@@ -9,7 +9,7 @@ import numpy as np
 import typer
 from sqlalchemy import create_engine, select, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column
-from sqlalchemy import Integer, String, Text as SQLText, Float, ForeignKey
+from sqlalchemy import Integer, String, Text as SQLText, Float, ForeignKey, JSON
 
 app = typer.Typer(add_completion=False)
 
@@ -34,9 +34,21 @@ class Feature(Base):
     bpm_conf: Mapped[Optional[float]] = mapped_column(Float)
     key: Mapped[Optional[str]] = mapped_column(String(8))
     key_conf: Mapped[Optional[float]] = mapped_column(Float)
-    # Minimal subset—DB has additional JSON fields
+    chroma_stats: Mapped[Optional[dict]] = mapped_column(JSON)
+    spectral: Mapped[Optional[dict]] = mapped_column(JSON)
+    dynamics: Mapped[Optional[dict]] = mapped_column(JSON)
+    stereo: Mapped[Optional[dict]] = mapped_column(JSON)
     percussive_harmonic_ratio: Mapped[Optional[float]] = mapped_column(Float)
     pumpiness: Mapped[Optional[float]] = mapped_column(Float)
+
+
+class Embedding(Base):
+    __tablename__ = "embeddings"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    track_id: Mapped[int] = mapped_column(ForeignKey("track.track_id"))
+    model: Mapped[str] = mapped_column(String(64))
+    dim: Mapped[int] = mapped_column(Integer)
+    vector: Mapped[list[float] | None] = mapped_column(JSON, nullable=True)
 
 
 def get_db_url() -> str:
@@ -51,31 +63,192 @@ def get_db_url() -> str:
     return f"postgresql+psycopg://{user}:{pw}@{host}:{port}/{db}"
 
 
-def safe_load_audio(path: str, sr: int = 44100) -> tuple[np.ndarray, int]:
+def safe_load_audio(path: str, sr: int = 44100, mono: bool = False) -> tuple[np.ndarray, int]:
+    """Load an audio file with a bit of defensive coding.
+
+    Parameters
+    ----------
+    path : str
+        Location of the audio file.
+    sr : int
+        Target sampling rate.
+    mono : bool
+        If True, collapse to mono.  Otherwise returns shape (n, ch).
+
+    Returns
+    -------
+    y : np.ndarray
+        Audio array (float32).
+    sr : int
+        Sampling rate.
+    """
+
     import soundfile as sf
     import librosa as lb
+
     try:
-        y, srate = sf.read(path, always_2d=False)
-        if y.ndim > 1:
-            y = np.mean(y, axis=1)
+        y, srate = sf.read(path, always_2d=True)
         if srate != sr:
-            y = lb.resample(y, orig_sr=srate, target_sr=sr)
+            y = lb.resample(y.T, orig_sr=srate, target_sr=sr).T
             srate = sr
-        return y.astype(np.float32), srate
     except Exception:
-        y, srate = lb.load(path, sr=sr, mono=True)
-        return y, srate
+        y, srate = lb.load(path, sr=sr, mono=False)
+        if y.ndim == 1:
+            y = y[None, :]
+        y = y.T
+    if mono:
+        y = np.mean(y, axis=1)
+    return y.astype(np.float32), srate
+
+
+def estimate_key(chroma: np.ndarray) -> tuple[str, float]:
+    """Estimate musical key from a chromagram.
+
+    Uses a simple template‑matching (Krumhansl-Schmuckler) approach
+    returning key string and a rudimentary confidence value.
+    """
+
+    # Krumhansl major/minor profiles
+    major = np.array([6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88])
+    minor = np.array([6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17])
+    chroma_mean = chroma.mean(axis=1)
+    majors = np.array([np.roll(major, i) for i in range(12)])
+    minors = np.array([np.roll(minor, i) for i in range(12)])
+    scores_major = chroma_mean @ majors.T
+    scores_minor = chroma_mean @ minors.T
+    idx_major = int(np.argmax(scores_major))
+    idx_minor = int(np.argmax(scores_minor))
+    notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
+    if scores_major[idx_major] >= scores_minor[idx_minor]:
+        key = f"{notes[idx_major]}maj"
+        score = scores_major[idx_major]
+    else:
+        key = f"{notes[idx_minor]}min"
+        score = scores_minor[idx_minor]
+    total = float(chroma_mean @ chroma_mean + 1e-6)
+    conf = float(score / total)
+    return key, conf
+
+
+def compute_embeddings(wav_path: str, models: list[str]) -> dict[str, list[float]]:
+    """Compute optional embeddings for the given audio file.
+
+    Parameters
+    ----------
+    wav_path : str
+        Path to audio file.
+    models : list[str]
+        Names of embedding backends to try (e.g. ``["openl3", "clap"]``).
+
+    Returns
+    -------
+    dict
+        Mapping of model name to embedding vector.
+    """
+
+    out: dict[str, list[float]] = {}
+    if not models:
+        return out
+
+    # Load audio in mono for embeddings
+    y, sr = safe_load_audio(wav_path, sr=48000, mono=True)
+
+    for model in models:
+        vec: np.ndarray | None = None
+        name = model.lower()
+        if name == "openl3":
+            try:
+                import openl3
+
+                emb, _ = openl3.get_audio_embedding(y, sr, hop_size=0.0)
+                vec = emb.mean(axis=0)
+            except Exception:
+                vec = None
+        elif name == "clap":
+            try:
+                import laion_clap
+                import torch
+
+                clap = laion_clap.CLAP_Module(enable_fusion=False)
+                audio = torch.tensor(y).unsqueeze(0)
+                emb = clap.get_audio_embedding_from_data(audio, sr)
+                vec = emb[0].numpy()
+            except Exception:
+                vec = None
+        else:
+            # Fallback lightweight embedding using MFCCs
+            try:
+                import librosa as lb
+
+                mfcc = lb.feature.mfcc(y=y, sr=sr, n_mfcc=20)
+                vec = mfcc.mean(axis=1)
+                name = "mfcc"
+            except Exception:
+                vec = None
+        if vec is not None:
+            out[name] = vec.astype(float).tolist()
+    return out
 
 
 def estimate_features(wav_path: str) -> dict:
     import librosa as lb
-    y, sr = safe_load_audio(wav_path, sr=44100)
-    if y.size == 0:
+
+    y_st, sr = safe_load_audio(wav_path, sr=44100, mono=False)
+    if y_st.size == 0:
         raise RuntimeError("empty audio")
 
-    # Onset strength for onset rate proxy
+    # Collapse to mono for most analyses
+    y = np.mean(y_st, axis=1)
+
+    # Chroma & key estimation
+    chroma = lb.feature.chroma_cqt(y=y, sr=sr)
+    chroma_mean = chroma.mean(axis=1)
+    chroma_var = chroma.var(axis=1)
+    key, key_conf = estimate_key(chroma)
+
+    # Spectral stats
+    centroid = lb.feature.spectral_centroid(y=y, sr=sr)[0]
+    rolloff = lb.feature.spectral_rolloff(y=y, sr=sr)[0]
+    flatness = lb.feature.spectral_flatness(y=y)[0]
+    bandwidth = lb.feature.spectral_bandwidth(y=y, sr=sr)[0]
+    spectral = {
+        "centroid_mean": float(np.mean(centroid)),
+        "centroid_var": float(np.var(centroid)),
+        "rolloff_mean": float(np.mean(rolloff)),
+        "rolloff_var": float(np.var(rolloff)),
+        "flatness_mean": float(np.mean(flatness)),
+        "flatness_var": float(np.var(flatness)),
+        "bandwidth_mean": float(np.mean(bandwidth)),
+        "bandwidth_var": float(np.var(bandwidth)),
+    }
+
+    # Dynamics
+    rms = lb.feature.rms(y=y)[0]
+    dyn_range = float(np.percentile(rms, 95) - np.percentile(rms, 5))
+    dynamics = {
+        "rms_mean": float(np.mean(rms)),
+        "rms_var": float(np.var(rms)),
+        "dynamic_range": dyn_range,
+    }
+
+    # Stereo width
+    if y_st.ndim == 2 and y_st.shape[1] >= 2:
+        l = y_st[:, 0]
+        r = y_st[:, 1]
+        mid = (l + r) / 2
+        side = (l - r) / 2
+        width = float(np.mean(np.abs(side)) / (np.mean(np.abs(mid)) + 1e-8))
+        if l.std() > 1e-6 and r.std() > 1e-6:
+            lr_corr = float(np.corrcoef(l, r)[0, 1])
+        else:
+            lr_corr = 1.0
+    else:
+        width = 0.0
+        lr_corr = 1.0
+    stereo = {"width": width, "lr_corr": lr_corr}
+
+    # Onset strength for tempo confidence
     onset_env = lb.onset.onset_strength(y=y, sr=sr)
-    onset_rate = float(np.mean(onset_env))
 
     # Tempo
     tempo, beats = lb.beat.beat_track(y=y, sr=sr)
@@ -98,6 +271,12 @@ def estimate_features(wav_path: str) -> dict:
     return {
         "bpm": bpm,
         "bpm_conf": bpm_conf,
+        "key": key,
+        "key_conf": key_conf,
+        "chroma_stats": {"mean": chroma_mean.tolist(), "var": chroma_var.tolist()},
+        "spectral": spectral,
+        "dynamics": dynamics,
+        "stereo": stereo,
         "percussive_harmonic_ratio": phr,
         "pumpiness": pump,
     }
@@ -142,12 +321,21 @@ def analyze_one(db: Session, tr: Track, audio_root: str) -> bool:
             track_id=tr.track_id,
             bpm=feats.get("bpm"),
             bpm_conf=feats.get("bpm_conf"),
-            key=None,
-            key_conf=None,
+            key=feats.get("key"),
+            key_conf=feats.get("key_conf"),
+            chroma_stats=feats.get("chroma_stats"),
+            spectral=feats.get("spectral"),
+            dynamics=feats.get("dynamics"),
+            stereo=feats.get("stereo"),
             percussive_harmonic_ratio=feats.get("percussive_harmonic_ratio"),
             pumpiness=feats.get("pumpiness"),
         )
     )
+    models_env = os.getenv("EMBEDDING_MODEL")
+    models = [m.strip() for m in models_env.split(",") if m.strip()] if models_env else []
+    embeds = compute_embeddings(str(p), models)
+    for name, vec in embeds.items():
+        db.add(Embedding(track_id=tr.track_id, model=name, dim=len(vec), vector=vec))
     db.commit()
     return True
 
