@@ -1,28 +1,31 @@
-async function getAgg() {
+import MoodSharesChart from './MoodSharesChart';
+
+async function getSeries() {
   const base = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000';
-  // Use trajectory weeks and then pull radar for each to assemble a simple table
   const trajRes = await fetch(`${base}/dashboard/trajectory`, { next: { revalidate: 0 } });
-  if (!trajRes.ok) return { points: [] };
+  if (!trajRes.ok) return [];
   const traj = await trajRes.json();
-  return traj;
+  const weeks: string[] = traj.points?.map((p: any) => p.week) ?? [];
+  const radarData = await Promise.all(
+    weeks.map(async (week: string) => {
+      const res = await fetch(`${base}/dashboard/radar?week=${encodeURIComponent(week)}`, { next: { revalidate: 0 } });
+      if (!res.ok) return null;
+      const radar = await res.json();
+      return { week: radar.week, ...radar.axes };
+    })
+  );
+  return radarData.filter(Boolean);
 }
 
 export default async function Moods() {
-  const traj = await getAgg();
+  const series = await getSeries();
   return (
     <section>
       <h2>Moods</h2>
-      {(!traj.points || traj.points.length === 0) ? (
+      {series.length === 0 ? (
         <p>No data yet. Ingest listens and aggregate weeks.</p>
       ) : (
-        <>
-          <p>Recent weeks:</p>
-          <ul>
-            {traj.points.map((p: any) => (
-              <li key={p.week}><code>{p.week}</code> – valence: {p.x.toFixed(3)}, energy: {p.y.toFixed(3)}</li>
-            ))}
-          </ul>
-        </>
+        <MoodSharesChart data={series} />
       )}
     </section>
   );
