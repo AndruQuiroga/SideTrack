@@ -1,7 +1,8 @@
+import { apiFetch } from '../../lib/api';
+
 async function getAgg() {
-  const base = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000';
   // Use trajectory weeks and then pull radar for each to assemble a simple table
-  const trajRes = await fetch(`${base}/dashboard/trajectory`, { next: { revalidate: 0 } });
+  const trajRes = await apiFetch('/dashboard/trajectory', { next: { revalidate: 0 } });
   if (!trajRes.ok) return { points: [] };
   const traj = await trajRes.json();
   return traj;
