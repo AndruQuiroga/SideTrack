@@ -1,0 +1,57 @@
+[
+  {
+    "user_id": "demo",
+    "played_at": "2024-05-06T12:34:00Z",
+    "source": "listenbrainz",
+    "track": {
+      "title": "Euphoric Dawn",
+      "artist_name": "Nova Flux",
+      "release_title": "Sunrise Arcs",
+      "duration": 420
+    }
+  },
+  {
+    "user_id": "demo",
+    "played_at": "2024-05-07T18:20:00Z",
+    "source": "listenbrainz",
+    "track": {
+      "title": "Industrial Night",
+      "artist_name": "Grain Shift",
+      "release_title": "City Static",
+      "duration": 390
+    }
+  },
+  {
+    "user_id": "demo",
+    "played_at": "2024-05-15T09:10:00Z",
+    "source": "listenbrainz",
+    "track": {
+      "title": "Float Module",
+      "artist_name": "Aerial",
+      "release_title": "Low Orbit",
+      "duration": 360
+    }
+  },
+  {
+    "user_id": "demo",
+    "played_at": "2024-06-03T21:05:00Z",
+    "source": "listenbrainz",
+    "track": {
+      "title": "Pump Engine",
+      "artist_name": "Drive Systems",
+      "release_title": "Torque",
+      "duration": 400
+    }
+  },
+  {
+    "user_id": "demo",
+    "played_at": "2024-06-17T07:55:00Z",
+    "source": "listenbrainz",
+    "track": {
+      "title": "Hypnotic Field",
+      "artist_name": "Deep Mesh",
+      "release_title": "Gradient",
+      "duration": 415
+    }
+  }
+]
