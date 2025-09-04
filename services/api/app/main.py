@@ -315,7 +315,7 @@ def score_track(track_id: int, method: str = DEFAULT_METHOD, db: Session = Depen
             )
             upserts += 1
     db.commit()
-    return {"detail": "scored", "track_id": track_id, "upserts": upserts}
+    return {"detail": "scored", "track_id": track_id, "scores": scores, "upserts": upserts}
 
 
 @app.post("/tracks/{track_id}/path")

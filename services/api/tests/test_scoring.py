@@ -32,6 +32,7 @@ def test_score_track_zero_shot(session):
 
     res = score_track(tr.track_id, db=session)
     assert res["detail"] == "scored"
+    assert set(res["scores"]) == set(AXES)
 
     rows = session.execute(select(MoodScore).where(MoodScore.track_id == tr.track_id)).scalars().all()
     assert len(rows) == len(AXES)
@@ -56,6 +57,7 @@ def test_score_track_supervised(session):
 
     res = score_track(tr.track_id, method="super", db=session)
     assert res["detail"] == "scored"
+    assert set(res["scores"]) == set(AXES)
     rows = session.execute(
         select(MoodScore).where(MoodScore.track_id == tr.track_id, MoodScore.method == "super")
     ).scalars().all()
@@ -69,3 +71,11 @@ def test_score_track_missing_data(session):
 
     with pytest.raises(HTTPException):
         score_track(tr.track_id, db=session)
+
+
+def test_score_track_bad_method(session):
+    tr = Track(title="Bad")
+    session.add(tr)
+    session.commit()
+    with pytest.raises(HTTPException):
+        score_track(tr.track_id, method="nope", db=session)

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from typing import Dict
 import hashlib
 import math
 import random
@@ -43,7 +42,7 @@ def _score_supervised(feat: Feature, axis: str) -> float:
     return float(round(score, 6))
 
 
-def score_axes(db: Session, track_id: int, method: str = "zero") -> Dict[str, float]:
+def score_axes(db: Session, track_id: int, method: str = "zero") -> dict[str, float]:
     if method not in SUPPORTED_METHODS:
         raise ValueError("unknown method")
 
