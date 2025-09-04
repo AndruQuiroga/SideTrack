@@ -1,7 +1,7 @@
 from datetime import date, datetime, timedelta, timezone
 from typing import Optional, List, Dict
 
-from fastapi import FastAPI, HTTPException, Query, Depends, Body
+from fastapi import FastAPI, HTTPException, Query, Depends, Body, BackgroundTasks
 from pydantic import BaseModel
 from sqlalchemy import text, select, func, and_, insert
 from sqlalchemy.orm import Session
@@ -16,6 +16,7 @@ from .models import (
     MoodScore,
     MoodAggWeek,
     LastfmTags,
+    Feature,
 )
 
 app = FastAPI(title="SideTrack API", version="0.1.0")
@@ -35,6 +36,20 @@ def _startup():
 
 
 AXES = ["energy", "valence", "danceability", "brightness", "pumpiness"]
+
+
+ANALYSIS_QUEUE: list[int] = []
+
+
+def _enqueue_analysis(track_id: int) -> None:
+    """Placeholder analysis job enqueue function.
+
+    In production this could push to a real job queue or call out to the
+    extractor service. For now, we record the track id in a list so tests can
+    verify scheduling.
+    """
+
+    ANALYSIS_QUEUE.append(track_id)
 
 
 class TrackIn(BaseModel):
@@ -286,8 +301,32 @@ def sync_lastfm_tags(since: Optional[date] = Query(None), db: Session = Depends(
 
 
 @app.post("/analyze/track/{track_id}")
-def analyze_track(track_id: int):
-    return {"detail": "scheduled", "track_id": track_id}
+def analyze_track(track_id: int, background_tasks: BackgroundTasks):
+    """Queue or trigger analysis for the given track.
+
+    If features already exist for the track we return a `done` status with the
+    existing feature row id. Otherwise, the track id is scheduled for
+    processing via ``BackgroundTasks``.
+    """
+
+    with get_db() as db:
+        tr = db.get(Track, track_id)
+        if not tr:
+            raise HTTPException(status_code=404, detail="track not found")
+        if not tr.path_local:
+            raise HTTPException(status_code=400, detail="track missing path")
+
+        existing = db.execute(select(Feature).where(Feature.track_id == track_id)).scalar_one_or_none()
+        if existing:
+            return {
+                "detail": "already_analyzed",
+                "track_id": track_id,
+                "status": "done",
+                "features_id": existing.id,
+            }
+
+    background_tasks.add_task(_enqueue_analysis, track_id)
+    return {"detail": "scheduled", "track_id": track_id, "status": "scheduled"}
 
 
 @app.post("/score/track/{track_id}")
