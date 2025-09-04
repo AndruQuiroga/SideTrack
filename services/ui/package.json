@@ -6,17 +6,21 @@
     "dev": "next dev -H 0.0.0.0",
     "build": "next build",
     "start": "next start -H 0.0.0.0",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "playwright test"
   },
   "dependencies": {
     "next": "14.2.5",
     "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "react-dom": "18.3.1",
+    "react-plotly.js": "2.6.0",
+    "plotly.js": "2.35.2"
   },
   "devDependencies": {
     "typescript": "5.5.4",
     "@types/react": "18.3.3",
-    "@types/node": "20.14.10"
+    "@types/node": "20.14.10",
+    "@playwright/test": "1.46.0"
   }
 }
 
