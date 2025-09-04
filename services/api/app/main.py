@@ -281,6 +281,11 @@ def ingest_listens(
 def ingest_musicbrainz(release_mbid: str = Query(..., description="MusicBrainz release MBID"), db: Session = Depends(get_db)):
     try:
         data = _mb_fetch_release(release_mbid)
+    except requests.HTTPError as e:
+        status = getattr(e.response, "status_code", None)
+        if status == 404:
+            raise HTTPException(status_code=404, detail="release not found")
+        raise HTTPException(status_code=502, detail=f"MusicBrainz error: {e}")
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"MusicBrainz error: {e}")
 

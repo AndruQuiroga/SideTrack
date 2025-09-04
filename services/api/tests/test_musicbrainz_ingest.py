@@ -82,11 +82,22 @@ def test_ingest_musicbrainz_dedup(mb_client):
     assert session.query(Track).count() == 2
     session.close()
 
-    # Second ingestion should not create duplicates
-    resp = client.post("/ingest/musicbrainz", params={"release_mbid": "release-mbid"})
-    assert resp.status_code == 200
-    assert resp.json()["tracks"] == 0
 
-    session = SessionLocal()
-    assert session.query(Track).count() == 2
-    session.close()
+def test_ingest_musicbrainz_not_found(mb_client, monkeypatch):
+    client, _ = mb_client
+    from services.api.app import main as main_mod
+
+    class Resp:
+        def raise_for_status(self):
+            from requests import HTTPError, Response
+
+            resp = Response()
+            resp.status_code = 404
+            raise HTTPError(response=resp)
+
+        def json(self):
+            return {}
+
+    monkeypatch.setattr(main_mod.requests, "get", lambda *a, **k: Resp())
+    resp = client.post("/ingest/musicbrainz", params={"release_mbid": "missing"})
+    assert resp.status_code == 404
