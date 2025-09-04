@@ -1,0 +1,36 @@
+version: "3.9"
+services:
+  vector:
+    image: ankane/pgvector
+    depends_on: [db]
+
+  scheduler:
+    build: ./services/scheduler
+    env_file: .env
+    depends_on: [api, extractor]
+    command: python -m scheduler.run
+
+  worker:
+    build: ./services/worker
+    env_file: .env
+    depends_on: [cache, db]
+    command: rq worker vibescope
+
+  # Inherit base services by using 'docker compose -f compose.min.yml -f compose.pro.yml up'
+  db:
+    image: timescale/timescaledb:latest-pg16
+  cache:
+    image: redis:7
+  api:
+    build: ./services/api
+  extractor:
+    build: ./services/extractor
+  ui:
+    build: ./services/ui
+    environment:
+      - NEXTAUTH_URL=${NEXTAUTH_URL}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - LISTENBRAINZ_APP_NAME=VibeScope
+      - LASTFM_API_KEY=${LASTFM_API_KEY}
