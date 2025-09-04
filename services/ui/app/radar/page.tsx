@@ -1,12 +1,13 @@
+import { apiFetch } from '../../lib/api';
+
 async function getRadar() {
-  const base = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000';
   // Pull trajectory to discover the most recent week, then build radar
-  const trajRes = await fetch(`${base}/dashboard/trajectory`, { next: { revalidate: 0 } });
+  const trajRes = await apiFetch('/dashboard/trajectory', { next: { revalidate: 0 } });
   const traj = await trajRes.json();
   const last = traj.points?.[traj.points.length - 1];
   const week = last?.week;
   if (!week) return { week: null, axes: {}, baseline: {} };
-  const res = await fetch(`${base}/dashboard/radar?week=${encodeURIComponent(week)}`, { next: { revalidate: 0 } });
+  const res = await apiFetch(`/dashboard/radar?week=${encodeURIComponent(week)}`, { next: { revalidate: 0 } });
   if (!res.ok) throw new Error('Failed to fetch radar');
   return res.json();
 }

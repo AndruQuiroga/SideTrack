@@ -1,6 +1,7 @@
+import { apiFetch } from '../../lib/api';
+
 async function getTrajectory() {
-  const base = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000';
-  const res = await fetch(`${base}/dashboard/trajectory`, { next: { revalidate: 0 } });
+  const res = await apiFetch('/dashboard/trajectory', { next: { revalidate: 0 } });
   if (!res.ok) throw new Error('Failed to fetch trajectory');
   return res.json();
 }

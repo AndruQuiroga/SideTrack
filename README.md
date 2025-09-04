@@ -464,6 +464,10 @@ cp .env.example .env
 #    - Authorized redirect URI: https://your.domain/api/auth/callback/google
 #    - Put GOOGLE_CLIENT_ID/SECRET into .env and set NEXTAUTH_URL
 
+# 2b) API base for UI fetches (default: http://localhost:8000)
+#     - NEXT_PUBLIC_API_BASE points the Next.js UI at the API
+#     - Override in production, e.g., https://api.your.domain
+
 # 3) Build and start
 docker compose up -d --build
 
