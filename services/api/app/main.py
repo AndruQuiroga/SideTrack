@@ -9,8 +9,9 @@ from pydantic import BaseModel
 from sqlalchemy import text, select, func, and_, insert
 from sqlalchemy.orm import Session
 
-from .db import get_db, maybe_create_all
 from fastapi.middleware.cors import CORSMiddleware
+
+from .db import get_db, maybe_create_all
 from .models import (
     Artist,
     Release,
@@ -22,6 +23,8 @@ from .models import (
     LastfmTags,
     Feature,
 )
+from .constants import AXES, DEFAULT_METHOD
+from . import scoring
 
 app = FastAPI(title="SideTrack API", version="0.1.0")
 app.add_middleware(
@@ -54,7 +57,6 @@ def _enqueue_analysis(track_id: int) -> None:
     """
 
     ANALYSIS_QUEUE.append(track_id)
-
 
 class TrackIn(BaseModel):
     title: str
@@ -93,16 +95,6 @@ def _get_or_create(db: Session, model, defaults: Dict | None = None, **kwargs):
     db.add(inst)
     db.flush()
     return inst
-
-
-def _score_value(seed: str, axis: str) -> float:
-    import hashlib
-
-    h = hashlib.md5((seed + "|" + axis).encode()).hexdigest()
-    # map first 8 hex chars to [0,1]
-    v = int(h[:8], 16) / 0xFFFFFFFF
-    return float(round(v, 6))
-
 
 def _env(name: str, default: Optional[str] = None) -> Optional[str]:
     import os
@@ -437,26 +429,41 @@ def analyze_track(track_id: int, background_tasks: BackgroundTasks):
 
 
 @app.post("/score/track/{track_id}")
-def score_track(track_id: int, db: Session = Depends(get_db)):
+def score_track(track_id: int, method: str = DEFAULT_METHOD, db: Session = Depends(get_db)):
     tr = db.get(Track, track_id)
     if not tr:
         raise HTTPException(status_code=404, detail="track not found")
-    seed = f"{tr.track_id}:{tr.title}:{tr.artist_id}"
+    try:
+        scores = scoring.score_axes(db, tr.track_id, method=method)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     upserts = 0
-    for ax in AXES:
-        val = _score_value(seed, ax)
+    for ax, val in scores.items():
         existing = db.execute(
             select(MoodScore).where(
-                and_(MoodScore.track_id == tr.track_id, MoodScore.axis == ax, MoodScore.method == "det")
+                and_(
+                    MoodScore.track_id == tr.track_id,
+                    MoodScore.axis == ax,
+                    MoodScore.method == method,
+                )
             )
         ).scalar_one_or_none()
         if existing:
             existing.value = val
+            existing.updated_at = datetime.utcnow()
         else:
-            db.add(MoodScore(track_id=tr.track_id, axis=ax, method="det", value=val, updated_at=datetime.utcnow()))
+            db.add(
+                MoodScore(
+                    track_id=tr.track_id,
+                    axis=ax,
+                    method=method,
+                    value=val,
+                    updated_at=datetime.utcnow(),
+                )
+            )
             upserts += 1
     db.commit()
-    return {"detail": "scored", "track_id": track_id, "upserts": upserts}
+    return {"detail": "scored", "track_id": track_id, "scores": scores, "upserts": upserts}
 
 
 @app.post("/tracks/{track_id}/path")
@@ -471,17 +478,16 @@ def set_track_path(track_id: int, payload: TrackPathIn, db: Session = Depends(ge
 
 @app.post("/aggregate/weeks")
 def aggregate_weeks(db: Session = Depends(get_db)):
-    # build weekly aggregates per axis from listens + mood scores (method=det)
-    # ensure every listened track has deterministic scores
+    # build weekly aggregates per axis from listens + mood scores
     listened_tracks = db.execute(select(Listen.track_id).distinct()).scalars().all()
     for tid in listened_tracks:
-        score_track(tid, db)  # deterministic, idempotent
+        score_track(tid, method=DEFAULT_METHOD, db=db)
 
     # pull joined rows: (played_at_week, axis, value)
     rows = db.execute(
         select(Listen.played_at, MoodScore.axis, MoodScore.value)
         .join(MoodScore, MoodScore.track_id == Listen.track_id)
-        .where(MoodScore.method == "det")
+        .where(MoodScore.method == DEFAULT_METHOD)
     ).all()
 
     # group in Python for simplicity
