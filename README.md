@@ -75,7 +75,7 @@ Local Audio (optional) ─────────┘                      │
 - `cache`: Redis for queues/rate limiting
 - `api`: FastAPI read/write endpoints; serves dashboard config
 - `extractor`: batch jobs for audio→features/embeddings
-- `scheduler`: Prefect or cron to run periodic jobs
+- `scheduler`: calls `/ingest/listens`, `/tags/lastfm/sync`, and `/aggregate/weeks` on a schedule
 - `ui`: Next.js app (Plotly / Recharts) for dashboards
 - `vectorizer` (optional): hosts CLAP/OpenL3 model if you want a separate container
 
@@ -415,8 +415,10 @@ USE_CLAP=true
 USE_DEMUCS=false
 TORCH_DEVICE=auto  # cuda|cpu|auto
 
-# Scheduler (Prefect 2 by default)
-SCHEDULE_CRON=@daily
+# Scheduler intervals (minutes)
+INGEST_LISTENS_INTERVAL_MINUTES=1
+LASTFM_SYNC_INTERVAL_MINUTES=30
+AGGREGATE_WEEKS_INTERVAL_MINUTES=1440
 TZ=America/New_York
 ```
 
@@ -463,6 +465,10 @@ cp .env.example .env
 #    - Create a Google Cloud OAuth Client (Web)
 #    - Authorized redirect URI: https://your.domain/api/auth/callback/google
 #    - Put GOOGLE_CLIENT_ID/SECRET into .env and set NEXTAUTH_URL
+
+# 2b) API base for UI fetches (default: http://localhost:8000)
+#     - NEXT_PUBLIC_API_BASE points the Next.js UI at the API
+#     - Override in production, e.g., https://api.your.domain
 
 # 3) Build and start
 docker compose up -d --build
