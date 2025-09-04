@@ -15,6 +15,7 @@ from .models import (
     Listen,
     MoodScore,
     MoodAggWeek,
+    UserLabel,
     LastfmTags,
 )
 
@@ -481,7 +482,20 @@ def dashboard_radar(week: str = Query(...), db: Session = Depends(get_db)):
 
 
 @app.post("/labels")
-def submit_label(user_id: str, track_id: int, axis: str, value: float):
-    if axis not in {"energy", "valence", "danceability", "brightness", "pumpiness"}:
+def submit_label(
+    user_id: str, track_id: int, axis: str, value: float, db: Session = Depends(get_db)
+):
+    if axis not in AXES:
         raise HTTPException(status_code=400, detail="Unknown axis")
-    return {"detail": "accepted", "user_id": user_id, "track_id": track_id, "axis": axis, "value": value}
+    lbl = UserLabel(user_id=user_id, track_id=track_id, axis=axis, value=value)
+    db.add(lbl)
+    db.commit()
+    db.refresh(lbl)
+    return {
+        "detail": "accepted",
+        "id": lbl.id,
+        "user_id": lbl.user_id,
+        "track_id": lbl.track_id,
+        "axis": lbl.axis,
+        "value": lbl.value,
+    }
