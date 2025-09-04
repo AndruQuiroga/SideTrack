@@ -6,16 +6,41 @@ import requests
 API = os.getenv("API_URL", "http://api:8000")
 
 
-def job():
+def ingest_listens():
     try:
-        r = requests.get(f"{API}/health", timeout=5)
-        print("[scheduler] health:", r.json())
+        r = requests.post(f"{API}/ingest/listens", timeout=10)
+        print("[scheduler] ingest listens:", r.status_code)
     except Exception as e:
-        print("[scheduler] error:", e)
+        print("[scheduler] ingest listens error:", e)
+
+
+def sync_lastfm_tags():
+    try:
+        r = requests.post(f"{API}/tags/lastfm/sync", timeout=10)
+        print("[scheduler] lastfm sync:", r.status_code)
+    except Exception as e:
+        print("[scheduler] lastfm sync error:", e)
+
+
+def aggregate_weeks():
+    try:
+        r = requests.post(f"{API}/aggregate/weeks", timeout=30)
+        print("[scheduler] aggregate weeks:", r.status_code)
+    except Exception as e:
+        print("[scheduler] aggregate weeks error:", e)
+
+
+def schedule_jobs():
+    ingest_minutes = float(os.getenv("INGEST_LISTENS_INTERVAL_MINUTES", "1"))
+    tags_minutes = float(os.getenv("LASTFM_SYNC_INTERVAL_MINUTES", "30"))
+    agg_minutes = float(os.getenv("AGGREGATE_WEEKS_INTERVAL_MINUTES", str(60 * 24)))
+    schedule.every(ingest_minutes).minutes.do(ingest_listens)
+    schedule.every(tags_minutes).minutes.do(sync_lastfm_tags)
+    schedule.every(agg_minutes).minutes.do(aggregate_weeks)
 
 
 def main():
-    schedule.every(1).minutes.do(job)
+    schedule_jobs()
     print("[scheduler] started")
     while True:
         schedule.run_pending()
