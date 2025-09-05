@@ -435,22 +435,29 @@ def analyze_track(track_id: int, background_tasks: BackgroundTasks):
 
 
 @app.post("/score/track/{track_id}")
-def score_track(track_id: int, method: str = DEFAULT_METHOD, db: Session = Depends(get_db)):
+def score_track(
+    track_id: int,
+    method: str = DEFAULT_METHOD,
+    version: str | None = None,
+    db: Session = Depends(get_db),
+):
     tr = db.get(Track, track_id)
     if not tr:
         raise HTTPException(status_code=404, detail="track not found")
     try:
-        scores = scoring.score_axes(db, tr.track_id, method=method)
+        scores = scoring.score_axes(db, tr.track_id, method=method, version=version)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    method_name = scoring.method_version(method, version)
     upserts = 0
-    for ax, val in scores.items():
+    for ax, data in scores.items():
+        val = data["value"]
         existing = db.execute(
             select(MoodScore).where(
                 and_(
                     MoodScore.track_id == tr.track_id,
                     MoodScore.axis == ax,
-                    MoodScore.method == method,
+                    MoodScore.method == method_name,
                 )
             )
         ).scalar_one_or_none()
@@ -462,14 +469,20 @@ def score_track(track_id: int, method: str = DEFAULT_METHOD, db: Session = Depen
                 MoodScore(
                     track_id=tr.track_id,
                     axis=ax,
-                    method=method,
+                    method=method_name,
                     value=val,
                     updated_at=datetime.utcnow(),
                 )
             )
             upserts += 1
     db.commit()
-    return {"detail": "scored", "track_id": track_id, "scores": scores, "upserts": upserts}
+    return {
+        "detail": "scored",
+        "track_id": track_id,
+        "scores": scores,
+        "upserts": upserts,
+        "method": method_name,
+    }
 
 
 @app.post("/tracks/{track_id}/path")
