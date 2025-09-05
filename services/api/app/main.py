@@ -187,8 +187,35 @@ def _ingest_lb_rows(db: Session, listens: list[dict], user_id: str | None = None
     return created
 
 
-def _lastfm_fetch_tags(artist: str, track: str, api_key: str) -> dict:
+def _lastfm_fetch_tags(
+    track_id: int,
+    artist: str,
+    track: str,
+    api_key: str,
+    db: Session,
+    max_age: int = 86400,
+) -> dict:
+    """Fetch top tags from Last.fm with simple caching and retries.
+
+    A DB-backed cache is used via the ``LastfmTags`` table. If a cached
+    row exists for ``track_id`` and it was updated within ``max_age`` seconds,
+    the cached tags are returned and no request is made. Otherwise the tags are
+    fetched from the Last.fm API, the cache/DB record is updated, and the tags
+    are returned.
+
+    HTTP errors (5xx or 429) are retried with exponential backoff.
+    """
+
+    existing = db.execute(
+        select(LastfmTags).where(LastfmTags.track_id == track_id)
+    ).scalar_one_or_none()
+    if existing and existing.updated_at and existing.updated_at > datetime.utcnow() - timedelta(
+        seconds=max_age
+    ):
+        return existing.tags or {}
+
     import requests
+
     params = {
         "method": "track.gettoptags",
         "artist": artist,
@@ -196,8 +223,23 @@ def _lastfm_fetch_tags(artist: str, track: str, api_key: str) -> dict:
         "api_key": api_key,
         "format": "json",
     }
-    r = requests.get("https://ws.audioscrobbler.com/2.0/", params=params, timeout=30)
-    r.raise_for_status()
+
+    backoff = 1.0
+    for attempt in range(3):
+        try:
+            r = requests.get(
+                "https://ws.audioscrobbler.com/2.0/", params=params, timeout=30
+            )
+            r.raise_for_status()
+            break
+        except requests.HTTPError as e:
+            status = getattr(e.response, "status_code", None)
+            if status and (status >= 500 or status == 429) and attempt < 2:
+                time.sleep(backoff)
+                backoff *= 2
+                continue
+            raise
+
     data = r.json()
     tags = data.get("toptags", {}).get("tag", [])
     # normalize to {tag: count}
@@ -210,6 +252,21 @@ def _lastfm_fetch_tags(artist: str, track: str, api_key: str) -> dict:
             cnt = 0
         if name:
             out[name] = cnt
+
+    if existing:
+        existing.tags = out
+        existing.updated_at = datetime.utcnow()
+    else:
+        db.add(
+            LastfmTags(
+                track_id=track_id,
+                source="track",
+                tags=out,
+                updated_at=datetime.utcnow(),
+            )
+        )
+    db.commit()
+
     return out
 
 
@@ -391,17 +448,10 @@ def sync_lastfm_tags(since: Optional[date] = Query(None), db: Session = Depends(
     updated = 0
     for tid, title, artist_name in rows:
         try:
-            tags = _lastfm_fetch_tags(artist_name, title, api_key)
+            _lastfm_fetch_tags(tid, artist_name, title, api_key, db)
+            updated += 1
         except Exception:
             continue
-        existing = db.execute(select(LastfmTags).where(LastfmTags.track_id == tid)).scalar_one_or_none()
-        if existing:
-            existing.tags = tags
-            existing.updated_at = datetime.utcnow()
-        else:
-            db.add(LastfmTags(track_id=tid, source="track", tags=tags, updated_at=datetime.utcnow()))
-        updated += 1
-    db.commit()
     return {"detail": "ok", "updated": updated}
 
 
