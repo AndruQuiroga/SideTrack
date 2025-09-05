@@ -1,22 +1,14 @@
 import os
-import sys
-from pathlib import Path
 
 import fakeredis
 import numpy as np
 import soundfile as sf
 from rq import Queue, SimpleWorker
 
-# Configure database before importing app modules
 os.environ.setdefault("DATABASE_URL", "sqlite:///./test_worker.db")
 os.environ.setdefault("AUTO_MIGRATE", "1")
 
-# Make the worker package importable when tests are executed from the repo root
-sys.path.append(str(Path(__file__).resolve().parents[1]))
 from worker.jobs import analyze_track, compute_embeddings
-
-# Make app package importable for database access
-sys.path.append(str(Path(__file__).resolve().parents[2] / "api"))
 from app.db import SessionLocal, maybe_create_all
 from app.models import Track, Feature
 
