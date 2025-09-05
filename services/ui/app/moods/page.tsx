@@ -8,8 +8,15 @@ async function getAgg() {
   return traj;
 }
 
+async function getFeatures(trackId: number) {
+  const res = await apiFetch(`/tracks/${trackId}/features`, { next: { revalidate: 0 } });
+  if (!res.ok) return null;
+  return res.json();
+}
+
 export default async function Moods() {
   const traj = await getAgg();
+  const feat = await getFeatures(1); // demo track id
   return (
     <section>
       <h2>Moods</h2>
@@ -24,6 +31,21 @@ export default async function Moods() {
             ))}
           </ul>
         </>
+      )}
+      <h3>Track Features</h3>
+      {feat && feat.feature ? (
+        <table>
+          <tbody>
+            {Object.entries(feat.feature).map(([k, v]) => (
+              <tr key={k}>
+                <td>{k}</td>
+                <td>{String(v)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : (
+        <p>No features available.</p>
       )}
     </section>
   );
