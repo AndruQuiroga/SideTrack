@@ -661,6 +661,78 @@ def dashboard_radar(
     return {"week": str(wk_date), "axes": axes, "baseline": baseline}
 
 
+@app.get("/dashboard/outliers")
+def dashboard_outliers(
+    limit: int = Query(10, ge=1, le=100),
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user),
+):
+    """Return tracks farthest from the recent mood centroid.
+
+    The centroid is computed from the user's listens over the last 90 days
+    using mood scores for each axis. Tracks are ranked by Euclidean distance
+    from this centroid.
+    """
+
+    since = datetime.now(timezone.utc) - timedelta(days=90)
+
+    # Compute centroid across recent listens
+    cent_rows = (
+        db.execute(
+            select(MoodScore.axis, func.avg(MoodScore.value))
+            .join(Listen, Listen.track_id == MoodScore.track_id)
+            .where(
+                and_(
+                    Listen.user_id == user_id,
+                    Listen.played_at >= since,
+                    MoodScore.method == DEFAULT_METHOD,
+                )
+            )
+            .group_by(MoodScore.axis)
+        ).all()
+    )
+    centroid = {ax: float(val or 0.0) for ax, val in cent_rows}
+    for ax in AXES:
+        centroid.setdefault(ax, 0.0)
+
+    # Gather candidate tracks listened to in the window
+    rows = (
+        db.execute(
+            select(Track.track_id, Track.title, Artist.name)
+            .join(Listen, Listen.track_id == Track.track_id)
+            .join(Artist, Track.artist_id == Artist.artist_id, isouter=True)
+            .where(and_(Listen.user_id == user_id, Listen.played_at >= since))
+            .group_by(Track.track_id, Track.title, Artist.name)
+        ).all()
+    )
+
+    outliers = []
+    for tid, title, artist_name in rows:
+        axis_rows = db.execute(
+            select(MoodScore.axis, MoodScore.value).where(
+                and_(
+                    MoodScore.track_id == tid,
+                    MoodScore.method == DEFAULT_METHOD,
+                )
+            )
+        ).all()
+        vec = {ax: float(val) for ax, val in axis_rows}
+        if len(vec) < len(AXES):
+            continue
+        dist = sum((vec[ax] - centroid[ax]) ** 2 for ax in AXES) ** 0.5
+        outliers.append(
+            {
+                "track_id": tid,
+                "title": title,
+                "artist": artist_name,
+                "distance": dist,
+            }
+        )
+
+    outliers.sort(key=lambda x: x["distance"], reverse=True)
+    return {"tracks": outliers[:limit], "centroid": centroid}
+
+
 @app.post("/labels")
 def submit_label(
     track_id: int,
