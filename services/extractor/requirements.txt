@@ -6,5 +6,5 @@ scipy==1.13.1
 librosa==0.10.2.post1
 soundfile==0.12.1
 openl3==0.4.2  # optional, for audio embeddings
-laion-clap==1.1.4  # optional CLAP embeddings
-torch==2.2.2  # required for laion-clap
+# CLAP is optional and pinned to an older NumPy; install separately if needed:
+#   pip install laion-clap==1.1.4 torch==2.2.2 numpy==1.23.5
