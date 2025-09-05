@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from ..db import get_db
 from ..models import Artist, Release, Track
+from ..main import HTTP_SESSION
 
 
 router = APIRouter()
@@ -48,7 +49,7 @@ def _mb_fetch_release(mbid: str) -> dict:
     url = f"https://musicbrainz.org/ws/2/release/{mbid}"
     params = {"inc": "recordings+artists", "fmt": "json"}
     headers = {"User-Agent": "SideTrack/0.1 (+https://example.com)"}
-    r = requests.get(url, params=params, headers=headers, timeout=30)
+    r = HTTP_SESSION.get(url, params=params, headers=headers, timeout=30)
     r.raise_for_status()
     return r.json()
 

@@ -7,7 +7,6 @@ from typing import Dict, List, Optional
 import json
 import os
 
-import requests
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy import and_, select
@@ -15,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from ..db import get_db
 from ..models import Artist, Listen, Release, Track
-from ..main import get_current_user
+from ..main import get_current_user, HTTP_SESSION
 
 
 router = APIRouter()
@@ -70,7 +69,7 @@ def _lb_fetch_listens(
             datetime.combine(since, datetime.min.time(), tzinfo=timezone.utc).timestamp()
         )
     url = f"{base}/{user}/listens"
-    r = requests.get(url, params=params, timeout=30)
+    r = HTTP_SESSION.get(url, params=params, timeout=30)
     r.raise_for_status()
     data = r.json()
     return data.get("listens", [])

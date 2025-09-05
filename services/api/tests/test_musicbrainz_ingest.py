@@ -45,7 +45,7 @@ def _setup_app(tmp_path, monkeypatch):
 
     app.dependency_overrides[get_db] = override_get_db
 
-    # mock requests.get
+    # mock HTTP session .get
     def fake_get(url, params=None, headers=None, timeout=30):
         import copy
 
@@ -58,7 +58,7 @@ def _setup_app(tmp_path, monkeypatch):
 
         return Resp()
 
-    monkeypatch.setattr(main_mod.requests, "get", fake_get)
+    monkeypatch.setattr(main_mod.HTTP_SESSION, "get", fake_get)
     monkeypatch.setattr(main_mod.time, "sleep", lambda x: None)
     return app, SessionLocal
 
@@ -100,6 +100,6 @@ def test_ingest_musicbrainz_not_found(mb_client, monkeypatch):
         def json(self):
             return {}
 
-    monkeypatch.setattr(main_mod.requests, "get", lambda *a, **k: Resp())
+    monkeypatch.setattr(main_mod.HTTP_SESSION, "get", lambda *a, **k: Resp())
     resp = client.post("/ingest/musicbrainz", params={"release_mbid": "missing"})
     assert resp.status_code == 404
