@@ -7,6 +7,10 @@ from typing import List
 
 import numpy as np
 import librosa
+import logging
+
+logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s:%(message)s")
+logger = logging.getLogger("worker")
 
 sys.path.append(str(Path(__file__).resolve().parents[2] / "api"))
 from app.db import SessionLocal  # type: ignore
@@ -62,5 +66,5 @@ def compute_embeddings(data: List[float]) -> List[float]:
     if max_val == 0:
         return [0 for _ in data]
     embeddings = [round(x / max_val, 4) for x in data]
-    print("[worker] computed embeddings")
+    logger.info("computed embeddings")
     return embeddings

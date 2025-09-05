@@ -2,6 +2,10 @@ import os
 import time
 import schedule
 import requests
+import logging
+
+logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s:%(message)s")
+logger = logging.getLogger("scheduler")
 
 API = os.getenv("API_URL", "http://api:8000")
 user_id = os.getenv("DEFAULT_USER_ID")
@@ -14,9 +18,9 @@ def ingest_listens():
             timeout=10,
             headers={"X-User-Id": user_id},
         )
-        print("[scheduler] ingest listens:", r.status_code)
-    except Exception as e:
-        print("[scheduler] ingest listens error:", e)
+        logger.info("ingest listens: %s", r.status_code)
+    except Exception:
+        logger.exception("ingest listens error")
 
 
 def sync_lastfm_tags():
@@ -26,9 +30,9 @@ def sync_lastfm_tags():
             timeout=10,
             headers={"X-User-Id": user_id},
         )
-        print("[scheduler] lastfm sync:", r.status_code)
-    except Exception as e:
-        print("[scheduler] lastfm sync error:", e)
+        logger.info("lastfm sync: %s", r.status_code)
+    except Exception:
+        logger.exception("lastfm sync error")
 
 
 def aggregate_weeks():
@@ -38,9 +42,9 @@ def aggregate_weeks():
             timeout=30,
             headers={"X-User-Id": user_id},
         )
-        print("[scheduler] aggregate weeks:", r.status_code)
-    except Exception as e:
-        print("[scheduler] aggregate weeks error:", e)
+        logger.info("aggregate weeks: %s", r.status_code)
+    except Exception:
+        logger.exception("aggregate weeks error")
 
 
 def schedule_jobs():
@@ -54,7 +58,7 @@ def schedule_jobs():
 
 def main():
     schedule_jobs()
-    print("[scheduler] started")
+    logger.info("started")
     while True:
         schedule.run_pending()
         time.sleep(1)
