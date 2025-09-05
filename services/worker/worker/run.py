@@ -14,7 +14,7 @@ def main() -> None:
     redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
     connection = redis.from_url(redis_url)
 
-    queues = ["analysis", "scoring"]
+    queues = ["analysis"]
     with Connection(connection):
         worker = Worker([Queue(name) for name in queues])
         worker.work()

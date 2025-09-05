@@ -1,24 +1,50 @@
 """Background job implementations for the worker service."""
 from __future__ import annotations
 
+import sys
+from pathlib import Path
 from typing import List
-import time
+
+import numpy as np
+import librosa
+
+sys.path.append(str(Path(__file__).resolve().parents[2] / "api"))
+from app.db import SessionLocal  # type: ignore
+from app.models import Track, Feature  # type: ignore
 
 
-def analyze_track(track_id: str) -> str:
-    """Simulate analyzing an audio track.
+def _basic_features(path: str) -> dict[str, float]:
+    """Estimate a couple of simple audio features."""
 
-    Args:
-        track_id: Identifier for the track to analyze.
+    y, sr = librosa.load(path, sr=None, mono=True)
+    tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
+    pump = float(np.sqrt(np.mean(y ** 2)))
+    return {"bpm": float(tempo), "pumpiness": pump}
 
-    Returns:
-        A message indicating the track has been analyzed.
+
+def analyze_track(track_id: int) -> int:
+    """Extract basic features for ``track_id`` and persist them.
+
+    Parameters
+    ----------
+    track_id:
+        Identifier of the track to analyze.
+
+    Returns
+    -------
+    int
+        The newly created features row id.
     """
-    # Simulate some work being done
-    time.sleep(0.1)
-    result = f"analysis-complete:{track_id}"
-    print(f"[worker] analyzed track {track_id}")
-    return result
+
+    with SessionLocal() as db:
+        track = db.get(Track, track_id)
+        if not track or not track.path_local:
+            raise ValueError("track missing")
+        feats = _basic_features(track.path_local)
+        feature = Feature(track_id=track_id, bpm=feats["bpm"], pumpiness=feats["pumpiness"])
+        db.add(feature)
+        db.commit()
+        return feature.id
 
 
 def compute_embeddings(data: List[float]) -> List[float]:
