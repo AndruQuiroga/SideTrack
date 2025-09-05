@@ -1,20 +1,17 @@
 """Background job implementations for the worker service."""
 from __future__ import annotations
 
-import sys
-from pathlib import Path
 from typing import List
 
-import numpy as np
 import librosa
+import numpy as np
 import logging
+
+from app.db import SessionLocal
+from app.models import Track, Feature
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s:%(message)s")
 logger = logging.getLogger("worker")
-
-sys.path.append(str(Path(__file__).resolve().parents[2] / "api"))
-from app.db import SessionLocal  # type: ignore
-from app.models import Track, Feature  # type: ignore
 
 
 def _basic_features(path: str) -> dict[str, float]:

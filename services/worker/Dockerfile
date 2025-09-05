@@ -1,6 +1,11 @@
 FROM python:3.11-slim
 WORKDIR /app
-RUN pip install --no-cache-dir rq==1.16.2 redis==5.0.7
-COPY worker ./worker
+
+COPY services/api /src/api
+RUN pip install --no-cache-dir /src/api
+
+COPY services/worker /src/worker
+RUN pip install --no-cache-dir /src/worker
+
 CMD ["python","-m","worker.run"]
 
