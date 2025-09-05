@@ -29,6 +29,18 @@ services:
     depends_on: [db]
     command: python -m extractor.run --schedule "@daily"
 
+  scheduler:
+    build: ./services/scheduler
+    env_file: .env
+    depends_on: [api, extractor]
+    command: python -m scheduler.run
+
+  worker:
+    build: ./services/worker
+    env_file: .env
+    depends_on: [cache, db]
+    command: python -m worker.run
+
   ui:
     build: ./services/ui
     env_file: .env
