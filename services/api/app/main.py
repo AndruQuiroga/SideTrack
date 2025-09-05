@@ -51,9 +51,6 @@ def get_current_user(x_user_id: str = Header(...)) -> str:
     return x_user_id
 
 
-AXES = ["energy", "valence", "danceability", "brightness", "pumpiness"]
-
-
 from rq import Queue
 import redis
 
