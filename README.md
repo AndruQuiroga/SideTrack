@@ -1,14 +1,17 @@
 # SideTrack
-*A hosted mood/taste analytics pipeline for your music listening history*
+
+_A hosted mood/taste analytics pipeline for your music listening history_
 
 > **TL;DR**: Pull listens from ListenBrainz → resolve MusicBrainz metadata → compute audio features + embeddings locally → score tracks on interpretable “vibe axes” (energy, valence, danceability, brightness, pumpiness, etc.) via zero‑shot + light supervision → aggregate to daily/weekly trends → visualize momentum and regime shifts on a beautiful dashboard. Fully containerized; GPU optional.
 
 ---
 
 ## Why & Goals
+
 You love EDM’s spectrum—from euphoric trance to gritty industrial—and you want a **data-native** view of how your taste evolves. VibeScope creates a personal, privacy‑respecting **taste space** and measures how your listening **moves** through that space over time.
 
 **Core goals**
+
 - Work great on **long‑tail**/underground tracks (minimal reliance on public popularity metadata)
 - Run **locally**, offline-friendly (only ListenBrainz/MusicBrainz APIs)
 - Provide **interpretable** axes (not just black-box clusters)
@@ -18,13 +21,14 @@ You love EDM’s spectrum—from euphoric trance to gritty industrial—and you 
 ---
 
 ## Features (MVP → Pro)
+
 - **Data ingest**: ListenBrainz listens, MusicBrainz entities & relationships (artist ↔ release ↔ track)
 - **Audio analysis** (local):
   - Handcrafted MIR features (BPM, key, spectral stats, onset rate, stereo width, dynamics)
   - Learned embeddings (OpenL3/musicnn/PANNs/CLAP)
-  - Optional **stem-aware** metrics via Demucs (e.g., *pumpiness*: kick–bass ducking correlation)
+  - Optional **stem-aware** metrics via Demucs (e.g., _pumpiness_: kick–bass ducking correlation)
 - **Mood/taste scoring**:
-  - **Zero-shot** text↔audio similarity (e.g., *euphoric*, *driving*, *melancholic*)
+  - **Zero-shot** text↔audio similarity (e.g., _euphoric_, _driving_, _melancholic_)
   - **Supervised** regressors for valence–arousal–danceability (calibrated later)
   - **Graph smoothing**: label propagation over track/artist/release k‑NN + MB relations
 - **Temporal modeling**: weekly centroids, variance, momentum vectors (EMA/Kalman), change‑point alerts
@@ -71,6 +75,7 @@ Local Audio (optional) ─────────┘                      │
 ```
 
 **Services**
+
 - `db`: Postgres 16 + TimescaleDB; optional pgvector
 - `cache`: Redis for queues/rate limiting
 - `api`: FastAPI read/write endpoints; serves dashboard config
@@ -94,9 +99,10 @@ Local Audio (optional) ─────────┘                      │
 - `mood_scores (track_id, axis, method, value, updated_at)`
 - `mood_agg_week` **(materialized view)** `(week, axis, mean, var, momentum, sample_size)`
 - `labels_user (user_id, track_id, axis, value, created_at)`
-- `graph_edges (src_track_id, dst_track_id, weight, kind)`   // kNN + MB relations
+- `graph_edges (src_track_id, dst_track_id, weight, kind)` // kNN + MB relations
 
 **Indices**
+
 - `listen_idx_time`, `listen_idx_track`
 - `embeddings_idx` (pgvector)
 - `mood_scores_unique (track_id, axis, method)`
@@ -108,6 +114,7 @@ Local Audio (optional) ─────────┘                      │
 **Continuous axes** (initial set): `energy`, `valence`, `danceability`, `brightness`, `rhythmic_complexity`, `pumpiness`, `texture_density`, `stereo_size`, `tempo`, `mode_confidence`.
 
 **Zero‑shot lexicon** (extendable):
+
 ```
 euphoric, melancholic, driving, hypnotic, gritty, airy, warm, cold,
 aggressive, floaty, groovy, minimal, maximal, industrial, ethereal,
@@ -119,6 +126,7 @@ playful, introspective, cinematic, raw, polished
 ## Modeling Approaches (choose any combo)
 
 ### 1) Handcrafted MIR (transparent, fast)
+
 - **Libs**: `essentia`, `librosa`, `madmom`, `aubio`
 - **Metrics**: BPM(+conf), onset rate, spectral centroid/rolloff/flatness, MFCC stats, spectral flux, zero‑crossing, chroma key+mode, loudness & DR, stereo width, percussive/harmonic ratio
 - **EDM‑specific**: **pumpiness** = corr(envelope_drums, −envelope_bass) using stems (Demucs) or bandpass proxies
@@ -126,25 +134,31 @@ playful, introspective, cinematic, raw, polished
 > **What are stems?** Optional source separation (e.g., with **Demucs**) splits a track into drums/bass/other/vocals. We use drum & bass envelopes to estimate side‑chain ducking ("pumpiness"). Enable when GPU is available; disabled by default.
 
 ### 2) Learned Embeddings (robust for long‑tail)
+
 - **OpenL3 (music env)**, **musicnn**, **PANNs/CNN14**, **VGGish**, **CLAP**
 - Segment (10–30s) or use **full‑track** pooling (default); pool by mean±var (or attention); L2‑normalize
 
 ### 3) Zero‑shot Mood Scoring
+
 - With **CLAP** (or text/audio joint model): cosine(track_emb, mood_text_emb)
 - No labels required; later calibrate with personal labels (Platt/isotonic)
 
 ### 4) Web‑Tag Harvesting (no‑label mode)
+
 - Pull **Last.fm** track/artist tags; normalize with TF‑IDF; map to axes (energy/valence/brightness/etc.) via a learned dictionary
 - Use **MusicBrainz** relationships (release/artist/label) to propagate weak labels
 
 ### 5) Light Supervision + Personalization (optional)
+
 - Train ridge/MLP from embeddings → (energy/valence/danceability) on public sets (DEAM/EmoMusic, MTG‑Jamendo) and calibrate to you if/when you add labels via the UI
 
 ### 6) Graph Label Propagation (stabilize long‑tail)
+
 - kNN over embeddings; add MB relations (same artist/release, remix/comp, label)
 - Propagate with weights; Bayesian partial pooling per artist/release
 
 ### 7) Temporal Modeling
+
 - Weekly centroid & variance per axis; **momentum** = Δ EMA(4‑week)
 - **CUSUM**/Bayesian change‑point for regime shifts
 - UMAP(embeddings) → 2D trajectory with arrow glyphs
@@ -154,6 +168,7 @@ playful, introspective, cinematic, raw, polished
 ## Pipelines
 
 **A. Ingestion**
+
 1. OAuth sign‑in (Google) via UI; connect **ListenBrainz** and **Last.fm** in settings
 2. Pull listens (ListenBrainz token)
 3. Resolve MBIDs + fetch artist/release metadata
@@ -161,6 +176,7 @@ playful, introspective, cinematic, raw, polished
 5. Build/refresh linkage graph
 
 **B. Audio Feature Extraction** (default: **full tracks**; excerpts optional)
+
 1. Locate local files by MBID/fingerprint; analyze **full audio**; optionally set `EXCERPT_SECONDS` for speed
 2. FFmpeg decode → mono/44.1k or stereo as needed
 3. Compute MIR + embeddings (OpenL3/musicnn/PANNs/CLAP)
@@ -168,24 +184,28 @@ playful, introspective, cinematic, raw, polished
 5. Store features/embeddings in DB
 
 **C. Scoring & Smoothing**
+
 1. Zero‑shot mood scoring (lexicon)
 2. Web‑tag harvesting → axis mapping (no‑label mode)
 3. Optional supervised regressors + calibration if you enable active learning later
 4. Graph label propagation / partial pooling
 
 **D. Aggregation**
+
 1. Weekly rollups (means, variance, sample count)
 2. Momentum vectors (EMA/Kalman)
 3. Materialize views for fast UI
 
 **E. Visualization**
+
 - API serves JSON for charts; UI renders Plotly/Recharts components with Auth.js session
 
 ## Containerization
 
 ### Minimal (MVP) Compose
+
 ```yaml
-version: "3.9"
+version: '3.9'
 services:
   db:
     image: timescale/timescaledb:latest-pg16
@@ -195,17 +215,17 @@ services:
       - POSTGRES_PASSWORD=vibe
     volumes:
       - db_data:/var/lib/postgresql/data
-    ports: ["5432:5432"]
+    ports: ['5432:5432']
 
   cache:
     image: redis:7
-    ports: ["6379:6379"]
+    ports: ['6379:6379']
 
   api:
     build: ./services/api
     env_file: .env
     depends_on: [db]
-    ports: ["8000:8000"]
+    ports: ['8000:8000']
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000
 
   extractor:
@@ -225,11 +245,11 @@ services:
     build: ./services/ui
     env_file: .env
     depends_on: [api]
-    ports: ["3000:3000"]
+    ports: ['3000:3000']
 
   proxy:
     image: caddy:2
-    ports: ["80:80", "443:443"]
+    ports: ['80:80', '443:443']
     volumes:
       - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
@@ -243,7 +263,8 @@ volumes:
 ```
 
 > The `extractor` will automatically use GPU when present (NVIDIA runtime) and fall back to CPU otherwise.
-```
+
+````
 
 ### Pro Compose (Queues + Scheduler + Vector DB + OAuth‑ready)
 ```yaml
@@ -272,26 +293,28 @@ services:
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - LISTENBRAINZ_APP_NAME=VibeScope
       - LASTFM_API_KEY=${LASTFM_API_KEY}
-```
+````
 
 > **Scheduler choice**: using **Prefect 2** as the modern default (switchable to cron if you prefer).yaml
-services:
-  vector:
+> services:
+> vector:
+
     image: ankane/pgvector
     depends_on: [db]
 
-  scheduler:
-    build: ./services/scheduler  # Prefect/cron container
-    env_file: .env
-    depends_on: [api, extractor]
-    command: python -m scheduler.run
+scheduler:
+build: ./services/scheduler # Prefect/cron container
+env_file: .env
+depends_on: [api, extractor]
+command: python -m scheduler.run
 
-  worker:
-    build: ./services/worker      # RQ/Celery worker
-    env_file: .env
-    depends_on: [cache, db]
-    command: rq worker vibescope
-```
+worker:
+build: ./services/worker # RQ/Celery worker
+env_file: .env
+depends_on: [cache, db]
+command: rq worker vibescope
+
+````
 
 ### GPU Override (optional)
 ```yaml
@@ -305,20 +328,19 @@ services:
     environment:
       - TORCH_DEVICE=cuda
     runtime: nvidia
-```
+````
 
 The extractor detects CUDA; if unavailable it falls back to `cpu` automatically.yaml
 services:
-  extractor:
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - capabilities: [gpu]
-    environment:
-      - TORCH_CUDA_ARCH_LIST=All
-    runtime: nvidia
-```
+extractor:
+deploy:
+resources:
+reservations:
+devices: - capabilities: [gpu]
+environment: - TORCH_CUDA_ARCH_LIST=All
+runtime: nvidia
+
+````
 
 ---
 
@@ -335,7 +357,7 @@ RUN pip install --no-cache-dir poetry && poetry config virtualenvs.create false 
 COPY . .
 ENV TORCH_DEVICE=auto  # cuda if available else cpu
 CMD ["python","-m","extractor.run"]
-```
+````
 
 **`services/api/Dockerfile`**
 
@@ -350,6 +372,7 @@ CMD ["uvicorn","app.main:app","--host","0.0.0.0","--port","8000"]
 ```
 
 **`services/ui/Dockerfile`**
+
 ```dockerfile
 FROM node:20-slim
 WORKDIR /app
@@ -361,6 +384,7 @@ CMD ["pnpm","dev","--","--host","0.0.0.0"]
 ```
 
 **`deploy/Caddyfile`** (example)
+
 ```
 :80 {
   redir https://{host}{uri}
@@ -381,6 +405,7 @@ CMD ["pnpm","dev","--","--host","0.0.0.0"]
 ---
 
 ## Configuration (`.env`)
+
 ```
 # DB
 POSTGRES_HOST=db
@@ -425,6 +450,7 @@ TZ=America/New_York
 ---
 
 ## API (FastAPI)
+
 - `GET /health` – service liveness
 - `POST /ingest/listens?since=YYYY-MM-DD` – sync listens
 - `POST /tags/lastfm/sync?since=YYYY-MM-DD` – fetch & cache Last.fm tags
@@ -439,14 +465,17 @@ TZ=America/New_York
 `X-User-Id` header identifying the caller.
 
 **Auth model**
+
 - UI uses **Auth.js (NextAuth)** with Google; UI acts as a **BFF proxy** to the API, forwarding an `X-User-Id` header derived from the session. The API authorizes requests per‑user and never stores Google tokens.
 
 ---
 
 ## Dashboard (Next.js + Plotly/Recharts)
+
 Built with **Next.js 14**, **Tailwind**, **shadcn/ui**, **framer‑motion**, **Plotly** (for arrows/UMAP) and **Recharts** (for streamgraphs). Auth via **Auth.js** (Google provider). Mobile‑friendly.
 
 **Pages**
+
 - `/` – Overview KPIs (listen count, diversity, momentum index)
 - `/trajectory` – 2D taste map with weekly arrows; color by energy; tooltip drill‑downs
 - `/moods` – streamgraph of mood shares; filters by artist/label/source
@@ -455,11 +484,13 @@ Built with **Next.js 14**, **Tailwind**, **shadcn/ui**, **framer‑motion**, **P
 - `/settings` – connect **ListenBrainz** and **Last.fm**; toggle GPU/stems/excerpts
 
 **UI niceties**
+
 - Smooth transitions (framer‑motion), dark/light theme, keyboard nav, persistent filters.
 
 ---
 
 ## Local Development
+
 ```bash
 # 1) Copy example env and adjust
 cp .env.example .env
@@ -493,21 +524,26 @@ https://your.domain
 ## Data Science Details
 
 **UMAP prep**
+
 - Take per‑track embedding; standardize; neighbors=50, min_dist=0.1; fit on full set
 - Weekly position = mean of contained tracks → arrow to next week
 
 **Momentum**
+
 - `m_t = EMA(centroid_t, span=4)`; momentum = `m_t − m_{t-1}`
 
 **Change‑points**
+
 - CUSUM on energy/valence; alert when exceeding tuned threshold
 
 **Mixtape selection**
+
 - Dominant cluster (HDBSCAN) of the week; pick k‑medoids with diversity penalty; 60–90 minutes
 
 ---
 
 ## Options & Swaps
+
 - **Scheduler**: **Prefect 2 (default)** ↔ cron (simple)
 - **Queue**: none ↔ RQ ↔ Celery
 - **DB**: TimescaleDB only ↔ +pgvector
@@ -518,12 +554,14 @@ https://your.domain
 ---
 
 ## Privacy & Licensing
+
 - Raw audio never leaves your machine. Embeddings and features are stored in DB.
 - Respect licenses; do not redistribute audio or stems.
 
 ---
 
 ## Testing
+
 - Synthetic audio fixtures; golden feature vectors
 - Deterministic seeds for embeddings/UMAP
 - Snapshot tests for API responses and charts
@@ -531,6 +569,7 @@ https://your.domain
 ---
 
 ## Roadmap
+
 - Smart **vibe summaries** (top words per week) using zero‑shot + tag fusion
 - Per‑artist drift and **label influence** diagnostics
 - **DJ‑set** segmentation and intra‑track contour plots (post‑v1)
@@ -539,4 +578,4 @@ https://your.domain
 
 ---
 
-**Rename** the project if you like: *VibeScope*, *TasteTrax*, *Pulseboard*, *Audiograph*, *RhythmLens*. Have fun measuring your vibe. 🎛️
+**Rename** the project if you like: _VibeScope_, _TasteTrax_, _Pulseboard_, _Audiograph_, _RhythmLens_. Have fun measuring your vibe. 🎛️

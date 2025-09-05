@@ -4,14 +4,11 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-
 sample_release = {
     "id": "release-mbid",
     "title": "Sample Release",
     "date": "2020-01-01",
-    "artist-credit": [
-        {"artist": {"id": "artist-mbid", "name": "Test Artist"}}
-    ],
+    "artist-credit": [{"artist": {"id": "artist-mbid", "name": "Test Artist"}}],
     "label-info": [{"label": {"name": "Test Label"}}],
     "media": [
         {
@@ -31,9 +28,9 @@ def _setup_app(tmp_path, monkeypatch):
     if str(root) not in sys.path:
         sys.path.insert(0, str(root))
     # Import after setting env so that the engine uses the test DB
-    from services.api.app.main import app
-    from services.api.app.db import SessionLocal, get_db
     from services.api.app import main as main_mod
+    from services.api.app.db import SessionLocal, get_db
+    from services.api.app.main import app
 
     # override get_db dependency to return actual session (not contextmanager)
     def override_get_db():

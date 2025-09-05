@@ -1,6 +1,5 @@
-import os
-from pathlib import Path
 import sys
+from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parents[3]))
 
@@ -9,12 +8,8 @@ import soundfile as sf
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
-from services.extractor.extractor.run import (
-    estimate_features,
-    analyze_one,
-)
-from services.common.models import Base, Track, Feature, Embedding
-
+from services.common.models import Base, Embedding, Feature, Track
+from services.extractor.extractor.run import analyze_one, estimate_features
 
 SR = 44100
 

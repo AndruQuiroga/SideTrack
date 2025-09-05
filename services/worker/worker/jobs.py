@@ -1,30 +1,31 @@
 """Background job implementations for the worker service."""
+
 from __future__ import annotations
 
-from typing import List
-
-import librosa
-import numpy as np
 import logging
+import sys
+from pathlib import Path
 
-from app.db import SessionLocal
-from app.models import Track, Feature
+import numpy as np
+
+# Ensure the API app package is importable as `app` for DB/session access
+sys.path.append(str(Path(__file__).resolve().parents[2] / "api"))
+from app.db import SessionLocal  # type: ignore
+
+from services.common.models import Feature, Track  # type: ignore
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s:%(message)s")
 logger = logging.getLogger("worker")
 
 
-sys.path.append(str(Path(__file__).resolve().parents[2] / "api"))
-from app.db import SessionLocal  # type: ignore
-from services.common.models import Track, Feature  # type: ignore
-
-
 def _basic_features(path: str) -> dict[str, float]:
     """Estimate a couple of simple audio features."""
+    # Import heavy deps lazily inside the function
+    import librosa
 
     y, sr = librosa.load(path, sr=None, mono=True)
     tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
-    pump = float(np.sqrt(np.mean(y ** 2)))
+    pump = float(np.sqrt(np.mean(y**2)))
     return {"bpm": float(tempo), "pumpiness": pump}
 
 
@@ -53,7 +54,7 @@ def analyze_track(track_id: int) -> int:
         return feature.id
 
 
-def compute_embeddings(data: List[float]) -> List[float]:
+def compute_embeddings(data: list[float]) -> list[float]:
     """Compute a simple normalised embedding vector.
 
     Args:

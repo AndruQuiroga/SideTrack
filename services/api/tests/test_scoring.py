@@ -10,9 +10,9 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
 if ROOT not in sys.path:
     sys.path.append(ROOT)
 
-from services.common.models import Base, Track, Embedding, Feature, MoodScore
-from services.api.app.main import score_track
 from services.api.app.constants import AXES
+from services.api.app.main import score_track
+from services.common.models import Base, Embedding, Feature, MoodScore, Track
 
 
 @pytest.fixture()
@@ -35,7 +35,9 @@ def test_score_track_zero_shot(session):
     assert res["detail"] == "scored"
     assert set(res["scores"]) == set(AXES)
 
-    rows = session.execute(select(MoodScore).where(MoodScore.track_id == tr.track_id)).scalars().all()
+    rows = (
+        session.execute(select(MoodScore).where(MoodScore.track_id == tr.track_id)).scalars().all()
+    )
     assert len(rows) == len(AXES)
     for row in rows:
         assert 0.0 <= row.value <= 1.0
@@ -63,9 +65,15 @@ def test_score_track_logreg(session):
     assert res["detail"] == "scored"
     assert res["method"] == "logreg_v1"
     assert set(res["scores"]) == set(AXES)
-    rows = session.execute(
-        select(MoodScore).where(MoodScore.track_id == tr.track_id, MoodScore.method == "logreg_v1")
-    ).scalars().all()
+    rows = (
+        session.execute(
+            select(MoodScore).where(
+                MoodScore.track_id == tr.track_id, MoodScore.method == "logreg_v1"
+            )
+        )
+        .scalars()
+        .all()
+    )
     assert len(rows) == len(AXES)
     for val in res["scores"].values():
         assert 0.0 <= val["value"] <= 1.0

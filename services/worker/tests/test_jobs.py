@@ -8,9 +8,10 @@ from rq import Queue, SimpleWorker
 os.environ.setdefault("DATABASE_URL", "sqlite:///./test_worker.db")
 os.environ.setdefault("AUTO_MIGRATE", "1")
 
-from worker.jobs import analyze_track, compute_embeddings
 from app.db import SessionLocal, maybe_create_all
-from services.common.models import Track, Feature
+from worker.jobs import analyze_track, compute_embeddings
+
+from services.common.models import Feature, Track
 
 maybe_create_all()
 
@@ -40,4 +41,4 @@ def test_jobs_are_executed():
         feat = db.get(Feature, job1.result)
         assert feat and feat.track_id == track_id
 
-    assert job2.result == [round(x, 4) for x in [1/3, 2/3, 1.0]]
+    assert job2.result == [round(x, 4) for x in [1 / 3, 2 / 3, 1.0]]

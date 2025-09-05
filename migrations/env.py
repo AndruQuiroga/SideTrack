@@ -13,7 +13,6 @@ sys.path.append(str(BASE_DIR))
 from services.api.app.config import get_settings  # type: ignore
 from services.common.models import Base  # type: ignore
 
-
 config = context.config
 
 if config.config_file_name is not None:

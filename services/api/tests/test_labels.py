@@ -10,10 +10,9 @@ from sqlalchemy import select
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 os.environ["DATABASE_URL"] = "sqlite:///./test.db"
 
-from services.api.app.main import app  # noqa: E402  (import after setting env)
 from services.api.app.db import SessionLocal, engine, get_db  # noqa: E402
+from services.api.app.main import app  # noqa: E402  (import after setting env)
 from services.common.models import Base, Track, UserLabel  # noqa: E402
-
 
 Base.metadata.create_all(bind=engine)
 
@@ -77,4 +76,3 @@ def test_submit_label_rejects_unknown_axis():
     assert resp.status_code == 400
     with SessionLocal() as db:
         assert db.execute(select(UserLabel)).first() is None
-

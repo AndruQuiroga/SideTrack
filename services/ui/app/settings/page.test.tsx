@@ -4,9 +4,7 @@ import Settings from './page';
 
 describe('Settings page', () => {
   beforeEach(() => {
-    global.fetch = jest
-      .fn()
-      .mockResolvedValue({ ok: true, json: () => Promise.resolve({}) });
+    global.fetch = jest.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({}) });
   });
 
   afterEach(() => {

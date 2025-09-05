@@ -1,39 +1,23 @@
 """Endpoints for MusicBrainz-related ingestion."""
 
+import time
 from datetime import datetime
-from typing import Dict, Optional
 
 import requests
-import time
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ..db import get_db
 from services.common.models import Artist, Release, Track
-from ..main import HTTP_SESSION
 
+from ..db import get_db
+from ..main import HTTP_SESSION
+from ..utils import get_or_create, mb_sanitize
 
 router = APIRouter()
 
 
-def _mb_sanitize(s: Optional[str]) -> Optional[str]:
-    if s is None:
-        return None
-    return s.strip().replace("\u0000", "")
-
-
-def _get_or_create(db: Session, model, defaults: Dict | None = None, **kwargs):
-    inst = db.execute(select(model).filter_by(**kwargs)).scalar_one_or_none()
-    if inst:
-        return inst
-    params = {**kwargs}
-    if defaults:
-        params.update(defaults)
-    inst = model(**params)
-    db.add(inst)
-    db.flush()
-    return inst
+# use shared utils: mb_sanitize, get_or_create
 
 
 _MB_LAST_CALL = 0.0
@@ -73,15 +57,11 @@ def ingest_musicbrainz(
     ac_list = data.get("artist-credit") or []
     if ac_list:
         art = (ac_list[0] or {}).get("artist", {})
-        artist = _get_or_create(
+        artist = get_or_create(
             db,
             Artist,
             mbid=art.get("id"),
-            defaults={
-                "name": _mb_sanitize(
-                    art.get("name") or art.get("sort-name") or "Unknown"
-                )
-            },
+            defaults={"name": mb_sanitize(art.get("name") or art.get("sort-name") or "Unknown")},
         )
 
     rel_date = None
@@ -93,14 +73,14 @@ def ingest_musicbrainz(
     label = None
     labels = data.get("label-info") or data.get("label-info-list") or []
     if labels:
-        label = _mb_sanitize((labels[0] or {}).get("label", {}).get("name"))
+        label = mb_sanitize((labels[0] or {}).get("label", {}).get("name"))
 
-    release = _get_or_create(
+    release = get_or_create(
         db,
         Release,
         mbid=data.get("id"),
         defaults={
-            "title": _mb_sanitize(data.get("title") or "Unknown"),
+            "title": mb_sanitize(data.get("title") or "Unknown"),
             "date": rel_date,
             "label": label,
             "artist_id": artist.artist_id if artist else None,
@@ -117,7 +97,7 @@ def ingest_musicbrainz(
             existing = db.execute(select(Track).filter_by(mbid=track_mbid)).scalar_one_or_none()
             length = rec.get("length") or trk.get("length")
             duration = int(length / 1000) if length else None
-            title = _mb_sanitize(rec.get("title") or trk.get("title") or "Unknown")
+            title = mb_sanitize(rec.get("title") or trk.get("title") or "Unknown")
             if existing is None:
                 db.add(
                     Track(
@@ -144,4 +124,3 @@ def ingest_musicbrainz(
         "release_id": release.release_id,
         "tracks": created_tracks,
     }
-

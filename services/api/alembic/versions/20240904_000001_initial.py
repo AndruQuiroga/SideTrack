@@ -1,6 +1,5 @@
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 revision = "20240904_000001_initial"
 down_revision = None
@@ -15,8 +14,8 @@ def upgrade():
         sa.Column("mbid", sa.String(length=36), nullable=True),
         sa.Column("name", sa.String(length=512), nullable=False),
     )
-    op.create_index("ix_artist_mbid", "artist", ["mbid"]) 
-    op.create_index("ix_artist_name", "artist", ["name"]) 
+    op.create_index("ix_artist_mbid", "artist", ["mbid"])
+    op.create_index("ix_artist_name", "artist", ["name"])
 
     op.create_table(
         "release",
@@ -27,7 +26,7 @@ def upgrade():
         sa.Column("label", sa.String(length=256), nullable=True),
         sa.Column("artist_id", sa.Integer, sa.ForeignKey("artist.artist_id"), nullable=True),
     )
-    op.create_index("ix_release_mbid", "release", ["mbid"]) 
+    op.create_index("ix_release_mbid", "release", ["mbid"])
 
     op.create_table(
         "track",
@@ -40,9 +39,9 @@ def upgrade():
         sa.Column("path_local", sa.Text, nullable=True),
         sa.Column("fingerprint", sa.String(length=128), nullable=True),
     )
-    op.create_index("ix_track_mbid", "track", ["mbid"]) 
-    op.create_index("ix_track_title", "track", ["title"]) 
-    op.create_index("ix_track_fingerprint", "track", ["fingerprint"]) 
+    op.create_index("ix_track_mbid", "track", ["mbid"])
+    op.create_index("ix_track_title", "track", ["title"])
+    op.create_index("ix_track_fingerprint", "track", ["fingerprint"])
 
     op.create_table(
         "listen",
@@ -52,8 +51,8 @@ def upgrade():
         sa.Column("played_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("source", sa.String(length=64), nullable=True),
     )
-    op.create_index("listen_idx_time", "listen", ["played_at"]) 
-    op.create_index("listen_idx_track", "listen", ["track_id"]) 
+    op.create_index("listen_idx_time", "listen", ["played_at"])
+    op.create_index("listen_idx_track", "listen", ["track_id"])
 
     op.create_table(
         "embeddings",
@@ -63,7 +62,7 @@ def upgrade():
         sa.Column("dim", sa.Integer, nullable=False),
         sa.Column("vector", sa.JSON, nullable=True),
     )
-    op.create_index("embeddings_idx", "embeddings", ["track_id"]) 
+    op.create_index("embeddings_idx", "embeddings", ["track_id"])
 
     op.create_table(
         "features",
@@ -130,11 +129,13 @@ def upgrade():
         "lastfm_tags",
         sa.Column("id", sa.Integer, primary_key=True),
         sa.Column("track_id", sa.Integer, sa.ForeignKey("track.track_id"), nullable=False),
-        sa.Column("source", sa.String(length=16), nullable=False, server_default=sa.text("'track'")),
+        sa.Column(
+            "source", sa.String(length=16), nullable=False, server_default=sa.text("'track'")
+        ),
         sa.Column("tags", sa.JSON, nullable=True),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=True),
     )
-    op.create_index("ix_lastfm_tags_track", "lastfm_tags", ["track_id"]) 
+    op.create_index("ix_lastfm_tags_track", "lastfm_tags", ["track_id"])
 
 
 def downgrade():

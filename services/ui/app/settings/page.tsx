@@ -72,8 +72,8 @@ export default function Settings() {
       const serverErrors = Array.isArray(data.detail)
         ? data.detail
         : data.detail
-        ? [data.detail]
-        : ['Error saving settings'];
+          ? [data.detail]
+          : ['Error saving settings'];
       setErrors(serverErrors);
       return;
     }
@@ -83,9 +83,7 @@ export default function Settings() {
   return (
     <section>
       <h2>Settings</h2>
-      {errors.length > 0 && (
-        <div role="alert">{errors.join(', ')}</div>
-      )}
+      {errors.length > 0 && <div role="alert">{errors.join(', ')}</div>}
       {message && <div role="status">{message}</div>}
       <form onSubmit={handleSubmit}>
         <fieldset>
@@ -129,11 +127,7 @@ export default function Settings() {
         <fieldset>
           <legend>Options</legend>
           <label>
-            <input
-              type="checkbox"
-              checked={useGpu}
-              onChange={(e) => setUseGpu(e.target.checked)}
-            />
+            <input type="checkbox" checked={useGpu} onChange={(e) => setUseGpu(e.target.checked)} />
             Use GPU
           </label>
           <label>
@@ -158,4 +152,3 @@ export default function Settings() {
     </section>
   );
 }
-

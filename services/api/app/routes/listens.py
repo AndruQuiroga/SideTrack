@@ -1,21 +1,20 @@
 """Endpoints for ingesting listen history."""
 
-from datetime import date, datetime, timezone
-from pathlib import Path
-from typing import Dict, List, Optional
-
 import json
 import os
+from datetime import UTC, date, datetime
+from pathlib import Path
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy import and_, select
 from sqlalchemy.orm import Session
 
-from ..db import get_db
 from services.common.models import Artist, Listen, Release, Track
-from ..main import get_current_user, HTTP_SESSION
 
+from ..db import get_db
+from ..main import HTTP_SESSION, get_current_user
+from ..utils import get_or_create, mb_sanitize
 
 router = APIRouter()
 
@@ -23,51 +22,33 @@ router = APIRouter()
 class TrackIn(BaseModel):
     title: str
     artist_name: str
-    release_title: Optional[str] = None
-    mbid: Optional[str] = None
-    duration: Optional[int] = None
-    path_local: Optional[str] = None
+    release_title: str | None = None
+    mbid: str | None = None
+    duration: int | None = None
+    path_local: str | None = None
 
 
 class ListenIn(BaseModel):
     user_id: str
     played_at: datetime
-    source: Optional[str] = "listenbrainz"
+    source: str | None = "listenbrainz"
     track: TrackIn
 
 
-def _env(name: str, default: Optional[str] = None) -> Optional[str]:
+def _env(name: str, default: str | None = None) -> str | None:
     return os.getenv(name, default)
 
 
-def _mb_sanitize(s: Optional[str]) -> Optional[str]:
-    if s is None:
-        return None
-    return s.strip().replace("\u0000", "")
-
-
-def _get_or_create(db: Session, model, defaults: Dict | None = None, **kwargs):
-    inst = db.execute(select(model).filter_by(**kwargs)).scalar_one_or_none()
-    if inst:
-        return inst
-    params = {**kwargs}
-    if defaults:
-        params.update(defaults)
-    inst = model(**params)
-    db.add(inst)
-    db.flush()
-    return inst
+# use shared utils: mb_sanitize, get_or_create
 
 
 def _lb_fetch_listens(
-    user: str, since: Optional[date], token: Optional[str] = None, limit: int = 500
+    user: str, since: date | None, token: str | None = None, limit: int = 500
 ) -> list[dict]:
     base = "https://api.listenbrainz.org/1/user"
     params: dict = {"count": min(limit, 1000)}
     if since:
-        params["min_ts"] = int(
-            datetime.combine(since, datetime.min.time(), tzinfo=timezone.utc).timestamp()
-        )
+        params["min_ts"] = int(datetime.combine(since, datetime.min.time(), tzinfo=UTC).timestamp())
     url = f"{base}/{user}/listens"
     r = HTTP_SESSION.get(url, params=params, timeout=30)
     r.raise_for_status()
@@ -79,11 +60,9 @@ def _ingest_lb_rows(db: Session, listens: list[dict], user_id: str | None = None
     created = 0
     for item in listens:
         tm = item.get("track_metadata", {})
-        artist_name = _mb_sanitize(
-            tm.get("artist_name") or tm.get("artist_name_mb")
-        ) or "Unknown"
-        track_title = _mb_sanitize(tm.get("track_name")) or "Unknown"
-        release_title = _mb_sanitize(tm.get("release_name"))
+        artist_name = mb_sanitize(tm.get("artist_name") or tm.get("artist_name_mb")) or "Unknown"
+        track_title = mb_sanitize(tm.get("track_name")) or "Unknown"
+        release_title = mb_sanitize(tm.get("release_name"))
         recording_mbid = (tm.get("mbid_mapping") or {}).get("recording_mbid")
         played_at_ts = item.get("listened_at")
         if not played_at_ts:
@@ -91,13 +70,11 @@ def _ingest_lb_rows(db: Session, listens: list[dict], user_id: str | None = None
         played_at = datetime.utcfromtimestamp(played_at_ts)
         uid = (user_id or item.get("user_name") or "lb").lower()
 
-        artist = _get_or_create(db, Artist, name=artist_name)
+        artist = get_or_create(db, Artist, name=artist_name)
         rel = None
         if release_title:
-            rel = _get_or_create(
-                db, Release, title=release_title, artist_id=artist.artist_id
-            )
-        track = _get_or_create(
+            rel = get_or_create(db, Release, title=release_title, artist_id=artist.artist_id)
+        track = get_or_create(
             db,
             Track,
             mbid=recording_mbid,
@@ -130,19 +107,15 @@ def _ingest_lb_rows(db: Session, listens: list[dict], user_id: str | None = None
 
 @router.post("/ingest/listens")
 def ingest_listens(
-    since: Optional[date] = Query(None),
-    listens: Optional[List[ListenIn]] = Body(
-        None, description="List of listens to ingest"
-    ),
+    since: date | None = Query(None),
+    listens: list[ListenIn] | None = Body(None, description="List of listens to ingest"),
     source: str = Query("auto", description="auto|listenbrainz|body|sample"),
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user),
 ):
     # 3 modes: body, ListenBrainz, or sample file
     if source == "body" and listens is None:
-        raise HTTPException(
-            status_code=400, detail="Body listens required for source=body"
-        )
+        raise HTTPException(status_code=400, detail="Body listens required for source=body")
 
     if listens is not None:
         # Ingest provided body
@@ -201,4 +174,3 @@ def ingest_listens(
         )
     created = _ingest_lb_rows(db, rows, user_id)
     return {"detail": "ok", "ingested": created, "source": "sample"}
-

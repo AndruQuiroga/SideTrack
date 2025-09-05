@@ -1,7 +1,7 @@
 import os
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
-from datetime import datetime, timezone
 
 import pytest
 from fastapi.testclient import TestClient
@@ -10,10 +10,10 @@ from fastapi.testclient import TestClient
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 os.environ["DATABASE_URL"] = "sqlite:///./test.db"
 
-from services.api.app.main import app  # noqa: E402
-from services.api.app.db import SessionLocal, engine, get_db  # noqa: E402
-from services.common.models import Base, Track, Artist, Listen, MoodScore  # noqa: E402
 from services.api.app.constants import AXES, DEFAULT_METHOD  # noqa: E402
+from services.api.app.db import SessionLocal, engine, get_db  # noqa: E402
+from services.api.app.main import app  # noqa: E402
+from services.common.models import Artist, Base, Listen, MoodScore, Track  # noqa: E402
 
 Base.metadata.create_all(bind=engine)
 
@@ -53,7 +53,7 @@ def _add_track(title: str, artist: str, value: float) -> int:
         db.refresh(tr)
         db.add_all(
             [
-                Listen(user_id="u1", track_id=tr.track_id, played_at=datetime.now(timezone.utc)),
+                Listen(user_id="u1", track_id=tr.track_id, played_at=datetime.now(UTC)),
                 *[
                     MoodScore(
                         track_id=tr.track_id,

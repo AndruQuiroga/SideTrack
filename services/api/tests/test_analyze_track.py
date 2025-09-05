@@ -9,8 +9,9 @@ os.environ.setdefault("AUTO_MIGRATE", "1")
 sys.path.append(str(Path(__file__).resolve().parents[3]))
 
 import fakeredis
-from rq import Queue
 from fastapi.testclient import TestClient
+from rq import Queue
+
 from services.api.app import main as app_main
 from services.api.app.db import SessionLocal, maybe_create_all
 from services.common.models import Track

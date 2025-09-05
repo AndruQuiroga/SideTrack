@@ -1,33 +1,31 @@
-from datetime import date, datetime, timedelta, timezone
-from typing import Optional, List, Dict
 import time
+from datetime import date, datetime, timedelta
 
 import requests
-from fastapi import FastAPI, HTTPException, Query, Depends, Body, Header
-
+from fastapi import Depends, FastAPI, Header, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from sqlalchemy import text, select, func, and_, insert, delete
+from sqlalchemy import and_, delete, func, select, text
 from sqlalchemy.orm import Session
 
-from fastapi.middleware.cors import CORSMiddleware
-
-from .db import get_db, maybe_create_all
-from .config import Settings, get_settings as get_app_settings
 from services.common.models import (
     Artist,
-    Release,
-    Track,
-    Listen,
-    MoodScore,
-    MoodAggWeek,
-    UserLabel,
-    LastfmTags,
-    Feature,
     Embedding,
+    Feature,
+    LastfmTags,
+    Listen,
+    MoodAggWeek,
+    MoodScore,
+    Track,
+    UserLabel,
     UserSettings,
 )
-from .constants import AXES, DEFAULT_METHOD
+
 from . import scoring
+from .config import Settings
+from .config import get_settings as get_app_settings
+from .constants import AXES, DEFAULT_METHOD
+from .db import get_db, maybe_create_all
 
 HTTP_SESSION = requests.Session()
 
@@ -54,9 +52,8 @@ def get_current_user(x_user_id: str = Header(...)) -> str:
     return x_user_id
 
 
-from rq import Queue
 import redis
-
+from rq import Queue
 
 _REDIS_CONN: redis.Redis | None = None
 
@@ -82,10 +79,10 @@ class TrackPathIn(BaseModel):
 
 
 class SettingsIn(BaseModel):
-    listenBrainzUser: Optional[str] = None
-    listenBrainzToken: Optional[str] = None
-    lastfmUser: Optional[str] = None
-    lastfmApiKey: Optional[str] = None
+    listenBrainzUser: str | None = None
+    listenBrainzToken: str | None = None
+    lastfmUser: str | None = None
+    lastfmApiKey: str | None = None
     useGpu: bool = False
     useStems: bool = False
     useExcerpts: bool = False
@@ -95,6 +92,8 @@ def _week_start(dt: datetime) -> date:
     # Monday as the start of the week
     d = dt.date()
     return d - timedelta(days=d.weekday())
+
+
 def _lastfm_fetch_tags(
     track_id: int,
     artist: str,
@@ -117,12 +116,12 @@ def _lastfm_fetch_tags(
     existing = db.execute(
         select(LastfmTags).where(LastfmTags.track_id == track_id)
     ).scalar_one_or_none()
-    if existing and existing.updated_at and existing.updated_at > datetime.utcnow() - timedelta(
-        seconds=max_age
+    if (
+        existing
+        and existing.updated_at
+        and existing.updated_at > datetime.utcnow() - timedelta(seconds=max_age)
     ):
         return existing.tags or {}
-
-    import requests
 
     params = {
         "method": "track.gettoptags",
@@ -135,9 +134,7 @@ def _lastfm_fetch_tags(
     backoff = 1.0
     for attempt in range(3):
         try:
-            r = requests.get(
-                "https://ws.audioscrobbler.com/2.0/", params=params, timeout=30
-            )
+            r = HTTP_SESSION.get("https://ws.audioscrobbler.com/2.0/", params=params, timeout=30)
             r.raise_for_status()
             break
         except requests.HTTPError as e:
@@ -239,7 +236,7 @@ def health(db: Session = Depends(get_db)):
 
 @app.post("/tags/lastfm/sync")
 def sync_lastfm_tags(
-    since: Optional[date] = Query(None),
+    since: date | None = Query(None),
     db: Session = Depends(get_db),
     settings: Settings = Depends(get_app_settings),
 ):
@@ -248,9 +245,13 @@ def sync_lastfm_tags(
         raise HTTPException(status_code=400, detail="LASTFM_API_KEY not configured")
 
     # find tracks with listens since date (or all if none)
-    q = select(Track.track_id, Track.title, Artist.name).join(Artist, Track.artist_id == Artist.artist_id)
+    q = select(Track.track_id, Track.title, Artist.name).join(
+        Artist, Track.artist_id == Artist.artist_id
+    )
     if since:
-        q = q.join(Listen, Listen.track_id == Track.track_id).where(Listen.played_at >= datetime.combine(since, datetime.min.time()))
+        q = q.join(Listen, Listen.track_id == Track.track_id).where(
+            Listen.played_at >= datetime.combine(since, datetime.min.time())
+        )
     rows = db.execute(q).all()
     updated = 0
     for tid, title, artist_name in rows:
@@ -278,7 +279,9 @@ def analyze_track(track_id: int, settings: Settings = Depends(get_app_settings))
         if not tr.path_local:
             raise HTTPException(status_code=400, detail="track missing path")
 
-        existing = db.execute(select(Feature).where(Feature.track_id == track_id)).scalar_one_or_none()
+        existing = db.execute(
+            select(Feature).where(Feature.track_id == track_id)
+        ).scalar_one_or_none()
         if existing:
             return {
                 "detail": "already_analyzed",
@@ -376,9 +379,9 @@ def get_track_features(track_id: int, db: Session = Depends(get_db)):
 def aggregate_weeks(db: Session = Depends(get_db), user_id: str = Depends(get_current_user)):
     # build weekly aggregates per axis from listens + mood scores for a user
     listened_tracks = (
-        db.execute(
-            select(Listen.track_id).where(Listen.user_id == user_id).distinct()
-        ).scalars().all()
+        db.execute(select(Listen.track_id).where(Listen.user_id == user_id).distinct())
+        .scalars()
+        .all()
     )
     for tid in listened_tracks:
         score_track(tid, method=DEFAULT_METHOD, db=db)
@@ -387,16 +390,13 @@ def aggregate_weeks(db: Session = Depends(get_db), user_id: str = Depends(get_cu
     rows = db.execute(
         select(Listen.played_at, MoodScore.axis, MoodScore.value)
         .join(MoodScore, MoodScore.track_id == Listen.track_id)
-        .where(
-            and_(MoodScore.method == DEFAULT_METHOD, Listen.user_id == user_id)
-        )
+        .where(and_(MoodScore.method == DEFAULT_METHOD, Listen.user_id == user_id))
     ).all()
 
     # group in Python for simplicity
-    agg: Dict[tuple[date, str], Dict[str, float]] = {}
-    counts: Dict[tuple[date, str], int] = {}
-    sums: Dict[tuple[date, str], float] = {}
-    sums2: Dict[tuple[date, str], float] = {}
+    counts: dict[tuple[date, str], int] = {}
+    sums: dict[tuple[date, str], float] = {}
+    sums2: dict[tuple[date, str], float] = {}
 
     for played_at, axis, value in rows:
         wk = _week_start(played_at)
@@ -407,8 +407,8 @@ def aggregate_weeks(db: Session = Depends(get_db), user_id: str = Depends(get_cu
 
     # compute stats and write table
     # first, build per-axis chronological index for momentum calc
-    per_axis_weeks: Dict[str, List[date]] = {ax: [] for ax in AXES}
-    for (wk, axis) in counts.keys():
+    per_axis_weeks: dict[str, list[date]] = {ax: [] for ax in AXES}
+    for wk, axis in counts.keys():
         per_axis_weeks.setdefault(axis, []).append(wk)
     for ax in per_axis_weeks.keys():
         per_axis_weeks[ax] = sorted(set(per_axis_weeks[ax]))

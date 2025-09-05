@@ -4,14 +4,15 @@ import os
 import sys
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config, pool
 from alembic import context
+from sqlalchemy import engine_from_config, pool
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 APP_DIR = os.path.join(os.path.dirname(BASE_DIR), "app")
 sys.path.append(APP_DIR)
 
 from app.config import get_settings  # type: ignore
+
 from services.common.models import Base  # type: ignore
 
 # this is the Alembic Config object, which provides
@@ -64,4 +65,3 @@ if context.is_offline_mode():
     run_migrations_offline()
 else:
     run_migrations_online()
-

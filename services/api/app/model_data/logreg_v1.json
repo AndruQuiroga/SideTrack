@@ -1,7 +1,22 @@
 {
-  "energy": {"bias": 0.0, "weights": {"bpm": 0.01, "pumpiness": 0.5, "percussive_harmonic_ratio": 0.2}},
-  "valence": {"bias": -0.1, "weights": {"bpm": 0.0, "pumpiness": 0.3, "percussive_harmonic_ratio": 0.7}},
-  "danceability": {"bias": 0.2, "weights": {"bpm": 0.005, "pumpiness": 0.4, "percussive_harmonic_ratio": 0.1}},
-  "brightness": {"bias": 0.0, "weights": {"bpm": 0.002, "pumpiness": 0.2, "percussive_harmonic_ratio": 0.5}},
-  "pumpiness": {"bias": 0.0, "weights": {"bpm": 0.001, "pumpiness": 1.0, "percussive_harmonic_ratio": 0.3}}
+  "energy": {
+    "bias": 0.0,
+    "weights": { "bpm": 0.01, "pumpiness": 0.5, "percussive_harmonic_ratio": 0.2 }
+  },
+  "valence": {
+    "bias": -0.1,
+    "weights": { "bpm": 0.0, "pumpiness": 0.3, "percussive_harmonic_ratio": 0.7 }
+  },
+  "danceability": {
+    "bias": 0.2,
+    "weights": { "bpm": 0.005, "pumpiness": 0.4, "percussive_harmonic_ratio": 0.1 }
+  },
+  "brightness": {
+    "bias": 0.0,
+    "weights": { "bpm": 0.002, "pumpiness": 0.2, "percussive_harmonic_ratio": 0.5 }
+  },
+  "pumpiness": {
+    "bias": 0.0,
+    "weights": { "bpm": 0.001, "pumpiness": 1.0, "percussive_harmonic_ratio": 0.3 }
+  }
 }

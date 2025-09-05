@@ -2,4 +2,5 @@ AXES = ["energy", "valence", "danceability", "brightness", "pumpiness"]
 
 # default scoring methods
 DEFAULT_METHOD = "zero"  # zero-shot using embeddings
-SUPPORTED_METHODS = {"zero", "logreg"}
+# Note: adding "heur" (heuristic feature-based) keeps backward compatibility
+SUPPORTED_METHODS = {"zero", "logreg", "heur"}

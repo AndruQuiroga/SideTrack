@@ -1,9 +1,15 @@
 import { apiFetch } from '../../lib/api';
 
-async function getTrajectory() {
+type TrajectoryPoint = { week: string; x: number; y: number };
+type Trajectory = {
+  points: TrajectoryPoint[];
+  arrows: { from: TrajectoryPoint; to: TrajectoryPoint }[];
+};
+
+async function getTrajectory(): Promise<Trajectory> {
   const res = await apiFetch('/dashboard/trajectory', { next: { revalidate: 0 } });
   if (!res.ok) throw new Error('Failed to fetch trajectory');
-  return res.json();
+  return (await res.json()) as Trajectory;
 }
 
 export default async function Trajectory() {
@@ -13,7 +19,7 @@ export default async function Trajectory() {
       <h2>Taste Trajectory</h2>
       <p>Showing weekly points (x = valence, y = energy):</p>
       <ol>
-        {data.points.map((p: any) => (
+        {data.points.map((p: TrajectoryPoint) => (
           <li key={p.week}>
             <code>{p.week}</code> → x: {p.x.toFixed(3)}, y: {p.y.toFixed(3)}
           </li>
@@ -21,7 +27,7 @@ export default async function Trajectory() {
       </ol>
       <h3>Arrows</h3>
       <ul>
-        {data.arrows.map((a: any, i: number) => (
+        {data.arrows.map((a, i: number) => (
           <li key={i}>
             {a.from.week} → {a.to.week}
           </li>

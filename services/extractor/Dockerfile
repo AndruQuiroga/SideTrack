@@ -15,4 +15,3 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY extractor ./extractor
 
 CMD ["python","-m","extractor.run","--schedule","@daily"]
-

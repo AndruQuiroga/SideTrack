@@ -1,17 +1,16 @@
 """Dashboard-related endpoints."""
 
-from datetime import date, datetime, timedelta, timezone
-from typing import Optional
+from datetime import UTC, date, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session
 
+from services.common.models import Artist, Listen, MoodAggWeek, MoodScore, Track
+
 from ..constants import AXES, DEFAULT_METHOD
 from ..db import get_db
-from services.common.models import Artist, Listen, MoodAggWeek, MoodScore, Track
 from ..main import get_current_user
-
 
 router = APIRouter()
 
@@ -42,7 +41,9 @@ def dashboard_trajectory(
             .distinct()
             .order_by(MoodAggWeek.week.desc())
             .limit(n_weeks)
-        ).scalars().all()
+        )
+        .scalars()
+        .all()
     )
     weeks = sorted(weeks)
     if not weeks:
@@ -74,7 +75,7 @@ def dashboard_radar(
     user_id: str = Depends(get_current_user),
 ):
     # parse week as YYYY-MM-DD (Monday) or ISO week-like YYYY-WW (fallback)
-    wk_date: Optional[date] = None
+    wk_date: date | None = None
     try:
         wk_date = datetime.fromisoformat(week).date()
     except Exception:
@@ -123,37 +124,33 @@ def dashboard_outliers(
 ):
     """Return tracks farthest from the recent mood centroid."""
 
-    since = datetime.now(timezone.utc) - timedelta(days=90)
+    since = datetime.now(UTC) - timedelta(days=90)
 
     # Compute centroid across recent listens
-    cent_rows = (
-        db.execute(
-            select(MoodScore.axis, func.avg(MoodScore.value))
-            .join(Listen, Listen.track_id == MoodScore.track_id)
-            .where(
-                and_(
-                    Listen.user_id == user_id,
-                    Listen.played_at >= since,
-                    MoodScore.method == DEFAULT_METHOD,
-                )
+    cent_rows = db.execute(
+        select(MoodScore.axis, func.avg(MoodScore.value))
+        .join(Listen, Listen.track_id == MoodScore.track_id)
+        .where(
+            and_(
+                Listen.user_id == user_id,
+                Listen.played_at >= since,
+                MoodScore.method == DEFAULT_METHOD,
             )
-            .group_by(MoodScore.axis)
-        ).all()
-    )
+        )
+        .group_by(MoodScore.axis)
+    ).all()
     centroid = {ax: float(val or 0.0) for ax, val in cent_rows}
     for ax in AXES:
         centroid.setdefault(ax, 0.0)
 
     # Gather candidate tracks listened to in the window
-    rows = (
-        db.execute(
-            select(Track.track_id, Track.title, Artist.name)
-            .join(Listen, Listen.track_id == Track.track_id)
-            .join(Artist, Track.artist_id == Artist.artist_id, isouter=True)
-            .where(and_(Listen.user_id == user_id, Listen.played_at >= since))
-            .group_by(Track.track_id, Track.title, Artist.name)
-        ).all()
-    )
+    rows = db.execute(
+        select(Track.track_id, Track.title, Artist.name)
+        .join(Listen, Listen.track_id == Track.track_id)
+        .join(Artist, Track.artist_id == Artist.artist_id, isouter=True)
+        .where(and_(Listen.user_id == user_id, Listen.played_at >= since))
+        .group_by(Track.track_id, Track.title, Artist.name)
+    ).all()
 
     outliers = []
     for tid, title, artist_name in rows:
@@ -180,4 +177,3 @@ def dashboard_outliers(
 
     outliers.sort(key=lambda x: x["distance"], reverse=True)
     return {"tracks": outliers[:limit], "centroid": centroid}
-

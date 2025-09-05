@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from .config import get_settings
 from services.common.models import Base
 
+from .config import get_settings
 
 _engine = None
 _SessionLocal = None
@@ -48,6 +49,7 @@ def maybe_create_all():
     except Exception:
         # Silent fail to avoid blocking API start if DB isn't reachable yet (e.g., compose race)
         pass
+
 
 # initialize on module import
 _get_sessionmaker()

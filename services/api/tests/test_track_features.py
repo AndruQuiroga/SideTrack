@@ -9,9 +9,9 @@ from fastapi.testclient import TestClient
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 os.environ["DATABASE_URL"] = "sqlite:///./test.db"
 
-from services.api.app.main import app  # noqa: E402
 from services.api.app.db import SessionLocal, engine, get_db  # noqa: E402
-from services.common.models import Base, Track, Feature, Embedding  # noqa: E402
+from services.api.app.main import app  # noqa: E402
+from services.common.models import Base, Embedding, Feature, Track  # noqa: E402
 
 Base.metadata.create_all(bind=engine)
 

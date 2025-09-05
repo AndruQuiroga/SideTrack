@@ -8,4 +8,3 @@ COPY services/worker /src/worker
 RUN pip install --no-cache-dir /src/worker
 
 CMD ["python","-m","worker.run"]
-

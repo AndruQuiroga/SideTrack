@@ -1,17 +1,13 @@
 from __future__ import annotations
 
 from functools import lru_cache
-import sys
-from pathlib import Path
 
-# Make the app package importable
-sys.path.append(str(Path(__file__).resolve().parents[2] / "api"))
-from app.config import Settings as AppSettings  # type: ignore
 from pydantic import Field
+from pydantic_settings import BaseSettings
 
 
-class SchedulerSettings(AppSettings):
-    """Settings for the scheduler service."""
+class SchedulerSettings(BaseSettings):
+    """Settings for the scheduler service (standalone, no API dependency)."""
 
     api_url: str = Field("http://api:8000", env="API_URL")
     default_user_id: str | None = Field(default=None, env="DEFAULT_USER_ID")

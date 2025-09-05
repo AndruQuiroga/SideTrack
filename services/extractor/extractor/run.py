@@ -18,7 +18,8 @@ def get_db_url() -> str:
     url = os.getenv("DATABASE_URL")
     if url:
         return url
-    host = os.getenv("POSTGRES_HOST", "localhost")
+    # Default to the docker-compose service name for Postgres
+    host = os.getenv("POSTGRES_HOST", "db")
     db = os.getenv("POSTGRES_DB", "vibescope")
     user = os.getenv("POSTGRES_USER", "vibe")
     pw = os.getenv("POSTGRES_PASSWORD", "vibe")
@@ -46,8 +47,8 @@ def safe_load_audio(path: str, sr: int = 44100, mono: bool = False) -> tuple[np.
         Sampling rate.
     """
 
-    import soundfile as sf
     import librosa as lb
+    import soundfile as sf
 
     try:
         y, srate = sf.read(path, always_2d=True)
@@ -196,13 +197,13 @@ def estimate_features(wav_path: str) -> dict:
 
     # Stereo width
     if y_st.ndim == 2 and y_st.shape[1] >= 2:
-        l = y_st[:, 0]
-        r = y_st[:, 1]
-        mid = (l + r) / 2
-        side = (l - r) / 2
+        left = y_st[:, 0]
+        right = y_st[:, 1]
+        mid = (left + right) / 2
+        side = (left - right) / 2
         width = float(np.mean(np.abs(side)) / (np.mean(np.abs(mid)) + 1e-8))
-        if l.std() > 1e-6 and r.std() > 1e-6:
-            lr_corr = float(np.corrcoef(l, r)[0, 1])
+        if left.std() > 1e-6 and right.std() > 1e-6:
+            lr_corr = float(np.corrcoef(left, right)[0, 1])
         else:
             lr_corr = 1.0
     else:

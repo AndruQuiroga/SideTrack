@@ -1,13 +1,13 @@
 """Entry point for the RQ worker."""
+
 from __future__ import annotations
 
 import redis
 from rq import Connection, Queue, Worker
 
-from .config import get_settings
-
 # Import job functions so the worker process knows about them.
 from . import jobs  # noqa: F401
+from .config import get_settings
 
 
 def main() -> None:

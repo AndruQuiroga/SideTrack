@@ -1,7 +1,8 @@
-import time
-import schedule
-import requests
 import logging
+import time
+
+import requests
+import schedule
 
 from .config import get_settings
 
@@ -66,4 +67,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

@@ -6,7 +6,8 @@ class Settings(BaseSettings):
     """Application configuration loaded from environment variables."""
 
     database_url: str | None = Field(default=None, env="DATABASE_URL")
-    postgres_host: str = Field(default="localhost", env="POSTGRES_HOST")
+    # In Docker, default to the Compose service name
+    postgres_host: str = Field(default="db", env="POSTGRES_HOST")
     postgres_db: str = Field(default="vibescope", env="POSTGRES_DB")
     postgres_user: str = Field(default="vibe", env="POSTGRES_USER")
     postgres_password: str = Field(default="vibe", env="POSTGRES_PASSWORD")
@@ -15,7 +16,8 @@ class Settings(BaseSettings):
     auto_migrate: bool = Field(default=True, env="AUTO_MIGRATE")
     env: str = Field(default="dev", env="ENV")
 
-    redis_url: str = Field(default="redis://localhost:6379/0", env="REDIS_URL")
+    # Use the Compose service name for Redis by default
+    redis_url: str = Field(default="redis://cache:6379/0", env="REDIS_URL")
     lastfm_api_key: str | None = Field(default=None, env="LASTFM_API_KEY")
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
@@ -28,6 +30,7 @@ class Settings(BaseSettings):
             f"postgresql+psycopg://{self.postgres_user}:{self.postgres_password}"
             f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
         )
+
 
 def get_settings() -> Settings:
     return Settings()

@@ -14,7 +14,7 @@ services:
     build: ./services/worker
     env_file: .env
     depends_on: [cache, db]
-    command: rq worker vibescope
+    command: python -m worker.run
 
   # Inherit base services by using 'docker compose -f compose.min.yml -f compose.pro.yml up'
   db:

@@ -1,21 +1,19 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
 
 from sqlalchemy import (
     JSON,
     Boolean,
-    Column,
     Date,
     DateTime,
     Float,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
     UniqueConstraint,
-    Index,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -28,7 +26,7 @@ class Artist(Base):
     __tablename__ = "artist"
 
     artist_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    mbid: Mapped[Optional[str]] = mapped_column(String(36), index=True)
+    mbid: Mapped[str | None] = mapped_column(String(36), index=True)
     name: Mapped[str] = mapped_column(String(512), index=True)
 
     releases: Mapped[list[Release]] = relationship("Release", back_populates="artist")
@@ -39,13 +37,13 @@ class Release(Base):
     __tablename__ = "release"
 
     release_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    mbid: Mapped[Optional[str]] = mapped_column(String(36), index=True)
+    mbid: Mapped[str | None] = mapped_column(String(36), index=True)
     title: Mapped[str] = mapped_column(String(512))
-    date: Mapped[Optional[Date]] = mapped_column(Date, nullable=True)
-    label: Mapped[Optional[str]] = mapped_column(String(256), nullable=True)
-    artist_id: Mapped[Optional[int]] = mapped_column(ForeignKey("artist.artist_id"))
+    date: Mapped[Date | None] = mapped_column(Date, nullable=True)
+    label: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    artist_id: Mapped[int | None] = mapped_column(ForeignKey("artist.artist_id"))
 
-    artist: Mapped[Optional[Artist]] = relationship("Artist", back_populates="releases")
+    artist: Mapped[Artist | None] = relationship("Artist", back_populates="releases")
     tracks: Mapped[list[Track]] = relationship("Track", back_populates="release")
 
 
@@ -53,35 +51,34 @@ class Track(Base):
     __tablename__ = "track"
 
     track_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    mbid: Mapped[Optional[str]] = mapped_column(String(36), index=True)
+    mbid: Mapped[str | None] = mapped_column(String(36), index=True)
     title: Mapped[str] = mapped_column(String(512), index=True)
-    artist_id: Mapped[Optional[int]] = mapped_column(ForeignKey("artist.artist_id"))
-    release_id: Mapped[Optional[int]] = mapped_column(ForeignKey("release.release_id"))
-    duration: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    path_local: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    fingerprint: Mapped[Optional[str]] = mapped_column(String(128), index=True)
+    artist_id: Mapped[int | None] = mapped_column(ForeignKey("artist.artist_id"))
+    release_id: Mapped[int | None] = mapped_column(ForeignKey("release.release_id"))
+    duration: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    path_local: Mapped[str | None] = mapped_column(Text, nullable=True)
+    fingerprint: Mapped[str | None] = mapped_column(String(128), index=True)
 
-    artist: Mapped[Optional[Artist]] = relationship("Artist", back_populates="tracks")
-    release: Mapped[Optional[Release]] = relationship("Release", back_populates="tracks")
+    artist: Mapped[Artist | None] = relationship("Artist", back_populates="tracks")
+    release: Mapped[Release | None] = relationship("Release", back_populates="tracks")
 
 
 class Listen(Base):
     __tablename__ = "listen"
-    __table_args__ = (
-        Index("listen_idx_time", "played_at"),
-        Index("listen_idx_track", "track_id"),
-    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     user_id: Mapped[str] = mapped_column(String(128), index=True)
-    track_id: Mapped[int] = mapped_column(ForeignKey("track.track_id"))
+    track_id: Mapped[int] = mapped_column(ForeignKey("track.track_id"), index=True)
     played_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
-    source: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    source: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
 
 class Embedding(Base):
     __tablename__ = "embeddings"
-    __table_args__ = (Index("embeddings_idx", "track_id"),)
+    __table_args__ = (
+        Index("embeddings_idx", "track_id"),
+        UniqueConstraint("track_id", "model", name="embeddings_track_model_unique"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     track_id: Mapped[int] = mapped_column(ForeignKey("track.track_id"))
@@ -93,26 +90,25 @@ class Embedding(Base):
 
 class Feature(Base):
     __tablename__ = "features"
+    __table_args__ = (UniqueConstraint("track_id", name="features_track_unique"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     track_id: Mapped[int] = mapped_column(ForeignKey("track.track_id"), index=True)
-    bpm: Mapped[Optional[float]] = mapped_column(Float)
-    bpm_conf: Mapped[Optional[float]] = mapped_column(Float)
-    key: Mapped[Optional[str]] = mapped_column(String(8))
-    key_conf: Mapped[Optional[float]] = mapped_column(Float)
-    chroma_stats: Mapped[Optional[dict]] = mapped_column(JSON)
-    spectral: Mapped[Optional[dict]] = mapped_column(JSON)
-    dynamics: Mapped[Optional[dict]] = mapped_column(JSON)
-    stereo: Mapped[Optional[dict]] = mapped_column(JSON)
-    percussive_harmonic_ratio: Mapped[Optional[float]] = mapped_column(Float)
-    pumpiness: Mapped[Optional[float]] = mapped_column(Float)
+    bpm: Mapped[float | None] = mapped_column(Float)
+    bpm_conf: Mapped[float | None] = mapped_column(Float)
+    key: Mapped[str | None] = mapped_column(String(8))
+    key_conf: Mapped[float | None] = mapped_column(Float)
+    chroma_stats: Mapped[dict | None] = mapped_column(JSON)
+    spectral: Mapped[dict | None] = mapped_column(JSON)
+    dynamics: Mapped[dict | None] = mapped_column(JSON)
+    stereo: Mapped[dict | None] = mapped_column(JSON)
+    percussive_harmonic_ratio: Mapped[float | None] = mapped_column(Float)
+    pumpiness: Mapped[float | None] = mapped_column(Float)
 
 
 class MoodScore(Base):
     __tablename__ = "mood_scores"
-    __table_args__ = (
-        UniqueConstraint("track_id", "axis", "method", name="mood_scores_unique"),
-    )
+    __table_args__ = (UniqueConstraint("track_id", "axis", "method", name="mood_scores_unique"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     track_id: Mapped[int] = mapped_column(ForeignKey("track.track_id"), index=True)
@@ -135,6 +131,9 @@ class UserLabel(Base):
 
 class GraphEdge(Base):
     __tablename__ = "graph_edges"
+    __table_args__ = (
+        UniqueConstraint("src_track_id", "dst_track_id", "kind", name="graph_edges_unique"),
+    )
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     src_track_id: Mapped[int] = mapped_column(ForeignKey("track.track_id"), index=True)
     dst_track_id: Mapped[int] = mapped_column(ForeignKey("track.track_id"), index=True)
@@ -144,6 +143,7 @@ class GraphEdge(Base):
 
 class MoodAggWeek(Base):
     __tablename__ = "mood_agg_week"
+    __table_args__ = (UniqueConstraint("user_id", "week", "axis", name="mood_agg_week_unique"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     user_id: Mapped[str] = mapped_column(String(128), index=True)
@@ -157,6 +157,7 @@ class MoodAggWeek(Base):
 
 class LastfmTags(Base):
     __tablename__ = "lastfm_tags"
+    __table_args__ = (UniqueConstraint("track_id", "source", name="lastfm_tags_unique"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     track_id: Mapped[int] = mapped_column(ForeignKey("track.track_id"), index=True)
@@ -169,10 +170,10 @@ class UserSettings(Base):
     __tablename__ = "user_settings"
 
     user_id: Mapped[str] = mapped_column(String(128), primary_key=True)
-    listenbrainz_user: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
-    listenbrainz_token: Mapped[Optional[str]] = mapped_column(String(256), nullable=True)
-    lastfm_user: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
-    lastfm_api_key: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    listenbrainz_user: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    listenbrainz_token: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    lastfm_user: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    lastfm_api_key: Mapped[str | None] = mapped_column(String(128), nullable=True)
     use_gpu: Mapped[bool] = mapped_column(Boolean, default=False)
     use_stems: Mapped[bool] = mapped_column(Boolean, default=False)
     use_excerpts: Mapped[bool] = mapped_column(Boolean, default=False)

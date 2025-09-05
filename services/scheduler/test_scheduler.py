@@ -1,5 +1,6 @@
-import sys
 import pathlib
+import sys
+
 import schedule
 
 # ensure we can import scheduler.run
@@ -27,6 +28,7 @@ def test_all_jobs_run(monkeypatch):
     monkeypatch.setenv("DEFAULT_USER_ID", "u1")
 
     import importlib
+
     run = importlib.import_module("scheduler.run")
     monkeypatch.setattr(run.requests, "post", fake_post)
 
