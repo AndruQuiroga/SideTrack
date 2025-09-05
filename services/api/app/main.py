@@ -3,10 +3,10 @@ from typing import Optional, List, Dict
 import time
 
 import requests
-from fastapi import FastAPI, HTTPException, Query, Depends, Body, BackgroundTasks
+from fastapi import FastAPI, HTTPException, Query, Depends, Body, BackgroundTasks, Header
 
 from pydantic import BaseModel
-from sqlalchemy import text, select, func, and_, insert
+from sqlalchemy import text, select, func, and_, insert, delete
 from sqlalchemy.orm import Session
 
 from fastapi.middleware.cors import CORSMiddleware
@@ -40,6 +40,13 @@ app.add_middleware(
 def _startup():
     # Make dev/local experience smooth
     maybe_create_all()
+
+
+def get_current_user(x_user_id: str = Header(...)) -> str:
+    """Simple header-based auth. The caller must supply X-User-Id."""
+    if not x_user_id:
+        raise HTTPException(status_code=401, detail="X-User-Id header required")
+    return x_user_id
 
 
 AXES = ["energy", "valence", "danceability", "brightness", "pumpiness"]
@@ -142,7 +149,7 @@ def _mb_fetch_release(mbid: str) -> dict:
     return r.json()
 
 
-def _ingest_lb_rows(db: Session, listens: list[dict]) -> int:
+def _ingest_lb_rows(db: Session, listens: list[dict], user_id: str | None = None) -> int:
     created = 0
     for item in listens:
         tm = item.get("track_metadata", {})
@@ -154,7 +161,7 @@ def _ingest_lb_rows(db: Session, listens: list[dict]) -> int:
         if not played_at_ts:
             continue
         played_at = datetime.utcfromtimestamp(played_at_ts)
-        user_id = (item.get("user_name") or "lb").lower()
+        uid = (user_id or item.get("user_name") or "lb").lower()
 
         artist = _get_or_create(db, Artist, name=artist_name)
         rel = None
@@ -170,11 +177,11 @@ def _ingest_lb_rows(db: Session, listens: list[dict]) -> int:
         )
         exists = db.execute(
             select(Listen).where(
-                and_(Listen.user_id == user_id, Listen.track_id == track.track_id, Listen.played_at == played_at)
+                and_(Listen.user_id == uid, Listen.track_id == track.track_id, Listen.played_at == played_at)
             )
         ).scalar_one_or_none()
         if not exists:
-            db.add(Listen(user_id=user_id, track_id=track.track_id, played_at=played_at, source="listenbrainz"))
+            db.add(Listen(user_id=uid, track_id=track.track_id, played_at=played_at, source="listenbrainz"))
             created += 1
     db.commit()
     return created
@@ -221,6 +228,7 @@ def ingest_listens(
     listens: Optional[List[ListenIn]] = Body(None, description="List of listens to ingest"),
     source: str = Query("auto", description="auto|listenbrainz|body|sample"),
     db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user),
 ):
     # 3 modes: body, ListenBrainz, or sample file
     if source == "body" and listens is None:
@@ -242,21 +250,19 @@ def ingest_listens(
             for ls in listens
             if not since or ls.played_at.date() >= since
         ]
-        created = _ingest_lb_rows(db, rows)
+        created = _ingest_lb_rows(db, rows, user_id)
         return {"detail": "ok", "ingested": created}
 
     if source in ("auto", "listenbrainz"):
-        user = _env("LISTENBRAINZ_USER")
         token = _env("LISTENBRAINZ_TOKEN")
-        if user:
-            try:
-                rows = _lb_fetch_listens(user, since, token)
-                created = _ingest_lb_rows(db, rows)
-                return {"detail": "ok", "ingested": created, "source": "listenbrainz"}
-            except Exception as e:
-                if source == "listenbrainz":
-                    raise HTTPException(status_code=502, detail=f"ListenBrainz error: {e}")
-                # fall through to sample
+        try:
+            rows = _lb_fetch_listens(user_id, since, token)
+            created = _ingest_lb_rows(db, rows, user_id)
+            return {"detail": "ok", "ingested": created, "source": "listenbrainz"}
+        except Exception as e:
+            if source == "listenbrainz":
+                raise HTTPException(status_code=502, detail=f"ListenBrainz error: {e}")
+            # fall through to sample
 
     # sample
     import json
@@ -282,7 +288,7 @@ def ingest_listens(
                 "user_name": x["user_id"],
             }
         )
-    created = _ingest_lb_rows(db, rows)
+    created = _ingest_lb_rows(db, rows, user_id)
     return {"detail": "ok", "ingested": created, "source": "sample"}
 
 
@@ -477,9 +483,13 @@ def set_track_path(track_id: int, payload: TrackPathIn, db: Session = Depends(ge
 
 
 @app.post("/aggregate/weeks")
-def aggregate_weeks(db: Session = Depends(get_db)):
-    # build weekly aggregates per axis from listens + mood scores
-    listened_tracks = db.execute(select(Listen.track_id).distinct()).scalars().all()
+def aggregate_weeks(db: Session = Depends(get_db), user_id: str = Depends(get_current_user)):
+    # build weekly aggregates per axis from listens + mood scores for a user
+    listened_tracks = (
+        db.execute(
+            select(Listen.track_id).where(Listen.user_id == user_id).distinct()
+        ).scalars().all()
+    )
     for tid in listened_tracks:
         score_track(tid, method=DEFAULT_METHOD, db=db)
 
@@ -487,7 +497,9 @@ def aggregate_weeks(db: Session = Depends(get_db)):
     rows = db.execute(
         select(Listen.played_at, MoodScore.axis, MoodScore.value)
         .join(MoodScore, MoodScore.track_id == Listen.track_id)
-        .where(MoodScore.method == DEFAULT_METHOD)
+        .where(
+            and_(MoodScore.method == DEFAULT_METHOD, Listen.user_id == user_id)
+        )
     ).all()
 
     # group in Python for simplicity
@@ -511,8 +523,8 @@ def aggregate_weeks(db: Session = Depends(get_db)):
     for ax in per_axis_weeks.keys():
         per_axis_weeks[ax] = sorted(set(per_axis_weeks[ax]))
 
-    # clear existing aggregates for recompute
-    db.execute(text("DELETE FROM mood_agg_week"))
+    # clear existing aggregates for this user before recompute
+    db.execute(delete(MoodAggWeek).where(MoodAggWeek.user_id == user_id))
 
     for (wk, axis), n in counts.items():
         s = sums[(wk, axis)]
@@ -533,6 +545,7 @@ def aggregate_weeks(db: Session = Depends(get_db)):
 
         db.add(
             MoodAggWeek(
+                user_id=user_id,
                 week=wk,
                 axis=axis,
                 mean=mean,
@@ -547,7 +560,11 @@ def aggregate_weeks(db: Session = Depends(get_db)):
 
 
 @app.get("/dashboard/trajectory")
-def dashboard_trajectory(window: str = Query("12w"), db: Session = Depends(get_db)):
+def dashboard_trajectory(
+    window: str = Query("12w"),
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user),
+):
     # Project weekly means to 2D using (x=valence, y=energy) for simplicity
     # window like "12w" or "6m" is parsed naively to weeks
     try:
@@ -561,12 +578,15 @@ def dashboard_trajectory(window: str = Query("12w"), db: Session = Depends(get_d
         n_weeks = 12
 
     # collect recent weeks
-    weeks = db.execute(
-        select(MoodAggWeek.week)
-        .distinct()
-        .order_by(MoodAggWeek.week.desc())
-        .limit(n_weeks)
-    ).scalars().all()
+    weeks = (
+        db.execute(
+            select(MoodAggWeek.week)
+            .where(MoodAggWeek.user_id == user_id)
+            .distinct()
+            .order_by(MoodAggWeek.week.desc())
+            .limit(n_weeks)
+        ).scalars().all()
+    )
     weeks = sorted(weeks)
     if not weeks:
         return {"window": window, "points": [], "arrows": []}
@@ -574,7 +594,9 @@ def dashboard_trajectory(window: str = Query("12w"), db: Session = Depends(get_d
     points = []
     for wk in weeks:
         axis_rows = db.execute(
-            select(MoodAggWeek.axis, MoodAggWeek.mean).where(MoodAggWeek.week == wk)
+            select(MoodAggWeek.axis, MoodAggWeek.mean).where(
+                and_(MoodAggWeek.week == wk, MoodAggWeek.user_id == user_id)
+            )
         ).all()
         d = {ax: val for ax, val in axis_rows}
         x = d.get("valence", 0.5)
@@ -592,7 +614,11 @@ def dashboard_trajectory(window: str = Query("12w"), db: Session = Depends(get_d
 
 
 @app.get("/dashboard/radar")
-def dashboard_radar(week: str = Query(...), db: Session = Depends(get_db)):
+def dashboard_radar(
+    week: str = Query(...),
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user),
+):
     # parse week as YYYY-MM-DD (Monday) or ISO week-like YYYY-WW (fallback)
     wk_date: Optional[date] = None
     try:
@@ -607,7 +633,9 @@ def dashboard_radar(week: str = Query(...), db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Invalid week format")
 
     rows = db.execute(
-        select(MoodAggWeek.axis, MoodAggWeek.mean).where(MoodAggWeek.week == wk_date)
+        select(MoodAggWeek.axis, MoodAggWeek.mean).where(
+            and_(MoodAggWeek.week == wk_date, MoodAggWeek.user_id == user_id)
+        )
     ).all()
     axes = {ax: val for ax, val in rows}
 
@@ -618,6 +646,7 @@ def dashboard_radar(week: str = Query(...), db: Session = Depends(get_db)):
             and_(
                 MoodAggWeek.week < wk_date,
                 MoodAggWeek.week >= wk_date - timedelta(weeks=24),
+                MoodAggWeek.user_id == user_id,
             )
         )
         .group_by(MoodAggWeek.axis)
@@ -634,7 +663,11 @@ def dashboard_radar(week: str = Query(...), db: Session = Depends(get_db)):
 
 @app.post("/labels")
 def submit_label(
-    user_id: str, track_id: int, axis: str, value: float, db: Session = Depends(get_db)
+    track_id: int,
+    axis: str,
+    value: float,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user),
 ):
     if axis not in AXES:
         raise HTTPException(status_code=400, detail="Unknown axis")

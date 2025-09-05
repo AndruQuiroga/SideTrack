@@ -52,7 +52,8 @@ def test_submit_label_stores_label():
     tid = _create_track()
     resp = client.post(
         "/labels",
-        params={"user_id": "u1", "track_id": tid, "axis": "energy", "value": 0.5},
+        params={"track_id": tid, "axis": "energy", "value": 0.5},
+        headers={"X-User-Id": "u1"},
     )
     assert resp.status_code == 200
     data = resp.json()
@@ -70,7 +71,8 @@ def test_submit_label_rejects_unknown_axis():
     tid = _create_track()
     resp = client.post(
         "/labels",
-        params={"user_id": "u1", "track_id": tid, "axis": "invalid", "value": 0.5},
+        params={"track_id": tid, "axis": "invalid", "value": 0.5},
+        headers={"X-User-Id": "u1"},
     )
     assert resp.status_code == 400
     with SessionLocal() as db:

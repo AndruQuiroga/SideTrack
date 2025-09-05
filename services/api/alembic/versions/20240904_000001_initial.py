@@ -114,6 +114,7 @@ def upgrade():
     op.create_table(
         "mood_agg_week",
         sa.Column("id", sa.Integer, primary_key=True),
+        sa.Column("user_id", sa.String(length=128), nullable=False),
         sa.Column("week", sa.Date, nullable=False),
         sa.Column("axis", sa.String(length=64), nullable=False),
         sa.Column("mean", sa.Float, nullable=False),
@@ -121,8 +122,9 @@ def upgrade():
         sa.Column("momentum", sa.Float, nullable=False, server_default=sa.text("0")),
         sa.Column("sample_size", sa.Integer, nullable=False),
     )
-    op.create_index("ix_mood_agg_week_week", "mood_agg_week", ["week"]) 
-    op.create_index("ix_mood_agg_week_axis", "mood_agg_week", ["axis"]) 
+    op.create_index("ix_mood_agg_week_week", "mood_agg_week", ["week"])
+    op.create_index("ix_mood_agg_week_axis", "mood_agg_week", ["axis"])
+    op.create_index("ix_mood_agg_week_user", "mood_agg_week", ["user_id"])
 
     op.create_table(
         "lastfm_tags",
@@ -140,6 +142,7 @@ def downgrade():
     op.drop_table("lastfm_tags")
     op.drop_index("ix_mood_agg_week_axis", table_name="mood_agg_week")
     op.drop_index("ix_mood_agg_week_week", table_name="mood_agg_week")
+    op.drop_index("ix_mood_agg_week_user", table_name="mood_agg_week")
     op.drop_table("mood_agg_week")
     op.drop_table("graph_edges")
     op.drop_table("labels_user")

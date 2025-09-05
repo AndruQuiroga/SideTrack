@@ -146,6 +146,7 @@ class MoodAggWeek(Base):
     __tablename__ = "mood_agg_week"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[str] = mapped_column(String(128), index=True)
     week: Mapped[Date] = mapped_column(Date, index=True)
     axis: Mapped[str] = mapped_column(String(64), index=True)
     mean: Mapped[float] = mapped_column(Float)
