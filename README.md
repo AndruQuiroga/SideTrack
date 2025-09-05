@@ -435,6 +435,9 @@ TZ=America/New_York
 - `GET /dashboard/radar?week=YYYY-WW` – radar data vs baseline
 - `POST /labels` – (optional) submit personal labels (axis,value)
 
+**Multi-user note**: API endpoints that read or write user data expect an
+`X-User-Id` header identifying the caller.
+
 **Auth model**
 - UI uses **Auth.js (NextAuth)** with Google; UI acts as a **BFF proxy** to the API, forwarding an `X-User-Id` header derived from the session. The API authorizes requests per‑user and never stores Google tokens.
 
@@ -477,9 +480,9 @@ docker compose up -d --build
 docker compose exec api alembic upgrade head
 
 # 5) First sync + analysis
-curl -X POST http://localhost:8000/ingest/listens?since=2024-01-01
-curl -X POST http://localhost:8000/tags/lastfm/sync?since=2024-01-01
-curl -X POST http://localhost:8000/aggregate/weeks
+curl -H "X-User-Id: your-user" -X POST http://localhost:8000/ingest/listens?since=2024-01-01
+curl -H "X-User-Id: your-user" -X POST http://localhost:8000/tags/lastfm/sync?since=2024-01-01
+curl -H "X-User-Id: your-user" -X POST http://localhost:8000/aggregate/weeks
 
 # 6) Open UI
 https://your.domain
