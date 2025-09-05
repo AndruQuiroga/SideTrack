@@ -22,6 +22,7 @@ from .models import (
     UserLabel,
     LastfmTags,
     Feature,
+    Embedding,
 )
 from .constants import AXES, DEFAULT_METHOD
 from . import scoring
@@ -480,6 +481,26 @@ def set_track_path(track_id: int, payload: TrackPathIn, db: Session = Depends(ge
     tr.path_local = payload.path_local
     db.commit()
     return {"detail": "ok", "track_id": track_id, "path_local": tr.path_local}
+
+
+@app.get("/tracks/{track_id}/features")
+def get_track_features(track_id: int, db: Session = Depends(get_db)):
+    tr = db.get(Track, track_id)
+    if not tr:
+        raise HTTPException(status_code=404, detail="track not found")
+    feat = db.execute(select(Feature).where(Feature.track_id == track_id)).scalar_one_or_none()
+    emb = db.execute(select(Embedding).where(Embedding.track_id == track_id)).scalar_one_or_none()
+
+    def _row_to_dict(row):
+        if not row:
+            return None
+        return {c.name: getattr(row, c.name) for c in row.__table__.columns}
+
+    return {
+        "track_id": track_id,
+        "feature": _row_to_dict(feat),
+        "embedding": _row_to_dict(emb),
+    }
 
 
 @app.post("/aggregate/weeks")
