@@ -22,6 +22,7 @@ from .models import (
     UserLabel,
     LastfmTags,
     Feature,
+    UserSettings,
 )
 from .constants import AXES, DEFAULT_METHOD
 from . import scoring
@@ -93,6 +94,16 @@ class ListenIn(BaseModel):
 
 class TrackPathIn(BaseModel):
     path_local: str
+
+
+class SettingsIn(BaseModel):
+    listenBrainzUser: Optional[str] = None
+    listenBrainzToken: Optional[str] = None
+    lastfmUser: Optional[str] = None
+    lastfmApiKey: Optional[str] = None
+    useGpu: bool = False
+    useStems: bool = False
+    useExcerpts: bool = False
 
 
 def _week_start(dt: datetime) -> date:
@@ -221,6 +232,56 @@ def _lastfm_fetch_tags(artist: str, track: str, api_key: str) -> dict:
         if name:
             out[name] = cnt
     return out
+
+
+@app.get("/settings")
+def get_settings(
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user),
+):
+    row = db.get(UserSettings, user_id)
+    if not row:
+        return {}
+    return {
+        "listenBrainzUser": row.listenbrainz_user,
+        "listenBrainzToken": row.listenbrainz_token,
+        "lastfmUser": row.lastfm_user,
+        "lastfmApiKey": row.lastfm_api_key,
+        "useGpu": row.use_gpu,
+        "useStems": row.use_stems,
+        "useExcerpts": row.use_excerpts,
+    }
+
+
+@app.post("/settings")
+def post_settings(
+    payload: SettingsIn,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user),
+):
+    errors = []
+    if bool(payload.listenBrainzUser) ^ bool(payload.listenBrainzToken):
+        errors.append("ListenBrainz user and token required together")
+    if bool(payload.lastfmUser) ^ bool(payload.lastfmApiKey):
+        errors.append("Last.fm user and API key required together")
+    if errors:
+        raise HTTPException(status_code=400, detail=errors)
+
+    row = db.get(UserSettings, user_id)
+    if not row:
+        row = UserSettings(user_id=user_id)
+
+    row.listenbrainz_user = payload.listenBrainzUser
+    row.listenbrainz_token = payload.listenBrainzToken
+    row.lastfm_user = payload.lastfmUser
+    row.lastfm_api_key = payload.lastfmApiKey
+    row.use_gpu = payload.useGpu
+    row.use_stems = payload.useStems
+    row.use_excerpts = payload.useExcerpts
+
+    db.add(row)
+    db.commit()
+    return {"ok": True}
 
 
 @app.get("/health")

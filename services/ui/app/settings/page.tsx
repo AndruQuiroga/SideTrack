@@ -62,11 +62,21 @@ export default function Settings() {
       useStems,
       useExcerpts,
     };
-    await fetch('/api/settings', {
+    const res = await fetch('/api/settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      const serverErrors = Array.isArray(data.detail)
+        ? data.detail
+        : data.detail
+        ? [data.detail]
+        : ['Error saving settings'];
+      setErrors(serverErrors);
+      return;
+    }
     setMessage('Settings saved');
   }
 
