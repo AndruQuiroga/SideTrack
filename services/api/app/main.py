@@ -3,7 +3,7 @@ from typing import Optional, List, Dict
 import time
 
 import requests
-from fastapi import FastAPI, HTTPException, Query, Depends, Body, BackgroundTasks, Header
+from fastapi import FastAPI, HTTPException, Query, Depends, Body, Header
 
 from pydantic import BaseModel
 from sqlalchemy import text, select, func, and_, insert, delete
@@ -23,6 +23,7 @@ from .models import (
     LastfmTags,
     Feature,
     Embedding,
+    UserSettings
 )
 from .constants import AXES, DEFAULT_METHOD
 from . import scoring
@@ -53,18 +54,28 @@ def get_current_user(x_user_id: str = Header(...)) -> str:
 AXES = ["energy", "valence", "danceability", "brightness", "pumpiness"]
 
 
-ANALYSIS_QUEUE: list[int] = []
+from rq import Queue
+import redis
+
+
+_REDIS_CONN: redis.Redis | None = None
+
+
+def _get_redis_connection() -> redis.Redis:
+    """Return a cached Redis connection using ``REDIS_URL``."""
+
+    global _REDIS_CONN
+    if _REDIS_CONN is None:
+        url = _env("REDIS_URL", "redis://localhost:6379/0")
+        _REDIS_CONN = redis.from_url(url)
+    return _REDIS_CONN
 
 
 def _enqueue_analysis(track_id: int) -> None:
-    """Placeholder analysis job enqueue function.
+    """Enqueue an analysis job for the given track id."""
 
-    In production this could push to a real job queue or call out to the
-    extractor service. For now, we record the track id in a list so tests can
-    verify scheduling.
-    """
-
-    ANALYSIS_QUEUE.append(track_id)
+    q = Queue("analysis", connection=_get_redis_connection())
+    q.enqueue("worker.jobs.analyze_track", track_id)
 
 class TrackIn(BaseModel):
     title: str
@@ -84,6 +95,16 @@ class ListenIn(BaseModel):
 
 class TrackPathIn(BaseModel):
     path_local: str
+
+
+class SettingsIn(BaseModel):
+    listenBrainzUser: Optional[str] = None
+    listenBrainzToken: Optional[str] = None
+    lastfmUser: Optional[str] = None
+    lastfmApiKey: Optional[str] = None
+    useGpu: bool = False
+    useStems: bool = False
+    useExcerpts: bool = False
 
 
 def _week_start(dt: datetime) -> date:
@@ -212,6 +233,56 @@ def _lastfm_fetch_tags(artist: str, track: str, api_key: str) -> dict:
         if name:
             out[name] = cnt
     return out
+
+
+@app.get("/settings")
+def get_settings(
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user),
+):
+    row = db.get(UserSettings, user_id)
+    if not row:
+        return {}
+    return {
+        "listenBrainzUser": row.listenbrainz_user,
+        "listenBrainzToken": row.listenbrainz_token,
+        "lastfmUser": row.lastfm_user,
+        "lastfmApiKey": row.lastfm_api_key,
+        "useGpu": row.use_gpu,
+        "useStems": row.use_stems,
+        "useExcerpts": row.use_excerpts,
+    }
+
+
+@app.post("/settings")
+def post_settings(
+    payload: SettingsIn,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user),
+):
+    errors = []
+    if bool(payload.listenBrainzUser) ^ bool(payload.listenBrainzToken):
+        errors.append("ListenBrainz user and token required together")
+    if bool(payload.lastfmUser) ^ bool(payload.lastfmApiKey):
+        errors.append("Last.fm user and API key required together")
+    if errors:
+        raise HTTPException(status_code=400, detail=errors)
+
+    row = db.get(UserSettings, user_id)
+    if not row:
+        row = UserSettings(user_id=user_id)
+
+    row.listenbrainz_user = payload.listenBrainzUser
+    row.listenbrainz_token = payload.listenBrainzToken
+    row.lastfm_user = payload.lastfmUser
+    row.lastfm_api_key = payload.lastfmApiKey
+    row.use_gpu = payload.useGpu
+    row.use_stems = payload.useStems
+    row.use_excerpts = payload.useExcerpts
+
+    db.add(row)
+    db.commit()
+    return {"ok": True}
 
 
 @app.get("/health")
@@ -407,12 +478,12 @@ def sync_lastfm_tags(since: Optional[date] = Query(None), db: Session = Depends(
 
 
 @app.post("/analyze/track/{track_id}")
-def analyze_track(track_id: int, background_tasks: BackgroundTasks):
+def analyze_track(track_id: int):
     """Queue or trigger analysis for the given track.
 
     If features already exist for the track we return a `done` status with the
     existing feature row id. Otherwise, the track id is scheduled for
-    processing via ``BackgroundTasks``.
+    processing on the analysis queue.
     """
 
     with get_db() as db:
@@ -431,27 +502,34 @@ def analyze_track(track_id: int, background_tasks: BackgroundTasks):
                 "features_id": existing.id,
             }
 
-    background_tasks.add_task(_enqueue_analysis, track_id)
+    _enqueue_analysis(track_id)
     return {"detail": "scheduled", "track_id": track_id, "status": "scheduled"}
 
 
 @app.post("/score/track/{track_id}")
-def score_track(track_id: int, method: str = DEFAULT_METHOD, db: Session = Depends(get_db)):
+def score_track(
+    track_id: int,
+    method: str = DEFAULT_METHOD,
+    version: str | None = None,
+    db: Session = Depends(get_db),
+):
     tr = db.get(Track, track_id)
     if not tr:
         raise HTTPException(status_code=404, detail="track not found")
     try:
-        scores = scoring.score_axes(db, tr.track_id, method=method)
+        scores = scoring.score_axes(db, tr.track_id, method=method, version=version)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    method_name = scoring.method_version(method, version)
     upserts = 0
-    for ax, val in scores.items():
+    for ax, data in scores.items():
+        val = data["value"]
         existing = db.execute(
             select(MoodScore).where(
                 and_(
                     MoodScore.track_id == tr.track_id,
                     MoodScore.axis == ax,
-                    MoodScore.method == method,
+                    MoodScore.method == method_name,
                 )
             )
         ).scalar_one_or_none()
@@ -463,14 +541,20 @@ def score_track(track_id: int, method: str = DEFAULT_METHOD, db: Session = Depen
                 MoodScore(
                     track_id=tr.track_id,
                     axis=ax,
-                    method=method,
+                    method=method_name,
                     value=val,
                     updated_at=datetime.utcnow(),
                 )
             )
             upserts += 1
     db.commit()
-    return {"detail": "scored", "track_id": track_id, "scores": scores, "upserts": upserts}
+    return {
+        "detail": "scored",
+        "track_id": track_id,
+        "scores": scores,
+        "upserts": upserts,
+        "method": method_name,
+    }
 
 
 @app.post("/tracks/{track_id}/path")
@@ -680,6 +764,78 @@ def dashboard_radar(
         baseline.setdefault(ax, 0.0)
 
     return {"week": str(wk_date), "axes": axes, "baseline": baseline}
+
+
+@app.get("/dashboard/outliers")
+def dashboard_outliers(
+    limit: int = Query(10, ge=1, le=100),
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user),
+):
+    """Return tracks farthest from the recent mood centroid.
+
+    The centroid is computed from the user's listens over the last 90 days
+    using mood scores for each axis. Tracks are ranked by Euclidean distance
+    from this centroid.
+    """
+
+    since = datetime.now(timezone.utc) - timedelta(days=90)
+
+    # Compute centroid across recent listens
+    cent_rows = (
+        db.execute(
+            select(MoodScore.axis, func.avg(MoodScore.value))
+            .join(Listen, Listen.track_id == MoodScore.track_id)
+            .where(
+                and_(
+                    Listen.user_id == user_id,
+                    Listen.played_at >= since,
+                    MoodScore.method == DEFAULT_METHOD,
+                )
+            )
+            .group_by(MoodScore.axis)
+        ).all()
+    )
+    centroid = {ax: float(val or 0.0) for ax, val in cent_rows}
+    for ax in AXES:
+        centroid.setdefault(ax, 0.0)
+
+    # Gather candidate tracks listened to in the window
+    rows = (
+        db.execute(
+            select(Track.track_id, Track.title, Artist.name)
+            .join(Listen, Listen.track_id == Track.track_id)
+            .join(Artist, Track.artist_id == Artist.artist_id, isouter=True)
+            .where(and_(Listen.user_id == user_id, Listen.played_at >= since))
+            .group_by(Track.track_id, Track.title, Artist.name)
+        ).all()
+    )
+
+    outliers = []
+    for tid, title, artist_name in rows:
+        axis_rows = db.execute(
+            select(MoodScore.axis, MoodScore.value).where(
+                and_(
+                    MoodScore.track_id == tid,
+                    MoodScore.method == DEFAULT_METHOD,
+                )
+            )
+        ).all()
+        vec = {ax: float(val) for ax, val in axis_rows}
+        if len(vec) < len(AXES):
+            continue
+        dist = sum((vec[ax] - centroid[ax]) ** 2 for ax in AXES) ** 0.5
+        outliers.append(
+            {
+                "track_id": tid,
+                "title": title,
+                "artist": artist_name,
+                "distance": dist,
+            }
+        )
+
+    outliers.sort(key=lambda x: x["distance"], reverse=True)
+    return {"tracks": outliers[:limit], "centroid": centroid}
 
 
 @app.post("/labels")

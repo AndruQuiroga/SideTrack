@@ -4,7 +4,9 @@ import Settings from './page';
 
 describe('Settings page', () => {
   beforeEach(() => {
-    global.fetch = jest.fn().mockResolvedValue({ json: () => Promise.resolve({}) });
+    global.fetch = jest
+      .fn()
+      .mockResolvedValue({ ok: true, json: () => Promise.resolve({}) });
   });
 
   afterEach(() => {
@@ -22,8 +24,14 @@ describe('Settings page', () => {
   });
 
   it('saves settings when valid', async () => {
-    (fetch as jest.Mock).mockResolvedValueOnce({ json: () => Promise.resolve({}) }); // GET
-    (fetch as jest.Mock).mockResolvedValueOnce({ json: () => Promise.resolve({ ok: true }) }); // POST
+    (fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({}),
+    }); // GET
+    (fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ ok: true }),
+    }); // POST
 
     render(<Settings />);
     await userEvent.type(screen.getByPlaceholderText('ListenBrainz username'), 'lbuser');

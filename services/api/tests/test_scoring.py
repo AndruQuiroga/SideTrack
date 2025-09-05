@@ -1,5 +1,6 @@
 import os
 import sys
+
 import pytest
 from fastapi import HTTPException
 from sqlalchemy import create_engine, select
@@ -39,9 +40,12 @@ def test_score_track_zero_shot(session):
     for row in rows:
         assert 0.0 <= row.value <= 1.0
         assert row.method == "zero"
+    for val in res["scores"].values():
+        assert 0.0 <= val["value"] <= 1.0
+        assert 0.0 <= val["confidence"] <= 1.0
 
 
-def test_score_track_supervised(session):
+def test_score_track_logreg(session):
     tr = Track(title="Song2")
     session.add(tr)
     session.flush()
@@ -55,13 +59,17 @@ def test_score_track_supervised(session):
     )
     session.commit()
 
-    res = score_track(tr.track_id, method="super", db=session)
+    res = score_track(tr.track_id, method="logreg", version="v1", db=session)
     assert res["detail"] == "scored"
+    assert res["method"] == "logreg_v1"
     assert set(res["scores"]) == set(AXES)
     rows = session.execute(
-        select(MoodScore).where(MoodScore.track_id == tr.track_id, MoodScore.method == "super")
+        select(MoodScore).where(MoodScore.track_id == tr.track_id, MoodScore.method == "logreg_v1")
     ).scalars().all()
     assert len(rows) == len(AXES)
+    for val in res["scores"].values():
+        assert 0.0 <= val["value"] <= 1.0
+        assert 0.0 <= val["confidence"] <= 1.0
 
 
 def test_score_track_missing_data(session):

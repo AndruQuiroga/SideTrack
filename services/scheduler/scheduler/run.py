@@ -4,11 +4,16 @@ import schedule
 import requests
 
 API = os.getenv("API_URL", "http://api:8000")
+user_id = os.getenv("DEFAULT_USER_ID")
 
 
 def ingest_listens():
     try:
-        r = requests.post(f"{API}/ingest/listens", timeout=10)
+        r = requests.post(
+            f"{API}/ingest/listens",
+            timeout=10,
+            headers={"X-User-Id": user_id},
+        )
         print("[scheduler] ingest listens:", r.status_code)
     except Exception as e:
         print("[scheduler] ingest listens error:", e)
@@ -16,7 +21,11 @@ def ingest_listens():
 
 def sync_lastfm_tags():
     try:
-        r = requests.post(f"{API}/tags/lastfm/sync", timeout=10)
+        r = requests.post(
+            f"{API}/tags/lastfm/sync",
+            timeout=10,
+            headers={"X-User-Id": user_id},
+        )
         print("[scheduler] lastfm sync:", r.status_code)
     except Exception as e:
         print("[scheduler] lastfm sync error:", e)
@@ -24,7 +33,11 @@ def sync_lastfm_tags():
 
 def aggregate_weeks():
     try:
-        r = requests.post(f"{API}/aggregate/weeks", timeout=30)
+        r = requests.post(
+            f"{API}/aggregate/weeks",
+            timeout=30,
+            headers={"X-User-Id": user_id},
+        )
         print("[scheduler] aggregate weeks:", r.status_code)
     except Exception as e:
         print("[scheduler] aggregate weeks error:", e)
