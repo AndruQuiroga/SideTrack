@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from ..constants import AXES, DEFAULT_METHOD
 from ..db import get_db
-from ..models import Artist, Listen, MoodAggWeek, MoodScore, Track
+from services.common.models import Artist, Listen, MoodAggWeek, MoodScore, Track
 from ..main import get_current_user
 
 

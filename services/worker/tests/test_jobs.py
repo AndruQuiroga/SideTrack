@@ -10,7 +10,7 @@ os.environ.setdefault("AUTO_MIGRATE", "1")
 
 from worker.jobs import analyze_track, compute_embeddings
 from app.db import SessionLocal, maybe_create_all
-from app.models import Track, Feature
+from services.common.models import Track, Feature
 
 maybe_create_all()
 

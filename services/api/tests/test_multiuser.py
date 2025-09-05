@@ -14,7 +14,7 @@ os.environ["DATABASE_URL"] = "sqlite:///./test.db"
 from services.api.app import main  # noqa: E402
 from services.api.app.main import app  # noqa: E402
 from services.api.app.db import SessionLocal, engine, get_db  # noqa: E402
-from services.api.app.models import (
+from services.common.models import (
     Base,
     Track,
     Listen,

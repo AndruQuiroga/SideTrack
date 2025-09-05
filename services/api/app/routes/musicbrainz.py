@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..db import get_db
-from ..models import Artist, Release, Track
+from services.common.models import Artist, Release, Track
 from ..main import HTTP_SESSION
 
 

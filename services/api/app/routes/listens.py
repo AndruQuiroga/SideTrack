@@ -13,7 +13,7 @@ from sqlalchemy import and_, select
 from sqlalchemy.orm import Session
 
 from ..db import get_db
-from ..models import Artist, Listen, Release, Track
+from services.common.models import Artist, Listen, Release, Track
 from ..main import get_current_user, HTTP_SESSION
 
 

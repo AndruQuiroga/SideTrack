@@ -3,52 +3,15 @@ from __future__ import annotations
 import os
 import time
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
 import typer
-from sqlalchemy import create_engine, select, text
-from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column
-from sqlalchemy import Integer, String, Text as SQLText, Float, ForeignKey, JSON
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import Session
+
+from services.common.models import Embedding, Feature, Track
 
 app = typer.Typer(add_completion=False)
-
-
-class Base(DeclarativeBase):
-    pass
-
-
-class Track(Base):
-    __tablename__ = "track"
-    track_id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    title: Mapped[str] = mapped_column(String(512))
-    path_local: Mapped[Optional[str]] = mapped_column(SQLText, nullable=True)
-    duration: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-
-
-class Feature(Base):
-    __tablename__ = "features"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    track_id: Mapped[int] = mapped_column(ForeignKey("track.track_id"))
-    bpm: Mapped[Optional[float]] = mapped_column(Float)
-    bpm_conf: Mapped[Optional[float]] = mapped_column(Float)
-    key: Mapped[Optional[str]] = mapped_column(String(8))
-    key_conf: Mapped[Optional[float]] = mapped_column(Float)
-    chroma_stats: Mapped[Optional[dict]] = mapped_column(JSON)
-    spectral: Mapped[Optional[dict]] = mapped_column(JSON)
-    dynamics: Mapped[Optional[dict]] = mapped_column(JSON)
-    stereo: Mapped[Optional[dict]] = mapped_column(JSON)
-    percussive_harmonic_ratio: Mapped[Optional[float]] = mapped_column(Float)
-    pumpiness: Mapped[Optional[float]] = mapped_column(Float)
-
-
-class Embedding(Base):
-    __tablename__ = "embeddings"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    track_id: Mapped[int] = mapped_column(ForeignKey("track.track_id"))
-    model: Mapped[str] = mapped_column(String(64))
-    dim: Mapped[int] = mapped_column(Integer)
-    vector: Mapped[list[float] | None] = mapped_column(JSON, nullable=True)
 
 
 def get_db_url() -> str:

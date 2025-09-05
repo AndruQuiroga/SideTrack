@@ -11,7 +11,7 @@ os.environ["DATABASE_URL"] = "sqlite:///./test.db"
 
 from services.api.app.main import app  # noqa: E402
 from services.api.app.db import SessionLocal, engine, get_db  # noqa: E402
-from services.api.app.models import Base, Track, Feature, Embedding  # noqa: E402
+from services.common.models import Base, Track, Feature, Embedding  # noqa: E402
 
 Base.metadata.create_all(bind=engine)
 

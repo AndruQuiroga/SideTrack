@@ -14,6 +14,11 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s:%(message
 logger = logging.getLogger("worker")
 
 
+sys.path.append(str(Path(__file__).resolve().parents[2] / "api"))
+from app.db import SessionLocal  # type: ignore
+from services.common.models import Track, Feature  # type: ignore
+
+
 def _basic_features(path: str) -> dict[str, float]:
     """Estimate a couple of simple audio features."""
 
