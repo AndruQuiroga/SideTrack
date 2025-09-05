@@ -3,7 +3,7 @@ from typing import Optional, List, Dict
 import time
 
 import requests
-from fastapi import FastAPI, HTTPException, Query, Depends, Body, BackgroundTasks, Header
+from fastapi import FastAPI, HTTPException, Query, Depends, Body, Header
 
 from pydantic import BaseModel
 from sqlalchemy import text, select, func, and_, insert, delete
@@ -52,18 +52,28 @@ def get_current_user(x_user_id: str = Header(...)) -> str:
 AXES = ["energy", "valence", "danceability", "brightness", "pumpiness"]
 
 
-ANALYSIS_QUEUE: list[int] = []
+from rq import Queue
+import redis
+
+
+_REDIS_CONN: redis.Redis | None = None
+
+
+def _get_redis_connection() -> redis.Redis:
+    """Return a cached Redis connection using ``REDIS_URL``."""
+
+    global _REDIS_CONN
+    if _REDIS_CONN is None:
+        url = _env("REDIS_URL", "redis://localhost:6379/0")
+        _REDIS_CONN = redis.from_url(url)
+    return _REDIS_CONN
 
 
 def _enqueue_analysis(track_id: int) -> None:
-    """Placeholder analysis job enqueue function.
+    """Enqueue an analysis job for the given track id."""
 
-    In production this could push to a real job queue or call out to the
-    extractor service. For now, we record the track id in a list so tests can
-    verify scheduling.
-    """
-
-    ANALYSIS_QUEUE.append(track_id)
+    q = Queue("analysis", connection=_get_redis_connection())
+    q.enqueue("worker.jobs.analyze_track", track_id)
 
 class TrackIn(BaseModel):
     title: str
@@ -406,12 +416,12 @@ def sync_lastfm_tags(since: Optional[date] = Query(None), db: Session = Depends(
 
 
 @app.post("/analyze/track/{track_id}")
-def analyze_track(track_id: int, background_tasks: BackgroundTasks):
+def analyze_track(track_id: int):
     """Queue or trigger analysis for the given track.
 
     If features already exist for the track we return a `done` status with the
     existing feature row id. Otherwise, the track id is scheduled for
-    processing via ``BackgroundTasks``.
+    processing on the analysis queue.
     """
 
     with get_db() as db:
@@ -430,7 +440,7 @@ def analyze_track(track_id: int, background_tasks: BackgroundTasks):
                 "features_id": existing.id,
             }
 
-    background_tasks.add_task(_enqueue_analysis, track_id)
+    _enqueue_analysis(track_id)
     return {"detail": "scheduled", "track_id": track_id, "status": "scheduled"}
 
 
