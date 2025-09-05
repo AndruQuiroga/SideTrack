@@ -1,21 +1,24 @@
-import os
-from functools import lru_cache
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class Settings:
-    # Optional explicit database URL (e.g., postgresql+psycopg://... or sqlite:///...)
-    database_url: str | None = os.getenv("DATABASE_URL")
+class Settings(BaseSettings):
+    """Application configuration loaded from environment variables."""
 
-    # Postgres pieces (used if DATABASE_URL not set)
-    postgres_host: str = os.getenv("POSTGRES_HOST", "localhost")
-    postgres_db: str = os.getenv("POSTGRES_DB", "vibescope")
-    postgres_user: str = os.getenv("POSTGRES_USER", "vibe")
-    postgres_password: str = os.getenv("POSTGRES_PASSWORD", "vibe")
-    postgres_port: int = int(os.getenv("POSTGRES_PORT", "5432"))
+    database_url: str | None = Field(default=None, env="DATABASE_URL")
+    postgres_host: str = Field(default="localhost", env="POSTGRES_HOST")
+    postgres_db: str = Field(default="vibescope", env="POSTGRES_DB")
+    postgres_user: str = Field(default="vibe", env="POSTGRES_USER")
+    postgres_password: str = Field(default="vibe", env="POSTGRES_PASSWORD")
+    postgres_port: int = Field(default=5432, env="POSTGRES_PORT")
 
-    # Dev convenience: auto-create tables on startup for SQLite or when explicitly enabled
-    auto_migrate: bool = os.getenv("AUTO_MIGRATE", "1").lower() in {"1", "true", "yes"}
-    env: str = os.getenv("ENV", "dev")
+    auto_migrate: bool = Field(default=True, env="AUTO_MIGRATE")
+    env: str = Field(default="dev", env="ENV")
+
+    redis_url: str = Field(default="redis://localhost:6379/0", env="REDIS_URL")
+    lastfm_api_key: str | None = Field(default=None, env="LASTFM_API_KEY")
+
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
     @property
     def db_url(self) -> str:
@@ -26,7 +29,5 @@ class Settings:
             f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
         )
 
-
-@lru_cache
 def get_settings() -> Settings:
     return Settings()

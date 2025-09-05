@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
 
 from .db import get_db, maybe_create_all
+from .config import Settings, get_settings as get_app_settings
 from .models import (
     Artist,
     Release,
@@ -60,20 +61,19 @@ import redis
 _REDIS_CONN: redis.Redis | None = None
 
 
-def _get_redis_connection() -> redis.Redis:
+def _get_redis_connection(settings: Settings) -> redis.Redis:
     """Return a cached Redis connection using ``REDIS_URL``."""
 
     global _REDIS_CONN
     if _REDIS_CONN is None:
-        url = _env("REDIS_URL", "redis://localhost:6379/0")
-        _REDIS_CONN = redis.from_url(url)
+        _REDIS_CONN = redis.from_url(settings.redis_url)
     return _REDIS_CONN
 
 
-def _enqueue_analysis(track_id: int) -> None:
+def _enqueue_analysis(track_id: int, settings: Settings) -> None:
     """Enqueue an analysis job for the given track id."""
 
-    q = Queue("analysis", connection=_get_redis_connection())
+    q = Queue("analysis", connection=_get_redis_connection(settings))
     q.enqueue("worker.jobs.analyze_track", track_id)
 
 
@@ -95,9 +95,6 @@ def _week_start(dt: datetime) -> date:
     # Monday as the start of the week
     d = dt.date()
     return d - timedelta(days=d.weekday())
-def _env(name: str, default: Optional[str] = None) -> Optional[str]:
-    import os
-    return os.getenv(name, default)
 def _lastfm_fetch_tags(
     track_id: int,
     artist: str,
@@ -241,8 +238,12 @@ def health(db: Session = Depends(get_db)):
 
 
 @app.post("/tags/lastfm/sync")
-def sync_lastfm_tags(since: Optional[date] = Query(None), db: Session = Depends(get_db)):
-    api_key = _env("LASTFM_API_KEY")
+def sync_lastfm_tags(
+    since: Optional[date] = Query(None),
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_app_settings),
+):
+    api_key = settings.lastfm_api_key
     if not api_key:
         raise HTTPException(status_code=400, detail="LASTFM_API_KEY not configured")
 
@@ -262,7 +263,7 @@ def sync_lastfm_tags(since: Optional[date] = Query(None), db: Session = Depends(
 
 
 @app.post("/analyze/track/{track_id}")
-def analyze_track(track_id: int):
+def analyze_track(track_id: int, settings: Settings = Depends(get_app_settings)):
     """Queue or trigger analysis for the given track.
 
     If features already exist for the track we return a `done` status with the
@@ -286,7 +287,7 @@ def analyze_track(track_id: int):
                 "features_id": existing.id,
             }
 
-    _enqueue_analysis(track_id)
+    _enqueue_analysis(track_id, settings)
     return {"detail": "scheduled", "track_id": track_id, "status": "scheduled"}
 
 
