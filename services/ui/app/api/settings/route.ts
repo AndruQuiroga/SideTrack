@@ -1,24 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000';
+
 export async function GET(req: NextRequest) {
-  const cookie = req.cookies.get('settings');
-  let data = {};
-  if (cookie) {
-    try {
-      data = JSON.parse(cookie.value);
-    } catch {
-      data = {};
-    }
-  }
-  return NextResponse.json(data);
+  const headers: Record<string, string> = {};
+  const uid = req.headers.get('x-user-id');
+  if (uid) headers['X-User-Id'] = uid;
+  const r = await fetch(`${API_BASE}/settings`, { headers });
+  const data = await r.json().catch(() => ({}));
+  return NextResponse.json(data, { status: r.status });
 }
 
 export async function POST(req: NextRequest) {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const uid = req.headers.get('x-user-id');
+  if (uid) headers['X-User-Id'] = uid;
   const body = await req.json();
-  const res = NextResponse.json({ ok: true });
-  res.cookies.set('settings', JSON.stringify(body), {
-    httpOnly: false,
-    path: '/',
+  const r = await fetch(`${API_BASE}/settings`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(body),
   });
-  return res;
+  const data = await r.json().catch(() => ({}));
+  return NextResponse.json(data, { status: r.status });
 }

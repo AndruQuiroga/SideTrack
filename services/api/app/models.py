@@ -163,3 +163,16 @@ class LastfmTags(Base):
     source: Mapped[str] = mapped_column(String(16), default="track")
     tags: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+
+
+class UserSettings(Base):
+    __tablename__ = "user_settings"
+
+    user_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    listenbrainz_user: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    listenbrainz_token: Mapped[Optional[str]] = mapped_column(String(256), nullable=True)
+    lastfm_user: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    lastfm_api_key: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    use_gpu: Mapped[bool] = mapped_column(Boolean, default=False)
+    use_stems: Mapped[bool] = mapped_column(Boolean, default=False)
+    use_excerpts: Mapped[bool] = mapped_column(Boolean, default=False)
