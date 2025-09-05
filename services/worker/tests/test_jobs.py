@@ -18,7 +18,7 @@ from worker.jobs import analyze_track, compute_embeddings
 # Make app package importable for database access
 sys.path.append(str(Path(__file__).resolve().parents[2] / "api"))
 from app.db import SessionLocal, maybe_create_all
-from app.models import Track, Feature
+from services.common.models import Track, Feature
 
 maybe_create_all()
 

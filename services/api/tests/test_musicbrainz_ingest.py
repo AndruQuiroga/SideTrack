@@ -77,7 +77,7 @@ def test_ingest_musicbrainz_dedup(mb_client):
     assert resp.json()["tracks"] >= 2
 
     session = SessionLocal()
-    from services.api.app.models import Artist, Release, Track
+    from services.common.models import Artist, Release, Track
 
     assert session.query(Artist).count() == 1
     assert session.query(Release).count() == 1

@@ -10,13 +10,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from services.extractor.extractor.run import (
-    Base,
-    Track,
-    Feature,
-    Embedding,
     estimate_features,
     analyze_one,
 )
+from services.common.models import Base, Track, Feature, Embedding
 
 
 SR = 44100

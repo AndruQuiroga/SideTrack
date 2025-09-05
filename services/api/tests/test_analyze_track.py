@@ -1,18 +1,19 @@
 import os
 import sys
+from pathlib import Path
 
 # Configure database before importing app modules
 os.environ.setdefault("DATABASE_URL", "sqlite:///./test_api.db")
 os.environ.setdefault("AUTO_MIGRATE", "1")
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.append(str(Path(__file__).resolve().parents[3]))
 
 import fakeredis
 from rq import Queue
 from fastapi.testclient import TestClient
-from app import main as app_main
-from app.db import SessionLocal, maybe_create_all
-from app.models import Track
+from services.api.app import main as app_main
+from services.api.app.db import SessionLocal, maybe_create_all
+from services.common.models import Track
 
 # Ensure tables exist
 maybe_create_all()

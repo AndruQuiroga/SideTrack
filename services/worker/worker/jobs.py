@@ -14,7 +14,7 @@ logger = logging.getLogger("worker")
 
 sys.path.append(str(Path(__file__).resolve().parents[2] / "api"))
 from app.db import SessionLocal  # type: ignore
-from app.models import Track, Feature  # type: ignore
+from services.common.models import Track, Feature  # type: ignore
 
 
 def _basic_features(path: str) -> dict[str, float]:

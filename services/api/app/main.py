@@ -13,7 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .db import get_db, maybe_create_all
 from .config import Settings, get_settings as get_app_settings
-from .models import (
+from services.common.models import (
     Artist,
     Release,
     Track,
@@ -24,7 +24,7 @@ from .models import (
     LastfmTags,
     Feature,
     Embedding,
-    UserSettings
+    UserSettings,
 )
 from .constants import AXES, DEFAULT_METHOD
 from . import scoring

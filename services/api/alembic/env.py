@@ -12,7 +12,7 @@ APP_DIR = os.path.join(os.path.dirname(BASE_DIR), "app")
 sys.path.append(APP_DIR)
 
 from app.config import get_settings  # type: ignore
-from app.models import Base  # type: ignore
+from services.common.models import Base  # type: ignore
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

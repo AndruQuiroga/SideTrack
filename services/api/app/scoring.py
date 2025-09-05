@@ -12,7 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from .constants import AXES, SUPPORTED_METHODS
-from .models import Embedding, Feature
+from services.common.models import Embedding, Feature
 
 
 MODEL_DIR = Path(__file__).resolve().parent / "model_data"

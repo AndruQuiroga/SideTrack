@@ -10,7 +10,7 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
 if ROOT not in sys.path:
     sys.path.append(ROOT)
 
-from services.api.app.models import Base, Track, Embedding, Feature, MoodScore
+from services.common.models import Base, Track, Embedding, Feature, MoodScore
 from services.api.app.main import score_track
 from services.api.app.constants import AXES
 
