@@ -34,6 +34,42 @@ The extractor uses GPU automatically when available (NVIDIA runtime), and falls 
 
 ---
 
+## Quick Start
+
+```bash
+# 0) Clone and enter
+git clone https://github.com/AndruQuiroga/SideTrack.git
+cd SideTrack
+
+# 1) Configure environment
+cp .env.example .env
+# (Optional) set LASTFM_API_KEY, DEFAULT_USER_ID, and NEXT_PUBLIC_API_BASE if needed
+
+# 2) Start the stack (single compose)
+docker compose up -d --build
+
+# 3) Apply DB migrations
+docker compose exec api alembic upgrade head
+
+# 4) Pull listens and aggregate (replace YOUR_USER)
+curl -H "X-User-Id: YOUR_USER" -X POST "http://localhost:8000/ingest/listens?since=2024-01-01"
+curl -H "X-User-Id: YOUR_USER" -X POST "http://localhost:8000/tags/lastfm/sync?since=2024-01-01"
+curl -H "X-User-Id: YOUR_USER" -X POST "http://localhost:8000/aggregate/weeks"
+
+# 5) Open the UI
+open http://localhost:3000
+```
+
+Developer tooling (optional):
+
+```bash
+python3.11 -m venv .venv && source .venv/bin/activate
+pip install pre-commit
+pre-commit install && pre-commit run --all-files
+```
+
+---
+
 ## Configuration (`.env`)
 
 ```
@@ -134,10 +170,10 @@ cp .env.example .env
 #     - NEXT_PUBLIC_API_BASE points the Next.js UI at the API
 #     - Override in production, e.g., https://api.your.domain
 
-# 3) Build and start
+# 3) Build and start (single compose)
 docker compose up -d --build
 
-# 4) Bootstrap DB (migrations, extensions)
+# 4) Bootstrap DB (migrations)
 docker compose exec api alembic upgrade head
 
 # 5) First sync + analysis
@@ -145,8 +181,8 @@ curl -H "X-User-Id: your-user" -X POST http://localhost:8000/ingest/listens?sinc
 curl -H "X-User-Id: your-user" -X POST http://localhost:8000/tags/lastfm/sync?since=2024-01-01
 curl -H "X-User-Id: your-user" -X POST http://localhost:8000/aggregate/weeks
 
-# 6) Open UI
-https://your.domain
+# 6) Open UI (default port)
+http://localhost:3000
 ```
 
 ---
@@ -174,7 +210,7 @@ https://your.domain
 
 ## Options & Swaps
 
-- **Scheduler**: **Prefect 2 (default)** ↔ cron (simple)
+- **Scheduler**: simple Python scheduler (current) ↔ cron
 - **Queue**: none ↔ RQ ↔ Celery
 - **DB**: TimescaleDB only ↔ +pgvector
 - **Embeddings**: OpenL3 ↔ musicnn ↔ CLAP ↔ PANNs (you can enable multiple)
