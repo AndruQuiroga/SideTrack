@@ -28,6 +28,8 @@ from .models import (
 from .constants import AXES, DEFAULT_METHOD
 from . import scoring
 
+HTTP_SESSION = requests.Session()
+
 app = FastAPI(title="SideTrack API", version="0.1.0")
 app.add_middleware(
     CORSMiddleware,
