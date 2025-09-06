@@ -1,20 +1,10 @@
 import pytest
 from fastapi import HTTPException
-from sqlalchemy import create_engine, select
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import select
 
 from sidetrack.api.constants import AXES
 from sidetrack.api.main import score_track
-from sidetrack.common.models import Base, Embedding, Feature, MoodScore, Track
-
-
-@pytest.fixture()
-def session():
-    engine = create_engine("sqlite:///:memory:", future=True)
-    Base.metadata.create_all(engine)
-    SessionLocal = sessionmaker(bind=engine, future=True)
-    with SessionLocal() as sess:
-        yield sess
+from sidetrack.common.models import Embedding, Feature, MoodScore, Track
 
 
 def test_score_track_zero_shot(session):

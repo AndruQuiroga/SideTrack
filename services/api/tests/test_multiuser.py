@@ -1,45 +1,15 @@
-import os
 from datetime import UTC, datetime
 
 import pytest
-from fastapi.testclient import TestClient
 from sqlalchemy import select
 
-os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///./test.db"
-
-from sidetrack.api import main  # noqa: E402
-from sidetrack.api.constants import DEFAULT_METHOD  # noqa: E402
-from sidetrack.api.db import SessionLocal, engine, get_db  # noqa: E402
-from sidetrack.api.main import app  # noqa: E402
-from sidetrack.common.models import Base, Listen, MoodAggWeek, MoodScore, Track  # noqa: E402
-
-Base.metadata.create_all(bind=engine.sync_engine)
+from sidetrack.api import main
+from sidetrack.api.constants import DEFAULT_METHOD
+from sidetrack.api.db import SessionLocal
+from sidetrack.common.models import Listen, MoodAggWeek, MoodScore, Track
 
 
-def override_get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-app.dependency_overrides[get_db] = override_get_db
-client = TestClient(app)
-
-
-@pytest.fixture(autouse=True)
-def clear_db():
-    """Clear tables between tests."""
-    with SessionLocal() as db:
-        db.query(MoodAggWeek).delete()
-        db.query(MoodScore).delete()
-        db.query(Listen).delete()
-        db.query(Track).delete()
-        db.commit()
-
-
-def _add_listen(user: str, value: float):
+def _add_listen(user: str, value: float) -> int:
     with SessionLocal() as db:
         tr = Track(title=f"t-{user}")
         db.add(tr)
@@ -57,7 +27,7 @@ def _add_listen(user: str, value: float):
         return tr.track_id
 
 
-def test_aggregate_weeks_is_scoped_to_user(monkeypatch):
+def test_aggregate_weeks_is_scoped_to_user(monkeypatch, client):
     monkeypatch.setattr(main, "score_track", lambda track_id, method=DEFAULT_METHOD, db=None: None)
     _add_listen("u1", 0.7)
     _add_listen("u2", 0.3)

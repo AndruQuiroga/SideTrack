@@ -1,40 +1,30 @@
-import os
-
-import fakeredis
 import numpy as np
 import soundfile as sf
 from rq import Queue, SimpleWorker
 
-os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///./test_worker.db")
-os.environ.setdefault("AUTO_MIGRATE", "1")
-
-from sidetrack.api.db import SessionLocal, maybe_create_all
+from sidetrack.api.db import SessionLocal
+from sidetrack.common.models import Feature, Track
 from sidetrack.worker.jobs import analyze_track, compute_embeddings
 
-from sidetrack.common.models import Feature, Track
 
-maybe_create_all()
-
-
-def test_jobs_are_executed():
+def test_jobs_are_executed(redis_conn, tmp_path):
     """Jobs enqueued on RQ queues should be picked up and executed."""
-    connection = fakeredis.FakeRedis()
+    audio_path = tmp_path / "test_worker.wav"
+    sf.write(audio_path, np.zeros(1024), 22050)
 
     with SessionLocal() as db:
-        audio_path = "test_worker.wav"
-        sf.write(audio_path, np.zeros(1024), 22050)
-        tr = Track(title="t", path_local=audio_path)
+        tr = Track(title="t", path_local=str(audio_path))
         db.add(tr)
         db.commit()
         track_id = tr.track_id
 
-    analysis_q = Queue("analysis", connection=connection)
-    scoring_q = Queue("scoring", connection=connection)
+    analysis_q = Queue("analysis", connection=redis_conn)
+    scoring_q = Queue("scoring", connection=redis_conn)
 
     job1 = analysis_q.enqueue(analyze_track, track_id)
     job2 = scoring_q.enqueue(compute_embeddings, [1.0, 2.0, 3.0])
 
-    worker = SimpleWorker([analysis_q, scoring_q], connection=connection)
+    worker = SimpleWorker([analysis_q, scoring_q], connection=redis_conn)
     worker.work(burst=True)
 
     with SessionLocal() as db:
