@@ -9,7 +9,7 @@ from sqlalchemy import select
 
 # Ensure repository root on sys.path and configure SQLite for tests
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
-os.environ["DATABASE_URL"] = "sqlite:///./test.db"
+os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///./test.db"
 
 from services.api.app import main  # noqa: E402
 from services.api.app.constants import DEFAULT_METHOD  # noqa: E402
@@ -17,7 +17,7 @@ from services.api.app.db import SessionLocal, engine, get_db  # noqa: E402
 from services.api.app.main import app  # noqa: E402
 from services.common.models import Base, Listen, MoodAggWeek, MoodScore, Track  # noqa: E402
 
-Base.metadata.create_all(bind=engine)
+Base.metadata.create_all(bind=engine.sync_engine)
 
 
 def override_get_db():
@@ -79,7 +79,7 @@ def test_aggregate_weeks_is_scoped_to_user(monkeypatch):
         assert m1.mean == pytest.approx(0.7)
         assert m2.mean == pytest.approx(0.3)
 
-    t_resp = client.get("/dashboard/trajectory", headers={"X-User-Id": "u1"})
+    t_resp = client.get("/api/v1/dashboard/trajectory", headers={"X-User-Id": "u1"})
     assert t_resp.status_code == 200
     t_data = t_resp.json()
     assert len(t_data["points"]) == 1

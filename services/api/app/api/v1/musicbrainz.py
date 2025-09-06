@@ -10,10 +10,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from services.common.models import Artist, Release, Track
 
-from ..db import get_db
-from ..main import get_http_client
-from ..schemas.musicbrainz import MusicbrainzIngestResponse
-from ..utils import get_or_create, mb_sanitize
+from ...db import get_db
+from ...main import get_http_client
+from ...schemas.musicbrainz import MusicbrainzIngestResponse
+from ...utils import get_or_create, mb_sanitize
 
 router = APIRouter()
 

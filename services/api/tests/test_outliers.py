@@ -8,14 +8,14 @@ from fastapi.testclient import TestClient
 
 # Ensure repository root on sys.path and configure SQLite for tests
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
-os.environ["DATABASE_URL"] = "sqlite:///./test.db"
+os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///./test.db"
 
 from services.api.app.constants import AXES, DEFAULT_METHOD  # noqa: E402
 from services.api.app.db import SessionLocal, engine, get_db  # noqa: E402
 from services.api.app.main import app  # noqa: E402
 from services.common.models import Artist, Base, Listen, MoodScore, Track  # noqa: E402
 
-Base.metadata.create_all(bind=engine)
+Base.metadata.create_all(bind=engine.sync_engine)
 
 
 def override_get_db():
@@ -74,7 +74,7 @@ def test_outliers_endpoint_returns_sorted_tracks():
     _add_track("near", "a", 0.6)
     far_tid = _add_track("far", "b", 0.0)
 
-    resp = client.get("/dashboard/outliers", headers={"X-User-Id": "u1"})
+    resp = client.get("/api/v1/dashboard/outliers", headers={"X-User-Id": "u1"})
     assert resp.status_code == 200
     data = resp.json()
     assert len(data["tracks"]) >= 3

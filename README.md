@@ -52,7 +52,7 @@ docker compose up -d --build
 docker compose exec api alembic upgrade head
 
 # 4) Pull listens and aggregate (replace YOUR_USER)
-curl -H "X-User-Id: YOUR_USER" -X POST "http://localhost:8000/ingest/listens?since=2024-01-01"
+curl -H "X-User-Id: YOUR_USER" -X POST "http://localhost:8000/api/v1/ingest/listens?since=2024-01-01"
 curl -H "X-User-Id: YOUR_USER" -X POST "http://localhost:8000/tags/lastfm/sync?since=2024-01-01"
 curl -H "X-User-Id: YOUR_USER" -X POST "http://localhost:8000/aggregate/weeks"
 
@@ -118,14 +118,21 @@ TZ=America/New_York
 ## API (FastAPI)
 
 - `GET /health` – service liveness
-- `POST /ingest/listens?since=YYYY-MM-DD` – sync listens
+- `POST /api/v1/ingest/listens?since=YYYY-MM-DD` – sync listens
 - `POST /tags/lastfm/sync?since=YYYY-MM-DD` – fetch & cache Last.fm tags
 - `POST /analyze/track/{track_id}` – compute features/embeddings
 - `POST /score/track/{track_id}` – compute mood scores
 - `POST /aggregate/weeks` – refresh weekly materializations
-- `GET /dashboard/trajectory?window=12w` – UMAP positions + arrows
-- `GET /dashboard/radar?week=YYYY-WW` – radar data vs baseline
+- `GET /api/v1/dashboard/trajectory?window=12w` – UMAP positions + arrows
+- `GET /api/v1/dashboard/radar?week=YYYY-WW` – radar data vs baseline
 - `POST /labels` – (optional) submit personal labels (axis,value)
+
+### API versioning
+
+Endpoints are prefixed with `/api/{version}`. The current stable version is
+`v1`; requests to `/` redirect to `/api/v1`. Unversioned paths are deprecated
+and will be removed in a future release. Clients should update any calls such as
+`/ingest/listens` to `/api/v1/ingest/listens` to ensure compatibility.
 
 **Multi-user note**: API endpoints that read or write user data expect an
 `X-User-Id` header identifying the caller.
@@ -177,7 +184,7 @@ docker compose up -d --build
 docker compose exec api alembic upgrade head
 
 # 5) First sync + analysis
-curl -H "X-User-Id: your-user" -X POST http://localhost:8000/ingest/listens?since=2024-01-01
+curl -H "X-User-Id: your-user" -X POST http://localhost:8000/api/v1/ingest/listens?since=2024-01-01
 curl -H "X-User-Id: your-user" -X POST http://localhost:8000/tags/lastfm/sync?since=2024-01-01
 curl -H "X-User-Id: your-user" -X POST http://localhost:8000/aggregate/weeks
 

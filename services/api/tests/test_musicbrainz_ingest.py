@@ -24,7 +24,7 @@ sample_release = {
 
 
 def _setup_app(tmp_path, monkeypatch):
-    db_url = f"sqlite:///{tmp_path}/test.db"
+    db_url = f"sqlite+aiosqlite:///{tmp_path}/test.db"
     monkeypatch.setenv("DATABASE_URL", db_url)
     root = Path(__file__).resolve().parents[3]
     if str(root) not in sys.path:
@@ -71,7 +71,7 @@ def mb_client(tmp_path, monkeypatch):
 
 def test_ingest_musicbrainz_dedup(mb_client):
     client, SessionLocal = mb_client
-    resp = client.post("/ingest/musicbrainz", params={"release_mbid": "release-mbid"})
+    resp = client.post("/api/v1/ingest/musicbrainz", params={"release_mbid": "release-mbid"})
     assert resp.status_code == 200
     data = MusicbrainzIngestResponse.model_validate(resp.json())
     assert data.tracks >= 2
@@ -101,5 +101,5 @@ def test_ingest_musicbrainz_not_found(mb_client, monkeypatch):
             return {}
 
     monkeypatch.setattr(main_mod.HTTP_SESSION, "get", lambda *a, **k: Resp())
-    resp = client.post("/ingest/musicbrainz", params={"release_mbid": "missing"})
+    resp = client.post("/api/v1/ingest/musicbrainz", params={"release_mbid": "missing"})
     assert resp.status_code == 404

@@ -431,9 +431,6 @@ async def submit_label(
     )
 
 
-from .routes import auth, dashboard, listens, musicbrainz
+from .api import router as api_router
 
-app.include_router(auth.router)
-app.include_router(listens.router)
-app.include_router(musicbrainz.router)
-app.include_router(dashboard.router)
+app.include_router(api_router)
