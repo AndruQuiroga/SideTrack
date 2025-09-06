@@ -8,8 +8,8 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Query
 
 from ...clients.listenbrainz import ListenBrainzClient, get_listenbrainz_client
 from ...config import Settings, get_settings
-from ...main import get_current_user
 from ...schemas.listens import IngestResponse, ListenIn
+from ...security import get_current_user
 from ...services.listen_service import ListenService, get_listen_service
 
 router = APIRouter()
