@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import ChartContainer from '../components/ChartContainer';
 import FilterBar from '../components/FilterBar';
+import Avatar from '../components/ui/Avatar';
 
 export default function Home() {
   return (
@@ -103,7 +104,7 @@ export default function Home() {
                   transition={{ duration: 0.3, delay: 0.05 * i }}
                   whileHover={{ scale: 1.01 }}
                 >
-                  <div className="h-8 w-8 rounded-full bg-gradient-to-br from-emerald-400 to-sky-400" />
+                  <Avatar size={32} />
                   <div className="flex-1">
                     <div className="text-sm">Track {i}</div>
                     <div className="text-xs text-muted-foreground">Artist</div>

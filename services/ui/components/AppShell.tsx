@@ -9,6 +9,7 @@ import ToastProvider from './ToastProvider';
 import HeaderActions from './HeaderActions';
 import MobileNav from './MobileNav';
 import { NavContext } from './NavContext';
+import Avatar from './ui/Avatar';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -33,7 +34,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           <div className="flex min-h-dvh flex-1 flex-col">
             <header className="sticky top-0 z-10 glass flex items-center justify-between px-4 py-3">
               <div className="flex items-center gap-2">
-                <div className="hidden h-8 w-8 rounded-full bg-gradient-to-br from-emerald-400 to-sky-400 md:block" />
+                <Avatar size={32} className="hidden md:block" />
                 <span className="text-sm text-muted-foreground">Your taste dashboard</span>
               </div>
               <div className="flex items-center gap-3 text-sm text-muted-foreground">
