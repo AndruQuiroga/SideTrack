@@ -1,21 +1,23 @@
 from datetime import UTC, datetime
 
+import pytest
+
 from sidetrack.api.constants import AXES, DEFAULT_METHOD
 from sidetrack.api.db import SessionLocal
 from sidetrack.common.models import Artist, Listen, MoodScore, Track
 
 
-def _add_track(title: str, artist: str, value: float) -> int:
+async def _add_track(title: str, artist: str, value: float) -> int:
     """Create track with uniform mood scores and a listen."""
-    with SessionLocal() as db:
+    async with SessionLocal() as db:
         art = Artist(name=artist)
         db.add(art)
-        db.commit()
-        db.refresh(art)
+        await db.commit()
+        await db.refresh(art)
         tr = Track(title=title, artist_id=art.artist_id)
         db.add(tr)
-        db.commit()
-        db.refresh(tr)
+        await db.commit()
+        await db.refresh(tr)
         db.add_all(
             [
                 Listen(user_id="u1", track_id=tr.track_id, played_at=datetime.now(UTC)),
@@ -30,16 +32,17 @@ def _add_track(title: str, artist: str, value: float) -> int:
                 ],
             ]
         )
-        db.commit()
+        await db.commit()
         return tr.track_id
 
 
-def test_outliers_endpoint_returns_sorted_tracks(client):
-    _add_track("center", "a", 0.5)
-    _add_track("near", "a", 0.6)
-    far_tid = _add_track("far", "b", 0.0)
+@pytest.mark.asyncio
+async def test_outliers_endpoint_returns_sorted_tracks(async_client):
+    await _add_track("center", "a", 0.5)
+    await _add_track("near", "a", 0.6)
+    far_tid = await _add_track("far", "b", 0.0)
 
-    resp = client.get("/api/v1/dashboard/outliers", headers={"X-User-Id": "u1"})
+    resp = await async_client.get("/api/v1/dashboard/outliers", headers={"X-User-Id": "u1"})
     assert resp.status_code == 200
     data = resp.json()
     assert len(data["tracks"]) >= 3
