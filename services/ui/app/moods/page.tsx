@@ -4,6 +4,7 @@ import { apiFetch } from '../../lib/api';
 import MoodsStreamgraph from '../../components/charts/MoodsStreamgraph';
 import ChartContainer from '../../components/ChartContainer';
 import FilterBar from '../../components/FilterBar';
+import { Card } from '../../components/ui/card';
 
 type Trajectory = { points: { week: string }[] };
 
@@ -46,7 +47,7 @@ export default function Moods() {
   }, []);
 
   const content = useMemo(() => {
-    if (loading) return <div className="h-[340px] w-full rounded-lg glass" />;
+    if (loading) return <Card variant="glass" className="h-[340px] w-full" />;
     if (!series.length) return <div className="text-sm text-muted-foreground">No data yet.</div>;
     return <MoodsStreamgraph data={series} axes={axes} />;
   }, [loading, series, axes]);
