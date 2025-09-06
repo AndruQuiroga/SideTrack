@@ -7,6 +7,8 @@ interface SettingsData {
   listenBrainzToken: string;
   lastfmUser: string;
   lastfmConnected: boolean;
+  spotifyUser: string;
+  spotifyConnected: boolean;
   useGpu: boolean;
   useStems: boolean;
   useExcerpts: boolean;
@@ -17,6 +19,8 @@ export default function Settings() {
   const [lbToken, setLbToken] = useState('');
   const [lfmUser, setLfmUser] = useState('');
   const [lfmConnected, setLfmConnected] = useState(false);
+  const [spUser, setSpUser] = useState('');
+  const [spConnected, setSpConnected] = useState(false);
   const [useGpu, setUseGpu] = useState(false);
   const [useStems, setUseStems] = useState(false);
   const [useExcerpts, setUseExcerpts] = useState(false);
@@ -31,6 +35,8 @@ export default function Settings() {
         setLbToken(data.listenBrainzToken || '');
         setLfmUser(data.lastfmUser || '');
         setLfmConnected(!!data.lastfmConnected);
+        setSpUser(data.spotifyUser || '');
+        setSpConnected(!!data.spotifyConnected);
         setUseGpu(!!data.useGpu);
         setUseStems(!!data.useStems);
         setUseExcerpts(!!data.useExcerpts);
@@ -90,6 +96,21 @@ export default function Settings() {
     setLfmConnected(false);
   }
 
+  async function handleSpotifyConnect() {
+    const callback = encodeURIComponent(`${window.location.origin}/spotify/callback`);
+    const res = await fetch(`/api/auth/spotify/login?callback=${callback}`);
+    const data = await res.json().catch(() => ({}));
+    if (data.url) {
+      window.location.href = data.url;
+    }
+  }
+
+  async function handleSpotifyDisconnect() {
+    await fetch('/api/auth/spotify/disconnect', { method: 'DELETE' });
+    setSpUser('');
+    setSpConnected(false);
+  }
+
   return (
     <section>
       <h2>Settings</h2>
@@ -127,6 +148,21 @@ export default function Settings() {
           ) : (
             <button type="button" onClick={handleConnect}>
               Connect Last.fm
+            </button>
+          )}
+        </fieldset>
+        <fieldset>
+          <legend>Connect Spotify</legend>
+          {spConnected ? (
+            <div>
+              Connected as {spUser}{' '}
+              <button type="button" onClick={handleSpotifyDisconnect}>
+                Disconnect
+              </button>
+            </div>
+          ) : (
+            <button type="button" onClick={handleSpotifyConnect}>
+              Connect Spotify
             </button>
           )}
         </fieldset>

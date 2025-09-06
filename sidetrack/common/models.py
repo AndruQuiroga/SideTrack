@@ -177,6 +177,12 @@ class UserSettings(Base):
     lastfm_session_key: Mapped[str | None] = mapped_column(
         "lastfm_api_key", String(128), nullable=True
     )
+    spotify_user: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    spotify_access_token: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    spotify_refresh_token: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    spotify_token_expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     use_gpu: Mapped[bool] = mapped_column(Boolean, default=False)
     use_stems: Mapped[bool] = mapped_column(Boolean, default=False)
     use_excerpts: Mapped[bool] = mapped_column(Boolean, default=False)
