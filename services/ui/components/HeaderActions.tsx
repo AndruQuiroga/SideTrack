@@ -2,7 +2,9 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useToast } from './ToastProvider';
-import { Sync } from 'lucide-react';
+import dynamic from 'next/dynamic';
+
+const Sync = dynamic(() => import('lucide-react/lib/esm/icons/sync'));
 
 export default function HeaderActions() {
   const toast = useToast();
