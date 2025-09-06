@@ -15,6 +15,7 @@
     "@tanstack/react-query": "^5.87.1",
     "@visx/axis": "3.3.0",
     "@visx/grid": "3.3.0",
+    "@visx/legend": "^3.12.0",
     "@visx/shape": "3.3.0",
     "@visx/tooltip": "3.3.0",
     "@visx/xychart": "3.10.1",
@@ -28,7 +29,8 @@
     "next": "14.2.5",
     "next-themes": "^0.2.1",
     "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "react-dom": "18.3.1",
+    "react-use-measure": "^2.1.7"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "6.4.2",
