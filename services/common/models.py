@@ -173,7 +173,9 @@ class UserSettings(Base):
     listenbrainz_user: Mapped[str | None] = mapped_column(String(128), nullable=True)
     listenbrainz_token: Mapped[str | None] = mapped_column(String(256), nullable=True)
     lastfm_user: Mapped[str | None] = mapped_column(String(128), nullable=True)
-    lastfm_api_key: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    lastfm_session_key: Mapped[str | None] = mapped_column(
+        "lastfm_api_key", String(128), nullable=True
+    )
     use_gpu: Mapped[bool] = mapped_column(Boolean, default=False)
     use_stems: Mapped[bool] = mapped_column(Boolean, default=False)
     use_excerpts: Mapped[bool] = mapped_column(Boolean, default=False)

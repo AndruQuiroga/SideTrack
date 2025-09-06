@@ -1,3 +1,4 @@
+import hashlib
 import time
 from datetime import date, datetime, timedelta
 
@@ -81,8 +82,6 @@ class TrackPathIn(BaseModel):
 class SettingsIn(BaseModel):
     listenBrainzUser: str | None = None
     listenBrainzToken: str | None = None
-    lastfmUser: str | None = None
-    lastfmApiKey: str | None = None
     useGpu: bool = False
     useStems: bool = False
     useExcerpts: bool = False
@@ -92,6 +91,13 @@ def _week_start(dt: datetime) -> date:
     # Monday as the start of the week
     d = dt.date()
     return d - timedelta(days=d.weekday())
+
+
+def _lastfm_sign(params: dict[str, str], secret: str) -> str:
+    items = "".join(f"{k}{v}" for k, v in sorted(params.items()))
+    m = hashlib.md5()
+    m.update((items + secret).encode("utf-8"))
+    return m.hexdigest()
 
 
 def _lastfm_fetch_tags(
@@ -175,6 +181,63 @@ def _lastfm_fetch_tags(
     return out
 
 
+@app.get("/auth/lastfm/login")
+def lastfm_login(
+    callback: str,
+    settings: Settings = Depends(get_app_settings),
+):
+    if not settings.lastfm_api_key:
+        raise HTTPException(status_code=400, detail="LASTFM_API_KEY not configured")
+    url = f"https://www.last.fm/api/auth/?api_key={settings.lastfm_api_key}&cb={callback}"
+    return {"url": url}
+
+
+@app.get("/auth/lastfm/session")
+def lastfm_session(
+    token: str,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user),
+    settings: Settings = Depends(get_app_settings),
+):
+    if not settings.lastfm_api_key or not settings.lastfm_api_secret:
+        raise HTTPException(status_code=400, detail="Last.fm API not configured")
+    params = {
+        "method": "auth.getSession",
+        "api_key": settings.lastfm_api_key,
+        "token": token,
+    }
+    params["api_sig"] = _lastfm_sign(params, settings.lastfm_api_secret)
+    params["format"] = "json"
+    r = HTTP_SESSION.get("https://ws.audioscrobbler.com/2.0/", params=params, timeout=30)
+    r.raise_for_status()
+    data = r.json()
+    session = data.get("session") or {}
+    key = session.get("key")
+    name = session.get("name")
+    if not key or not name:
+        raise HTTPException(status_code=400, detail="Invalid session response")
+    row = db.get(UserSettings, user_id)
+    if not row:
+        row = UserSettings(user_id=user_id)
+    row.lastfm_user = name
+    row.lastfm_session_key = key
+    db.add(row)
+    db.commit()
+    return {"ok": True, "lastfmUser": name}
+
+
+@app.delete("/auth/lastfm/session")
+def lastfm_disconnect(db: Session = Depends(get_db), user_id: str = Depends(get_current_user)):
+    row = db.get(UserSettings, user_id)
+    if not row:
+        return {"ok": True}
+    row.lastfm_user = None
+    row.lastfm_session_key = None
+    db.add(row)
+    db.commit()
+    return {"ok": True}
+
+
 @app.get("/settings")
 def get_settings(
     db: Session = Depends(get_db),
@@ -187,7 +250,7 @@ def get_settings(
         "listenBrainzUser": row.listenbrainz_user,
         "listenBrainzToken": row.listenbrainz_token,
         "lastfmUser": row.lastfm_user,
-        "lastfmApiKey": row.lastfm_api_key,
+        "lastfmConnected": bool(row.lastfm_session_key),
         "useGpu": row.use_gpu,
         "useStems": row.use_stems,
         "useExcerpts": row.use_excerpts,
@@ -203,8 +266,6 @@ def post_settings(
     errors = []
     if bool(payload.listenBrainzUser) ^ bool(payload.listenBrainzToken):
         errors.append("ListenBrainz user and token required together")
-    if bool(payload.lastfmUser) ^ bool(payload.lastfmApiKey):
-        errors.append("Last.fm user and API key required together")
     if errors:
         raise HTTPException(status_code=400, detail=errors)
 
@@ -214,8 +275,6 @@ def post_settings(
 
     row.listenbrainz_user = payload.listenBrainzUser
     row.listenbrainz_token = payload.listenBrainzToken
-    row.lastfm_user = payload.lastfmUser
-    row.lastfm_api_key = payload.lastfmApiKey
     row.use_gpu = payload.useGpu
     row.use_stems = payload.useStems
     row.use_excerpts = payload.useExcerpts

@@ -34,8 +34,6 @@ describe('Settings page', () => {
     render(<Settings />);
     await userEvent.type(screen.getByPlaceholderText('ListenBrainz username'), 'lbuser');
     await userEvent.type(screen.getByPlaceholderText('Token'), 'lbtoken');
-    await userEvent.type(screen.getByPlaceholderText('Last.fm username'), 'lfmuser');
-    await userEvent.type(screen.getByPlaceholderText('API key'), 'lfmkey');
     await userEvent.click(screen.getByLabelText('Use GPU'));
     await userEvent.click(screen.getByLabelText('Extract stems'));
     await userEvent.click(screen.getByLabelText('Use excerpts'));
@@ -46,8 +44,6 @@ describe('Settings page', () => {
     expect(body).toEqual({
       listenBrainzUser: 'lbuser',
       listenBrainzToken: 'lbtoken',
-      lastfmUser: 'lfmuser',
-      lastfmApiKey: 'lfmkey',
       useGpu: true,
       useStems: true,
       useExcerpts: true,

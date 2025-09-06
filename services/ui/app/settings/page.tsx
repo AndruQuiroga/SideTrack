@@ -6,7 +6,7 @@ interface SettingsData {
   listenBrainzUser: string;
   listenBrainzToken: string;
   lastfmUser: string;
-  lastfmApiKey: string;
+  lastfmConnected: boolean;
   useGpu: boolean;
   useStems: boolean;
   useExcerpts: boolean;
@@ -16,7 +16,7 @@ export default function Settings() {
   const [lbUser, setLbUser] = useState('');
   const [lbToken, setLbToken] = useState('');
   const [lfmUser, setLfmUser] = useState('');
-  const [lfmApiKey, setLfmApiKey] = useState('');
+  const [lfmConnected, setLfmConnected] = useState(false);
   const [useGpu, setUseGpu] = useState(false);
   const [useStems, setUseStems] = useState(false);
   const [useExcerpts, setUseExcerpts] = useState(false);
@@ -30,7 +30,7 @@ export default function Settings() {
         setLbUser(data.listenBrainzUser || '');
         setLbToken(data.listenBrainzToken || '');
         setLfmUser(data.lastfmUser || '');
-        setLfmApiKey(data.lastfmApiKey || '');
+        setLfmConnected(!!data.lastfmConnected);
         setUseGpu(!!data.useGpu);
         setUseStems(!!data.useStems);
         setUseExcerpts(!!data.useExcerpts);
@@ -46,9 +46,6 @@ export default function Settings() {
     if ((lbUser && !lbToken) || (!lbUser && lbToken)) {
       errs.push('ListenBrainz user and token required together');
     }
-    if ((lfmUser && !lfmApiKey) || (!lfmUser && lfmApiKey)) {
-      errs.push('Last.fm user and API key required together');
-    }
     setErrors(errs);
     setMessage('');
     if (errs.length > 0) return;
@@ -56,8 +53,6 @@ export default function Settings() {
     const body: SettingsData = {
       listenBrainzUser: lbUser,
       listenBrainzToken: lbToken,
-      lastfmUser: lfmUser,
-      lastfmApiKey: lfmApiKey,
       useGpu,
       useStems,
       useExcerpts,
@@ -78,6 +73,21 @@ export default function Settings() {
       return;
     }
     setMessage('Settings saved');
+  }
+
+  async function handleConnect() {
+    const callback = encodeURIComponent(`${window.location.origin}/lastfm/callback`);
+    const res = await fetch(`/api/auth/lastfm/login?callback=${callback}`);
+    const data = await res.json().catch(() => ({}));
+    if (data.url) {
+      window.location.href = data.url;
+    }
+  }
+
+  async function handleDisconnect() {
+    await fetch('/api/auth/lastfm/session', { method: 'DELETE' });
+    setLfmUser('');
+    setLfmConnected(false);
   }
 
   return (
@@ -107,22 +117,18 @@ export default function Settings() {
         </fieldset>
         <fieldset>
           <legend>Connect Last.fm</legend>
-          <label>
-            Username
-            <input
-              placeholder="Last.fm username"
-              value={lfmUser}
-              onChange={(e) => setLfmUser(e.target.value)}
-            />
-          </label>
-          <label>
-            API Key
-            <input
-              placeholder="API key"
-              value={lfmApiKey}
-              onChange={(e) => setLfmApiKey(e.target.value)}
-            />
-          </label>
+          {lfmConnected ? (
+            <div>
+              Connected as {lfmUser}{' '}
+              <button type="button" onClick={handleDisconnect}>
+                Disconnect
+              </button>
+            </div>
+          ) : (
+            <button type="button" onClick={handleConnect}>
+              Connect Last.fm
+            </button>
+          )}
         </fieldset>
         <fieldset>
           <legend>Options</legend>
