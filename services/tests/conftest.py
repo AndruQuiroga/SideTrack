@@ -9,11 +9,16 @@ import pytest
 import pytest_asyncio
 from dotenv import load_dotenv
 from fastapi.testclient import TestClient
+from httpx import ASGITransport, AsyncClient
+
+ROOT = Path(__file__).resolve().parents[2]
+
+# Configure a default SQLite database before importing the app
+os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
+os.environ["AUTO_MIGRATE"] = "1"
 
 from sidetrack.api import main as app_main
 from sidetrack.api.db import SessionLocal, get_db, maybe_create_all
-
-ROOT = Path(__file__).resolve().parents[2]
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -68,4 +73,28 @@ def client(db, redis_conn):
     app_main.app.dependency_overrides[get_db] = override_get_db
     with TestClient(app_main.app) as c:
         yield c
+    app_main.app.dependency_overrides.clear()
+
+
+@pytest_asyncio.fixture
+async def async_client(db, redis_conn):
+    """Return an AsyncClient with DB and Redis fixtures configured."""
+    app_main._REDIS_CONN = redis_conn
+
+    async def override_get_db():
+        async with SessionLocal() as db_session:
+            yield db_session
+
+    app_main.app.dependency_overrides[get_db] = override_get_db
+
+    async def _noop_create_all():
+        return None
+
+    app_main.maybe_create_all = _noop_create_all  # type: ignore
+
+    async with app_main.app.router.lifespan_context(app_main.app):
+        transport = ASGITransport(app=app_main.app)
+        async with AsyncClient(transport=transport, base_url="http://testserver") as ac:
+            yield ac
+
     app_main.app.dependency_overrides.clear()

@@ -1,6 +1,10 @@
 import copy
 
+import copy
+
 import pytest
+import pytest_asyncio
+from sqlalchemy import func, select
 
 from sidetrack.api import main as main_mod
 from sidetrack.api.db import SessionLocal
@@ -24,8 +28,8 @@ sample_release = {
 }
 
 
-@pytest.fixture
-def mb_client(client, monkeypatch):
+@pytest_asyncio.fixture
+async def mb_client(async_client, monkeypatch):
     def fake_get(url, params=None, headers=None, timeout=30):
         class Resp:
             def raise_for_status(self):
@@ -38,23 +42,26 @@ def mb_client(client, monkeypatch):
 
     monkeypatch.setattr(main_mod.HTTP_SESSION, "get", fake_get)
     monkeypatch.setattr(main_mod.time, "sleep", lambda x: None)
-    return client
+    return async_client
 
 
-def test_ingest_musicbrainz_dedup(mb_client):
-    resp = mb_client.post("/api/v1/ingest/musicbrainz", params={"release_mbid": "release-mbid"})
+@pytest.mark.asyncio
+async def test_ingest_musicbrainz_dedup(mb_client):
+    resp = await mb_client.post(
+        "/api/v1/ingest/musicbrainz", params={"release_mbid": "release-mbid"}
+    )
     assert resp.status_code == 200
     data = MusicbrainzIngestResponse.model_validate(resp.json())
     assert data.tracks >= 2
 
-    session = SessionLocal()
-    assert session.query(Artist).count() == 1
-    assert session.query(Release).count() == 1
-    assert session.query(Track).count() >= 2
-    session.close()
+    async with SessionLocal() as session:
+        assert (await session.scalar(select(func.count()).select_from(Artist))) == 1
+        assert (await session.scalar(select(func.count()).select_from(Release))) == 1
+        assert (await session.scalar(select(func.count()).select_from(Track))) >= 2
 
 
-def test_ingest_musicbrainz_not_found(mb_client, monkeypatch):
+@pytest.mark.asyncio
+async def test_ingest_musicbrainz_not_found(mb_client, monkeypatch):
     class Resp:
         def raise_for_status(self):
             from requests import HTTPError, Response
@@ -67,5 +74,7 @@ def test_ingest_musicbrainz_not_found(mb_client, monkeypatch):
             return {}
 
     monkeypatch.setattr(main_mod.HTTP_SESSION, "get", lambda *a, **k: Resp())
-    resp = mb_client.post("/api/v1/ingest/musicbrainz", params={"release_mbid": "missing"})
+    resp = await mb_client.post(
+        "/api/v1/ingest/musicbrainz", params={"release_mbid": "missing"}
+    )
     assert resp.status_code == 404
