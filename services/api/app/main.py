@@ -532,8 +532,9 @@ def submit_label(
     }
 
 
-from .routes import dashboard, listens, musicbrainz
+from .routes import auth, dashboard, listens, musicbrainz
 
+app.include_router(auth.router)
 app.include_router(listens.router)
 app.include_router(musicbrainz.router)
 app.include_router(dashboard.router)

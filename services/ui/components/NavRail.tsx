@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Compass, Activity, Radar, Target, Settings, Home } from 'lucide-react';
+import { Compass, Activity, Radar, Target, Settings, Home, User } from 'lucide-react';
 import clsx from 'clsx';
 import { motion } from 'framer-motion';
 
@@ -11,6 +11,7 @@ const nav = [
   { href: '/moods', label: 'Moods', icon: Activity },
   { href: '/radar', label: 'Radar', icon: Radar },
   { href: '/outliers', label: 'Outliers', icon: Target },
+  { href: '/account', label: 'Account', icon: User },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
