@@ -1,7 +1,9 @@
 import logging
+import time
 from datetime import date, datetime, timedelta
 
 import httpx
+import requests
 import structlog
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -42,9 +44,11 @@ setup_logging()
 setup_tracing("sidetrack-api")
 
 
+HTTP_SESSION = requests.Session()
+
+
 async def get_http_client():
-    async with httpx.AsyncClient() as client:
-        yield client
+    yield HTTP_SESSION
 
 
 app = FastAPI(title="SideTrack API", version="0.1.0")

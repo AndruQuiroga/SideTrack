@@ -1,9 +1,8 @@
 """Endpoints for MusicBrainz-related ingestion."""
 
-import time
 from datetime import datetime
 
-import httpx
+import requests
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
@@ -12,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sidetrack.common.models import Artist, Release, Track
 
 from ...db import get_db
-from ...main import get_http_client
+from ...main import HTTP_SESSION, time
 from ...schemas.musicbrainz import MusicbrainzIngestResponse
 from ...utils import get_or_create, mb_sanitize
 
@@ -27,7 +26,7 @@ router = APIRouter()
 _MB_LAST_CALL = 0.0
 
 
-async def _mb_fetch_release(client: httpx.AsyncClient, mbid: str) -> dict:
+def _mb_fetch_release(mbid: str) -> dict:
     """Fetch release info from MusicBrainz with simple rate limiting."""
     global _MB_LAST_CALL
     wait = 1.0 - (time.time() - _MB_LAST_CALL)
@@ -37,7 +36,7 @@ async def _mb_fetch_release(client: httpx.AsyncClient, mbid: str) -> dict:
     url = f"https://musicbrainz.org/ws/2/release/{mbid}"
     params = {"inc": "recordings+artists", "fmt": "json"}
     headers = {"User-Agent": "SideTrack/0.1 (+https://example.com)"}
-    r = await client.get(url, params=params, headers=headers, timeout=30)
+    r = HTTP_SESSION.get(url, params=params, headers=headers, timeout=30)
     r.raise_for_status()
     return r.json()
 
@@ -46,11 +45,12 @@ async def _mb_fetch_release(client: httpx.AsyncClient, mbid: str) -> dict:
 async def ingest_musicbrainz(
     release_mbid: str = Query(..., description="MusicBrainz release MBID"),
     db: AsyncSession = Depends(get_db),
-    client: httpx.AsyncClient = Depends(get_http_client),
 ):
     try:
-        data = await _mb_fetch_release(client, release_mbid)
-    except httpx.HTTPError as exc:
+        from asyncio import to_thread
+
+        data = await to_thread(_mb_fetch_release, release_mbid)
+    except requests.HTTPError as exc:
         status = getattr(exc.response, "status_code", None)
         if status == 404:
             raise HTTPException(status_code=404, detail="release not found")
