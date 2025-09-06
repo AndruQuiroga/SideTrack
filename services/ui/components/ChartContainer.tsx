@@ -10,7 +10,7 @@ type Props = {
 
 export default function ChartContainer({ title, subtitle, actions, children }: Props) {
   return (
-    <Card asChild variant="glass" className="p-md">
+    <Card asChild variant="glass" className="p-4">
       <section>
         <div className="mb-3 flex items-center justify-between gap-4">
           <div>
@@ -19,7 +19,7 @@ export default function ChartContainer({ title, subtitle, actions, children }: P
           </div>
           {actions && <div className="flex items-center gap-2">{actions}</div>}
         </div>
-        <div className="min-h-[160px]">{children}</div>
+        <div className="min-h-[clamp(120px,25vh,160px)]">{children}</div>
       </section>
     </Card>
   );

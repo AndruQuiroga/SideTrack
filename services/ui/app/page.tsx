@@ -8,7 +8,7 @@ import Avatar from '../components/ui/Avatar';
 
 export default function Home() {
   return (
-    <section className="space-y-6">
+    <section className="@container space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Overview</h1>
@@ -22,7 +22,7 @@ export default function Home() {
         </Link>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 @[640px]:grid-cols-2 @[1024px]:grid-cols-4">
         {[
           <MetricCard
             key="m1"
@@ -55,7 +55,7 @@ export default function Home() {
           value="12w"
         />
       </div>
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 @[768px]:grid-cols-2">
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           whileInView={{ opacity: 1, y: 0 }}
