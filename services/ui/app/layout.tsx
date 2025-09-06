@@ -3,26 +3,14 @@ export const metadata = {
   description: 'Taste trajectory dashboard',
 };
 
-import ApiStatus from './api-status';
+import './globals.css';
+import AppShell from '../components/AppShell';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body style={{ fontFamily: 'system-ui, sans-serif', margin: 0 }}>
-        <header
-          style={{
-            padding: '12px 16px',
-            borderBottom: '1px solid #eee',
-            display: 'flex',
-            justifyContent: 'space-between',
-          }}
-        >
-          <strong>SideTrack</strong>
-          <span>
-            <ApiStatus />
-          </span>
-        </header>
-        <main style={{ padding: 16 }}>{children}</main>
+    <html lang="en" suppressHydrationWarning>
+      <body className="font-sans antialiased">
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

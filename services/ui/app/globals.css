@@ -1,0 +1,37 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 228 16% 6%; /* #0E0F12 */
+  --foreground: 220 14% 96%; /* off-white */
+  --muted: 228 12% 14%;
+  --muted-foreground: 220 10% 70%;
+  --card: 228 12% 10%;
+  --card-foreground: var(--foreground);
+  --border: 228 12% 18%;
+  --input: 228 12% 18%;
+  --primary: 158 84% 58%; /* #2FE08B */
+  --primary-foreground: 222 14% 12%;
+  --secondary: 196 100% 62%; /* #39D2FF */
+  --secondary-foreground: 222 14% 12%;
+  --accent: 196 100% 62%;
+  --accent-foreground: 222 14% 12%;
+  --ring: 196 100% 62%;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: saturate(140%) blur(8px);
+  border: 1px solid hsl(var(--border));
+}

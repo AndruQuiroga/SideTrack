@@ -12,7 +12,18 @@
   "dependencies": {
     "next": "14.2.5",
     "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "react-dom": "18.3.1",
+    "clsx": "2.1.1",
+    "lucide-react": "0.441.0",
+    "framer-motion": "11.0.14",
+    "@visx/xychart": "3.10.1",
+    "@visx/shape": "3.3.0",
+    "@visx/tooltip": "3.3.0",
+    "@visx/axis": "3.3.0",
+    "@visx/grid": "3.3.0",
+    "d3-array": "3.2.4",
+    "d3-scale": "4.0.2",
+    "d3-shape": "3.2.0"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "6.4.2",
@@ -21,8 +32,11 @@
     "@types/jest": "29.5.11",
     "@types/node": "20.14.10",
     "@types/react": "18.3.3",
+    "autoprefixer": "10.4.19",
     "jest": "29.7.0",
     "jest-environment-jsdom": "^29.7.0",
+    "postcss": "8.4.41",
+    "tailwindcss": "3.4.10",
     "typescript": "5.5.4"
   }
 }

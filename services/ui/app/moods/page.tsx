@@ -1,58 +1,61 @@
+'use client';
+import { useEffect, useMemo, useState } from 'react';
 import { apiFetch } from '../../lib/api';
+import MoodsStreamgraph from '../../components/charts/MoodsStreamgraph';
 
-type TrajectoryPoint = { week: string; x: number; y: number };
-type Trajectory = { points: TrajectoryPoint[] };
-type FeatureResponse = { feature?: Record<string, unknown> } | null;
+type Trajectory = { points: { week: string }[] };
 
-async function getAgg(): Promise<Trajectory> {
-  // Use trajectory weeks and then pull radar for each to assemble a simple table
-  const trajRes = await apiFetch('/dashboard/trajectory', { next: { revalidate: 0 } });
-  if (!trajRes.ok) return { points: [] } as Trajectory;
-  const traj = (await trajRes.json()) as Trajectory;
-  return traj;
-}
+export default function Moods() {
+  const [loading, setLoading] = useState(true);
+  const [series, setSeries] = useState<{ week: Date; [axis: string]: number | Date }[]>([]);
+  const [axes] = useState<string[]>([
+    'energy',
+    'valence',
+    'danceability',
+    'brightness',
+    'pumpiness',
+  ]);
 
-async function getFeatures(trackId: number): Promise<FeatureResponse> {
-  const res = await apiFetch(`/tracks/${trackId}/features`, { next: { revalidate: 0 } });
-  if (!res.ok) return null;
-  return (await res.json()) as FeatureResponse;
-}
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const trajRes = await apiFetch('/dashboard/trajectory');
+        const traj: Trajectory = await trajRes.json();
+        const weeks = (traj.points ?? []).slice(-12).map((p) => p.week);
+        const rows = await Promise.all(
+          weeks.map(async (w) => {
+            const r = await apiFetch(`/dashboard/radar?week=${encodeURIComponent(w)}`);
+            const j = await r.json();
+            return { week: new Date(j.week), ...j.axes };
+          }),
+        );
+        if (!mounted) return;
+        setSeries(rows);
+      } catch (e) {
+        setSeries([]);
+      } finally {
+        setLoading(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
-export default async function Moods() {
-  const traj = await getAgg();
-  const feat = await getFeatures(1); // demo track id
+  const content = useMemo(() => {
+    if (loading) return <div className="h-[340px] w-full rounded-lg glass" />;
+    if (!series.length) return <div className="text-sm text-muted-foreground">No data yet.</div>;
+    return <MoodsStreamgraph data={series} axes={axes} />;
+  }, [loading, series, axes]);
+
   return (
-    <section>
-      <h2>Moods</h2>
-      {!traj.points || traj.points.length === 0 ? (
-        <p>No data yet. Ingest listens and aggregate weeks.</p>
-      ) : (
-        <>
-          <p>Recent weeks:</p>
-          <ul>
-            {traj.points.map((p: TrajectoryPoint) => (
-              <li key={p.week}>
-                <code>{p.week}</code> – valence: {p.x.toFixed(3)}, energy: {p.y.toFixed(3)}
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-      <h3>Track Features</h3>
-      {feat && feat.feature ? (
-        <table>
-          <tbody>
-            {Object.entries(feat.feature).map(([k, v]) => (
-              <tr key={k}>
-                <td>{k}</td>
-                <td>{String(v)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      ) : (
-        <p>No features available.</p>
-      )}
+    <section className="space-y-4">
+      <div>
+        <h2 className="text-xl font-semibold">Moods</h2>
+        <p className="text-sm text-muted-foreground">Stacked axes over the last 12 weeks</p>
+      </div>
+      {content}
     </section>
   );
 }
