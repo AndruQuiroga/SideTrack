@@ -2,11 +2,16 @@ from __future__ import annotations
 
 from contextlib import asynccontextmanager
 
+import structlog
+from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from services.common.models import Base
 
 from .config import get_settings
+
+logger = structlog.get_logger(__name__)
 
 _engine = None
 _SessionLocal: async_sessionmaker[AsyncSession] | None = None
@@ -19,6 +24,7 @@ def _get_sessionmaker() -> async_sessionmaker[AsyncSession]:
     settings = get_settings()
     if _SessionLocal is None or _current_url != settings.db_url:
         _engine = create_async_engine(settings.db_url, pool_pre_ping=True)
+        SQLAlchemyInstrumentor().instrument(engine=_engine)
         _SessionLocal = async_sessionmaker(bind=_engine, autoflush=False, autocommit=False)
         _current_url = settings.db_url
         globals()["engine"] = _engine
@@ -46,10 +52,12 @@ async def maybe_create_all() -> None:
         if get_settings().auto_migrate or url.startswith("sqlite"):
             async with _engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
-    except Exception:
-        # Silent fail to avoid blocking API start if DB isn't reachable yet (e.g., compose race)
-        pass
+    except SQLAlchemyError as exc:
+        logger.warning(
+            "DB init failed", error=str(exc)
+        )
 
 
 # initialize on module import
 _get_sessionmaker()
+

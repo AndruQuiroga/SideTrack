@@ -2,6 +2,7 @@
 
 from datetime import UTC, date, datetime, timedelta
 
+import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,6 +14,7 @@ from ...db import get_db
 from ...security import get_current_user
 
 router = APIRouter()
+logger = structlog.get_logger(__name__)
 
 
 @router.get("/dashboard/trajectory")
@@ -30,7 +32,8 @@ async def dashboard_trajectory(
             n_weeks = int(window[:-1]) * 4
         else:
             n_weeks = 12
-    except Exception:
+    except ValueError:
+        logger.warning("Invalid window format", window=window)
         n_weeks = 12
 
     # collect recent weeks
@@ -82,11 +85,12 @@ async def dashboard_radar(
     wk_date: date | None = None
     try:
         wk_date = datetime.fromisoformat(week).date()
-    except Exception:
+    except ValueError:
         try:
             y, w = week.split("-")
             wk_date = datetime.fromisocalendar(int(y), int(w), 1).date()
-        except Exception:
+        except ValueError:
+            logger.warning("Invalid week format", week=week)
             pass
     if wk_date is None:
         raise HTTPException(status_code=400, detail="Invalid week format")
@@ -191,3 +195,4 @@ async def dashboard_outliers(
 
     outliers.sort(key=lambda x: x["distance"], reverse=True)
     return {"tracks": outliers[:limit], "centroid": centroid}
+
