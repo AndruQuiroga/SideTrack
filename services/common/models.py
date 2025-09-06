@@ -179,3 +179,11 @@ class UserSettings(Base):
     use_gpu: Mapped[bool] = mapped_column(Boolean, default=False)
     use_stems: Mapped[bool] = mapped_column(Boolean, default=False)
     use_excerpts: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class UserAccount(Base):
+    __tablename__ = "user_account"
+
+    user_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    password_hash: Mapped[str] = mapped_column(String(128))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
