@@ -1,11 +1,14 @@
 import type { Config } from 'tailwindcss';
+import containerQueries from '@tailwindcss/container-queries';
 
 export const tokens = {
   spacing: {
-    xs: '0.25rem',
-    sm: '0.5rem',
-    md: '1rem',
-    lg: '1.5rem',
+    1: 'var(--space-1)',
+    2: 'var(--space-2)',
+    3: 'var(--space-3)',
+    4: 'var(--space-4)',
+    5: 'var(--space-5)',
+    6: 'var(--space-6)',
   },
   colors: {
     background: 'hsl(var(--background))',
@@ -85,7 +88,7 @@ const config: Config = {
       },
     },
   },
-  plugins: [],
+  plugins: [containerQueries],
 };
 
 export default config;

@@ -65,7 +65,10 @@ export default function MoodsStreamgraph({ data, axes }: { data: Series[]; axes:
   };
 
   return (
-    <div ref={ref} className="relative w-full h-[320px]">
+    <div
+      ref={ref}
+      className="relative w-full aspect-[4/3] h-[clamp(240px,40vh,320px)]"
+    >
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}

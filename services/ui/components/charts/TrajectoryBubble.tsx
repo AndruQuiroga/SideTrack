@@ -40,7 +40,10 @@ export default function TrajectoryBubble({ data }: { data: TrajectoryData }) {
   const [highlight, setHighlight] = useState<number | null>(null);
 
   return (
-    <div ref={ref} className="relative w-full h-[380px]">
+    <div
+      ref={ref}
+      className="relative w-full aspect-[4/3] h-[clamp(240px,40vh,380px)]"
+    >
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}

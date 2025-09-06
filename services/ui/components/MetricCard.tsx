@@ -15,7 +15,7 @@ export default function MetricCard({ title, value, delta }: Props) {
       : undefined;
   const deltaClass = delta && delta.value >= 0 ? 'text-emerald-400' : 'text-rose-400';
   return (
-    <Card asChild variant="glass" className="p-md shadow-soft">
+    <Card asChild variant="glass" className="p-4 shadow-soft">
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}

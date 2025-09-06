@@ -7,7 +7,9 @@ import Skeleton from '../../components/Skeleton';
 const TrajectoryClient = dynamic(
   () => import('../../components/charts/TrajectoryClient'),
   {
-    loading: () => <Skeleton className="h-[380px]" />,
+    loading: () => (
+      <Skeleton className="aspect-[4/3] h-[clamp(240px,40vh,380px)]" />
+    ),
     ssr: false,
   },
 );
@@ -30,7 +32,11 @@ export default async function Trajectory() {
         />
       </div>
       <ChartContainer title="Trajectory" subtitle="Recent weekly bubbles and positions">
-        <Suspense fallback={<Skeleton className="h-[380px]" />}>
+        <Suspense
+          fallback={
+            <Skeleton className="aspect-[4/3] h-[clamp(240px,40vh,380px)]" />
+          }
+        >
           <TrajectoryClient />
         </Suspense>
       </ChartContainer>
