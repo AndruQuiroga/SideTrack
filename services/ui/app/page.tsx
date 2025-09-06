@@ -1,3 +1,4 @@
+'use client';
 import MetricCard from '../components/MetricCard';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
