@@ -34,6 +34,33 @@ export const tokens = {
     },
     ring: 'hsl(var(--ring))',
   },
+  lightColors: {
+    background: 'hsl(var(--light-background))',
+    foreground: 'hsl(var(--light-foreground))',
+    muted: {
+      DEFAULT: 'hsl(var(--light-muted))',
+      foreground: 'hsl(var(--light-muted-foreground))',
+    },
+    card: {
+      DEFAULT: 'hsl(var(--light-card))',
+      foreground: 'hsl(var(--light-card-foreground))',
+    },
+    border: 'hsl(var(--light-border))',
+    input: 'hsl(var(--light-input))',
+    primary: {
+      DEFAULT: 'hsl(var(--light-primary))',
+      foreground: 'hsl(var(--light-primary-foreground))',
+    },
+    secondary: {
+      DEFAULT: 'hsl(var(--light-secondary))',
+      foreground: 'hsl(var(--light-secondary-foreground))',
+    },
+    accent: {
+      DEFAULT: 'hsl(var(--light-accent))',
+      foreground: 'hsl(var(--light-accent-foreground))',
+    },
+    ring: 'hsl(var(--light-ring))',
+  },
   radii: {
     lg: '12px',
     md: '10px',
@@ -54,7 +81,7 @@ const config: Config = {
         soft: '0 10px 30px rgba(0,0,0,0.12)',
       },
       fontFamily: {
-        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-sans)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
     },
   },
