@@ -1,7 +1,15 @@
 'use client';
-import { useEffect, useState } from 'react';
-import TrajectoryBubble, { TrajectoryData } from './TrajectoryBubble';
+import { Suspense, useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { apiFetch } from '../../lib/api';
+import Skeleton from '../Skeleton';
+
+import type { TrajectoryData } from './TrajectoryBubble';
+
+const TrajectoryBubble = dynamic(() => import('./TrajectoryBubble'), {
+  loading: () => <Skeleton className="h-[380px]" />,
+  ssr: false,
+});
 
 export default function TrajectoryClient() {
   const [data, setData] = useState<TrajectoryData>({ points: [], arrows: [] });
@@ -27,7 +35,11 @@ export default function TrajectoryClient() {
     };
   }, []);
 
-  if (loading) return <div className="h-[380px] w-full rounded-lg glass p-3" />;
+  if (loading) return <Skeleton className="h-[380px]" />;
   if (error) return <div className="text-sm text-rose-400">{error}</div>;
-  return <TrajectoryBubble data={data} />;
+  return (
+    <Suspense fallback={<Skeleton className="h-[380px]" />}>
+      <TrajectoryBubble data={data} />
+    </Suspense>
+  );
 }

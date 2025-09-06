@@ -1,6 +1,16 @@
-import TrajectoryClient from '../../components/charts/TrajectoryClient';
+import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
 import ChartContainer from '../../components/ChartContainer';
 import FilterBar from '../../components/FilterBar';
+import Skeleton from '../../components/Skeleton';
+
+const TrajectoryClient = dynamic(
+  () => import('../../components/charts/TrajectoryClient'),
+  {
+    loading: () => <Skeleton className="h-[380px]" />,
+    ssr: false,
+  },
+);
 
 export default async function Trajectory() {
   return (
@@ -20,7 +30,9 @@ export default async function Trajectory() {
         />
       </div>
       <ChartContainer title="Trajectory" subtitle="Recent weekly bubbles and positions">
-        <TrajectoryClient />
+        <Suspense fallback={<Skeleton className="h-[380px]" />}>
+          <TrajectoryClient />
+        </Suspense>
       </ChartContainer>
     </section>
   );

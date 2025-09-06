@@ -1,10 +1,18 @@
 'use client';
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { apiFetch } from '../../lib/api';
-import MoodsStreamgraph from '../../components/charts/MoodsStreamgraph';
 import ChartContainer from '../../components/ChartContainer';
 import FilterBar from '../../components/FilterBar';
-import { Card } from '../../components/ui/card';
+import Skeleton from '../../components/Skeleton';
+
+const MoodsStreamgraph = dynamic(
+  () => import('../../components/charts/MoodsStreamgraph'),
+  {
+    loading: () => <Skeleton className="h-[340px]" />,
+    ssr: false,
+  },
+);
 
 type Trajectory = { points: { week: string }[] };
 
@@ -47,9 +55,13 @@ export default function Moods() {
   }, []);
 
   const content = useMemo(() => {
-    if (loading) return <Card variant="glass" className="h-[340px] w-full" />;
+    if (loading) return <Skeleton className="h-[340px]" />;
     if (!series.length) return <div className="text-sm text-muted-foreground">No data yet.</div>;
-    return <MoodsStreamgraph data={series} axes={axes} />;
+    return (
+      <Suspense fallback={<Skeleton className="h-[340px]" />}>
+        <MoodsStreamgraph data={series} axes={axes} />
+      </Suspense>
+    );
   }, [loading, series, axes]);
 
   return (
