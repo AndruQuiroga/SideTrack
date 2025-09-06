@@ -8,12 +8,12 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-APP_DIR = os.path.join(os.path.dirname(BASE_DIR), "app")
-sys.path.append(APP_DIR)
+REPO_DIR = os.path.abspath(os.path.join(BASE_DIR, "../.."))
+sys.path.append(REPO_DIR)
 
-from app.config import get_settings  # type: ignore
+from sidetrack.api.config import get_settings  # type: ignore
 
-from services.common.models import Base  # type: ignore
+from sidetrack.common.models import Base  # type: ignore
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

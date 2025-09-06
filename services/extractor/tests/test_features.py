@@ -1,15 +1,12 @@
-import sys
 from pathlib import Path
-
-sys.path.append(str(Path(__file__).resolve().parents[3]))
 
 import numpy as np
 import soundfile as sf
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
-from services.common.models import Base, Embedding, Feature, Track
-from services.extractor.extractor.run import analyze_one, estimate_features
+from sidetrack.common.models import Base, Embedding, Feature, Track
+from sidetrack.extractor.run import analyze_one, estimate_features
 
 SR = 44100
 

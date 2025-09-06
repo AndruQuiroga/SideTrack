@@ -1,21 +1,17 @@
 import os
-import sys
 from datetime import UTC, datetime
-from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 
-# Ensure repository root on sys.path and configure SQLite for tests
-sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///./test.db"
 
-from services.api.app import main  # noqa: E402
-from services.api.app.constants import DEFAULT_METHOD  # noqa: E402
-from services.api.app.db import SessionLocal, engine, get_db  # noqa: E402
-from services.api.app.main import app  # noqa: E402
-from services.common.models import Base, Listen, MoodAggWeek, MoodScore, Track  # noqa: E402
+from sidetrack.api import main  # noqa: E402
+from sidetrack.api.constants import DEFAULT_METHOD  # noqa: E402
+from sidetrack.api.db import SessionLocal, engine, get_db  # noqa: E402
+from sidetrack.api.main import app  # noqa: E402
+from sidetrack.common.models import Base, Listen, MoodAggWeek, MoodScore, Track  # noqa: E402
 
 Base.metadata.create_all(bind=engine.sync_engine)
 

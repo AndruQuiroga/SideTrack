@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from services.common.models import UserAccount, UserSettings
+from sidetrack.common.models import UserAccount, UserSettings
 
 from ...db import get_db
 from ...schemas.auth import Credentials, MeOut, UserOut

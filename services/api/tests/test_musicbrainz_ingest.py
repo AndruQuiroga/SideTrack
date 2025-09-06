@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from services.api.app.schemas.musicbrainz import MusicbrainzIngestResponse
+from sidetrack.api.schemas.musicbrainz import MusicbrainzIngestResponse
 
 sample_release = {
     "id": "release-mbid",
@@ -26,13 +26,10 @@ sample_release = {
 def _setup_app(tmp_path, monkeypatch):
     db_url = f"sqlite+aiosqlite:///{tmp_path}/test.db"
     monkeypatch.setenv("DATABASE_URL", db_url)
-    root = Path(__file__).resolve().parents[3]
-    if str(root) not in sys.path:
-        sys.path.insert(0, str(root))
     # Import after setting env so that the engine uses the test DB
-    from services.api.app import main as main_mod
-    from services.api.app.db import SessionLocal, get_db
-    from services.api.app.main import app
+    from sidetrack.api import main as main_mod
+    from sidetrack.api.db import SessionLocal, get_db
+    from sidetrack.api.main import app
 
     # override get_db dependency to return actual session (not contextmanager)
     def override_get_db():
@@ -77,7 +74,7 @@ def test_ingest_musicbrainz_dedup(mb_client):
     assert data.tracks >= 2
 
     session = SessionLocal()
-    from services.common.models import Artist, Release, Track
+    from sidetrack.common.models import Artist, Release, Track
 
     assert session.query(Artist).count() == 1
     assert session.query(Release).count() == 1
@@ -87,7 +84,7 @@ def test_ingest_musicbrainz_dedup(mb_client):
 
 def test_ingest_musicbrainz_not_found(mb_client, monkeypatch):
     client, _ = mb_client
-    from services.api.app import main as main_mod
+    from sidetrack.api import main as main_mod
 
     class Resp:
         def raise_for_status(self):

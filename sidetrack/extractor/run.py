@@ -9,7 +9,7 @@ import typer
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
 
-from services.common.models import Embedding, Feature, Track
+from sidetrack.common.models import Embedding, Feature, Track
 
 app = typer.Typer(add_completion=False)
 

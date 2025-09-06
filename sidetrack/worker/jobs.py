@@ -3,16 +3,10 @@
 from __future__ import annotations
 
 import logging
-import sys
-from pathlib import Path
-
 import numpy as np
 
-# Ensure the API app package is importable as `app` for DB/session access
-sys.path.append(str(Path(__file__).resolve().parents[2] / "api"))
-from app.db import SessionLocal  # type: ignore
-
-from services.common.models import Feature, Track  # type: ignore
+from sidetrack.api.db import SessionLocal
+from sidetrack.common.models import Feature, Track
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s:%(message)s")
 logger = logging.getLogger("worker")

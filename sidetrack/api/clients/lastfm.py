@@ -12,7 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
-from services.common.models import LastfmTags
+from sidetrack.common.models import LastfmTags
 
 from ..config import Settings, get_settings
 

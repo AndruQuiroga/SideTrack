@@ -1,6 +1,4 @@
-import sys
 from datetime import datetime
-from pathlib import Path
 
 import pytest
 import pytest_asyncio
@@ -10,10 +8,7 @@ import pytest_asyncio
 async def session(tmp_path, monkeypatch):
     db_url = f"sqlite+aiosqlite:///{tmp_path}/test.db"
     monkeypatch.setenv("DATABASE_URL", db_url)
-    root = Path(__file__).resolve().parents[3]
-    if str(root) not in sys.path:
-        sys.path.insert(0, str(root))
-    from services.api.app.db import SessionLocal, maybe_create_all
+    from sidetrack.api.db import SessionLocal, maybe_create_all
 
     await maybe_create_all()
     async with SessionLocal() as sess:
@@ -22,7 +17,7 @@ async def session(tmp_path, monkeypatch):
 
 @pytest.mark.asyncio
 async def test_artist_repository_get_or_create(session):
-    from services.api.app.repositories.artist_repository import ArtistRepository
+    from sidetrack.api.repositories.artist_repository import ArtistRepository
 
     repo = ArtistRepository(session)
     a1 = await repo.get_or_create("Test Artist")
@@ -32,13 +27,13 @@ async def test_artist_repository_get_or_create(session):
 
 @pytest.mark.asyncio
 async def test_listen_service_ingest(session):
-    from services.api.app.repositories.artist_repository import ArtistRepository
-    from services.api.app.repositories.listen_repository import ListenRepository
-    from services.api.app.repositories.release_repository import ReleaseRepository
-    from services.api.app.repositories.track_repository import TrackRepository
-    from services.api.app.services.listen_service import ListenService
+    from sidetrack.api.repositories.artist_repository import ArtistRepository
+    from sidetrack.api.repositories.listen_repository import ListenRepository
+    from sidetrack.api.repositories.release_repository import ReleaseRepository
+    from sidetrack.api.repositories.track_repository import TrackRepository
+    from sidetrack.api.services.listen_service import ListenService
     from sqlalchemy import select
-    from services.common.models import Listen
+    from sidetrack.common.models import Listen
 
     service = ListenService(
         ArtistRepository(session),

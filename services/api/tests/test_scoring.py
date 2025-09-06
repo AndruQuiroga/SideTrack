@@ -1,18 +1,11 @@
-import os
-import sys
-
 import pytest
 from fastapi import HTTPException
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 
-ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
-if ROOT not in sys.path:
-    sys.path.append(ROOT)
-
-from services.api.app.constants import AXES
-from services.api.app.main import score_track
-from services.common.models import Base, Embedding, Feature, MoodScore, Track
+from sidetrack.api.constants import AXES
+from sidetrack.api.main import score_track
+from sidetrack.common.models import Base, Embedding, Feature, MoodScore, Track
 
 
 @pytest.fixture()

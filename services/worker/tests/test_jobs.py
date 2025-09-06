@@ -5,13 +5,13 @@ import numpy as np
 import soundfile as sf
 from rq import Queue, SimpleWorker
 
-os.environ.setdefault("DATABASE_URL", "sqlite:///./test_worker.db")
+os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///./test_worker.db")
 os.environ.setdefault("AUTO_MIGRATE", "1")
 
-from services.api.app.db import SessionLocal, maybe_create_all
-from services.worker.worker.jobs import analyze_track, compute_embeddings
+from sidetrack.api.db import SessionLocal, maybe_create_all
+from sidetrack.worker.jobs import analyze_track, compute_embeddings
 
-from services.common.models import Feature, Track
+from sidetrack.common.models import Feature, Track
 
 maybe_create_all()
 
