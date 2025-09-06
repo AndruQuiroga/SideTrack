@@ -18,6 +18,8 @@ class Settings(BaseSettings):
 
     # Use the Compose service name for Redis by default
     redis_url: str = Field(default="redis://cache:6379/0", env="REDIS_URL")
+    listenbrainz_user: str | None = Field(default=None, env="LISTENBRAINZ_USER")
+    listenbrainz_token: str | None = Field(default=None, env="LISTENBRAINZ_TOKEN")
     lastfm_api_key: str | None = Field(default=None, env="LASTFM_API_KEY")
     lastfm_api_secret: str | None = Field(default=None, env="LASTFM_API_SECRET")
 

@@ -81,8 +81,8 @@ POSTGRES_PASSWORD=vibe
 POSTGRES_PORT=5432
 
 # ListenBrainz / MusicBrainz
-LISTENBRAINZ_USER=your_user
-LISTENBRAINZ_TOKEN=lb_xxx
+LISTENBRAINZ_USER=your_user          # ListenBrainz username for ingestion
+LISTENBRAINZ_TOKEN=lb_xxx            # ListenBrainz API token
 MUSICBRAINZ_RATE_LIMIT=1.0   # req/sec
 
 # Last.fm
