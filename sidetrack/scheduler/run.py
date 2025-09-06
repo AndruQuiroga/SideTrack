@@ -48,13 +48,27 @@ def aggregate_weeks():
         logger.exception("aggregate weeks error")
 
 
+def fetch_spotify_listens():
+    try:
+        r = requests.post(
+            f"{settings.api_url}/spotify/listens",
+            timeout=10,
+            headers={"X-User-Id": settings.default_user_id},
+        )
+        logger.info("spotify listens: %s", r.status_code)
+    except Exception:
+        logger.exception("spotify listens error")
+
+
 def schedule_jobs():
     ingest_minutes = settings.ingest_listens_interval_minutes
     tags_minutes = settings.lastfm_sync_interval_minutes
     agg_minutes = settings.aggregate_weeks_interval_minutes
+    spotify_minutes = settings.spotify_listens_interval_minutes
     schedule.every(ingest_minutes).minutes.do(ingest_listens)
     schedule.every(tags_minutes).minutes.do(sync_lastfm_tags)
     schedule.every(agg_minutes).minutes.do(aggregate_weeks)
+    schedule.every(spotify_minutes).minutes.do(fetch_spotify_listens)
 
 
 def main():

@@ -29,3 +29,25 @@ class TrackRepository:
             duration=duration,
             path_local=path_local,
         )
+
+    async def get_or_create_spotify(
+        self,
+        spotify_id: str,
+        title: str,
+        artist_id: int,
+        release_id: int | None = None,
+        duration: int | None = None,
+    ) -> Track:
+        """Get or create a track using the Spotify track ID."""
+        defaults = {
+            "title": title,
+            "artist_id": artist_id,
+            "release_id": release_id,
+            "duration": duration,
+        }
+        return await get_or_create(
+            self.db,
+            Track,
+            defaults=defaults,
+            spotify_id=spotify_id,
+        )

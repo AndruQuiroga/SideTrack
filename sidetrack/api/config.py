@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     lastfm_api_key: str | None = Field(default=None, env="LASTFM_API_KEY")
     lastfm_api_secret: str | None = Field(default=None, env="LASTFM_API_SECRET")
     google_client_id: str | None = Field(default=None, env="GOOGLE_CLIENT_ID")
+    spotify_token: str | None = Field(default=None, env="SPOTIFY_TOKEN")
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
