@@ -1,11 +1,22 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Compass, Activity, Radar, Target, Settings, Home, User } from 'lucide-react';
+import {
+  Compass,
+  Activity,
+  Radar,
+  Target,
+  Settings,
+  Home,
+  User,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
 import clsx from 'clsx';
 import { motion } from 'framer-motion';
+import { useNav } from './NavContext';
 
-const nav = [
+export const nav = [
   { href: '/', label: 'Overview', icon: Home },
   { href: '/trajectory', label: 'Trajectory', icon: Compass },
   { href: '/moods', label: 'Moods', icon: Activity },
@@ -17,11 +28,12 @@ const nav = [
 
 export default function NavRail() {
   const pathname = usePathname();
+  const { collapsed, setCollapsed } = useNav();
   return (
-    <aside className="hidden md:flex h-dvh w-60 flex-col gap-2 p-3 glass">
+    <div className="flex h-full flex-col gap-2 p-3 glass">
       <div className="flex items-center gap-2 px-2 py-3">
         <div className="h-8 w-8 rounded-full bg-gradient-to-br from-emerald-400 to-sky-400" />
-        <strong className="text-lg">SideTrack</strong>
+        {!collapsed && <strong className="text-lg">SideTrack</strong>}
       </div>
       <nav className="flex flex-col gap-1">
         {nav.map((item) => {
@@ -44,13 +56,19 @@ export default function NavRail() {
                 transition={{ type: 'spring', stiffness: 300, damping: 20 }}
               >
                 <Icon size={18} />
-                <span>{item.label}</span>
+                {!collapsed && <span>{item.label}</span>}
               </motion.div>
             </Link>
           );
         })}
       </nav>
-      <div className="mt-auto px-2 py-3 text-xs text-muted-foreground">v0.1</div>
-    </aside>
+      <button
+        onClick={() => setCollapsed(!collapsed)}
+        className="mt-auto flex items-center gap-2 px-2 py-3 text-xs text-muted-foreground"
+      >
+        {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+        {!collapsed && <span>Collapse</span>}
+      </button>
+    </div>
   );
 }
