@@ -2,11 +2,18 @@ import logging
 from datetime import date, datetime, timedelta
 
 import httpx
+import structlog
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
 from sqlalchemy import and_, delete, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import SQLAlchemyError
 
+from services.common.logging import setup_logging
+from services.common.telemetry import setup_tracing
 from services.common.models import (
     Artist,
     Embedding,
@@ -31,12 +38,19 @@ from .schemas.tracks import AnalyzeTrackResponse, TrackPathIn, TrackPathResponse
 from .security import get_current_user, require_role
 
 
+setup_logging()
+setup_tracing("sidetrack-api")
+
+
 async def get_http_client():
     async with httpx.AsyncClient() as client:
         yield client
 
 
 app = FastAPI(title="SideTrack API", version="0.1.0")
+FastAPIInstrumentor().instrument_app(app)
+HTTPXClientInstrumentor().instrument()
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -46,7 +60,18 @@ app.add_middleware(
 )
 
 
-logger = logging.getLogger("sidetrack.auth")
+logger = structlog.get_logger("sidetrack.auth")
+
+
+@app.middleware("http")
+async def handle_exceptions(request: Request, call_next):
+    try:
+        return await call_next(request)
+    except HTTPException:
+        raise
+    except Exception as exc:  # pragma: no cover - fallback
+        logger.exception("Unhandled exception", path=request.url.path)
+        return JSONResponse(status_code=500, content={"detail": "Internal Server Error"})
 
 
 @app.middleware("http")
@@ -54,7 +79,7 @@ async def log_unauthorized(request: Request, call_next):
     """Log and propagate unauthorized access attempts."""
     response = await call_next(request)
     if response.status_code == 401:
-        logger.warning("Unauthorized access: %s %s", request.method, request.url.path)
+        logger.warning("Unauthorized access", method=request.method, path=request.url.path)
     return response
 
 
@@ -113,8 +138,9 @@ async def lastfm_session(
 ):
     try:
         key, name = await lf_client.get_session(token)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except (RuntimeError, httpx.HTTPError) as exc:
+        logger.error("LastFM session error", error=str(exc))
+        raise HTTPException(status_code=400, detail=str(exc))
     row = await db.get(UserSettings, user_id)
     if not row:
         row = UserSettings(user_id=user_id)
@@ -182,8 +208,9 @@ async def health(db: AsyncSession = Depends(get_db)):
     try:
         await db.execute(text("SELECT 1"))
         return {"status": "ok", "db": "up"}
-    except Exception as e:
-        return {"status": "degraded", "db": str(e)}
+    except SQLAlchemyError as exc:
+        logger.error("Health check failed", error=str(exc))
+        return {"status": "degraded", "db": str(exc)}
 
 
 @app.post("/tags/lastfm/sync")
@@ -209,7 +236,8 @@ async def sync_lastfm_tags(
         try:
             await lf_client.get_track_tags(db, tid, artist_name, title)
             updated += 1
-        except Exception:
+        except (RuntimeError, httpx.HTTPError) as exc:
+            logger.warning("Tag sync failed", track_id=tid, error=str(exc))
             continue
     return {"detail": "ok", "updated": updated}
 

@@ -4,7 +4,9 @@ import json
 from datetime import date, datetime
 from pathlib import Path
 
+import httpx
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
+import structlog
 
 from ...clients.listenbrainz import ListenBrainzClient, get_listenbrainz_client
 from ...config import Settings, get_settings
@@ -13,6 +15,8 @@ from ...security import get_current_user
 from ...services.listen_service import ListenService, get_listen_service
 
 router = APIRouter()
+
+logger = structlog.get_logger(__name__)
 
 
 @router.post("/ingest/listens", response_model=IngestResponse)
@@ -54,9 +58,10 @@ async def ingest_listens(
             rows = await lb_client.fetch_listens(user_id, since, token)
             created = await listen_service.ingest_lb_rows(rows, user_id)
             return IngestResponse(detail="ok", ingested=created, source="listenbrainz")
-        except Exception as e:
+        except httpx.HTTPError as exc:
+            logger.error("ListenBrainz fetch failed", error=str(exc))
             if source == "listenbrainz":
-                raise HTTPException(status_code=502, detail=f"ListenBrainz error: {e}")
+                raise HTTPException(status_code=502, detail=f"ListenBrainz error: {exc}")
             # fall through to sample
 
     sample_path = Path("data/sample_listens.json")
@@ -82,3 +87,4 @@ async def ingest_listens(
         )
     created = await listen_service.ingest_lb_rows(rows, user_id)
     return IngestResponse(detail="ok", ingested=created, source="sample")
+

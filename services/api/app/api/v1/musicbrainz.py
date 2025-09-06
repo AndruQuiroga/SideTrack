@@ -4,6 +4,7 @@ import time
 from datetime import datetime
 
 import httpx
+import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,6 +15,8 @@ from ...db import get_db
 from ...main import get_http_client
 from ...schemas.musicbrainz import MusicbrainzIngestResponse
 from ...utils import get_or_create, mb_sanitize
+
+logger = structlog.get_logger(__name__)
 
 router = APIRouter()
 
@@ -47,13 +50,15 @@ async def ingest_musicbrainz(
 ):
     try:
         data = await _mb_fetch_release(client, release_mbid)
-    except httpx.HTTPError as e:
-        status = getattr(e.response, "status_code", None)
+    except httpx.HTTPError as exc:
+        status = getattr(exc.response, "status_code", None)
         if status == 404:
             raise HTTPException(status_code=404, detail="release not found")
-        raise HTTPException(status_code=502, detail=f"MusicBrainz error: {e}")
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=f"MusicBrainz error: {e}")
+        logger.error("MusicBrainz HTTP error", error=str(exc))
+        raise HTTPException(status_code=502, detail=f"MusicBrainz error: {exc}")
+    except ValueError as exc:
+        logger.error("MusicBrainz parse error", error=str(exc))
+        raise HTTPException(status_code=502, detail=f"MusicBrainz error: {exc}")
 
     artist = None
     ac_list = data.get("artist-credit") or []
@@ -70,7 +75,7 @@ async def ingest_musicbrainz(
     if data.get("date"):
         try:
             rel_date = datetime.fromisoformat(data["date"]).date()
-        except Exception:
+        except ValueError:
             rel_date = None
     label = None
     labels = data.get("label-info") or data.get("label-info-list") or []
@@ -128,3 +133,4 @@ async def ingest_musicbrainz(
         release_id=release.release_id,
         tracks=created_tracks,
     )
+

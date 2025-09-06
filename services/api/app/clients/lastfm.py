@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from typing import Any
 
 import httpx
+import structlog
 from fastapi import Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,6 +15,9 @@ from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponen
 from services.common.models import LastfmTags
 
 from ..config import Settings, get_settings
+
+
+logger = structlog.get_logger(__name__)
 
 
 def _retryable(exc: Exception) -> bool:
@@ -114,7 +118,8 @@ class LastfmClient:
             name = (t.get("name") or "").strip()
             try:
                 cnt = int(t.get("count") or 0)
-            except Exception:
+            except (TypeError, ValueError):
+                logger.debug("Invalid tag count", tag=t)
                 cnt = 0
             if name:
                 out[name] = cnt
@@ -140,3 +145,4 @@ async def get_lastfm_client(
 ) -> AsyncGenerator[LastfmClient, None]:
     async with httpx.AsyncClient() as client:
         yield LastfmClient(client, settings.lastfm_api_key, settings.lastfm_api_secret)
+
