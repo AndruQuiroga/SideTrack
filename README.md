@@ -85,9 +85,9 @@ LISTENBRAINZ_USER=your_user
 LISTENBRAINZ_TOKEN=lb_xxx
 MUSICBRAINZ_RATE_LIMIT=1.0   # req/sec
 
-# Last.fm (for web tag harvesting)
+# Last.fm
 LASTFM_API_KEY=lfm_xxx
-LASTFM_USER=your_lastfm_username
+LASTFM_API_SECRET=lfm_secret
 
 # Auth.js (NextAuth) – Google OAuth
 NEXTAUTH_URL=https://your.domain
