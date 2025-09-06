@@ -1,5 +1,12 @@
 'use client';
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import {
+  ToastProvider as RadixToastProvider,
+  ToastViewport,
+  Toast,
+  ToastTitle,
+  ToastDescription,
+} from './ui/Toast';
 
 type Toast = {
   id: number;
@@ -7,7 +14,7 @@ type Toast = {
   description?: string;
   kind?: 'success' | 'error' | 'info';
 };
-type Ctx = { toasts: Toast[]; show: (t: Omit<Toast, 'id'>) => void; dismiss: (id: number) => void };
+type Ctx = { show: (t: Omit<Toast, 'id'>) => void; dismiss: (id: number) => void };
 
 const ToastCtx = createContext<Ctx | null>(null);
 
@@ -22,28 +29,30 @@ export default function ToastProvider({ children }: { children: React.ReactNode 
   const show = useCallback((t: Omit<Toast, 'id'>) => {
     const id = Date.now() + Math.random();
     setList((prev) => [...prev, { id, ...t }]);
-    setTimeout(() => setList((prev) => prev.filter((x) => x.id !== id)), 3500);
   }, []);
   const dismiss = useCallback(
     (id: number) => setList((prev) => prev.filter((x) => x.id !== id)),
     [],
   );
-  const value = useMemo(() => ({ toasts: list, show, dismiss }), [list, show, dismiss]);
+  const value = useMemo(() => ({ show, dismiss }), [show, dismiss]);
 
   return (
     <ToastCtx.Provider value={value}>
-      {children}
-      <div className="pointer-events-none fixed right-4 top-4 z-50 flex w-80 flex-col gap-2">
+      <RadixToastProvider duration={3500}>
+        {children}
         {list.map((t) => (
-          <div
+          <Toast
             key={t.id}
-            className="pointer-events-auto rounded-md border border-white/10 bg-black/70 p-3 shadow-soft"
+            onOpenChange={(open) => {
+              if (!open) dismiss(t.id);
+            }}
           >
-            <div className="text-sm font-medium">{t.title}</div>
-            {t.description && <div className="text-xs text-muted-foreground">{t.description}</div>}
-          </div>
+            <ToastTitle>{t.title}</ToastTitle>
+            {t.description && <ToastDescription>{t.description}</ToastDescription>}
+          </Toast>
         ))}
-      </div>
+        <ToastViewport />
+      </RadixToastProvider>
     </ToastCtx.Provider>
   );
 }
