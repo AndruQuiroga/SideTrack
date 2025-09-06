@@ -3,15 +3,15 @@
 import time
 from datetime import datetime
 
-import requests
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from services.common.models import Artist, Release, Track
 
 from ..db import get_db
-from ..main import HTTP_SESSION
+from ..main import get_http_client
 from ..utils import get_or_create, mb_sanitize
 
 router = APIRouter()
@@ -23,7 +23,7 @@ router = APIRouter()
 _MB_LAST_CALL = 0.0
 
 
-def _mb_fetch_release(mbid: str) -> dict:
+async def _mb_fetch_release(client: httpx.AsyncClient, mbid: str) -> dict:
     """Fetch release info from MusicBrainz with simple rate limiting."""
     global _MB_LAST_CALL
     wait = 1.0 - (time.time() - _MB_LAST_CALL)
@@ -33,19 +33,20 @@ def _mb_fetch_release(mbid: str) -> dict:
     url = f"https://musicbrainz.org/ws/2/release/{mbid}"
     params = {"inc": "recordings+artists", "fmt": "json"}
     headers = {"User-Agent": "SideTrack/0.1 (+https://example.com)"}
-    r = HTTP_SESSION.get(url, params=params, headers=headers, timeout=30)
+    r = await client.get(url, params=params, headers=headers, timeout=30)
     r.raise_for_status()
     return r.json()
 
 
 @router.post("/ingest/musicbrainz")
-def ingest_musicbrainz(
+async def ingest_musicbrainz(
     release_mbid: str = Query(..., description="MusicBrainz release MBID"),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
+    client: httpx.AsyncClient = Depends(get_http_client),
 ):
     try:
-        data = _mb_fetch_release(release_mbid)
-    except requests.HTTPError as e:
+        data = await _mb_fetch_release(client, release_mbid)
+    except httpx.HTTPError as e:
         status = getattr(e.response, "status_code", None)
         if status == 404:
             raise HTTPException(status_code=404, detail="release not found")
@@ -57,7 +58,7 @@ def ingest_musicbrainz(
     ac_list = data.get("artist-credit") or []
     if ac_list:
         art = (ac_list[0] or {}).get("artist", {})
-        artist = get_or_create(
+        artist = await get_or_create(
             db,
             Artist,
             mbid=art.get("id"),
@@ -75,7 +76,7 @@ def ingest_musicbrainz(
     if labels:
         label = mb_sanitize((labels[0] or {}).get("label", {}).get("name"))
 
-    release = get_or_create(
+    release = await get_or_create(
         db,
         Release,
         mbid=data.get("id"),
@@ -94,7 +95,9 @@ def ingest_musicbrainz(
             track_mbid = rec.get("id")
             if not track_mbid:
                 continue
-            existing = db.execute(select(Track).filter_by(mbid=track_mbid)).scalar_one_or_none()
+            existing = (
+                await db.execute(select(Track).filter_by(mbid=track_mbid))
+            ).scalar_one_or_none()
             length = rec.get("length") or trk.get("length")
             duration = int(length / 1000) if length else None
             title = mb_sanitize(rec.get("title") or trk.get("title") or "Unknown")
@@ -117,7 +120,7 @@ def ingest_musicbrainz(
                 if duration and existing.duration is None:
                     existing.duration = duration
 
-    db.commit()
+    await db.commit()
     return {
         "detail": "ok",
         "artist_id": artist.artist_id if artist else None,

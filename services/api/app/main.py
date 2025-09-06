@@ -2,12 +2,12 @@ import hashlib
 import time
 from datetime import date, datetime, timedelta
 
-import requests
-from fastapi import Depends, FastAPI, Header, HTTPException, Query
+import httpx
+from fastapi import BackgroundTasks, Depends, FastAPI, Header, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy import and_, delete, func, select, text
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from services.common.models import (
     Artist,
@@ -28,7 +28,11 @@ from .config import get_settings as get_app_settings
 from .constants import AXES, DEFAULT_METHOD
 from .db import get_db, maybe_create_all
 
-HTTP_SESSION = requests.Session()
+
+async def get_http_client():
+    async with httpx.AsyncClient() as client:
+        yield client
+
 
 app = FastAPI(title="SideTrack API", version="0.1.0")
 app.add_middleware(
@@ -41,9 +45,9 @@ app.add_middleware(
 
 
 @app.on_event("startup")
-def _startup():
+async def _startup():
     # Make dev/local experience smooth
-    maybe_create_all()
+    await maybe_create_all()
 
 
 def get_current_user(x_user_id: str = Header(...)) -> str:
@@ -100,12 +104,13 @@ def _lastfm_sign(params: dict[str, str], secret: str) -> str:
     return m.hexdigest()
 
 
-def _lastfm_fetch_tags(
+async def _lastfm_fetch_tags(
     track_id: int,
     artist: str,
     track: str,
     api_key: str,
-    db: Session,
+    db: AsyncSession,
+    client: httpx.AsyncClient,
     max_age: int = 86400,
 ) -> dict:
     """Fetch top tags from Last.fm with simple caching and retries.
@@ -119,8 +124,8 @@ def _lastfm_fetch_tags(
     HTTP errors (5xx or 429) are retried with exponential backoff.
     """
 
-    existing = db.execute(
-        select(LastfmTags).where(LastfmTags.track_id == track_id)
+    existing = (
+        await db.execute(select(LastfmTags).where(LastfmTags.track_id == track_id))
     ).scalar_one_or_none()
     if (
         existing
@@ -140,10 +145,10 @@ def _lastfm_fetch_tags(
     backoff = 1.0
     for attempt in range(3):
         try:
-            r = HTTP_SESSION.get("https://ws.audioscrobbler.com/2.0/", params=params, timeout=30)
+            r = await client.get("https://ws.audioscrobbler.com/2.0/", params=params, timeout=30)
             r.raise_for_status()
             break
-        except requests.HTTPError as e:
+        except httpx.HTTPError as e:
             status = getattr(e.response, "status_code", None)
             if status and (status >= 500 or status == 429) and attempt < 2:
                 time.sleep(backoff)
@@ -176,13 +181,13 @@ def _lastfm_fetch_tags(
                 updated_at=datetime.utcnow(),
             )
         )
-    db.commit()
+    await db.commit()
 
     return out
 
 
 @app.get("/auth/lastfm/login")
-def lastfm_login(
+async def lastfm_login(
     callback: str,
     settings: Settings = Depends(get_app_settings),
 ):
@@ -193,11 +198,12 @@ def lastfm_login(
 
 
 @app.get("/auth/lastfm/session")
-def lastfm_session(
+async def lastfm_session(
     token: str,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     user_id: str = Depends(get_current_user),
     settings: Settings = Depends(get_app_settings),
+    client: httpx.AsyncClient = Depends(get_http_client),
 ):
     if not settings.lastfm_api_key or not settings.lastfm_api_secret:
         raise HTTPException(status_code=400, detail="Last.fm API not configured")
@@ -208,7 +214,7 @@ def lastfm_session(
     }
     params["api_sig"] = _lastfm_sign(params, settings.lastfm_api_secret)
     params["format"] = "json"
-    r = HTTP_SESSION.get("https://ws.audioscrobbler.com/2.0/", params=params, timeout=30)
+    r = await client.get("https://ws.audioscrobbler.com/2.0/", params=params, timeout=30)
     r.raise_for_status()
     data = r.json()
     session = data.get("session") or {}
@@ -216,34 +222,36 @@ def lastfm_session(
     name = session.get("name")
     if not key or not name:
         raise HTTPException(status_code=400, detail="Invalid session response")
-    row = db.get(UserSettings, user_id)
+    row = await db.get(UserSettings, user_id)
     if not row:
         row = UserSettings(user_id=user_id)
     row.lastfm_user = name
     row.lastfm_session_key = key
     db.add(row)
-    db.commit()
+    await db.commit()
     return {"ok": True, "lastfmUser": name}
 
 
 @app.delete("/auth/lastfm/session")
-def lastfm_disconnect(db: Session = Depends(get_db), user_id: str = Depends(get_current_user)):
-    row = db.get(UserSettings, user_id)
+async def lastfm_disconnect(
+    db: AsyncSession = Depends(get_db), user_id: str = Depends(get_current_user)
+):
+    row = await db.get(UserSettings, user_id)
     if not row:
         return {"ok": True}
     row.lastfm_user = None
     row.lastfm_session_key = None
     db.add(row)
-    db.commit()
+    await db.commit()
     return {"ok": True}
 
 
 @app.get("/settings")
-def get_settings(
-    db: Session = Depends(get_db),
+async def get_settings(
+    db: AsyncSession = Depends(get_db),
     user_id: str = Depends(get_current_user),
 ):
-    row = db.get(UserSettings, user_id)
+    row = await db.get(UserSettings, user_id)
     if not row:
         return {}
     return {
@@ -258,9 +266,9 @@ def get_settings(
 
 
 @app.post("/settings")
-def post_settings(
+async def post_settings(
     payload: SettingsIn,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     user_id: str = Depends(get_current_user),
 ):
     errors = []
@@ -269,7 +277,7 @@ def post_settings(
     if errors:
         raise HTTPException(status_code=400, detail=errors)
 
-    row = db.get(UserSettings, user_id)
+    row = await db.get(UserSettings, user_id)
     if not row:
         row = UserSettings(user_id=user_id)
 
@@ -280,24 +288,25 @@ def post_settings(
     row.use_excerpts = payload.useExcerpts
 
     db.add(row)
-    db.commit()
+    await db.commit()
     return {"ok": True}
 
 
 @app.get("/health")
-def health(db: Session = Depends(get_db)):
+async def health(db: AsyncSession = Depends(get_db)):
     try:
-        db.execute(text("SELECT 1"))
+        await db.execute(text("SELECT 1"))
         return {"status": "ok", "db": "up"}
     except Exception as e:
         return {"status": "degraded", "db": str(e)}
 
 
 @app.post("/tags/lastfm/sync")
-def sync_lastfm_tags(
+async def sync_lastfm_tags(
     since: date | None = Query(None),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     settings: Settings = Depends(get_app_settings),
+    client: httpx.AsyncClient = Depends(get_http_client),
 ):
     api_key = settings.lastfm_api_key
     if not api_key:
@@ -311,11 +320,11 @@ def sync_lastfm_tags(
         q = q.join(Listen, Listen.track_id == Track.track_id).where(
             Listen.played_at >= datetime.combine(since, datetime.min.time())
         )
-    rows = db.execute(q).all()
+    rows = (await db.execute(q)).all()
     updated = 0
     for tid, title, artist_name in rows:
         try:
-            _lastfm_fetch_tags(tid, artist_name, title, api_key, db)
+            await _lastfm_fetch_tags(tid, artist_name, title, api_key, db, client)
             updated += 1
         except Exception:
             continue
@@ -323,7 +332,12 @@ def sync_lastfm_tags(
 
 
 @app.post("/analyze/track/{track_id}")
-def analyze_track(track_id: int, settings: Settings = Depends(get_app_settings)):
+async def analyze_track(
+    track_id: int,
+    background_tasks: BackgroundTasks,
+    settings: Settings = Depends(get_app_settings),
+    db: AsyncSession = Depends(get_db),
+):
     """Queue or trigger analysis for the given track.
 
     If features already exist for the track we return a `done` status with the
@@ -331,52 +345,53 @@ def analyze_track(track_id: int, settings: Settings = Depends(get_app_settings))
     processing on the analysis queue.
     """
 
-    with get_db() as db:
-        tr = db.get(Track, track_id)
-        if not tr:
-            raise HTTPException(status_code=404, detail="track not found")
-        if not tr.path_local:
-            raise HTTPException(status_code=400, detail="track missing path")
+    tr = await db.get(Track, track_id)
+    if not tr:
+        raise HTTPException(status_code=404, detail="track not found")
+    if not tr.path_local:
+        raise HTTPException(status_code=400, detail="track missing path")
 
-        existing = db.execute(
-            select(Feature).where(Feature.track_id == track_id)
-        ).scalar_one_or_none()
-        if existing:
-            return {
-                "detail": "already_analyzed",
-                "track_id": track_id,
-                "status": "done",
-                "features_id": existing.id,
-            }
+    existing = (
+        await db.execute(select(Feature).where(Feature.track_id == track_id))
+    ).scalar_one_or_none()
+    if existing:
+        return {
+            "detail": "already_analyzed",
+            "track_id": track_id,
+            "status": "done",
+            "features_id": existing.id,
+        }
 
-    _enqueue_analysis(track_id, settings)
+    background_tasks.add_task(_enqueue_analysis, track_id, settings)
     return {"detail": "scheduled", "track_id": track_id, "status": "scheduled"}
 
 
 @app.post("/score/track/{track_id}")
-def score_track(
+async def score_track(
     track_id: int,
     method: str = DEFAULT_METHOD,
     version: str | None = None,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
-    tr = db.get(Track, track_id)
+    tr = await db.get(Track, track_id)
     if not tr:
         raise HTTPException(status_code=404, detail="track not found")
     try:
-        scores = scoring.score_axes(db, tr.track_id, method=method, version=version)
+        scores = await scoring.score_axes(db, tr.track_id, method=method, version=version)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     method_name = scoring.method_version(method, version)
     upserts = 0
     for ax, data in scores.items():
         val = data["value"]
-        existing = db.execute(
-            select(MoodScore).where(
-                and_(
-                    MoodScore.track_id == tr.track_id,
-                    MoodScore.axis == ax,
-                    MoodScore.method == method_name,
+        existing = (
+            await db.execute(
+                select(MoodScore).where(
+                    and_(
+                        MoodScore.track_id == tr.track_id,
+                        MoodScore.axis == ax,
+                        MoodScore.method == method_name,
+                    )
                 )
             )
         ).scalar_one_or_none()
@@ -394,7 +409,7 @@ def score_track(
                 )
             )
             upserts += 1
-    db.commit()
+    await db.commit()
     return {
         "detail": "scored",
         "track_id": track_id,
@@ -405,22 +420,26 @@ def score_track(
 
 
 @app.post("/tracks/{track_id}/path")
-def set_track_path(track_id: int, payload: TrackPathIn, db: Session = Depends(get_db)):
-    tr = db.get(Track, track_id)
+async def set_track_path(track_id: int, payload: TrackPathIn, db: AsyncSession = Depends(get_db)):
+    tr = await db.get(Track, track_id)
     if not tr:
         raise HTTPException(status_code=404, detail="track not found")
     tr.path_local = payload.path_local
-    db.commit()
+    await db.commit()
     return {"detail": "ok", "track_id": track_id, "path_local": tr.path_local}
 
 
 @app.get("/tracks/{track_id}/features")
-def get_track_features(track_id: int, db: Session = Depends(get_db)):
-    tr = db.get(Track, track_id)
+async def get_track_features(track_id: int, db: AsyncSession = Depends(get_db)):
+    tr = await db.get(Track, track_id)
     if not tr:
         raise HTTPException(status_code=404, detail="track not found")
-    feat = db.execute(select(Feature).where(Feature.track_id == track_id)).scalar_one_or_none()
-    emb = db.execute(select(Embedding).where(Embedding.track_id == track_id)).scalar_one_or_none()
+    feat = (
+        await db.execute(select(Feature).where(Feature.track_id == track_id))
+    ).scalar_one_or_none()
+    emb = (
+        await db.execute(select(Embedding).where(Embedding.track_id == track_id))
+    ).scalar_one_or_none()
 
     def _row_to_dict(row):
         if not row:
@@ -435,21 +454,25 @@ def get_track_features(track_id: int, db: Session = Depends(get_db)):
 
 
 @app.post("/aggregate/weeks")
-def aggregate_weeks(db: Session = Depends(get_db), user_id: str = Depends(get_current_user)):
+async def aggregate_weeks(
+    db: AsyncSession = Depends(get_db), user_id: str = Depends(get_current_user)
+):
     # build weekly aggregates per axis from listens + mood scores for a user
     listened_tracks = (
-        db.execute(select(Listen.track_id).where(Listen.user_id == user_id).distinct())
+        (await db.execute(select(Listen.track_id).where(Listen.user_id == user_id).distinct()))
         .scalars()
         .all()
     )
     for tid in listened_tracks:
-        score_track(tid, method=DEFAULT_METHOD, db=db)
+        await score_track(tid, method=DEFAULT_METHOD, db=db)
 
     # pull joined rows: (played_at_week, axis, value)
-    rows = db.execute(
-        select(Listen.played_at, MoodScore.axis, MoodScore.value)
-        .join(MoodScore, MoodScore.track_id == Listen.track_id)
-        .where(and_(MoodScore.method == DEFAULT_METHOD, Listen.user_id == user_id))
+    rows = (
+        await db.execute(
+            select(Listen.played_at, MoodScore.axis, MoodScore.value)
+            .join(MoodScore, MoodScore.track_id == Listen.track_id)
+            .where(and_(MoodScore.method == DEFAULT_METHOD, Listen.user_id == user_id))
+        )
     ).all()
 
     # group in Python for simplicity
@@ -473,7 +496,7 @@ def aggregate_weeks(db: Session = Depends(get_db), user_id: str = Depends(get_cu
         per_axis_weeks[ax] = sorted(set(per_axis_weeks[ax]))
 
     # clear existing aggregates for this user before recompute
-    db.execute(delete(MoodAggWeek).where(MoodAggWeek.user_id == user_id))
+    await db.execute(delete(MoodAggWeek).where(MoodAggWeek.user_id == user_id))
 
     for (wk, axis), n in counts.items():
         s = sums[(wk, axis)]
@@ -503,25 +526,25 @@ def aggregate_weeks(db: Session = Depends(get_db), user_id: str = Depends(get_cu
                 sample_size=n,
             )
         )
-    db.commit()
-    total = db.execute(select(func.count(MoodAggWeek.id))).scalar() or 0
+    await db.commit()
+    total = (await db.execute(select(func.count(MoodAggWeek.id)))).scalar() or 0
     return {"detail": "ok", "rows": int(total)}
 
 
 @app.post("/labels")
-def submit_label(
+async def submit_label(
     track_id: int,
     axis: str,
     value: float,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     user_id: str = Depends(get_current_user),
 ):
     if axis not in AXES:
         raise HTTPException(status_code=400, detail="Unknown axis")
     lbl = UserLabel(user_id=user_id, track_id=track_id, axis=axis, value=value)
     db.add(lbl)
-    db.commit()
-    db.refresh(lbl)
+    await db.commit()
+    await db.refresh(lbl)
     return {
         "detail": "accepted",
         "id": lbl.id,
