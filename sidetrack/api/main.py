@@ -30,6 +30,7 @@ from sidetrack.common.models import (
 
 from . import scoring
 from .clients.lastfm import LastfmClient, get_lastfm_client
+from .clients.spotify import SpotifyClient, get_spotify_client
 from .config import Settings
 from .config import get_settings as get_app_settings
 from .constants import AXES, DEFAULT_METHOD
@@ -169,6 +170,65 @@ async def lastfm_disconnect(
     return {"ok": True}
 
 
+@app.get("/auth/spotify/login")
+async def spotify_login(
+    callback: str,
+    sp_client: SpotifyClient = Depends(get_spotify_client),
+):
+    try:
+        url = sp_client.auth_url(callback)
+    except RuntimeError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"url": url}
+
+
+@app.get("/auth/spotify/callback")
+async def spotify_callback(
+    code: str,
+    callback: str,
+    db: AsyncSession = Depends(get_db),
+    user_id: str = Depends(require_role("user")),
+    sp_client: SpotifyClient = Depends(get_spotify_client),
+):
+    try:
+        token_data = await sp_client.exchange_code(code, callback)
+        access_token = token_data.get("access_token")
+        refresh_token = token_data.get("refresh_token")
+        expires_in = int(token_data.get("expires_in") or 0)
+        profile = await sp_client.get_current_user(access_token)
+        username = profile.get("id") or profile.get("display_name")
+    except (RuntimeError, httpx.HTTPError) as exc:
+        logger.error("Spotify auth error", error=str(exc))
+        raise HTTPException(status_code=400, detail=str(exc))
+    row = await db.get(UserSettings, user_id)
+    if not row:
+        row = UserSettings(user_id=user_id)
+    row.spotify_user = username
+    row.spotify_access_token = access_token
+    row.spotify_refresh_token = refresh_token
+    row.spotify_token_expires_at = datetime.utcnow() + timedelta(seconds=expires_in)
+    db.add(row)
+    await db.commit()
+    return {"ok": True, "spotifyUser": username}
+
+
+@app.delete("/auth/spotify/disconnect")
+async def spotify_disconnect(
+    db: AsyncSession = Depends(get_db),
+    user_id: str = Depends(require_role("user")),
+):
+    row = await db.get(UserSettings, user_id)
+    if not row:
+        return {"ok": True}
+    row.spotify_user = None
+    row.spotify_access_token = None
+    row.spotify_refresh_token = None
+    row.spotify_token_expires_at = None
+    db.add(row)
+    await db.commit()
+    return {"ok": True}
+
+
 @app.get("/settings", response_model=SettingsOut)
 async def get_settings(
     db: AsyncSession = Depends(get_db),
@@ -177,7 +237,17 @@ async def get_settings(
     row = await db.get(UserSettings, user_id)
     if not row:
         return SettingsOut()
-    return SettingsOut.model_validate(row)
+    return SettingsOut(
+        listenBrainzUser=row.listenbrainz_user,
+        listenBrainzToken=row.listenbrainz_token,
+        lastfmUser=row.lastfm_user,
+        lastfmConnected=bool(row.lastfm_session_key),
+        spotifyUser=row.spotify_user,
+        spotifyConnected=bool(row.spotify_access_token),
+        useGpu=row.use_gpu,
+        useStems=row.use_stems,
+        useExcerpts=row.use_excerpts,
+    )
 
 
 @app.post("/settings", response_model=SettingsUpdateResponse)

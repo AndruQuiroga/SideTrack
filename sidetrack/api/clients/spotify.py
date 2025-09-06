@@ -1,0 +1,73 @@
+from collections.abc import AsyncGenerator
+from typing import Any
+
+import httpx
+from fastapi import Depends
+
+from ..config import Settings, get_settings
+
+
+class SpotifyClient:
+    """Minimal Spotify API client for OAuth and basic requests."""
+
+    auth_root = "https://accounts.spotify.com"
+    api_root = "https://api.spotify.com/v1"
+
+    def __init__(self, client: httpx.AsyncClient, client_id: str | None, client_secret: str | None) -> None:
+        self._client = client
+        self.client_id = client_id
+        self.client_secret = client_secret
+
+    def auth_url(self, callback: str, scope: str = "user-read-email") -> str:
+        if not self.client_id:
+            raise RuntimeError("SPOTIFY_CLIENT_ID not configured")
+        params = {
+            "response_type": "code",
+            "client_id": self.client_id,
+            "scope": scope,
+            "redirect_uri": callback,
+        }
+        return f"{self.auth_root}/authorize?" + httpx.QueryParams(params).render()
+
+    async def exchange_code(self, code: str, callback: str) -> dict[str, Any]:
+        if not self.client_id or not self.client_secret:
+            raise RuntimeError("Spotify credentials not configured")
+        data = {
+            "grant_type": "authorization_code",
+            "code": code,
+            "redirect_uri": callback,
+        }
+        auth = httpx.BasicAuth(self.client_id, self.client_secret)
+        resp = await self._client.post(
+            f"{self.auth_root}/api/token", data=data, auth=auth, timeout=30
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+    async def refresh_token(self, refresh_token: str) -> dict[str, Any]:
+        if not self.client_id or not self.client_secret:
+            raise RuntimeError("Spotify credentials not configured")
+        data = {"grant_type": "refresh_token", "refresh_token": refresh_token}
+        auth = httpx.BasicAuth(self.client_id, self.client_secret)
+        resp = await self._client.post(
+            f"{self.auth_root}/api/token", data=data, auth=auth, timeout=30
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+    async def get_current_user(self, access_token: str) -> dict[str, Any]:
+        headers = {"Authorization": f"Bearer {access_token}"}
+        resp = await self._client.get(f"{self.api_root}/me", headers=headers, timeout=30)
+        resp.raise_for_status()
+        return resp.json()
+
+
+async def get_spotify_client(
+    settings: Settings = Depends(get_settings),
+) -> AsyncGenerator[SpotifyClient, None]:
+    async with httpx.AsyncClient() as client:
+        yield SpotifyClient(
+            client,
+            settings.spotify_client_id,
+            settings.spotify_client_secret,
+        )
