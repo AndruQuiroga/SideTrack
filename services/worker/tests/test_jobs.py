@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 import soundfile as sf
 from rq import Queue, SimpleWorker
 
@@ -6,6 +7,8 @@ from sidetrack.api.db import SessionLocal
 from sidetrack.common.models import Feature
 from tests.factories import TrackFactory
 from sidetrack.worker.jobs import analyze_track, compute_embeddings
+
+pytestmark = pytest.mark.integration
 
 
 def test_jobs_are_executed(redis_conn, tmp_path):

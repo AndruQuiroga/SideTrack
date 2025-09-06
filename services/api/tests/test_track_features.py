@@ -3,6 +3,8 @@ import pytest
 from sidetrack.api.db import SessionLocal
 from tests.factories import EmbeddingFactory, FeatureFactory, TrackFactory
 
+pytestmark = pytest.mark.integration
+
 
 async def _create_track_with_features() -> int:
     async with SessionLocal() as db:

@@ -7,6 +7,8 @@ from sidetrack.api.db import SessionLocal
 from sidetrack.common.models import Artist, Listen, MoodScore
 from tests.factories import TrackFactory
 
+pytestmark = pytest.mark.integration
+
 
 async def _add_track(title: str, artist: str, value: float) -> int:
     """Create track with uniform mood scores and a listen."""

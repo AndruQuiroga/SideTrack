@@ -11,6 +11,8 @@ from sidetrack.api.db import SessionLocal
 from sidetrack.api.schemas.musicbrainz import MusicbrainzIngestResponse
 from sidetrack.common.models import Artist, Release, Track
 
+pytestmark = pytest.mark.integration
+
 sample_release = {
     "id": "release-mbid",
     "title": "Sample Release",

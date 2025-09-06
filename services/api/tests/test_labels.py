@@ -6,6 +6,8 @@ from sidetrack.api.schemas.labels import LabelResponse
 from sidetrack.common.models import UserLabel
 from tests.factories import TrackFactory
 
+pytestmark = pytest.mark.integration
+
 
 async def _create_track() -> int:
     async with SessionLocal() as db:

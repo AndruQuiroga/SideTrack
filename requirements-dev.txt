@@ -55,6 +55,7 @@ pytest-env==1.0.1
 factory-boy==3.3.0
 pydantic-factories==1.17.0
 coverage==7.6.1
+testcontainers==3.7.1
 
 # Development tools
 black==24.3.0

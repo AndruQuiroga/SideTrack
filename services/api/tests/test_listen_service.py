@@ -10,6 +10,8 @@ from sidetrack.api.repositories.track_repository import TrackRepository
 from sidetrack.api.services.listen_service import ListenService
 from sidetrack.common.models import Listen
 
+pytestmark = pytest.mark.integration
+
 
 @pytest.mark.asyncio
 async def test_artist_repository_get_or_create(async_session):
