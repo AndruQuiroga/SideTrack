@@ -5,6 +5,7 @@ export const metadata = {
 
 import './globals.css';
 import AppShell from '../components/AppShell';
+import PageTransition from '../components/PageTransition';
 import { ThemeProvider } from 'next-themes';
 import { Inter } from 'next/font/google';
 
@@ -15,7 +16,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} font-sans antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-          <AppShell>{children}</AppShell>
+          <PageTransition>
+            <AppShell>{children}</AppShell>
+          </PageTransition>
         </ThemeProvider>
       </body>
     </html>
