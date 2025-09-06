@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import clsx from 'clsx';
 
 import NavRail from '../components/NavRail';
@@ -12,16 +12,22 @@ import { NavContext } from './NavContext';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('nav-collapsed');
+    if (stored !== null) {
+      setCollapsed(stored === 'true');
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('nav-collapsed', collapsed.toString());
+  }, [collapsed]);
   return (
     <ToastProvider>
       <NavContext.Provider value={{ collapsed, setCollapsed }}>
         <div className="min-h-dvh md:flex">
-          <aside
-            className={clsx(
-              'hidden md:block transition-all',
-              collapsed ? 'w-16' : 'w-60',
-            )}
-          >
+          <aside className={clsx('hidden md:block transition-all', collapsed ? 'w-16' : 'w-60')}>
             <NavRail />
           </aside>
           <div className="flex min-h-dvh flex-1 flex-col">
@@ -37,9 +43,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 </span>
               </div>
             </header>
-            <main className="container mx-auto w-full max-w-6xl flex-1 px-4 py-6">
-              {children}
-            </main>
+            <main className="container mx-auto w-full max-w-6xl flex-1 px-4 py-6">{children}</main>
           </div>
         </div>
         <MobileNav />

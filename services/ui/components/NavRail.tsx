@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import clsx from 'clsx';
 import { motion } from 'framer-motion';
+import * as Tooltip from '@radix-ui/react-tooltip';
 import { useNav } from './NavContext';
 
 export const nav = [
@@ -35,33 +36,56 @@ export default function NavRail() {
         <div className="h-8 w-8 rounded-full bg-gradient-to-br from-emerald-400 to-sky-400" />
         {!collapsed && <strong className="text-lg">SideTrack</strong>}
       </div>
-      <nav className="flex flex-col gap-1">
-        {nav.map((item) => {
-          const Icon = item.icon;
-          const active = pathname === item.href;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={clsx(
-                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
-                active
-                  ? 'bg-emerald-500/10 text-emerald-300'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-white/5',
-              )}
-            >
-              <motion.div
-                className="flex items-center gap-3"
-                whileHover={{ x: 2 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-              >
-                <Icon size={18} />
-                {!collapsed && <span>{item.label}</span>}
-              </motion.div>
-            </Link>
-          );
-        })}
-      </nav>
+      <Tooltip.Provider>
+        <nav className="flex flex-col gap-1">
+          {nav.map((item) => {
+            const Icon = item.icon;
+            const active = pathname === item.href;
+            return (
+              <Tooltip.Root key={item.href}>
+                <Tooltip.Trigger asChild>
+                  <Link
+                    href={item.href}
+                    className={clsx(
+                      'relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
+                      active
+                        ? 'text-emerald-300'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-white/5',
+                    )}
+                  >
+                    {active && (
+                      <motion.span
+                        layoutId="nav-active"
+                        className="absolute inset-0 -z-10 rounded-lg bg-emerald-500/10"
+                        transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                      />
+                    )}
+                    <motion.div
+                      className="flex items-center gap-3"
+                      whileHover={{ x: 2 }}
+                      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                    >
+                      <Icon size={18} />
+                      {!collapsed && <span>{item.label}</span>}
+                    </motion.div>
+                  </Link>
+                </Tooltip.Trigger>
+                {collapsed && (
+                  <Tooltip.Portal>
+                    <Tooltip.Content
+                      side="right"
+                      sideOffset={8}
+                      className="rounded-md bg-foreground px-2 py-1 text-xs text-background"
+                    >
+                      {item.label}
+                    </Tooltip.Content>
+                  </Tooltip.Portal>
+                )}
+              </Tooltip.Root>
+            );
+          })}
+        </nav>
+      </Tooltip.Provider>
       <button
         onClick={() => setCollapsed(!collapsed)}
         className="mt-auto flex items-center gap-2 px-2 py-3 text-xs text-muted-foreground"
