@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+      - run: pip install nox coverage-badge
+      - run: nox -s lint unit integration
+      - run: coverage xml
+      - run: coverage-badge -o coverage.svg -f
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            coverage.xml
+            coverage.svg
+      - uses: codecov/codecov-action@v4
+        with:
+          files: coverage.xml
