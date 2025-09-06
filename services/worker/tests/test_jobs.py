@@ -8,8 +8,8 @@ from rq import Queue, SimpleWorker
 os.environ.setdefault("DATABASE_URL", "sqlite:///./test_worker.db")
 os.environ.setdefault("AUTO_MIGRATE", "1")
 
-from app.db import SessionLocal, maybe_create_all
-from worker.jobs import analyze_track, compute_embeddings
+from services.api.app.db import SessionLocal, maybe_create_all
+from services.worker.worker.jobs import analyze_track, compute_embeddings
 
 from services.common.models import Feature, Track
 
