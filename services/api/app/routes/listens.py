@@ -1,7 +1,6 @@
 """Endpoints for ingesting listen history."""
 
 import json
-import os
 from datetime import date, datetime
 from pathlib import Path
 
@@ -9,6 +8,7 @@ import httpx
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from pydantic import BaseModel
 
+from ..config import Settings, get_settings
 from ..main import get_current_user, get_http_client
 from ..services.listen_service import ListenService, get_listen_service
 
@@ -31,10 +31,6 @@ class ListenIn(BaseModel):
     track: TrackIn
 
 
-def _env(name: str, default: str | None = None) -> str | None:
-    return os.getenv(name, default)
-
-
 @router.post("/ingest/listens")
 async def ingest_listens(
     since: date | None = Query(None),
@@ -43,6 +39,7 @@ async def ingest_listens(
     listen_service: ListenService = Depends(get_listen_service),
     client: httpx.AsyncClient = Depends(get_http_client),
     user_id: str = Depends(get_current_user),
+    settings: Settings = Depends(get_settings),
 ):
     # 3 modes: body, ListenBrainz, or sample file
     if source == "body" and listens is None:
@@ -68,7 +65,7 @@ async def ingest_listens(
         return {"detail": "ok", "ingested": created}
 
     if source in ("auto", "listenbrainz"):
-        token = _env("LISTENBRAINZ_TOKEN")
+        token = settings.listenbrainz_token
         try:
             rows = await listen_service.lb_fetch_listens(client, user_id, since, token)
             created = await listen_service.ingest_lb_rows(rows, user_id)
