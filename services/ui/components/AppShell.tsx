@@ -1,8 +1,6 @@
 "use client";
 
 import { useState } from 'react';
-import { usePathname } from 'next/navigation';
-import { AnimatePresence, motion } from 'framer-motion';
 import clsx from 'clsx';
 
 import NavRail from '../components/NavRail';
@@ -14,7 +12,6 @@ import { NavContext } from './NavContext';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
-  const pathname = usePathname();
   return (
     <ToastProvider>
       <NavContext.Provider value={{ collapsed, setCollapsed }}>
@@ -40,20 +37,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 </span>
               </div>
             </header>
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={pathname}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-                className="flex-1"
-              >
-                <main className="container mx-auto w-full max-w-6xl px-4 py-6">
-                  {children}
-                </main>
-              </motion.div>
-            </AnimatePresence>
+            <main className="container mx-auto w-full max-w-6xl flex-1 px-4 py-6">
+              {children}
+            </main>
           </div>
         </div>
         <MobileNav />
