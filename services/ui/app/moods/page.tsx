@@ -2,6 +2,7 @@
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { apiFetch } from '../../lib/api';
+import { useTrajectory } from '../../lib/query';
 import ChartContainer from '../../components/ChartContainer';
 import FilterBar from '../../components/FilterBar';
 import Skeleton from '../../components/Skeleton';
@@ -14,10 +15,9 @@ const MoodsStreamgraph = dynamic(
   },
 );
 
-type Trajectory = { points: { week: string }[] };
-
 export default function Moods() {
-  const [loading, setLoading] = useState(true);
+  const { data: traj, isLoading: trajLoading } = useTrajectory();
+  const [radarLoading, setRadarLoading] = useState(false);
   const [series, setSeries] = useState<{ week: Date; [axis: string]: number | Date }[]>([]);
   const [axes] = useState<string[]>([
     'energy',
@@ -28,11 +28,11 @@ export default function Moods() {
   ]);
 
   useEffect(() => {
+    if (!traj) return;
     let mounted = true;
+    setRadarLoading(true);
     (async () => {
       try {
-        const trajRes = await apiFetch('/dashboard/trajectory');
-        const traj: Trajectory = await trajRes.json();
         const weeks = (traj.points ?? []).slice(-12).map((p) => p.week);
         const rows = await Promise.all(
           weeks.map(async (w) => {
@@ -41,18 +41,19 @@ export default function Moods() {
             return { week: new Date(j.week), ...j.axes };
           }),
         );
-        if (!mounted) return;
-        setSeries(rows);
+        if (mounted) setSeries(rows);
       } catch (e) {
-        setSeries([]);
+        if (mounted) setSeries([]);
       } finally {
-        setLoading(false);
+        if (mounted) setRadarLoading(false);
       }
     })();
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [traj]);
+
+  const loading = trajLoading || radarLoading;
 
   const content = useMemo(() => {
     if (loading) return <Skeleton className="h-[340px]" />;

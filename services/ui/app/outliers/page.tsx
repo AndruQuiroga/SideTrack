@@ -1,24 +1,20 @@
-import { apiFetch } from '../../lib/api';
+'use client';
 
-type OutlierTrack = { track_id: number; title: string; artist?: string; distance: number };
-type OutliersResponse = { tracks: OutlierTrack[] };
+import { useOutliers } from '../../lib/query';
 
-async function getOutliers(): Promise<OutliersResponse> {
-  const res = await apiFetch('/dashboard/outliers', { next: { revalidate: 0 } });
-  if (!res.ok) return { tracks: [] } as OutliersResponse;
-  return (await res.json()) as OutliersResponse;
-}
-
-export default async function Outliers() {
-  const data = await getOutliers();
+export default function Outliers() {
+  const { data, isLoading } = useOutliers();
+  const tracks = data?.tracks ?? [];
   return (
     <section>
       <h2>Outliers</h2>
-      {!data.tracks || data.tracks.length === 0 ? (
+      {isLoading ? (
+        <p>Loading...</p>
+      ) : tracks.length === 0 ? (
         <p>No outliers found.</p>
       ) : (
         <ul>
-          {data.tracks.map((t: OutlierTrack) => (
+          {tracks.map((t) => (
             <li key={t.track_id}>
               {t.title} – {t.artist || 'Unknown'} ({t.distance.toFixed(3)})
             </li>
