@@ -3,7 +3,8 @@ import soundfile as sf
 from rq import Queue, SimpleWorker
 
 from sidetrack.api.db import SessionLocal
-from sidetrack.common.models import Feature, Track
+from sidetrack.common.models import Feature
+from tests.factories import TrackFactory
 from sidetrack.worker.jobs import analyze_track, compute_embeddings
 
 
@@ -13,10 +14,14 @@ def test_jobs_are_executed(redis_conn, tmp_path):
     sf.write(audio_path, np.zeros(1024), 22050)
 
     with SessionLocal() as db:
-        tr = Track(title="t", path_local=str(audio_path))
+        from sidetrack.common.models import Base
+
+        Base.metadata.create_all(db.bind)
+        tr = TrackFactory(title="t", path_local=str(audio_path))
         db.add(tr)
-        db.commit()
+        db.flush()
         track_id = tr.track_id
+        db.commit()
 
     analysis_q = Queue("analysis", connection=redis_conn)
     scoring_q = Queue("scoring", connection=redis_conn)

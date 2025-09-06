@@ -3,16 +3,18 @@ from sqlalchemy import select
 
 from sidetrack.api.db import SessionLocal
 from sidetrack.api.schemas.labels import LabelResponse
-from sidetrack.common.models import Track, UserLabel
+from sidetrack.common.models import UserLabel
+from tests.factories import TrackFactory
 
 
 async def _create_track() -> int:
     async with SessionLocal() as db:
-        tr = Track(title="test")
+        tr = TrackFactory(title="test")
         db.add(tr)
+        await db.flush()
+        tid = tr.track_id
         await db.commit()
-        await db.refresh(tr)
-        return tr.track_id
+        return tid
 
 
 @pytest.mark.asyncio
