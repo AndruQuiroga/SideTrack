@@ -4,26 +4,26 @@ from sqlalchemy import select
 
 from sidetrack.api.constants import AXES
 from sidetrack.api.main import score_track
-from sidetrack.common.models import Embedding, Feature, MoodScore, Track
+from sidetrack.common.models import MoodScore
+from tests.factories import EmbeddingFactory, FeatureFactory, TrackFactory
 
 
 @pytest.mark.asyncio
 async def test_score_track_zero_shot(async_session):
-    tr = Track(title="Song")
+    tr = TrackFactory()
     async_session.add(tr)
     await async_session.flush()
-    async_session.add(
-        Embedding(track_id=tr.track_id, model="test", dim=3, vector=[0.1, 0.2, 0.3])
-    )
+    tid = tr.track_id
+    async_session.add(EmbeddingFactory(unit=True, track_id=tid))
     await async_session.commit()
 
-    res = await score_track(tr.track_id, db=async_session)
+    res = await score_track(tid, db=async_session)
     assert res["detail"] == "scored"
     assert set(res["scores"]) == set(AXES)
 
     rows = (
         await async_session.execute(
-            select(MoodScore).where(MoodScore.track_id == tr.track_id)
+            select(MoodScore).where(MoodScore.track_id == tid)
         )
     ).scalars().all()
     assert len(rows) == len(AXES)
@@ -37,12 +37,13 @@ async def test_score_track_zero_shot(async_session):
 
 @pytest.mark.asyncio
 async def test_score_track_logreg(async_session):
-    tr = Track(title="Song2")
+    tr = TrackFactory()
     async_session.add(tr)
     await async_session.flush()
+    tid = tr.track_id
     async_session.add(
-        Feature(
-            track_id=tr.track_id,
+        FeatureFactory(
+            track_id=tid,
             bpm=120.0,
             pumpiness=0.5,
             percussive_harmonic_ratio=0.4,
@@ -50,14 +51,14 @@ async def test_score_track_logreg(async_session):
     )
     await async_session.commit()
 
-    res = await score_track(tr.track_id, method="logreg", version="v1", db=async_session)
+    res = await score_track(tid, method="logreg", version="v1", db=async_session)
     assert res["detail"] == "scored"
     assert res["method"] == "logreg_v1"
     assert set(res["scores"]) == set(AXES)
     rows = (
         await async_session.execute(
             select(MoodScore).where(
-                MoodScore.track_id == tr.track_id, MoodScore.method == "logreg_v1"
+                MoodScore.track_id == tid, MoodScore.method == "logreg_v1"
             )
         )
     ).scalars().all()
@@ -69,18 +70,22 @@ async def test_score_track_logreg(async_session):
 
 @pytest.mark.asyncio
 async def test_score_track_missing_data(async_session):
-    tr = Track(title="NoData")
+    tr = TrackFactory()
     async_session.add(tr)
+    await async_session.flush()
+    tid = tr.track_id
     await async_session.commit()
 
     with pytest.raises(HTTPException):
-        await score_track(tr.track_id, db=async_session)
+        await score_track(tid, db=async_session)
 
 
 @pytest.mark.asyncio
 async def test_score_track_bad_method(async_session):
-    tr = Track(title="Bad")
+    tr = TrackFactory()
     async_session.add(tr)
+    await async_session.flush()
+    tid = tr.track_id
     await async_session.commit()
     with pytest.raises(HTTPException):
-        await score_track(tr.track_id, method="nope", db=async_session)
+        await score_track(tid, method="nope", db=async_session)

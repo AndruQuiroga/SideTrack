@@ -4,7 +4,8 @@ import pytest
 
 from sidetrack.api.constants import AXES, DEFAULT_METHOD
 from sidetrack.api.db import SessionLocal
-from sidetrack.common.models import Artist, Listen, MoodScore, Track
+from sidetrack.common.models import Artist, Listen, MoodScore
+from tests.factories import TrackFactory
 
 
 async def _add_track(title: str, artist: str, value: float) -> int:
@@ -14,16 +15,16 @@ async def _add_track(title: str, artist: str, value: float) -> int:
         db.add(art)
         await db.commit()
         await db.refresh(art)
-        tr = Track(title=title, artist_id=art.artist_id)
+        tr = TrackFactory(title=title, artist_id=art.artist_id)
         db.add(tr)
-        await db.commit()
-        await db.refresh(tr)
+        await db.flush()
+        tid = tr.track_id
         db.add_all(
             [
-                Listen(user_id="u1", track_id=tr.track_id, played_at=datetime.now(UTC)),
+                Listen(user_id="u1", track_id=tid, played_at=datetime.now(UTC)),
                 *[
                     MoodScore(
-                        track_id=tr.track_id,
+                        track_id=tid,
                         axis=ax,
                         method=DEFAULT_METHOD,
                         value=value,
@@ -33,7 +34,7 @@ async def _add_track(title: str, artist: str, value: float) -> int:
             ]
         )
         await db.commit()
-        return tr.track_id
+        return tid
 
 
 @pytest.mark.asyncio

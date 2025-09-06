@@ -1,20 +1,33 @@
 import pytest
 
 from sidetrack.api.db import SessionLocal
-from sidetrack.common.models import Embedding, Feature, Track
+from tests.factories import EmbeddingFactory, FeatureFactory, TrackFactory
 
 
 async def _create_track_with_features() -> int:
     async with SessionLocal() as db:
-        tr = Track(title="t")
+        tr = TrackFactory()
         db.add(tr)
         await db.flush()
+        tid = tr.track_id
         db.add(
-            Feature(track_id=tr.track_id, bpm=120.0, pumpiness=0.5, percussive_harmonic_ratio=0.3)
+            FeatureFactory(
+                track_id=tid,
+                bpm=120.0,
+                pumpiness=0.5,
+                percussive_harmonic_ratio=0.3,
+            )
         )
-        db.add(Embedding(track_id=tr.track_id, model="m", dim=3, vector=[0.1, 0.2, 0.3]))
+        db.add(
+            EmbeddingFactory(
+                track_id=tid,
+                model="m",
+                dim=3,
+                vector=[0.1, 0.2, 0.3],
+            )
+        )
         await db.commit()
-        return tr.track_id
+        return tid
 
 
 @pytest.mark.asyncio

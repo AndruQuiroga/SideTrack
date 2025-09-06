@@ -6,25 +6,26 @@ from sqlalchemy import select
 from sidetrack.api import main
 from sidetrack.api.constants import DEFAULT_METHOD
 from sidetrack.api.db import SessionLocal
-from sidetrack.common.models import Listen, MoodAggWeek, MoodScore, Track
+from sidetrack.common.models import Listen, MoodAggWeek, MoodScore
+from tests.factories import TrackFactory
 
 
 async def _add_listen(user: str, value: float) -> int:
     async with SessionLocal() as db:
-        tr = Track(title=f"t-{user}")
+        tr = TrackFactory(title=f"t-{user}")
         db.add(tr)
-        await db.commit()
-        await db.refresh(tr)
+        await db.flush()
+        tid = tr.track_id
         db.add_all(
             [
                 Listen(
-                    user_id=user, track_id=tr.track_id, played_at=datetime(2024, 1, 1, tzinfo=UTC)
+                    user_id=user, track_id=tid, played_at=datetime(2024, 1, 1, tzinfo=UTC)
                 ),
-                MoodScore(track_id=tr.track_id, axis="energy", method=DEFAULT_METHOD, value=value),
+                MoodScore(track_id=tid, axis="energy", method=DEFAULT_METHOD, value=value),
             ]
         )
         await db.commit()
-        return tr.track_id
+        return tid
 
 
 @pytest.mark.asyncio

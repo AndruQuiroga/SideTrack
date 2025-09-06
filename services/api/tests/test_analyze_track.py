@@ -3,16 +3,17 @@ from rq import Queue
 
 from sidetrack.api.db import SessionLocal
 from sidetrack.api.schemas.tracks import AnalyzeTrackResponse
-from sidetrack.common.models import Track
+from tests.factories import TrackFactory
 
 
 @pytest.mark.asyncio
 async def test_analyze_track_schedules_job(async_client, redis_conn):
     async with SessionLocal() as db:
-        tr = Track(title="test", path_local="song.mp3")
+        tr = TrackFactory(path_local="song.mp3")
         db.add(tr)
-        await db.commit()
+        await db.flush()
         tid = tr.track_id
+        await db.commit()
     resp = await async_client.post(f"/analyze/track/{tid}")
     assert resp.status_code == 200
     data = AnalyzeTrackResponse.model_validate(resp.json())
@@ -31,9 +32,10 @@ async def test_analyze_track_not_found(async_client):
 @pytest.mark.asyncio
 async def test_analyze_track_missing_path(async_client):
     async with SessionLocal() as db:
-        tr = Track(title="nop")
+        tr = TrackFactory()
         db.add(tr)
-        await db.commit()
+        await db.flush()
         tid = tr.track_id
+        await db.commit()
     resp = await async_client.post(f"/analyze/track/{tid}")
     assert resp.status_code == 400

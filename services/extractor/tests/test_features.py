@@ -5,7 +5,8 @@ import soundfile as sf
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
-from sidetrack.common.models import Base, Embedding, Feature, Track
+from sidetrack.common.models import Base, Embedding, Feature
+from tests.factories import TrackFactory
 from sidetrack.extractor.run import analyze_one, estimate_features
 
 SR = 44100
@@ -35,7 +36,7 @@ def test_analyze_one_with_embeddings(tmp_path, monkeypatch):
     engine = create_engine("sqlite://")
     Base.metadata.create_all(engine)
     with Session(engine) as db:
-        tr = Track(track_id=1, title="t", path_local=str(wav), duration=2)
+        tr = TrackFactory(track_id=1, title="t", path_local=str(wav), duration=2)
         db.add(tr)
         db.commit()
         monkeypatch.setenv("EMBEDDING_MODEL", "mfcc")
