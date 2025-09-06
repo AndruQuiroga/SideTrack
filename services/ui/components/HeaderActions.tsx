@@ -5,17 +5,17 @@ import { useToast } from './ToastProvider';
 import { Sync } from 'lucide-react';
 
 export default function HeaderActions() {
-  const { show } = useToast();
+  const toast = useToast();
   const [syncing, setSyncing] = useState(false);
 
   const handleSync = async () => {
     setSyncing(true);
-    show({ title: 'Sync started', description: 'Fetching listens…', kind: 'info' });
+    toast.show({ title: 'Sync started', description: 'Fetching listens…', kind: 'info' });
     try {
       await fetch('/api/lastfm/sync', { method: 'POST' });
-      show({ title: 'Sync complete', description: 'Listens updated', kind: 'success' });
+      toast.show({ title: 'Sync complete', description: 'Listens updated', kind: 'success' });
     } catch {
-      show({ title: 'Sync failed', description: 'Please try again later', kind: 'error' });
+      toast.show({ title: 'Sync failed', description: 'Please try again later', kind: 'error' });
     } finally {
       setSyncing(false);
     }
