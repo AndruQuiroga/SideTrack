@@ -1,45 +1,31 @@
 from datetime import datetime
 
 import pytest
-import pytest_asyncio
+from sqlalchemy import select
 
-
-@pytest_asyncio.fixture()
-async def session(tmp_path, monkeypatch):
-    db_url = f"sqlite+aiosqlite:///{tmp_path}/test.db"
-    monkeypatch.setenv("DATABASE_URL", db_url)
-    from sidetrack.api.db import SessionLocal, maybe_create_all
-
-    await maybe_create_all()
-    async with SessionLocal() as sess:
-        yield sess
+from sidetrack.api.repositories.artist_repository import ArtistRepository
+from sidetrack.api.repositories.listen_repository import ListenRepository
+from sidetrack.api.repositories.release_repository import ReleaseRepository
+from sidetrack.api.repositories.track_repository import TrackRepository
+from sidetrack.api.services.listen_service import ListenService
+from sidetrack.common.models import Listen
 
 
 @pytest.mark.asyncio
-async def test_artist_repository_get_or_create(session):
-    from sidetrack.api.repositories.artist_repository import ArtistRepository
-
-    repo = ArtistRepository(session)
+async def test_artist_repository_get_or_create(async_session):
+    repo = ArtistRepository(async_session)
     a1 = await repo.get_or_create("Test Artist")
     a2 = await repo.get_or_create("Test Artist")
     assert a1.artist_id == a2.artist_id
 
 
 @pytest.mark.asyncio
-async def test_listen_service_ingest(session):
-    from sidetrack.api.repositories.artist_repository import ArtistRepository
-    from sidetrack.api.repositories.listen_repository import ListenRepository
-    from sidetrack.api.repositories.release_repository import ReleaseRepository
-    from sidetrack.api.repositories.track_repository import TrackRepository
-    from sidetrack.api.services.listen_service import ListenService
-    from sqlalchemy import select
-    from sidetrack.common.models import Listen
-
+async def test_listen_service_ingest(async_session):
     service = ListenService(
-        ArtistRepository(session),
-        ReleaseRepository(session),
-        TrackRepository(session),
-        ListenRepository(session),
+        ArtistRepository(async_session),
+        ReleaseRepository(async_session),
+        TrackRepository(async_session),
+        ListenRepository(async_session),
     )
 
     ts = int(datetime.utcnow().timestamp())
@@ -63,5 +49,5 @@ async def test_listen_service_ingest(session):
     created = await service.ingest_lb_rows(rows, "tester")
     assert created == 0
 
-    res = await session.execute(select(Listen))
+    res = await async_session.execute(select(Listen))
     assert len(res.scalars().all()) == 1

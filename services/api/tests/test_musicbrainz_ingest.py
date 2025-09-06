@@ -1,10 +1,11 @@
-import sys
-from pathlib import Path
+import copy
 
 import pytest
-from fastapi.testclient import TestClient
 
+from sidetrack.api import main as main_mod
+from sidetrack.api.db import SessionLocal
 from sidetrack.api.schemas.musicbrainz import MusicbrainzIngestResponse
+from sidetrack.common.models import Artist, Release, Track
 
 sample_release = {
     "id": "release-mbid",
@@ -23,28 +24,9 @@ sample_release = {
 }
 
 
-def _setup_app(tmp_path, monkeypatch):
-    db_url = f"sqlite+aiosqlite:///{tmp_path}/test.db"
-    monkeypatch.setenv("DATABASE_URL", db_url)
-    # Import after setting env so that the engine uses the test DB
-    from sidetrack.api import main as main_mod
-    from sidetrack.api.db import SessionLocal, get_db
-    from sidetrack.api.main import app
-
-    # override get_db dependency to return actual session (not contextmanager)
-    def override_get_db():
-        db = SessionLocal()
-        try:
-            yield db
-        finally:
-            db.close()
-
-    app.dependency_overrides[get_db] = override_get_db
-
-    # mock HTTP session .get
+@pytest.fixture
+def mb_client(client, monkeypatch):
     def fake_get(url, params=None, headers=None, timeout=30):
-        import copy
-
         class Resp:
             def raise_for_status(self):
                 pass
@@ -56,26 +38,16 @@ def _setup_app(tmp_path, monkeypatch):
 
     monkeypatch.setattr(main_mod.HTTP_SESSION, "get", fake_get)
     monkeypatch.setattr(main_mod.time, "sleep", lambda x: None)
-    return app, SessionLocal
-
-
-@pytest.fixture
-def mb_client(tmp_path, monkeypatch):
-    app, SessionLocal = _setup_app(tmp_path, monkeypatch)
-    with TestClient(app) as client:
-        yield client, SessionLocal
+    return client
 
 
 def test_ingest_musicbrainz_dedup(mb_client):
-    client, SessionLocal = mb_client
-    resp = client.post("/api/v1/ingest/musicbrainz", params={"release_mbid": "release-mbid"})
+    resp = mb_client.post("/api/v1/ingest/musicbrainz", params={"release_mbid": "release-mbid"})
     assert resp.status_code == 200
     data = MusicbrainzIngestResponse.model_validate(resp.json())
     assert data.tracks >= 2
 
     session = SessionLocal()
-    from sidetrack.common.models import Artist, Release, Track
-
     assert session.query(Artist).count() == 1
     assert session.query(Release).count() == 1
     assert session.query(Track).count() >= 2
@@ -83,9 +55,6 @@ def test_ingest_musicbrainz_dedup(mb_client):
 
 
 def test_ingest_musicbrainz_not_found(mb_client, monkeypatch):
-    client, _ = mb_client
-    from sidetrack.api import main as main_mod
-
     class Resp:
         def raise_for_status(self):
             from requests import HTTPError, Response
@@ -98,5 +67,5 @@ def test_ingest_musicbrainz_not_found(mb_client, monkeypatch):
             return {}
 
     monkeypatch.setattr(main_mod.HTTP_SESSION, "get", lambda *a, **k: Resp())
-    resp = client.post("/api/v1/ingest/musicbrainz", params={"release_mbid": "missing"})
+    resp = mb_client.post("/api/v1/ingest/musicbrainz", params={"release_mbid": "missing"})
     assert resp.status_code == 404

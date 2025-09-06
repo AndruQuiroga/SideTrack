@@ -1,39 +1,8 @@
-import os
 from datetime import UTC, datetime
 
-import pytest
-from fastapi.testclient import TestClient
-
-os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///./test.db"
-
-from sidetrack.api.constants import AXES, DEFAULT_METHOD  # noqa: E402
-from sidetrack.api.db import SessionLocal, engine, get_db  # noqa: E402
-from sidetrack.api.main import app  # noqa: E402
-from sidetrack.common.models import Artist, Base, Listen, MoodScore, Track  # noqa: E402
-
-Base.metadata.create_all(bind=engine.sync_engine)
-
-
-def override_get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-app.dependency_overrides[get_db] = override_get_db
-client = TestClient(app)
-
-
-@pytest.fixture(autouse=True)
-def clear_db():
-    with SessionLocal() as db:
-        db.query(MoodScore).delete()
-        db.query(Listen).delete()
-        db.query(Track).delete()
-        db.query(Artist).delete()
-        db.commit()
+from sidetrack.api.constants import AXES, DEFAULT_METHOD
+from sidetrack.api.db import SessionLocal
+from sidetrack.common.models import Artist, Listen, MoodScore, Track
 
 
 def _add_track(title: str, artist: str, value: float) -> int:
@@ -65,7 +34,7 @@ def _add_track(title: str, artist: str, value: float) -> int:
         return tr.track_id
 
 
-def test_outliers_endpoint_returns_sorted_tracks():
+def test_outliers_endpoint_returns_sorted_tracks(client):
     _add_track("center", "a", 0.5)
     _add_track("near", "a", 0.6)
     far_tid = _add_track("far", "b", 0.0)

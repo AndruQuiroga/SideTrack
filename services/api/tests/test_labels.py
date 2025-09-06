@@ -1,38 +1,8 @@
-import os
-
-import pytest
-from fastapi.testclient import TestClient
 from sqlalchemy import select
 
-os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///./test.db"
-
-from sidetrack.api.db import SessionLocal, engine, get_db  # noqa: E402
-from sidetrack.api.main import app  # noqa: E402  (import after setting env)
+from sidetrack.api.db import SessionLocal
 from sidetrack.api.schemas.labels import LabelResponse
-from sidetrack.common.models import Base, Track, UserLabel  # noqa: E402
-
-Base.metadata.create_all(bind=engine)
-
-
-def override_get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-app.dependency_overrides[get_db] = override_get_db
-client = TestClient(app)
-
-
-@pytest.fixture(autouse=True)
-def clear_db():
-    """Clear tables between tests."""
-    with SessionLocal() as db:
-        db.query(UserLabel).delete()
-        db.query(Track).delete()
-        db.commit()
+from sidetrack.common.models import Track, UserLabel
 
 
 def _create_track() -> int:
@@ -44,7 +14,7 @@ def _create_track() -> int:
         return tr.track_id
 
 
-def test_submit_label_stores_label():
+def test_submit_label_stores_label(client):
     tid = _create_track()
     resp = client.post(
         "/labels",
@@ -63,7 +33,7 @@ def test_submit_label_stores_label():
         assert lbl.value == 0.5
 
 
-def test_submit_label_rejects_unknown_axis():
+def test_submit_label_rejects_unknown_axis(client):
     tid = _create_track()
     resp = client.post(
         "/labels",

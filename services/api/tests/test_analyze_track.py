@@ -1,54 +1,35 @@
-import os
-
-# Configure database before importing app modules
-os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///./test_api.db")
-os.environ.setdefault("AUTO_MIGRATE", "1")
-
-import fakeredis
-from fastapi.testclient import TestClient
 from rq import Queue
 
-from sidetrack.api import main as app_main
-from sidetrack.api.db import SessionLocal, maybe_create_all
+from sidetrack.api.db import SessionLocal
 from sidetrack.api.schemas.tracks import AnalyzeTrackResponse
 from sidetrack.common.models import Track
 
-# Ensure tables exist
-maybe_create_all()
 
-
-def test_analyze_track_schedules_job():
-    connection = fakeredis.FakeRedis()
-    app_main._REDIS_CONN = connection
+def test_analyze_track_schedules_job(client, redis_conn):
     with SessionLocal() as db:
         tr = Track(title="test", path_local="song.mp3")
         db.add(tr)
         db.commit()
         tid = tr.track_id
-    with TestClient(app_main.app) as client:
-        resp = client.post(f"/analyze/track/{tid}")
-        assert resp.status_code == 200
-        data = AnalyzeTrackResponse.model_validate(resp.json())
-        assert data.status == "scheduled"
-    q = Queue("analysis", connection=connection)
+    resp = client.post(f"/analyze/track/{tid}")
+    assert resp.status_code == 200
+    data = AnalyzeTrackResponse.model_validate(resp.json())
+    assert data.status == "scheduled"
+    q = Queue("analysis", connection=redis_conn)
     jobs = q.jobs
     assert jobs and jobs[0].args[0] == tid
 
 
-def test_analyze_track_not_found():
-    with TestClient(app_main.app) as client:
-        resp = client.post("/analyze/track/9999")
-        assert resp.status_code == 404
+def test_analyze_track_not_found(client):
+    resp = client.post("/analyze/track/9999")
+    assert resp.status_code == 404
 
 
-def test_analyze_track_missing_path():
-    connection = fakeredis.FakeRedis()
-    app_main._REDIS_CONN = connection
+def test_analyze_track_missing_path(client):
     with SessionLocal() as db:
         tr = Track(title="nop")
         db.add(tr)
         db.commit()
         tid = tr.track_id
-    with TestClient(app_main.app) as client:
-        resp = client.post(f"/analyze/track/{tid}")
-        assert resp.status_code == 400
+    resp = client.post(f"/analyze/track/{tid}")
+    assert resp.status_code == 400
