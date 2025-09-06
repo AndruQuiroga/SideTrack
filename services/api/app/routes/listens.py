@@ -5,15 +5,16 @@ import os
 from datetime import UTC, date, datetime
 from pathlib import Path
 
+import httpx
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy import and_, select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from services.common.models import Artist, Listen, Release, Track
 
 from ..db import get_db
-from ..main import HTTP_SESSION, get_current_user
+from ..main import get_current_user, get_http_client
 from ..utils import get_or_create, mb_sanitize
 
 router = APIRouter()
@@ -42,21 +43,25 @@ def _env(name: str, default: str | None = None) -> str | None:
 # use shared utils: mb_sanitize, get_or_create
 
 
-def _lb_fetch_listens(
-    user: str, since: date | None, token: str | None = None, limit: int = 500
+async def _lb_fetch_listens(
+    client: httpx.AsyncClient,
+    user: str,
+    since: date | None,
+    token: str | None = None,
+    limit: int = 500,
 ) -> list[dict]:
     base = "https://api.listenbrainz.org/1/user"
     params: dict = {"count": min(limit, 1000)}
     if since:
         params["min_ts"] = int(datetime.combine(since, datetime.min.time(), tzinfo=UTC).timestamp())
     url = f"{base}/{user}/listens"
-    r = HTTP_SESSION.get(url, params=params, timeout=30)
+    r = await client.get(url, params=params, timeout=30)
     r.raise_for_status()
     data = r.json()
     return data.get("listens", [])
 
 
-def _ingest_lb_rows(db: Session, listens: list[dict], user_id: str | None = None) -> int:
+async def _ingest_lb_rows(db: AsyncSession, listens: list[dict], user_id: str | None = None) -> int:
     created = 0
     for item in listens:
         tm = item.get("track_metadata", {})
@@ -70,11 +75,11 @@ def _ingest_lb_rows(db: Session, listens: list[dict], user_id: str | None = None
         played_at = datetime.utcfromtimestamp(played_at_ts)
         uid = (user_id or item.get("user_name") or "lb").lower()
 
-        artist = get_or_create(db, Artist, name=artist_name)
+        artist = await get_or_create(db, Artist, name=artist_name)
         rel = None
         if release_title:
-            rel = get_or_create(db, Release, title=release_title, artist_id=artist.artist_id)
-        track = get_or_create(
+            rel = await get_or_create(db, Release, title=release_title, artist_id=artist.artist_id)
+        track = await get_or_create(
             db,
             Track,
             mbid=recording_mbid,
@@ -82,12 +87,14 @@ def _ingest_lb_rows(db: Session, listens: list[dict], user_id: str | None = None
             artist_id=artist.artist_id,
             release_id=rel.release_id if rel else None,
         )
-        exists = db.execute(
-            select(Listen).where(
-                and_(
-                    Listen.user_id == uid,
-                    Listen.track_id == track.track_id,
-                    Listen.played_at == played_at,
+        exists = (
+            await db.execute(
+                select(Listen).where(
+                    and_(
+                        Listen.user_id == uid,
+                        Listen.track_id == track.track_id,
+                        Listen.played_at == played_at,
+                    )
                 )
             )
         ).scalar_one_or_none()
@@ -101,16 +108,17 @@ def _ingest_lb_rows(db: Session, listens: list[dict], user_id: str | None = None
                 )
             )
             created += 1
-    db.commit()
+    await db.commit()
     return created
 
 
 @router.post("/ingest/listens")
-def ingest_listens(
+async def ingest_listens(
     since: date | None = Query(None),
     listens: list[ListenIn] | None = Body(None, description="List of listens to ingest"),
     source: str = Query("auto", description="auto|listenbrainz|body|sample"),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
+    client: httpx.AsyncClient = Depends(get_http_client),
     user_id: str = Depends(get_current_user),
 ):
     # 3 modes: body, ListenBrainz, or sample file
@@ -133,14 +141,14 @@ def ingest_listens(
             for ls in listens
             if not since or ls.played_at.date() >= since
         ]
-        created = _ingest_lb_rows(db, rows, user_id)
+        created = await _ingest_lb_rows(db, rows, user_id)
         return {"detail": "ok", "ingested": created}
 
     if source in ("auto", "listenbrainz"):
         token = _env("LISTENBRAINZ_TOKEN")
         try:
-            rows = _lb_fetch_listens(user_id, since, token)
-            created = _ingest_lb_rows(db, rows, user_id)
+            rows = await _lb_fetch_listens(client, user_id, since, token)
+            created = await _ingest_lb_rows(db, rows, user_id)
             return {
                 "detail": "ok",
                 "ingested": created,
@@ -172,5 +180,5 @@ def ingest_listens(
                 "user_name": x["user_id"],
             }
         )
-    created = _ingest_lb_rows(db, rows, user_id)
+    created = await _ingest_lb_rows(db, rows, user_id)
     return {"detail": "ok", "ingested": created, "source": "sample"}

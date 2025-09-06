@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from services.common.models import Embedding, Feature
 
@@ -177,8 +177,8 @@ def _score_heuristic(feat: Feature, axis: str) -> tuple[float, float]:
 # ---------------------------------------------------------------------------
 
 
-def score_axes(
-    db: Session, track_id: int, method: str = "zero", version: str | None = None
+async def score_axes(
+    db: AsyncSession, track_id: int, method: str = "zero", version: str | None = None
 ) -> dict[str, dict[str, float]]:
     """Score a track across all axes using the specified method.
 
@@ -189,8 +189,8 @@ def score_axes(
         raise ValueError("unknown method")
 
     if method == "zero":
-        emb = db.execute(
-            select(Embedding).where(Embedding.track_id == track_id)
+        emb = (
+            await db.execute(select(Embedding).where(Embedding.track_id == track_id))
         ).scalar_one_or_none()
         if not emb or not emb.vector:
             raise ValueError("embedding not found")
@@ -201,7 +201,9 @@ def score_axes(
 
     # heuristic model from engineered features
     if method == "heur":
-        feat = db.execute(select(Feature).where(Feature.track_id == track_id)).scalar_one_or_none()
+        feat = (
+            await db.execute(select(Feature).where(Feature.track_id == track_id))
+        ).scalar_one_or_none()
         if not feat:
             raise ValueError("features not found")
         out: dict[str, dict[str, float]] = {}
@@ -213,7 +215,9 @@ def score_axes(
     # logistic regression and other supervised models
     version = version or "v1"
     models = _load_models(method, version)
-    feat = db.execute(select(Feature).where(Feature.track_id == track_id)).scalar_one_or_none()
+    feat = (
+        await db.execute(select(Feature).where(Feature.track_id == track_id))
+    ).scalar_one_or_none()
     if not feat:
         raise ValueError("features not found")
     scores: dict[str, dict[str, float]] = {}

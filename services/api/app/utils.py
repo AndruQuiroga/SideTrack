@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 def mb_sanitize(s: str | None) -> str | None:
@@ -15,9 +15,11 @@ def mb_sanitize(s: str | None) -> str | None:
     return s.strip().replace("\u0000", "")
 
 
-def get_or_create(db: Session, model: type, defaults: dict[str, Any] | None = None, **kwargs: Any):
+async def get_or_create(
+    db: AsyncSession, model: type, defaults: dict[str, Any] | None = None, **kwargs: Any
+):
     """Simple get-or-create helper using the given SQLAlchemy model and filters."""
-    inst = db.execute(select(model).filter_by(**kwargs)).scalar_one_or_none()
+    inst = (await db.execute(select(model).filter_by(**kwargs))).scalar_one_or_none()
     if inst:
         return inst
     params: dict[str, Any] = {**kwargs}
@@ -25,5 +27,5 @@ def get_or_create(db: Session, model: type, defaults: dict[str, Any] | None = No
         params.update(defaults)
     inst = model(**params)
     db.add(inst)
-    db.flush()
+    await db.flush()
     return inst
