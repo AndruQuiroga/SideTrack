@@ -10,7 +10,7 @@ from services.common.models import Artist, Listen, MoodAggWeek, MoodScore, Track
 
 from ...constants import AXES, DEFAULT_METHOD
 from ...db import get_db
-from ...main import get_current_user
+from ...security import get_current_user
 
 router = APIRouter()
 

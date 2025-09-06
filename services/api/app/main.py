@@ -1,7 +1,8 @@
+import logging
 from datetime import date, datetime, timedelta
 
 import httpx
-from fastapi import BackgroundTasks, Depends, FastAPI, Header, HTTPException, Query
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import and_, delete, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -27,6 +28,7 @@ from .db import get_db, maybe_create_all
 from .schemas.labels import LabelResponse
 from .schemas.settings import SettingsIn, SettingsOut, SettingsUpdateResponse
 from .schemas.tracks import AnalyzeTrackResponse, TrackPathIn, TrackPathResponse
+from .security import get_current_user, require_role
 
 
 async def get_http_client():
@@ -44,17 +46,22 @@ app.add_middleware(
 )
 
 
+logger = logging.getLogger("sidetrack.auth")
+
+
+@app.middleware("http")
+async def log_unauthorized(request: Request, call_next):
+    """Log and propagate unauthorized access attempts."""
+    response = await call_next(request)
+    if response.status_code == 401:
+        logger.warning("Unauthorized access: %s %s", request.method, request.url.path)
+    return response
+
+
 @app.on_event("startup")
 async def _startup():
     # Make dev/local experience smooth
     await maybe_create_all()
-
-
-def get_current_user(x_user_id: str = Header(...)) -> str:
-    """Simple header-based auth. The caller must supply X-User-Id."""
-    if not x_user_id:
-        raise HTTPException(status_code=401, detail="X-User-Id header required")
-    return x_user_id
 
 
 import redis
@@ -101,7 +108,7 @@ async def lastfm_login(
 async def lastfm_session(
     token: str,
     db: AsyncSession = Depends(get_db),
-    user_id: str = Depends(get_current_user),
+    user_id: str = Depends(require_role("user")),
     lf_client: LastfmClient = Depends(get_lastfm_client),
 ):
     try:
