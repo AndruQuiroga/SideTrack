@@ -1,21 +1,17 @@
 import os
-import sys
-from pathlib import Path
 
 # Configure database before importing app modules
-os.environ.setdefault("DATABASE_URL", "sqlite:///./test_api.db")
+os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///./test_api.db")
 os.environ.setdefault("AUTO_MIGRATE", "1")
-
-sys.path.append(str(Path(__file__).resolve().parents[3]))
 
 import fakeredis
 from fastapi.testclient import TestClient
 from rq import Queue
 
-from services.api.app import main as app_main
-from services.api.app.db import SessionLocal, maybe_create_all
-from services.api.app.schemas.tracks import AnalyzeTrackResponse
-from services.common.models import Track
+from sidetrack.api import main as app_main
+from sidetrack.api.db import SessionLocal, maybe_create_all
+from sidetrack.api.schemas.tracks import AnalyzeTrackResponse
+from sidetrack.common.models import Track
 
 # Ensure tables exist
 maybe_create_all()

@@ -1,10 +1,4 @@
-import pathlib
-import sys
-
 import schedule
-
-# ensure we can import scheduler.run
-sys.path.append(str(pathlib.Path(__file__).resolve().parent))
 
 
 def test_all_jobs_run(monkeypatch):
@@ -26,10 +20,9 @@ def test_all_jobs_run(monkeypatch):
     monkeypatch.setenv("LASTFM_SYNC_INTERVAL_MINUTES", "1")
     monkeypatch.setenv("AGGREGATE_WEEKS_INTERVAL_MINUTES", "1")
     monkeypatch.setenv("DEFAULT_USER_ID", "u1")
-
     import importlib
 
-    run = importlib.import_module("scheduler.run")
+    run = importlib.import_module("sidetrack.scheduler.run")
     monkeypatch.setattr(run.requests, "post", fake_post)
 
     schedule.clear()

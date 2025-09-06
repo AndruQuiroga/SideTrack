@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from services.common.models import Track
+from sidetrack.common.models import Track
 from ..utils import get_or_create
 
 

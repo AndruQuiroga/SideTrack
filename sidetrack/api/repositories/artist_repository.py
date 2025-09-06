@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from services.common.models import Artist
+from sidetrack.common.models import Artist
 from ..utils import get_or_create
 
 

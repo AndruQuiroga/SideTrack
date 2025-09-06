@@ -12,9 +12,9 @@ from sqlalchemy import and_, delete, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError
 
-from services.common.logging import setup_logging
-from services.common.telemetry import setup_tracing
-from services.common.models import (
+from sidetrack.common.logging import setup_logging
+from sidetrack.common.telemetry import setup_tracing
+from sidetrack.common.models import (
     Artist,
     Embedding,
     Feature,

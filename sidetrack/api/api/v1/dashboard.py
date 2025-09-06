@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from services.common.models import Artist, Listen, MoodAggWeek, MoodScore, Track
+from sidetrack.common.models import Artist, Listen, MoodAggWeek, MoodScore, Track
 
 from ...constants import AXES, DEFAULT_METHOD
 from ...db import get_db

@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from services.common.models import Listen
+from sidetrack.common.models import Listen
 
 
 class ListenRepository:

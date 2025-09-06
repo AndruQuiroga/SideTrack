@@ -1,16 +1,12 @@
 import os
-import sys
-from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-# Ensure repository root on sys.path and configure SQLite for tests
-sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///./test.db"
 
-from services.api.app.db import SessionLocal, engine, get_db  # noqa: E402
-from services.api.app.main import app  # noqa: E402
-from services.common.models import Base  # noqa: E402
+from sidetrack.api.db import SessionLocal, engine, get_db  # noqa: E402
+from sidetrack.api.main import app  # noqa: E402
+from sidetrack.common.models import Base  # noqa: E402
 
 Base.metadata.create_all(bind=engine.sync_engine)
 

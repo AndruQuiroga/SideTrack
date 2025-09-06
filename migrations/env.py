@@ -10,8 +10,8 @@ from sqlalchemy import engine_from_config, pool
 BASE_DIR = pathlib.Path(__file__).resolve().parents[1]
 sys.path.append(str(BASE_DIR))
 
-from services.api.app.config import get_settings  # type: ignore
-from services.common.models import Base  # type: ignore
+from sidetrack.api.config import get_settings  # type: ignore
+from sidetrack.common.models import Base  # type: ignore
 
 config = context.config
 

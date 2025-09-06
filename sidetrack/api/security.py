@@ -9,7 +9,7 @@ from passlib.context import CryptContext
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from services.common.models import UserAccount
+from sidetrack.common.models import UserAccount
 
 from .db import get_db
 

@@ -1,17 +1,13 @@
 import os
-import sys
-from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 
-# Setup env and path
-sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
-os.environ["DATABASE_URL"] = "sqlite:///./test.db"
+os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///./test.db"
 
-from services.api.app.db import SessionLocal, engine, get_db  # noqa: E402
-from services.api.app.main import app  # noqa: E402
-from services.common.models import Base, Embedding, Feature, Track  # noqa: E402
+from sidetrack.api.db import SessionLocal, engine, get_db  # noqa: E402
+from sidetrack.api.main import app  # noqa: E402
+from sidetrack.common.models import Base, Embedding, Feature, Track  # noqa: E402
 
 Base.metadata.create_all(bind=engine)
 
