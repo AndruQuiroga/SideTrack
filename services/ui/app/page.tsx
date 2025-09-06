@@ -1,6 +1,8 @@
 import MetricCard from '../components/MetricCard';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import ChartContainer from '../components/ChartContainer';
+import FilterBar from '../components/FilterBar';
 
 export default function Home() {
   return (
@@ -41,59 +43,75 @@ export default function Home() {
         ))}
       </div>
 
+      <div className="flex items-center justify-between">
+        <FilterBar
+          options={[
+            { label: '4w', value: '4w' },
+            { label: '12w', value: '12w' },
+            { label: '24w', value: '24w' },
+          ]}
+          value="12w"
+        />
+      </div>
       <div className="grid gap-6 lg:grid-cols-2">
         <motion.div
-          className="glass rounded-lg p-4"
           initial={{ opacity: 0, y: 8 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.4 }}
         >
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-medium">Recent Weeks</h2>
-            <Link href="/trajectory" className="text-xs text-muted-foreground hover:underline">
-              Open
-            </Link>
-          </div>
-          <motion.div
-            className="h-48 rounded-md bg-white/5"
-            initial={{ scale: 0.98, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.4 }}
-          />
+          <ChartContainer
+            title="Recent Weeks"
+            subtitle="Quick glance at your trajectory"
+            actions={
+              <Link href="/trajectory" className="text-xs text-muted-foreground hover:underline">
+                Open
+              </Link>
+            }
+          >
+            <motion.div
+              className="h-48 rounded-md bg-white/5"
+              initial={{ scale: 0.98, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.4 }}
+            />
+          </ChartContainer>
         </motion.div>
         <motion.div
-          className="glass rounded-lg p-4"
           initial={{ opacity: 0, y: 8 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.4, delay: 0.05 }}
         >
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-medium">Outliers</h2>
-            <Link href="/outliers" className="text-xs text-muted-foreground hover:underline">
-              Open
-            </Link>
-          </div>
-          <div className="space-y-2">
-            {[1, 2, 3].map((i) => (
-              <motion.div
-                key={i}
-                className="flex items-center gap-3 rounded-md p-2 hover:bg-white/5"
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 0.05 * i }}
-                whileHover={{ scale: 1.01 }}
-              >
-                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-emerald-400 to-sky-400" />
-                <div className="flex-1">
-                  <div className="text-sm">Track {i}</div>
-                  <div className="text-xs text-muted-foreground">Artist</div>
-                </div>
-                <div className="text-xs text-muted-foreground">dist 0.{9 - i}</div>
-              </motion.div>
-            ))}
-          </div>
+          <ChartContainer
+            title="Outliers"
+            subtitle="Far from your recent centroid"
+            actions={
+              <Link href="/outliers" className="text-xs text-muted-foreground hover:underline">
+                Open
+              </Link>
+            }
+          >
+            <div className="space-y-2">
+              {[1, 2, 3].map((i) => (
+                <motion.div
+                  key={i}
+                  className="flex items-center gap-3 rounded-md p-2 hover:bg-white/5"
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.05 * i }}
+                  whileHover={{ scale: 1.01 }}
+                >
+                  <div className="h-8 w-8 rounded-full bg-gradient-to-br from-emerald-400 to-sky-400" />
+                  <div className="flex-1">
+                    <div className="text-sm">Track {i}</div>
+                    <div className="text-xs text-muted-foreground">Artist</div>
+                  </div>
+                  <div className="text-xs text-muted-foreground">dist 0.{9 - i}</div>
+                </motion.div>
+              ))}
+            </div>
+          </ChartContainer>
         </motion.div>
       </div>
     </section>

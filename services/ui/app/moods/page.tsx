@@ -2,6 +2,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { apiFetch } from '../../lib/api';
 import MoodsStreamgraph from '../../components/charts/MoodsStreamgraph';
+import ChartContainer from '../../components/ChartContainer';
+import FilterBar from '../../components/FilterBar';
 
 type Trajectory = { points: { week: string }[] };
 
@@ -51,11 +53,22 @@ export default function Moods() {
 
   return (
     <section className="space-y-4">
-      <div>
-        <h2 className="text-xl font-semibold">Moods</h2>
-        <p className="text-sm text-muted-foreground">Stacked axes over the last 12 weeks</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-semibold">Moods</h2>
+          <p className="text-sm text-muted-foreground">Stacked axes over the last 12 weeks</p>
+        </div>
+        <FilterBar
+          options={[
+            { label: '12w', value: '12w' },
+            { label: '24w', value: '24w' },
+          ]}
+          value="12w"
+        />
       </div>
-      {content}
+      <ChartContainer title="Mood streamgraph" subtitle="Axes stacked by week">
+        {content}
+      </ChartContainer>
     </section>
   );
 }
