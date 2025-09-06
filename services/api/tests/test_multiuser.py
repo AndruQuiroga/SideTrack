@@ -9,6 +9,8 @@ from sidetrack.api.db import SessionLocal
 from sidetrack.common.models import Listen, MoodAggWeek, MoodScore
 from tests.factories import TrackFactory
 
+pytestmark = pytest.mark.integration
+
 
 async def _add_listen(user: str, value: float) -> int:
     async with SessionLocal() as db:

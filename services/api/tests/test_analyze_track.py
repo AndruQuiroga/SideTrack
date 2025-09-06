@@ -1,26 +1,37 @@
 import pytest
-from rq import Queue
+from types import SimpleNamespace
 
+from sidetrack.api import main
 from sidetrack.api.db import SessionLocal
 from sidetrack.api.schemas.tracks import AnalyzeTrackResponse
 from tests.factories import TrackFactory
 
+pytestmark = pytest.mark.unit
+
 
 @pytest.mark.asyncio
-async def test_analyze_track_schedules_job(async_client, redis_conn):
+async def test_analyze_track_schedules_job(async_client, monkeypatch):
     async with SessionLocal() as db:
         tr = TrackFactory(path_local="song.mp3")
         db.add(tr)
         await db.flush()
         tid = tr.track_id
         await db.commit()
+    dummy = SimpleNamespace(jobs=[])
+
+    class DummyQueue:
+        def enqueue(self, func, *args, **kwargs):
+            job = SimpleNamespace(args=args, kwargs=kwargs)
+            dummy.jobs.append(job)
+            return job
+
+    monkeypatch.setattr(main, "Queue", lambda *a, **k: DummyQueue())
+
     resp = await async_client.post(f"/analyze/track/{tid}")
     assert resp.status_code == 200
     data = AnalyzeTrackResponse.model_validate(resp.json())
     assert data.status == "scheduled"
-    q = Queue("analysis", connection=redis_conn)
-    jobs = q.jobs
-    assert jobs and jobs[0].args[0] == tid
+    assert dummy.jobs and dummy.jobs[0].args[0] == tid
 
 
 @pytest.mark.asyncio

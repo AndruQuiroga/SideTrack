@@ -43,3 +43,9 @@ ignore = [
 "services/api/alembic/env.py" = ["E402"]
 "services/api/app/main.py" = ["E402"]
 "services/api/tests/test_scoring.py" = ["E402"]
+
+[tool.pytest.ini_options]
+markers = [
+    "unit: fast-running tests that mock external services",
+    "integration: tests that require external services",
+]

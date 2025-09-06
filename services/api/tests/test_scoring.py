@@ -7,6 +7,8 @@ from sidetrack.api.main import score_track
 from sidetrack.common.models import MoodScore
 from tests.factories import EmbeddingFactory, FeatureFactory, TrackFactory
 
+pytestmark = pytest.mark.integration
+
 
 @pytest.mark.asyncio
 async def test_score_track_zero_shot(async_session):

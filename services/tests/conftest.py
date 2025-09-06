@@ -7,9 +7,13 @@ from pathlib import Path
 import fakeredis
 import pytest
 import pytest_asyncio
+import schedule
 from dotenv import load_dotenv
 from fastapi.testclient import TestClient
 from httpx import ASGITransport, AsyncClient
+from redis import Redis
+from testcontainers.postgres import PostgresContainer
+from testcontainers.redis import RedisContainer
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -28,15 +32,28 @@ def load_env() -> None:
 
 
 @pytest.fixture
-def db(tmp_path):
-    """Configure a temporary SQLite database for each test."""
-    db_file = tmp_path / "test.db"
-    os.environ["DATABASE_URL"] = f"sqlite+aiosqlite:///{db_file}"
-    os.environ.setdefault("AUTO_MIGRATE", "1")
-    asyncio.run(maybe_create_all())
-    yield db_file
-    if db_file.exists():
-        db_file.unlink()
+def db(tmp_path, request):
+    """Configure database per test, using Postgres for integration tests."""
+    if request.node.get_closest_marker("integration"):
+        try:
+            with PostgresContainer("postgres:16") as pg:
+                url = pg.get_connection_url().replace(
+                    "postgresql://", "postgresql+psycopg://"
+                )
+                os.environ["DATABASE_URL"] = url
+                os.environ.setdefault("AUTO_MIGRATE", "1")
+                asyncio.run(maybe_create_all())
+                yield Path("/tmp/postgres")
+        except Exception as exc:  # pragma: no cover - infrastructure failure
+            pytest.skip(f"Postgres container unavailable: {exc}")
+    else:
+        db_file = tmp_path / "test.db"
+        os.environ["DATABASE_URL"] = f"sqlite+aiosqlite:///{db_file}"
+        os.environ.setdefault("AUTO_MIGRATE", "1")
+        asyncio.run(maybe_create_all())
+        yield db_file
+        if db_file.exists():
+            db_file.unlink()
 
 
 @pytest.fixture
@@ -52,13 +69,27 @@ async def async_session(db):
 
 
 @pytest.fixture
-def redis_conn():
-    conn = fakeredis.FakeRedis()
-    try:
-        yield conn
-    finally:
+def redis_conn(request):
+    if request.node.get_closest_marker("integration"):
+        try:
+            with RedisContainer("redis:7") as rc:
+                conn = Redis.from_url(rc.get_connection_url())
+                conn.flushall()
+                try:
+                    yield conn
+                finally:
+                    conn.flushall()
+                    conn.close()
+        except Exception as exc:  # pragma: no cover - infrastructure failure
+            pytest.skip(f"Redis container unavailable: {exc}")
+    else:
+        conn = fakeredis.FakeRedis()
         conn.flushall()
-        conn.close()
+        try:
+            yield conn
+        finally:
+            conn.flushall()
+            conn.close()
 
 
 @pytest.fixture
@@ -98,3 +129,10 @@ async def async_client(db, redis_conn):
             yield ac
 
     app_main.app.dependency_overrides.clear()
+
+
+@pytest.fixture(autouse=True)
+def _clear_schedule():
+    schedule.clear()
+    yield
+    schedule.clear()
