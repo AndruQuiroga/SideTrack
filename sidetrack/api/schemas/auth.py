@@ -6,6 +6,10 @@ class Credentials(BaseModel):
     password: str
 
 
+class GoogleToken(BaseModel):
+    token: str
+
+
 class UserOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     user_id: str
