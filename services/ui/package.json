@@ -30,11 +30,13 @@
     "lucide-react": "0.441.0",
     "next": "14.2.5",
     "next-themes": "^0.2.1",
+    "nprogress": "^0.2.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-use-measure": "^2.1.7"
   },
   "devDependencies": {
+    "@tailwindcss/container-queries": "^0.1.1",
     "@testing-library/jest-dom": "6.4.2",
     "@testing-library/react": "14.2.1",
     "@testing-library/user-event": "14.4.3",
@@ -49,7 +51,6 @@
     "jest-environment-jsdom": "^29.7.0",
     "postcss": "8.4.41",
     "tailwindcss": "3.4.10",
-    "@tailwindcss/container-queries": "^0.1.1",
     "typescript": "5.5.4"
   }
 }

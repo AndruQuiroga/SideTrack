@@ -10,6 +10,7 @@ import HeaderActions from './HeaderActions';
 import MobileNav from './MobileNav';
 import { NavContext } from './NavContext';
 import Avatar from './ui/Avatar';
+import RouteProgress from './RouteProgress';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -33,6 +34,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           </aside>
           <div className="flex min-h-dvh flex-1 flex-col">
             <header className="sticky top-0 z-10 glass flex items-center justify-between px-4 py-3">
+              <RouteProgress />
               <div className="flex items-center gap-2">
                 <Avatar size={32} className="hidden md:block" />
                 <span className="text-sm text-muted-foreground">Your taste dashboard</span>
