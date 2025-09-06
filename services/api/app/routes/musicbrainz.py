@@ -12,6 +12,7 @@ from services.common.models import Artist, Release, Track
 
 from ..db import get_db
 from ..main import get_http_client
+from ..schemas.musicbrainz import MusicbrainzIngestResponse
 from ..utils import get_or_create, mb_sanitize
 
 router = APIRouter()
@@ -38,7 +39,7 @@ async def _mb_fetch_release(client: httpx.AsyncClient, mbid: str) -> dict:
     return r.json()
 
 
-@router.post("/ingest/musicbrainz")
+@router.post("/ingest/musicbrainz", response_model=MusicbrainzIngestResponse)
 async def ingest_musicbrainz(
     release_mbid: str = Query(..., description="MusicBrainz release MBID"),
     db: AsyncSession = Depends(get_db),
@@ -121,9 +122,9 @@ async def ingest_musicbrainz(
                     existing.duration = duration
 
     await db.commit()
-    return {
-        "detail": "ok",
-        "artist_id": artist.artist_id if artist else None,
-        "release_id": release.release_id,
-        "tracks": created_tracks,
-    }
+    return MusicbrainzIngestResponse(
+        detail="ok",
+        artist_id=artist.artist_id if artist else None,
+        release_id=release.release_id,
+        tracks=created_tracks,
+    )

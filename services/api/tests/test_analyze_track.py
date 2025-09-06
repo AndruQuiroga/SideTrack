@@ -14,6 +14,7 @@ from rq import Queue
 
 from services.api.app import main as app_main
 from services.api.app.db import SessionLocal, maybe_create_all
+from services.api.app.schemas.tracks import AnalyzeTrackResponse
 from services.common.models import Track
 
 # Ensure tables exist
@@ -31,7 +32,8 @@ def test_analyze_track_schedules_job():
     with TestClient(app_main.app) as client:
         resp = client.post(f"/analyze/track/{tid}")
         assert resp.status_code == 200
-        assert resp.json()["status"] == "scheduled"
+        data = AnalyzeTrackResponse.model_validate(resp.json())
+        assert data.status == "scheduled"
     q = Queue("analysis", connection=connection)
     jobs = q.jobs
     assert jobs and jobs[0].args[0] == tid
