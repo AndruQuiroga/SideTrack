@@ -12,6 +12,7 @@ os.environ["DATABASE_URL"] = "sqlite:///./test.db"
 
 from services.api.app.db import SessionLocal, engine, get_db  # noqa: E402
 from services.api.app.main import app  # noqa: E402  (import after setting env)
+from services.api.app.schemas.labels import LabelResponse
 from services.common.models import Base, Track, UserLabel  # noqa: E402
 
 Base.metadata.create_all(bind=engine)
@@ -55,9 +56,9 @@ def test_submit_label_stores_label():
         headers={"X-User-Id": "u1"},
     )
     assert resp.status_code == 200
-    data = resp.json()
-    assert data["detail"] == "accepted"
-    assert data["axis"] == "energy"
+    data = LabelResponse.model_validate(resp.json())
+    assert data.detail == "accepted"
+    assert data.axis == "energy"
 
     with SessionLocal() as db:
         lbl = db.execute(select(UserLabel)).scalar_one()

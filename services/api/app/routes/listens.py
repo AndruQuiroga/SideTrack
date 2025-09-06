@@ -6,32 +6,16 @@ from pathlib import Path
 
 import httpx
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
-from pydantic import BaseModel
 
 from ..config import Settings, get_settings
 from ..main import get_current_user, get_http_client
+from ..schemas.listens import IngestResponse, ListenIn
 from ..services.listen_service import ListenService, get_listen_service
 
 router = APIRouter()
 
 
-class TrackIn(BaseModel):
-    title: str
-    artist_name: str
-    release_title: str | None = None
-    mbid: str | None = None
-    duration: int | None = None
-    path_local: str | None = None
-
-
-class ListenIn(BaseModel):
-    user_id: str
-    played_at: datetime
-    source: str | None = "listenbrainz"
-    track: TrackIn
-
-
-@router.post("/ingest/listens")
+@router.post("/ingest/listens", response_model=IngestResponse)
 async def ingest_listens(
     since: date | None = Query(None),
     listens: list[ListenIn] | None = Body(None, description="List of listens to ingest"),
@@ -62,18 +46,14 @@ async def ingest_listens(
             if not since or ls.played_at.date() >= since
         ]
         created = await listen_service.ingest_lb_rows(rows, user_id)
-        return {"detail": "ok", "ingested": created}
+        return IngestResponse(detail="ok", ingested=created)
 
     if source in ("auto", "listenbrainz"):
         token = settings.listenbrainz_token
         try:
             rows = await listen_service.lb_fetch_listens(client, user_id, since, token)
             created = await listen_service.ingest_lb_rows(rows, user_id)
-            return {
-                "detail": "ok",
-                "ingested": created,
-                "source": "listenbrainz",
-            }
+            return IngestResponse(detail="ok", ingested=created, source="listenbrainz")
         except Exception as e:
             if source == "listenbrainz":
                 raise HTTPException(status_code=502, detail=f"ListenBrainz error: {e}")
@@ -101,4 +81,4 @@ async def ingest_listens(
             }
         )
     created = await listen_service.ingest_lb_rows(rows, user_id)
-    return {"detail": "ok", "ingested": created, "source": "sample"}
+    return IngestResponse(detail="ok", ingested=created, source="sample")

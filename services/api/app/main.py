@@ -5,7 +5,6 @@ from datetime import date, datetime, timedelta
 import httpx
 from fastapi import BackgroundTasks, Depends, FastAPI, Header, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
 from sqlalchemy import and_, delete, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -27,6 +26,9 @@ from .config import Settings
 from .config import get_settings as get_app_settings
 from .constants import AXES, DEFAULT_METHOD
 from .db import get_db, maybe_create_all
+from .schemas.labels import LabelResponse
+from .schemas.settings import SettingsIn, SettingsOut, SettingsUpdateResponse
+from .schemas.tracks import AnalyzeTrackResponse, TrackPathIn, TrackPathResponse
 
 
 async def get_http_client():
@@ -77,18 +79,6 @@ def _enqueue_analysis(track_id: int, settings: Settings) -> None:
 
     q = Queue("analysis", connection=_get_redis_connection(settings))
     q.enqueue("worker.jobs.analyze_track", track_id)
-
-
-class TrackPathIn(BaseModel):
-    path_local: str
-
-
-class SettingsIn(BaseModel):
-    listenBrainzUser: str | None = None
-    listenBrainzToken: str | None = None
-    useGpu: bool = False
-    useStems: bool = False
-    useExcerpts: bool = False
 
 
 def _week_start(dt: datetime) -> date:
@@ -246,26 +236,18 @@ async def lastfm_disconnect(
     return {"ok": True}
 
 
-@app.get("/settings")
+@app.get("/settings", response_model=SettingsOut)
 async def get_settings(
     db: AsyncSession = Depends(get_db),
     user_id: str = Depends(get_current_user),
 ):
     row = await db.get(UserSettings, user_id)
     if not row:
-        return {}
-    return {
-        "listenBrainzUser": row.listenbrainz_user,
-        "listenBrainzToken": row.listenbrainz_token,
-        "lastfmUser": row.lastfm_user,
-        "lastfmConnected": bool(row.lastfm_session_key),
-        "useGpu": row.use_gpu,
-        "useStems": row.use_stems,
-        "useExcerpts": row.use_excerpts,
-    }
+        return SettingsOut()
+    return SettingsOut.model_validate(row)
 
 
-@app.post("/settings")
+@app.post("/settings", response_model=SettingsUpdateResponse)
 async def post_settings(
     payload: SettingsIn,
     db: AsyncSession = Depends(get_db),
@@ -289,7 +271,7 @@ async def post_settings(
 
     db.add(row)
     await db.commit()
-    return {"ok": True}
+    return SettingsUpdateResponse(ok=True)
 
 
 @app.get("/health")
@@ -331,7 +313,7 @@ async def sync_lastfm_tags(
     return {"detail": "ok", "updated": updated}
 
 
-@app.post("/analyze/track/{track_id}")
+@app.post("/analyze/track/{track_id}", response_model=AnalyzeTrackResponse)
 async def analyze_track(
     track_id: int,
     background_tasks: BackgroundTasks,
@@ -355,15 +337,15 @@ async def analyze_track(
         await db.execute(select(Feature).where(Feature.track_id == track_id))
     ).scalar_one_or_none()
     if existing:
-        return {
-            "detail": "already_analyzed",
-            "track_id": track_id,
-            "status": "done",
-            "features_id": existing.id,
-        }
+        return AnalyzeTrackResponse(
+            detail="already_analyzed",
+            track_id=track_id,
+            status="done",
+            features_id=existing.id,
+        )
 
     background_tasks.add_task(_enqueue_analysis, track_id, settings)
-    return {"detail": "scheduled", "track_id": track_id, "status": "scheduled"}
+    return AnalyzeTrackResponse(detail="scheduled", track_id=track_id, status="scheduled")
 
 
 @app.post("/score/track/{track_id}")
@@ -419,14 +401,14 @@ async def score_track(
     }
 
 
-@app.post("/tracks/{track_id}/path")
+@app.post("/tracks/{track_id}/path", response_model=TrackPathResponse)
 async def set_track_path(track_id: int, payload: TrackPathIn, db: AsyncSession = Depends(get_db)):
     tr = await db.get(Track, track_id)
     if not tr:
         raise HTTPException(status_code=404, detail="track not found")
     tr.path_local = payload.path_local
     await db.commit()
-    return {"detail": "ok", "track_id": track_id, "path_local": tr.path_local}
+    return TrackPathResponse(detail="ok", track_id=track_id, path_local=tr.path_local)
 
 
 @app.get("/tracks/{track_id}/features")
@@ -531,7 +513,7 @@ async def aggregate_weeks(
     return {"detail": "ok", "rows": int(total)}
 
 
-@app.post("/labels")
+@app.post("/labels", response_model=LabelResponse)
 async def submit_label(
     track_id: int,
     axis: str,
@@ -545,14 +527,14 @@ async def submit_label(
     db.add(lbl)
     await db.commit()
     await db.refresh(lbl)
-    return {
-        "detail": "accepted",
-        "id": lbl.id,
-        "user_id": lbl.user_id,
-        "track_id": lbl.track_id,
-        "axis": lbl.axis,
-        "value": lbl.value,
-    }
+    return LabelResponse(
+        detail="accepted",
+        id=lbl.id,
+        user_id=lbl.user_id,
+        track_id=lbl.track_id,
+        axis=lbl.axis,
+        value=lbl.value,
+    )
 
 
 from .routes import auth, dashboard, listens, musicbrainz

@@ -4,6 +4,8 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
+from services.api.app.schemas.musicbrainz import MusicbrainzIngestResponse
+
 sample_release = {
     "id": "release-mbid",
     "title": "Sample Release",
@@ -71,7 +73,8 @@ def test_ingest_musicbrainz_dedup(mb_client):
     client, SessionLocal = mb_client
     resp = client.post("/ingest/musicbrainz", params={"release_mbid": "release-mbid"})
     assert resp.status_code == 200
-    assert resp.json()["tracks"] >= 2
+    data = MusicbrainzIngestResponse.model_validate(resp.json())
+    assert data.tracks >= 2
 
     session = SessionLocal()
     from services.common.models import Artist, Release, Track
