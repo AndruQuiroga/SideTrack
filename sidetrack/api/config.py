@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     listenbrainz_token: str | None = Field(default=None, env="LISTENBRAINZ_TOKEN")
     lastfm_api_key: str | None = Field(default=None, env="LASTFM_API_KEY")
     lastfm_api_secret: str | None = Field(default=None, env="LASTFM_API_SECRET")
+    google_client_id: str | None = Field(default=None, env="GOOGLE_CLIENT_ID")
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
