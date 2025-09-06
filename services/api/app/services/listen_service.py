@@ -1,6 +1,5 @@
-from datetime import UTC, date, datetime
+from datetime import datetime
 
-import httpx
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,7 +12,7 @@ from ..utils import mb_sanitize
 
 
 class ListenService:
-    """Service layer handling listen ingestion and external fetching."""
+    """Service layer handling listen ingestion."""
 
     def __init__(
         self,
@@ -27,31 +26,7 @@ class ListenService:
         self.tracks = track_repo
         self.listens = listen_repo
 
-    async def lb_fetch_listens(
-        self,
-        client: httpx.AsyncClient,
-        user: str,
-        since: date | None,
-        token: str | None = None,
-        limit: int = 500,
-    ) -> list[dict]:
-        """Fetch listens from the ListenBrainz API."""
-        base = "https://api.listenbrainz.org/1/user"
-        params: dict = {"count": min(limit, 1000)}
-        if since:
-            params["min_ts"] = int(
-                datetime.combine(since, datetime.min.time(), tzinfo=UTC).timestamp()
-            )
-        url = f"{base}/{user}/listens"
-        headers = {"Authorization": f"Token {token}"} if token else None
-        r = await client.get(url, params=params, timeout=30, headers=headers)
-        r.raise_for_status()
-        data = r.json()
-        return data.get("listens", [])
-
-    async def ingest_lb_rows(
-        self, listens: list[dict], user_id: str | None = None
-    ) -> int:
+    async def ingest_lb_rows(self, listens: list[dict], user_id: str | None = None) -> int:
         """Ingest ListenBrainz-style listen rows into the database."""
         created = 0
         for item in listens:

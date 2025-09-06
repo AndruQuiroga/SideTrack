@@ -1,5 +1,3 @@
-import hashlib
-import time
 from datetime import date, datetime, timedelta
 
 import httpx
@@ -12,7 +10,6 @@ from services.common.models import (
     Artist,
     Embedding,
     Feature,
-    LastfmTags,
     Listen,
     MoodAggWeek,
     MoodScore,
@@ -22,6 +19,7 @@ from services.common.models import (
 )
 
 from . import scoring
+from .clients.lastfm import LastfmClient, get_lastfm_client
 from .config import Settings
 from .config import get_settings as get_app_settings
 from .constants import AXES, DEFAULT_METHOD
@@ -87,103 +85,15 @@ def _week_start(dt: datetime) -> date:
     return d - timedelta(days=d.weekday())
 
 
-def _lastfm_sign(params: dict[str, str], secret: str) -> str:
-    items = "".join(f"{k}{v}" for k, v in sorted(params.items()))
-    m = hashlib.md5()
-    m.update((items + secret).encode("utf-8"))
-    return m.hexdigest()
-
-
-async def _lastfm_fetch_tags(
-    track_id: int,
-    artist: str,
-    track: str,
-    api_key: str,
-    db: AsyncSession,
-    client: httpx.AsyncClient,
-    max_age: int = 86400,
-) -> dict:
-    """Fetch top tags from Last.fm with simple caching and retries.
-
-    A DB-backed cache is used via the ``LastfmTags`` table. If a cached
-    row exists for ``track_id`` and it was updated within ``max_age`` seconds,
-    the cached tags are returned and no request is made. Otherwise the tags are
-    fetched from the Last.fm API, the cache/DB record is updated, and the tags
-    are returned.
-
-    HTTP errors (5xx or 429) are retried with exponential backoff.
-    """
-
-    existing = (
-        await db.execute(select(LastfmTags).where(LastfmTags.track_id == track_id))
-    ).scalar_one_or_none()
-    if (
-        existing
-        and existing.updated_at
-        and existing.updated_at > datetime.utcnow() - timedelta(seconds=max_age)
-    ):
-        return existing.tags or {}
-
-    params = {
-        "method": "track.gettoptags",
-        "artist": artist,
-        "track": track,
-        "api_key": api_key,
-        "format": "json",
-    }
-
-    backoff = 1.0
-    for attempt in range(3):
-        try:
-            r = await client.get("https://ws.audioscrobbler.com/2.0/", params=params, timeout=30)
-            r.raise_for_status()
-            break
-        except httpx.HTTPError as e:
-            status = getattr(e.response, "status_code", None)
-            if status and (status >= 500 or status == 429) and attempt < 2:
-                time.sleep(backoff)
-                backoff *= 2
-                continue
-            raise
-
-    data = r.json()
-    tags = data.get("toptags", {}).get("tag", [])
-    # normalize to {tag: count}
-    out: dict[str, int] = {}
-    for t in tags:
-        name = (t.get("name") or "").strip()
-        try:
-            cnt = int(t.get("count") or 0)
-        except Exception:
-            cnt = 0
-        if name:
-            out[name] = cnt
-
-    if existing:
-        existing.tags = out
-        existing.updated_at = datetime.utcnow()
-    else:
-        db.add(
-            LastfmTags(
-                track_id=track_id,
-                source="track",
-                tags=out,
-                updated_at=datetime.utcnow(),
-            )
-        )
-    await db.commit()
-
-    return out
-
-
 @app.get("/auth/lastfm/login")
 async def lastfm_login(
     callback: str,
-    settings: Settings = Depends(get_app_settings),
+    lf_client: LastfmClient = Depends(get_lastfm_client),
 ):
-    if not settings.lastfm_api_key:
-        raise HTTPException(status_code=400, detail="LASTFM_API_KEY not configured")
-    url = f"https://www.last.fm/api/auth/?api_key={settings.lastfm_api_key}&cb={callback}"
+    try:
+        url = lf_client.auth_url(callback)
+    except RuntimeError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     return {"url": url}
 
 
@@ -192,26 +102,12 @@ async def lastfm_session(
     token: str,
     db: AsyncSession = Depends(get_db),
     user_id: str = Depends(get_current_user),
-    settings: Settings = Depends(get_app_settings),
-    client: httpx.AsyncClient = Depends(get_http_client),
+    lf_client: LastfmClient = Depends(get_lastfm_client),
 ):
-    if not settings.lastfm_api_key or not settings.lastfm_api_secret:
-        raise HTTPException(status_code=400, detail="Last.fm API not configured")
-    params = {
-        "method": "auth.getSession",
-        "api_key": settings.lastfm_api_key,
-        "token": token,
-    }
-    params["api_sig"] = _lastfm_sign(params, settings.lastfm_api_secret)
-    params["format"] = "json"
-    r = await client.get("https://ws.audioscrobbler.com/2.0/", params=params, timeout=30)
-    r.raise_for_status()
-    data = r.json()
-    session = data.get("session") or {}
-    key = session.get("key")
-    name = session.get("name")
-    if not key or not name:
-        raise HTTPException(status_code=400, detail="Invalid session response")
+    try:
+        key, name = await lf_client.get_session(token)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
     row = await db.get(UserSettings, user_id)
     if not row:
         row = UserSettings(user_id=user_id)
@@ -287,11 +183,9 @@ async def health(db: AsyncSession = Depends(get_db)):
 async def sync_lastfm_tags(
     since: date | None = Query(None),
     db: AsyncSession = Depends(get_db),
-    settings: Settings = Depends(get_app_settings),
-    client: httpx.AsyncClient = Depends(get_http_client),
+    lf_client: LastfmClient = Depends(get_lastfm_client),
 ):
-    api_key = settings.lastfm_api_key
-    if not api_key:
+    if not lf_client.api_key:
         raise HTTPException(status_code=400, detail="LASTFM_API_KEY not configured")
 
     # find tracks with listens since date (or all if none)
@@ -306,7 +200,7 @@ async def sync_lastfm_tags(
     updated = 0
     for tid, title, artist_name in rows:
         try:
-            await _lastfm_fetch_tags(tid, artist_name, title, api_key, db, client)
+            await lf_client.get_track_tags(db, tid, artist_name, title)
             updated += 1
         except Exception:
             continue
