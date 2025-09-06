@@ -4,11 +4,11 @@ import json
 from datetime import date, datetime
 from pathlib import Path
 
-import httpx
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
 
+from ..clients.listenbrainz import ListenBrainzClient, get_listenbrainz_client
 from ..config import Settings, get_settings
-from ..main import get_current_user, get_http_client
+from ..main import get_current_user
 from ..schemas.listens import IngestResponse, ListenIn
 from ..services.listen_service import ListenService, get_listen_service
 
@@ -21,7 +21,7 @@ async def ingest_listens(
     listens: list[ListenIn] | None = Body(None, description="List of listens to ingest"),
     source: str = Query("auto", description="auto|listenbrainz|body|sample"),
     listen_service: ListenService = Depends(get_listen_service),
-    client: httpx.AsyncClient = Depends(get_http_client),
+    lb_client: ListenBrainzClient = Depends(get_listenbrainz_client),
     user_id: str = Depends(get_current_user),
     settings: Settings = Depends(get_settings),
 ):
@@ -51,7 +51,7 @@ async def ingest_listens(
     if source in ("auto", "listenbrainz"):
         token = settings.listenbrainz_token
         try:
-            rows = await listen_service.lb_fetch_listens(client, user_id, since, token)
+            rows = await lb_client.fetch_listens(user_id, since, token)
             created = await listen_service.ingest_lb_rows(rows, user_id)
             return IngestResponse(detail="ok", ingested=created, source="listenbrainz")
         except Exception as e:
