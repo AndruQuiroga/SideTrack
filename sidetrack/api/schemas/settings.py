@@ -15,6 +15,8 @@ class SettingsOut(BaseModel):
     listenBrainzToken: str | None = None
     lastfmUser: str | None = None
     lastfmConnected: bool = False
+    spotifyUser: str | None = None
+    spotifyConnected: bool = False
     useGpu: bool = False
     useStems: bool = False
     useExcerpts: bool = False
