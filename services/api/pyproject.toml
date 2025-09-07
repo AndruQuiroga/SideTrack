@@ -30,8 +30,8 @@ dependencies = [
 ]
 
 [tool.setuptools]
-packages = ["app"]
+packages = ["sidetrack"]
 include-package-data = true
 
 [tool.setuptools.package-data]
-"app" = ["model_data/*.json"]
+"sidetrack.api" = ["model_data/*.json"]
