@@ -58,6 +58,7 @@ curl -H "X-User-Id: YOUR_USER" -X POST "http://localhost:8000/aggregate/weeks"
 
 # 5) Open the UI
 open http://localhost:3000
+# Production: https://sidetrack.network
 ```
 
 Developer tooling (optional):
@@ -90,7 +91,7 @@ LASTFM_API_KEY=lfm_xxx
 LASTFM_API_SECRET=lfm_secret
 
 # Auth.js (NextAuth) – Google OAuth
-NEXTAUTH_URL=https://your.domain
+NEXTAUTH_URL=https://sidetrack.network
 NEXTAUTH_SECRET=supersecretlongrandom
 GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
@@ -170,12 +171,12 @@ cp .env.example .env
 
 # 2) Set up Google OAuth creds
 #    - Create a Google Cloud OAuth Client (Web)
-#    - Authorized redirect URI: https://your.domain/api/auth/callback/google
+#    - Authorized redirect URI: https://sidetrack.network/api/auth/callback/google
 #    - Put GOOGLE_CLIENT_ID/SECRET into .env and set NEXTAUTH_URL
 
 # 2b) API base for UI fetches (default: http://localhost:8000)
 #     - NEXT_PUBLIC_API_BASE points the Next.js UI at the API
-#     - Override in production, e.g., https://api.your.domain
+#     - Override in production, e.g., https://sidetrack.network/api
 
 # 3) Build and start (single compose)
 docker compose up -d --build
