@@ -5,8 +5,8 @@ from datetime import date, datetime
 from pathlib import Path
 
 import httpx
-from fastapi import APIRouter, Body, Depends, HTTPException, Query
 import structlog
+from fastapi import APIRouter, Body, Depends, HTTPException, Query
 
 from ...clients.listenbrainz import ListenBrainzClient, get_listenbrainz_client
 from ...config import Settings, get_settings
@@ -87,4 +87,3 @@ async def ingest_listens(
         )
     created = await listen_service.ingest_lb_rows(rows, user_id)
     return IngestResponse(detail="ok", ingested=created, source="sample")
-

@@ -11,15 +11,30 @@ export interface AvatarProps extends HTMLAttributes<HTMLDivElement> {
   size?: number;
 }
 
-export default function Avatar({ src, alt = 'avatar', size = 32, className, ...props }: AvatarProps) {
+export default function Avatar({
+  src,
+  alt = 'avatar',
+  size = 32,
+  className,
+  ...props
+}: AvatarProps) {
   return (
     <div
-      className={cn('flex items-center justify-center overflow-hidden rounded-full bg-white/5', className)}
+      className={cn(
+        'flex items-center justify-center overflow-hidden rounded-full bg-white/5',
+        className,
+      )}
       style={{ width: size, height: size }}
       {...props}
     >
       {src ? (
-        <Image src={src} alt={alt} width={size} height={size} className="h-full w-full object-cover" />
+        <Image
+          src={src}
+          alt={alt}
+          width={size}
+          height={size}
+          className="h-full w-full object-cover"
+        />
       ) : (
         <UserIcon className="h-2/3 w-2/3 text-muted-foreground" />
       )}

@@ -4,15 +4,10 @@ import ChartContainer from '../../components/ChartContainer';
 import FilterBar from '../../components/FilterBar';
 import Skeleton from '../../components/Skeleton';
 
-const TrajectoryClient = dynamic(
-  () => import('../../components/charts/TrajectoryClient'),
-  {
-    loading: () => (
-      <Skeleton className="aspect-[4/3] h-[clamp(240px,40vh,380px)]" />
-    ),
-    ssr: false,
-  },
-);
+const TrajectoryClient = dynamic(() => import('../../components/charts/TrajectoryClient'), {
+  loading: () => <Skeleton className="aspect-[4/3] h-[clamp(240px,40vh,380px)]" />,
+  ssr: false,
+});
 
 export default async function Trajectory() {
   return (
@@ -32,11 +27,7 @@ export default async function Trajectory() {
         />
       </div>
       <ChartContainer title="Trajectory" subtitle="Recent weekly bubbles and positions">
-        <Suspense
-          fallback={
-            <Skeleton className="aspect-[4/3] h-[clamp(240px,40vh,380px)]" />
-          }
-        >
+        <Suspense fallback={<Skeleton className="aspect-[4/3] h-[clamp(240px,40vh,380px)]" />}>
           <TrajectoryClient />
         </Suspense>
       </ChartContainer>

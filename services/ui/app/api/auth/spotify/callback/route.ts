@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE || 'https://sidetrack.network/api';
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'https://sidetrack.network/api';
 
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get('code') || '';
@@ -11,7 +10,7 @@ export async function GET(req: NextRequest) {
   if (uid) headers['X-User-Id'] = uid;
   const r = await fetch(
     `${API_BASE}/auth/spotify/callback?code=${encodeURIComponent(code)}&callback=${encodeURIComponent(callback)}`,
-    { headers }
+    { headers },
   );
   const data = await r.json().catch(() => ({}));
   return NextResponse.json(data, { status: r.status });

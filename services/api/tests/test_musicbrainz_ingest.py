@@ -1,7 +1,5 @@
 import copy
 
-import copy
-
 import pytest
 import pytest_asyncio
 from sqlalchemy import func, select
@@ -76,7 +74,5 @@ async def test_ingest_musicbrainz_not_found(mb_client, monkeypatch):
             return {}
 
     monkeypatch.setattr(main_mod.HTTP_SESSION, "get", lambda *a, **k: Resp())
-    resp = await mb_client.post(
-        "/api/v1/ingest/musicbrainz", params={"release_mbid": "missing"}
-    )
+    resp = await mb_client.post("/api/v1/ingest/musicbrainz", params={"release_mbid": "missing"})
     assert resp.status_code == 404

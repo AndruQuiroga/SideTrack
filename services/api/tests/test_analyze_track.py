@@ -1,5 +1,6 @@
-import pytest
 from types import SimpleNamespace
+
+import pytest
 
 from sidetrack.api import main
 from sidetrack.api.db import SessionLocal

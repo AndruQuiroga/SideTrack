@@ -43,6 +43,9 @@ ignore = [
 "services/api/alembic/env.py" = ["E402"]
 "services/api/app/main.py" = ["E402"]
 "services/api/tests/test_scoring.py" = ["E402"]
+"sidetrack/api/main.py" = ["E402"]
+"services/tests/conftest.py" = ["E402"]
+"tests/factories/__init__.py" = ["E402"]
 
 [tool.pytest.ini_options]
 markers = [

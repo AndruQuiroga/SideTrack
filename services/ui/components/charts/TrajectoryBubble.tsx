@@ -35,15 +35,11 @@ export default function TrajectoryBubble({ data }: { data: TrajectoryData }) {
     [innerHeight],
   );
 
-  const { tooltipData, tooltipLeft, tooltipTop, showTooltip, hideTooltip } =
-    useTooltip<Point>();
+  const { tooltipData, tooltipLeft, tooltipTop, showTooltip, hideTooltip } = useTooltip<Point>();
   const [highlight, setHighlight] = useState<number | null>(null);
 
   return (
-    <div
-      ref={ref}
-      className="relative w-full aspect-[4/3] h-[clamp(240px,40vh,380px)]"
-    >
+    <div ref={ref} className="relative w-full aspect-[4/3] h-[clamp(240px,40vh,380px)]">
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -79,16 +75,8 @@ export default function TrajectoryBubble({ data }: { data: TrajectoryData }) {
                   height={innerHeight}
                   stroke="#e0e0e0"
                 />
-                <GridRows
-                  scale={zoom.applyToScale(yScale)}
-                  width={innerWidth}
-                  stroke="#e0e0e0"
-                />
-                <AxisBottom
-                  top={innerHeight}
-                  scale={zoom.applyToScale(xScale)}
-                  numTicks={4}
-                />
+                <GridRows scale={zoom.applyToScale(yScale)} width={innerWidth} stroke="#e0e0e0" />
+                <AxisBottom top={innerHeight} scale={zoom.applyToScale(xScale)} numTicks={4} />
                 <AxisLeft scale={zoom.applyToScale(yScale)} numTicks={4} />
                 <Group transform={zoom.toString()}>
                   {arrows.map((a, i) => (
@@ -178,4 +166,3 @@ export default function TrajectoryBubble({ data }: { data: TrajectoryData }) {
     </div>
   );
 }
-

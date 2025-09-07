@@ -2,8 +2,7 @@ import * as React from 'react';
 import { Slot } from '@radix-ui/react-slot';
 import { cn } from '../lib/utils';
 
-export interface SkeletonProps
-  extends React.HTMLAttributes<HTMLDivElement> {
+export interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
   asChild?: boolean;
 }
 

@@ -1,5 +1,3 @@
-import logging
-import time
 from datetime import date, datetime, timedelta
 
 import httpx
@@ -11,11 +9,10 @@ from fastapi.responses import JSONResponse
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
 from sqlalchemy import and_, delete, func, select, text
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from sidetrack.common.logging import setup_logging
-from sidetrack.common.telemetry import setup_tracing
 from sidetrack.common.models import (
     Artist,
     Embedding,
@@ -27,6 +24,7 @@ from sidetrack.common.models import (
     UserLabel,
     UserSettings,
 )
+from sidetrack.common.telemetry import setup_tracing
 
 from . import scoring
 from .clients.lastfm import LastfmClient, get_lastfm_client
@@ -39,7 +37,6 @@ from .schemas.labels import LabelResponse
 from .schemas.settings import SettingsIn, SettingsOut, SettingsUpdateResponse
 from .schemas.tracks import AnalyzeTrackResponse, TrackPathIn, TrackPathResponse
 from .security import get_current_user, require_role
-
 
 setup_logging()
 setup_tracing("sidetrack-api")
@@ -74,7 +71,7 @@ async def handle_exceptions(request: Request, call_next):
         return await call_next(request)
     except HTTPException:
         raise
-    except Exception as exc:  # pragma: no cover - fallback
+    except Exception:  # pragma: no cover - fallback
         logger.exception("Unhandled exception", path=request.url.path)
         return JSONResponse(status_code=500, content={"detail": "Internal Server Error"})
 

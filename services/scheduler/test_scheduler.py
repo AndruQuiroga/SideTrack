@@ -1,5 +1,5 @@
-import schedule
 import pytest
+import schedule
 
 pytestmark = pytest.mark.unit
 

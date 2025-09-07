@@ -8,14 +8,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from sidetrack.common.models import Feature, Track, UserSettings
 
+from ....worker.jobs import fetch_spotify_features
 from ...clients.spotify import SpotifyClient, get_spotify_client
 from ...db import get_db
 from ...repositories.artist_repository import ArtistRepository
 from ...repositories.listen_repository import ListenRepository
 from ...repositories.track_repository import TrackRepository
 from ...security import get_current_user
-from ....worker.jobs import fetch_spotify_features
-
 
 router = APIRouter()
 
@@ -52,9 +51,7 @@ async def import_spotify_listens(
         played_at = datetime.fromisoformat(item["played_at"].replace("Z", "+00:00"))
 
         artist = await artist_repo.get_or_create(artist_name)
-        track = await track_repo.get_or_create_spotify(
-            spotify_id, title, artist.artist_id
-        )
+        track = await track_repo.get_or_create_spotify(spotify_id, title, artist.artist_id)
 
         if not await listen_repo.exists(user_id, track.track_id, played_at):
             await listen_repo.add(user_id, track.track_id, played_at, "spotify")
@@ -122,4 +119,3 @@ async def spotify_track_features(
 
     fid = await fetch_spotify_features(track_id, row.spotify_access_token, sp_client)
     return {"detail": "ok", "status": "created", "feature_id": fid}
-

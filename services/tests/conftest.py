@@ -4,6 +4,7 @@ import asyncio
 import os
 from pathlib import Path
 
+import docker
 import fakeredis
 import pytest
 import pytest_asyncio
@@ -14,7 +15,6 @@ from httpx import ASGITransport, AsyncClient
 from redis import Redis
 from testcontainers.postgres import PostgresContainer
 from testcontainers.redis import RedisContainer
-import docker
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -51,9 +51,7 @@ def db(tmp_path, request):
             pytest.skip("Docker not available for integration tests")
         try:
             with PostgresContainer("postgres:16") as pg:
-                url = pg.get_connection_url().replace(
-                    "postgresql://", "postgresql+psycopg://"
-                )
+                url = pg.get_connection_url().replace("postgresql://", "postgresql+psycopg://")
                 os.environ["DATABASE_URL"] = url
                 os.environ.setdefault("AUTO_MIGRATE", "1")
                 asyncio.run(maybe_create_all())

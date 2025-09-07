@@ -22,12 +22,12 @@ class TrackFactory(factory.Factory):
     spotify_id = None
 
 
-
 class FeatureFactory(factory.Factory):
     """Factory for :class:`~sidetrack.common.models.Feature`."""
 
     class Meta:
         model = Feature
+
     bpm = 120.0
     pumpiness = 0.5
     percussive_harmonic_ratio = 0.3
@@ -41,6 +41,7 @@ class EmbeddingFactory(factory.Factory):
 
     class Meta:
         model = Embedding
+
     model = "test"
     dim = 3
     vector = [0.1, 0.2, 0.3]

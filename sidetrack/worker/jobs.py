@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+
 import numpy as np
 
 from sidetrack.api.clients.spotify import SpotifyClient
@@ -71,9 +72,7 @@ def compute_embeddings(data: list[float]) -> list[float]:
 KEYS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
 
 
-async def fetch_spotify_features(
-    track_id: int, access_token: str, client: SpotifyClient
-) -> int:
+async def fetch_spotify_features(track_id: int, access_token: str, client: SpotifyClient) -> int:
     """Fetch Spotify audio features and store them as :class:`Feature`."""
 
     async with SessionLocal() as db:

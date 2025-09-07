@@ -12,7 +12,6 @@ REPO_DIR = os.path.abspath(os.path.join(BASE_DIR, "../.."))
 sys.path.append(REPO_DIR)
 
 from sidetrack.api.config import get_settings  # type: ignore
-
 from sidetrack.common.models import Base  # type: ignore
 
 # this is the Alembic Config object, which provides

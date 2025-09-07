@@ -24,13 +24,7 @@ export interface CardProps
 const Card = React.forwardRef<HTMLDivElement, CardProps>(
   ({ className, variant, asChild = false, ...props }, ref) => {
     const Comp = asChild ? Slot : 'div';
-    return (
-      <Comp
-        className={cn(cardVariants({ variant }), className)}
-        ref={ref}
-        {...props}
-      />
-    );
+    return <Comp className={cn(cardVariants({ variant }), className)} ref={ref} {...props} />;
   },
 );
 Card.displayName = 'Card';

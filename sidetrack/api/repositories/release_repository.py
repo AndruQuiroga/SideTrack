@@ -1,6 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sidetrack.common.models import Release
+
 from ..utils import get_or_create
 
 

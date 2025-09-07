@@ -1,4 +1,4 @@
-"use client";
+'use client';
 import { motion } from 'framer-motion';
 import clsx from 'clsx';
 
@@ -23,9 +23,7 @@ export default function FilterBar({ options, value, onChange }: Props) {
             onClick={() => onChange?.(opt.value)}
             className={clsx(
               'relative rounded-full px-3 py-1 text-xs',
-              active
-                ? 'text-emerald-300'
-                : 'text-muted-foreground hover:text-foreground',
+              active ? 'text-emerald-300' : 'text-muted-foreground hover:text-foreground',
             )}
           >
             {active && (

@@ -195,4 +195,3 @@ async def dashboard_outliers(
 
     outliers.sort(key=lambda x: x["distance"], reverse=True)
     return {"tracks": outliers[:limit], "centroid": centroid}
-

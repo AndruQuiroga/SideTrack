@@ -5,8 +5,8 @@ from rq import Queue, SimpleWorker
 
 from sidetrack.api.db import SessionLocal
 from sidetrack.common.models import Feature
-from tests.factories import TrackFactory
 from sidetrack.worker.jobs import analyze_track, compute_embeddings
+from tests.factories import TrackFactory
 
 pytestmark = pytest.mark.integration
 

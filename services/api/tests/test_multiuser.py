@@ -20,9 +20,7 @@ async def _add_listen(user: str, value: float) -> int:
         tid = tr.track_id
         db.add_all(
             [
-                Listen(
-                    user_id=user, track_id=tid, played_at=datetime(2024, 1, 1, tzinfo=UTC)
-                ),
+                Listen(user_id=user, track_id=tid, played_at=datetime(2024, 1, 1, tzinfo=UTC)),
                 MoodScore(track_id=tid, axis="energy", method=DEFAULT_METHOD, value=value),
             ]
         )
@@ -47,12 +45,8 @@ async def test_aggregate_weeks_is_scoped_to_user(monkeypatch, async_client):
     async with SessionLocal() as db:
         rows = (await db.execute(select(MoodAggWeek))).all()
         assert len(rows) == 2
-        m1 = (
-            await db.execute(select(MoodAggWeek).where(MoodAggWeek.user_id == "u1"))
-        ).scalar_one()
-        m2 = (
-            await db.execute(select(MoodAggWeek).where(MoodAggWeek.user_id == "u2"))
-        ).scalar_one()
+        m1 = (await db.execute(select(MoodAggWeek).where(MoodAggWeek.user_id == "u1"))).scalar_one()
+        m2 = (await db.execute(select(MoodAggWeek).where(MoodAggWeek.user_id == "u2"))).scalar_one()
         assert m1.mean == pytest.approx(0.7)
         assert m2.mean == pytest.approx(0.3)
 

@@ -14,7 +14,9 @@ class SpotifyClient:
     auth_root = "https://accounts.spotify.com"
     api_root = "https://api.spotify.com/v1"
 
-    def __init__(self, client: httpx.AsyncClient, client_id: str | None, client_secret: str | None) -> None:
+    def __init__(
+        self, client: httpx.AsyncClient, client_id: str | None, client_secret: str | None
+    ) -> None:
         self._client = client
         self.client_id = client_id
         self.client_secret = client_secret

@@ -13,4 +13,3 @@ export function useNav() {
   if (!ctx) throw new Error('NavContext missing');
   return ctx;
 }
-

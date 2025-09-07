@@ -13,11 +13,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY services/extractor/requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
-# Make shared models importable
-COPY services/common /src/services/common
-ENV PYTHONPATH=/src:/app
+# Copy monorepo services to ensure imports resolve
+COPY services /src/services
+ENV PYTHONPATH=/src
 
-# App code
-COPY services/extractor/extractor /app/extractor
-
+# Run extractor from source
+WORKDIR /src/services/extractor
 CMD ["python","-m","extractor.run","--schedule","@daily"]

@@ -11,8 +11,9 @@ export default function SpotifyCallback() {
     const code = params.get('code');
     if (code) {
       const callback = encodeURIComponent(`${window.location.origin}/spotify/callback`);
-      fetch(`/api/auth/spotify/callback?code=${code}&callback=${callback}`)
-        .finally(() => router.replace('/settings'));
+      fetch(`/api/auth/spotify/callback?code=${code}&callback=${callback}`).finally(() =>
+        router.replace('/settings'),
+      );
     } else {
       router.replace('/settings');
     }

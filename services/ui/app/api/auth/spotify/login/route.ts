@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE || 'https://sidetrack.network/api';
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'https://sidetrack.network/api';
 
 export async function GET(req: NextRequest) {
   const callback = req.nextUrl.searchParams.get('callback') || '';

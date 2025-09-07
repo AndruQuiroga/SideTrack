@@ -7,15 +7,10 @@ import ChartContainer from '../../components/ChartContainer';
 import FilterBar from '../../components/FilterBar';
 import Skeleton from '../../components/Skeleton';
 
-const MoodsStreamgraph = dynamic(
-  () => import('../../components/charts/MoodsStreamgraph'),
-  {
-    loading: () => (
-      <Skeleton className="aspect-[4/3] h-[clamp(240px,40vh,340px)]" />
-    ),
-    ssr: false,
-  },
-);
+const MoodsStreamgraph = dynamic(() => import('../../components/charts/MoodsStreamgraph'), {
+  loading: () => <Skeleton className="aspect-[4/3] h-[clamp(240px,40vh,340px)]" />,
+  ssr: false,
+});
 
 export default function Moods() {
   const { data: traj, isLoading: trajLoading } = useTrajectory();
@@ -58,15 +53,10 @@ export default function Moods() {
   const loading = trajLoading || radarLoading;
 
   const content = useMemo(() => {
-    if (loading)
-      return <Skeleton className="aspect-[4/3] h-[clamp(240px,40vh,340px)]" />;
+    if (loading) return <Skeleton className="aspect-[4/3] h-[clamp(240px,40vh,340px)]" />;
     if (!series.length) return <div className="text-sm text-muted-foreground">No data yet.</div>;
     return (
-      <Suspense
-        fallback={
-          <Skeleton className="aspect-[4/3] h-[clamp(240px,40vh,340px)]" />
-        }
-      >
+      <Suspense fallback={<Skeleton className="aspect-[4/3] h-[clamp(240px,40vh,340px)]" />}>
         <MoodsStreamgraph data={series} axes={axes} />
       </Suspense>
     );

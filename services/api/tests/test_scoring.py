@@ -24,10 +24,10 @@ async def test_score_track_zero_shot(async_session):
     assert set(res["scores"]) == set(AXES)
 
     rows = (
-        await async_session.execute(
-            select(MoodScore).where(MoodScore.track_id == tid)
-        )
-    ).scalars().all()
+        (await async_session.execute(select(MoodScore).where(MoodScore.track_id == tid)))
+        .scalars()
+        .all()
+    )
     assert len(rows) == len(AXES)
     for row in rows:
         assert 0.0 <= row.value <= 1.0
@@ -58,12 +58,14 @@ async def test_score_track_logreg(async_session):
     assert res["method"] == "logreg_v1"
     assert set(res["scores"]) == set(AXES)
     rows = (
-        await async_session.execute(
-            select(MoodScore).where(
-                MoodScore.track_id == tid, MoodScore.method == "logreg_v1"
+        (
+            await async_session.execute(
+                select(MoodScore).where(MoodScore.track_id == tid, MoodScore.method == "logreg_v1")
             )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     assert len(rows) == len(AXES)
     for val in res["scores"].values():
         assert 0.0 <= val["value"] <= 1.0

@@ -7,8 +7,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from sidetrack.common.models import Base, Embedding, Feature
-from tests.factories import TrackFactory
 from sidetrack.extractor.run import analyze_one, estimate_features
+from tests.factories import TrackFactory
 
 pytestmark = pytest.mark.unit
 

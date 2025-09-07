@@ -4,7 +4,6 @@ from sqlalchemy import select
 from sidetrack.api.clients.spotify import SpotifyClient
 from sidetrack.common.models import Listen, UserSettings
 
-
 pytestmark = pytest.mark.asyncio
 
 
@@ -38,4 +37,3 @@ async def test_spotify_listens_ingest(async_client, async_session, monkeypatch):
 
     res = await async_session.execute(select(Listen))
     assert len(res.scalars().all()) == 1
-

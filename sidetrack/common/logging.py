@@ -18,4 +18,3 @@ def setup_logging(level: int = logging.INFO) -> None:
         wrapper_class=structlog.make_filtering_bound_logger(level),
         logger_factory=structlog.stdlib.LoggerFactory(),
     )
-

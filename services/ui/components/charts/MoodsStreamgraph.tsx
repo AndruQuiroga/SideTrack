@@ -17,10 +17,7 @@ export default function MoodsStreamgraph({ data, axes }: { data: Series[]; axes:
   const height = bounds.height || 320;
   const margin = { top: 10, right: 10, bottom: 20, left: 10 };
 
-  const xDomain = useMemo(
-    () => extent(data, (d) => d.week as Date) as [Date, Date],
-    [data],
-  );
+  const xDomain = useMemo(() => extent(data, (d) => d.week as Date) as [Date, Date], [data]);
   const xScale = useMemo(
     () => scaleTime({ domain: xDomain, range: [margin.left, width - margin.right] }),
     [xDomain, width, margin.left, margin.right],
@@ -38,13 +35,9 @@ export default function MoodsStreamgraph({ data, axes }: { data: Series[]; axes:
     [axes],
   );
 
-  const { tooltipData, tooltipLeft, tooltipTop, showTooltip, hideTooltip } =
-    useTooltip<Series>();
+  const { tooltipData, tooltipLeft, tooltipTop, showTooltip, hideTooltip } = useTooltip<Series>();
 
-  const dateBisect = useMemo(
-    () => bisector<Series, Date>((d) => d.week as Date).left,
-    [],
-  );
+  const dateBisect = useMemo(() => bisector<Series, Date>((d) => d.week as Date).left, []);
 
   const handleMouseMove = (event: React.MouseEvent<SVGRectElement>) => {
     const point = localPoint(event);
@@ -65,10 +58,7 @@ export default function MoodsStreamgraph({ data, axes }: { data: Series[]; axes:
   };
 
   return (
-    <div
-      ref={ref}
-      className="relative w-full aspect-[4/3] h-[clamp(240px,40vh,320px)]"
-    >
+    <div ref={ref} className="relative w-full aspect-[4/3] h-[clamp(240px,40vh,320px)]">
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}

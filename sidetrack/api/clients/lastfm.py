@@ -16,7 +16,6 @@ from sidetrack.common.models import LastfmTags
 
 from ..config import Settings, get_settings
 
-
 logger = structlog.get_logger(__name__)
 
 
@@ -145,4 +144,3 @@ async def get_lastfm_client(
 ) -> AsyncGenerator[LastfmClient, None]:
     async with httpx.AsyncClient() as client:
         yield LastfmClient(client, settings.lastfm_api_key, settings.lastfm_api_secret)
-

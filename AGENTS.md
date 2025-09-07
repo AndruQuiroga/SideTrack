@@ -12,9 +12,9 @@
 
 The database layer uses both synchronous and asynchronous SQLAlchemy engines.
 `SessionLocal(async_session: bool | None = None)` returns an async session when
-called inside an event loop. Pass ``async_session=False`` to force a synchronous
+called inside an event loop. Pass `async_session=False` to force a synchronous
 session from within async-aware code (e.g. a fixture running under
-``pytest-asyncio``) to avoid ``MissingGreenlet`` errors.
+`pytest-asyncio`) to avoid `MissingGreenlet` errors.
 
 Integration tests rely on Docker; they are automatically skipped if a Docker
 daemon is not reachable.
