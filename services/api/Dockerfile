@@ -13,6 +13,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Copy API sources (package, alembic, config)
 COPY services/api/ /srv/api/
+# Copy monorepo package src for setuptools (sidetrack)
+COPY sidetrack/ /srv/api/sidetrack/
 
 # Install API Python package
 RUN pip install --no-cache-dir /srv/api
