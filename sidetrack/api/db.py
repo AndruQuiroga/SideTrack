@@ -38,9 +38,24 @@ def _get_sessionmakers() -> None:
         setattr(globals()["engine"], "sync_engine", _sync_engine)
 
 
-def SessionLocal() -> Session | AsyncSession:
+def SessionLocal(async_session: bool | None = None) -> Session | AsyncSession:
+    """Return a session appropriate for the current context.
+
+    When ``async_session`` is ``True`` or ``False`` the return value is forced
+    to be asynchronous or synchronous respectively, regardless of whether an
+    event loop is running.  If ``None`` (the default) an ``AsyncSession`` is
+    returned only when an event loop is active, otherwise a regular ``Session``
+    is provided.  This avoids ``MissingGreenlet`` errors when synchronous code
+    is executed from within an async test harness.
+    """
+
     _get_sessionmakers()
     import asyncio
+
+    if async_session is True:
+        return _AsyncSessionLocal()
+    if async_session is False:
+        return _SyncSessionLocal()
 
     try:
         asyncio.get_running_loop()

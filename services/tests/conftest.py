@@ -14,6 +14,7 @@ from httpx import ASGITransport, AsyncClient
 from redis import Redis
 from testcontainers.postgres import PostgresContainer
 from testcontainers.redis import RedisContainer
+import docker
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -23,6 +24,17 @@ os.environ["AUTO_MIGRATE"] = "1"
 
 from sidetrack.api import main as app_main
 from sidetrack.api.db import SessionLocal, get_db, maybe_create_all
+
+
+def _docker_available() -> bool:
+    """Return True if a Docker daemon is reachable."""
+    try:
+        client = docker.from_env()
+        client.ping()
+        client.close()
+        return True
+    except Exception:
+        return False
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -35,6 +47,8 @@ def load_env() -> None:
 def db(tmp_path, request):
     """Configure database per test, using Postgres for integration tests."""
     if request.node.get_closest_marker("integration"):
+        if not _docker_available():
+            pytest.skip("Docker not available for integration tests")
         try:
             with PostgresContainer("postgres:16") as pg:
                 url = pg.get_connection_url().replace(
@@ -58,19 +72,21 @@ def db(tmp_path, request):
 
 @pytest.fixture
 def session(db):
-    with SessionLocal() as sess:
+    with SessionLocal(async_session=False) as sess:
         yield sess
 
 
 @pytest_asyncio.fixture
 async def async_session(db):
-    async with SessionLocal() as sess:
+    async with SessionLocal(async_session=True) as sess:
         yield sess
 
 
 @pytest.fixture
 def redis_conn(request):
     if request.node.get_closest_marker("integration"):
+        if not _docker_available():
+            pytest.skip("Docker not available for integration tests")
         try:
             with RedisContainer("redis:7") as rc:
                 conn = Redis.from_url(rc.get_connection_url())
@@ -98,7 +114,7 @@ def client(db, redis_conn):
     app_main._REDIS_CONN = redis_conn
 
     def override_get_db():
-        with SessionLocal() as db_session:
+        with SessionLocal(async_session=False) as db_session:
             yield db_session
 
     app_main.app.dependency_overrides[get_db] = override_get_db
@@ -113,7 +129,7 @@ async def async_client(db, redis_conn):
     app_main._REDIS_CONN = redis_conn
 
     async def override_get_db():
-        async with SessionLocal() as db_session:
+        async with SessionLocal(async_session=True) as db_session:
             yield db_session
 
     app_main.app.dependency_overrides[get_db] = override_get_db
