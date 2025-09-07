@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import numpy as np
 
+from sidetrack.api.clients.spotify import SpotifyClient
 from sidetrack.api.db import SessionLocal
 from sidetrack.common.models import Feature, Track
 
@@ -65,3 +66,38 @@ def compute_embeddings(data: list[float]) -> list[float]:
     embeddings = [round(x / max_val, 4) for x in data]
     logger.info("computed embeddings")
     return embeddings
+
+
+KEYS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
+
+
+async def fetch_spotify_features(
+    track_id: int, access_token: str, client: SpotifyClient
+) -> int:
+    """Fetch Spotify audio features and store them as :class:`Feature`."""
+
+    async with SessionLocal() as db:
+        track = await db.get(Track, track_id)
+        if not track or not track.spotify_id:
+            raise ValueError("track missing")
+
+        data = await client.get_audio_features(access_token, track.spotify_id)
+
+        key_name = None
+        key_val = data.get("key")
+        if key_val is not None and 0 <= int(key_val) < len(KEYS):
+            mode = data.get("mode")
+            suffix = "major" if int(mode or 1) == 1 else "minor"
+            key_name = f"{KEYS[int(key_val)]} {suffix}"
+
+        feature = Feature(
+            track_id=track_id,
+            bpm=data.get("tempo"),
+            key=key_name,
+            pumpiness=data.get("energy"),
+        )
+        db.add(feature)
+        await db.flush()
+        fid = feature.id
+        await db.commit()
+        return fid
