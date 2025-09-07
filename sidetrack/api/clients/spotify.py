@@ -94,6 +94,18 @@ class SpotifyClient:
         resp.raise_for_status()
         return resp.json().get("items", [])
 
+    async def get_audio_features(self, access_token: str, spotify_id: str) -> dict[str, Any]:
+        """Return Spotify's audio features for a track."""
+
+        headers = {"Authorization": f"Bearer {access_token}"}
+        resp = await self._client.get(
+            f"{self.api_root}/audio-features/{spotify_id}",
+            headers=headers,
+            timeout=30,
+        )
+        resp.raise_for_status()
+        return resp.json()
+
 
 async def get_spotify_client(
     settings: Settings = Depends(get_settings),
