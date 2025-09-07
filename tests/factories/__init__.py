@@ -19,6 +19,7 @@ class TrackFactory(factory.Factory):
     release_id = None
     duration = None
     fingerprint = None
+    spotify_id = None
 
 
 

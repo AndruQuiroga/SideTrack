@@ -1,4 +1,5 @@
 from collections.abc import AsyncGenerator
+from datetime import datetime
 from typing import Any
 
 import httpx
@@ -60,6 +61,38 @@ class SpotifyClient:
         resp = await self._client.get(f"{self.api_root}/me", headers=headers, timeout=30)
         resp.raise_for_status()
         return resp.json()
+
+    async def fetch_recently_played(
+        self,
+        access_token: str,
+        after: datetime | None = None,
+        limit: int = 50,
+    ) -> list[dict[str, Any]]:
+        """Fetch a user's recently played tracks.
+
+        Parameters
+        ----------
+        access_token:
+            OAuth access token for the user.
+        after:
+            If provided, only return listens after this timestamp.
+        limit:
+            Maximum number of rows to return (Spotify max 50).
+        """
+
+        headers = {"Authorization": f"Bearer {access_token}"}
+        params: dict[str, Any] = {"limit": min(limit, 50)}
+        if after:
+            # Spotify expects milliseconds since epoch
+            params["after"] = int(after.timestamp() * 1000)
+        resp = await self._client.get(
+            f"{self.api_root}/me/player/recently-played",
+            headers=headers,
+            params=params,
+            timeout=30,
+        )
+        resp.raise_for_status()
+        return resp.json().get("items", [])
 
 
 async def get_spotify_client(

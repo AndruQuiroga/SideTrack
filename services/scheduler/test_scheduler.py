@@ -20,6 +20,7 @@ def test_all_jobs_run(monkeypatch):
 
     monkeypatch.setenv("API_URL", "http://api")
     monkeypatch.setenv("INGEST_LISTENS_INTERVAL_MINUTES", "1")
+    monkeypatch.setenv("SPOTIFY_LISTENS_INTERVAL_MINUTES", "1")
     monkeypatch.setenv("LASTFM_SYNC_INTERVAL_MINUTES", "1")
     monkeypatch.setenv("AGGREGATE_WEEKS_INTERVAL_MINUTES", "1")
     monkeypatch.setenv("DEFAULT_USER_ID", "u1")
@@ -34,5 +35,6 @@ def test_all_jobs_run(monkeypatch):
 
     expected_headers = {"X-User-Id": "u1"}
     assert ("http://api/ingest/listens", expected_headers) in calls
+    assert ("http://api/spotify/listens", expected_headers) in calls
     assert ("http://api/tags/lastfm/sync", expected_headers) in calls
     assert ("http://api/aggregate/weeks", expected_headers) in calls
