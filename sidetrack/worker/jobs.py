@@ -53,15 +53,19 @@ def analyze_track(track_id: int) -> int:
 def compute_embeddings(data: list[float]) -> list[float]:
     """Compute a simple normalised embedding vector.
 
+    Normalisation is performed by dividing each value by the largest absolute
+    value in ``data`` so that the output preserves the sign of the original
+    values while remaining within ``[-1, 1]``.
+
     Args:
         data: List of floats representing raw features.
 
     Returns:
-        A list of floats normalised by the maximum value.
+        A list of floats normalised by the maximum absolute value.
     """
     if not data:
         return []
-    max_val = max(data)
+    max_val = max(abs(x) for x in data)
     if max_val == 0:
         return [0 for _ in data]
     embeddings = [round(x / max_val, 4) for x in data]
