@@ -1,18 +1,15 @@
-FROM python:3.11-slim
+# syntax=docker/dockerfile:1
 
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
-
-WORKDIR /app
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    ffmpeg \
+# Build stage: install extractor extras using cached wheels
+FROM sidetrack-base AS builder
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential \
     && rm -rf /var/lib/apt/lists/*
+RUN pip install --no-cache-dir --find-links /wheels 'sidetrack[extractor]'
 
-# Copy project files and install extractor extras
-COPY pyproject.toml ./
-COPY sidetrack ./sidetrack
-RUN pip install --no-cache-dir .[extractor]
+# Runtime stage: minimal image with ffmpeg and installed packages
+FROM sidetrack-base AS runtime
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+COPY --from=builder /usr/local /usr/local
 
-# Run extractor
 CMD ["python", "-m", "sidetrack.extractor.run", "--schedule", "@daily"]
