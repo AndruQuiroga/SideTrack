@@ -1,12 +1,13 @@
 FROM python:3.11-slim
-WORKDIR /app
 
-COPY services /src/services
-# Provide the sidetrack package next to API's pyproject
-COPY sidetrack /src/services/api/sidetrack
-RUN pip install --no-cache-dir /src/services/api
-RUN pip install --no-cache-dir /src/services/worker
+# Copy the project sources and install the sidetrack package with
+# worker-specific extras.
+WORKDIR /src
+COPY pyproject.toml ./
+COPY sidetrack ./sidetrack
+RUN pip install --no-cache-dir .[worker]
 
-ENV PYTHONPATH=/src
+# Run the worker from the installed package location.
+WORKDIR /usr/local/lib/python3.11/site-packages/sidetrack
+CMD ["python", "-m", "sidetrack.worker.run"]
 
-CMD ["python","-m","worker.run"]
