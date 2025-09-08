@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import asyncio
+import contextlib
 import os
-import time
+import signal
 from pathlib import Path
 
 import numpy as np
@@ -306,7 +308,12 @@ def analyze_one(db: Session, tr: Track, audio_root: str) -> bool:
 
 @app.command()
 def main(
-    schedule: str = typer.Option("@daily", help="Cron or preset schedule"),
+    interval: float = typer.Option(
+        10.0,
+        "--interval",
+        help="Seconds between extraction passes",
+        envvar="EXTRACTOR_INTERVAL",
+    ),
     once: bool = typer.Option(False, help="Run one pass then exit"),
     batch_size: int = typer.Option(4, help="Tracks to process per pass"),
 ):
@@ -322,8 +329,27 @@ def main(
             typer.echo(f"[extractor] DB not ready: {e}")
             return
 
+    asyncio.run(_run_loop(engine, audio_root, batch_size, interval, once))
+
+
+async def _run_loop(
+    engine: any, audio_root: str, batch_size: int, interval: float, once: bool
+) -> None:
+    stop_event = asyncio.Event()
+
+    def _stop(*_: object) -> None:
+        stop_event.set()
+
+    loop = asyncio.get_running_loop()
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        try:
+            loop.add_signal_handler(sig, _stop)
+        except NotImplementedError:
+            # Windows may not support signal handlers in Proactor loop
+            signal.signal(sig, lambda *_: stop_event.set())
+
     try:
-        while True:
+        while not stop_event.is_set():
             with Session(engine) as db:
                 pending = find_pending_tracks(db, batch_size=batch_size)
                 if not pending:
@@ -333,8 +359,16 @@ def main(
                     typer.echo(f"[extractor] track {tr.track_id} analyzed: {ok}")
             if once:
                 break
-            time.sleep(10)
-    except KeyboardInterrupt:
+            sleep_task = asyncio.create_task(asyncio.sleep(interval))
+            stop_task = asyncio.create_task(stop_event.wait())
+            done, pending_tasks = await asyncio.wait(
+                {sleep_task, stop_task}, return_when=asyncio.FIRST_COMPLETED
+            )
+            for task in pending_tasks:
+                task.cancel()
+                with contextlib.suppress(asyncio.CancelledError):
+                    await task
+    finally:
         typer.echo("[extractor] stopping")
 
 
