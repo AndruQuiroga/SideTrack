@@ -5,7 +5,6 @@ from datetime import datetime
 import asyncio
 import httpx
 import structlog
-import time
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,24 +22,22 @@ router = APIRouter()
 
 
 # use shared utils: mb_sanitize, get_or_create
-
-
-_MB_LAST_CALL = 0.0
+_MB_LOCK = asyncio.Lock()
 
 
 async def _mb_fetch_release(client: httpx.AsyncClient, mbid: str) -> dict:
     """Fetch release info from MusicBrainz with simple rate limiting."""
-    global _MB_LAST_CALL
-    wait = 1.0 - (time.time() - _MB_LAST_CALL)
-    if wait > 0:
-        await asyncio.sleep(wait)
-    _MB_LAST_CALL = time.time()
     url = f"https://musicbrainz.org/ws/2/release/{mbid}"
     params = {"inc": "recordings+artists", "fmt": "json"}
     headers = {"User-Agent": "SideTrack/0.1 (+https://example.com)"}
-    r = await client.get(url, params=params, headers=headers, timeout=30)
-    r.raise_for_status()
-    return r.json()
+    async with _MB_LOCK:
+        try:
+            resp = await client.get(url, params=params, headers=headers, timeout=30)
+            resp.raise_for_status()
+            return resp.json()
+        finally:
+            # MusicBrainz allows one request per second
+            await asyncio.sleep(1)
 
 
 @router.post("/ingest/musicbrainz", response_model=MusicbrainzIngestResponse)
@@ -57,8 +54,8 @@ async def ingest_musicbrainz(
             raise HTTPException(status_code=404, detail="release not found")
         logger.error("MusicBrainz HTTP error", error=str(exc))
         raise HTTPException(status_code=502, detail=f"MusicBrainz error: {exc}")
-    except httpx.HTTPError as exc:
-        logger.error("MusicBrainz HTTP error", error=str(exc))
+    except httpx.RequestError as exc:
+        logger.error("MusicBrainz request error", error=str(exc))
         raise HTTPException(status_code=502, detail=f"MusicBrainz error: {exc}")
     except ValueError as exc:
         logger.error("MusicBrainz parse error", error=str(exc))
