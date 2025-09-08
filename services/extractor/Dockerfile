@@ -13,10 +13,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY services/extractor/requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
-# Copy monorepo services to ensure imports resolve
-COPY services /src/services
-ENV PYTHONPATH=/src
+# Copy and install sidetrack package
+COPY pyproject.toml sidetrack /app/
+RUN pip install /app
 
-# Run extractor from source
-WORKDIR /src/services/extractor
-CMD ["python","-m","extractor.run","--schedule","@daily"]
+# Run extractor
+CMD ["python", "-m", "sidetrack.extractor.run", "--schedule", "@daily"]

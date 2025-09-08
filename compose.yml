@@ -31,7 +31,7 @@ services:
     volumes:
       - ./data/audio:/audio:ro
     depends_on: [db]
-    command: python -m extractor.run --schedule "@daily"
+    command: python -m sidetrack.extractor.run --schedule "@daily"
 
   scheduler:
     build:
