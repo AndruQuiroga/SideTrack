@@ -30,7 +30,7 @@ sample_release = {
 
 @pytest_asyncio.fixture
 async def mb_client(async_client, monkeypatch):
-    def fake_get(url, params=None, headers=None, timeout=30):
+    async def fake_get(url, params=None, headers=None, timeout=30):
         class Resp:
             def raise_for_status(self):
                 pass
@@ -41,7 +41,7 @@ async def mb_client(async_client, monkeypatch):
         return Resp()
 
     monkeypatch.setattr(main_mod.HTTP_SESSION, "get", fake_get)
-    monkeypatch.setattr(main_mod.time, "sleep", lambda x: None)
+    monkeypatch.setattr(main_mod, "_MB_LAST_CALL", 0.0)
     return async_client
 
 
@@ -62,17 +62,22 @@ async def test_ingest_musicbrainz_dedup(mb_client):
 
 @pytest.mark.asyncio
 async def test_ingest_musicbrainz_not_found(mb_client, monkeypatch):
-    class Resp:
-        def raise_for_status(self):
-            from requests import HTTPError, Response
+    from httpx import HTTPStatusError, Request, Response
 
-            resp = Response()
-            resp.status_code = 404
-            raise HTTPError(response=resp)
+    async def fake_get(*args, **kwargs):
+        request = Request("GET", "https://musicbrainz.org")
+        response = Response(status_code=404, request=request)
 
-        def json(self):
-            return {}
+        class Resp:
+            def raise_for_status(self):
+                raise HTTPStatusError("Not Found", request=request, response=response)
 
-    monkeypatch.setattr(main_mod.HTTP_SESSION, "get", lambda *a, **k: Resp())
+            def json(self):
+                return {}
+
+        return Resp()
+
+    monkeypatch.setattr(main_mod.HTTP_SESSION, "get", fake_get)
+    monkeypatch.setattr(main_mod, "_MB_LAST_CALL", 0.0)
     resp = await mb_client.post("/api/v1/ingest/musicbrainz", params={"release_mbid": "missing"})
     assert resp.status_code == 404
