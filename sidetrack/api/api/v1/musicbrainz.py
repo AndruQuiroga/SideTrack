@@ -4,6 +4,7 @@ from datetime import datetime
 
 import requests
 import structlog
+import time
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sidetrack.common.models import Artist, Release, Track
 
 from ...db import get_db
-from ...main import HTTP_SESSION, time
+from ...main import HTTP_SESSION
 from ...schemas.musicbrainz import MusicbrainzIngestResponse
 from ...utils import get_or_create, mb_sanitize
 
