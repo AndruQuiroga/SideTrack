@@ -8,6 +8,58 @@ requires-python = ">=3.11"
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
+[project.optional-dependencies]
+api = [
+    "fastapi==0.111.1",
+    "uvicorn[standard]==0.30.1",
+    "pydantic==2.8.2",
+    "pydantic-settings==2.3.4",
+    "python-dotenv==1.0.1",
+    "psycopg[binary]==3.2.1",
+    "SQLAlchemy==2.0.32",
+    "alembic==1.13.2",
+    "requests==2.32.3",
+    "httpx[async]==0.27.0",
+    "tenacity==8.2.3",
+    "passlib[bcrypt]==1.7.4",
+    "redis==5.0.7",
+    "rq==1.16.2",
+    "structlog==24.1.0",
+    "google-auth==2.40.3",
+    "opentelemetry-api==1.36.0",
+    "opentelemetry-sdk==1.36.0",
+    "opentelemetry-instrumentation-fastapi==0.57b0",
+    "opentelemetry-instrumentation-httpx==0.57b0",
+    "opentelemetry-instrumentation-sqlalchemy==0.57b0",
+    "pytest-asyncio==0.23.7",
+]
+extractor = [
+    "typer==0.12.3",
+    "python-dotenv==1.0.1",
+    "SQLAlchemy==2.0.32",
+    "psycopg[binary]==3.2.1",
+    "numpy==1.26.4",
+    "scipy==1.13.1",
+    "librosa==0.10.2.post1",
+    "soundfile==0.12.1",
+    "openl3==0.4.2",
+]
+scheduler = [
+    "requests==2.32.3",
+    "schedule==1.2.2",
+    "pydantic==2.8.2",
+    "pydantic-settings==2.3.4",
+]
+worker = [
+    "sidetrack[api]",
+    "rq==1.16.2",
+    "redis==5.0.7",
+    "librosa==0.10.2.post1",
+    "numpy==1.26.4",
+    "soundfile==0.12.1",
+    "fakeredis==2.23.2",
+]
+
 [tool.setuptools.packages.find]
 include = ["sidetrack*"]
 
