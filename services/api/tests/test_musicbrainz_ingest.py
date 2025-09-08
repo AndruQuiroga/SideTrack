@@ -41,7 +41,6 @@ async def mb_client(async_client, monkeypatch):
         return Resp()
 
     monkeypatch.setattr(main_mod.HTTP_SESSION, "get", fake_get)
-    monkeypatch.setattr(main_mod, "_MB_LAST_CALL", 0.0)
     return async_client
 
 
@@ -78,6 +77,5 @@ async def test_ingest_musicbrainz_not_found(mb_client, monkeypatch):
         return Resp()
 
     monkeypatch.setattr(main_mod.HTTP_SESSION, "get", fake_get)
-    monkeypatch.setattr(main_mod, "_MB_LAST_CALL", 0.0)
     resp = await mb_client.post("/api/v1/ingest/musicbrainz", params={"release_mbid": "missing"})
     assert resp.status_code == 404
