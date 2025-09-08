@@ -1,7 +1,6 @@
 from datetime import date, datetime, timedelta
 
 import httpx
-import requests
 import structlog
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -42,10 +41,11 @@ setup_logging()
 setup_tracing("sidetrack-api")
 
 
-HTTP_SESSION = requests.Session()
+HTTP_SESSION: httpx.AsyncClient | None = None
 
 
 async def get_http_client():
+    assert HTTP_SESSION is not None
     yield HTTP_SESSION
 
 
@@ -88,7 +88,15 @@ async def log_unauthorized(request: Request, call_next):
 @app.on_event("startup")
 async def _startup():
     # Make dev/local experience smooth
+    global HTTP_SESSION
+    HTTP_SESSION = httpx.AsyncClient()
     await maybe_create_all()
+
+
+@app.on_event("shutdown")
+async def _shutdown() -> None:
+    if HTTP_SESSION is not None:
+        await HTTP_SESSION.aclose()
 
 
 import redis
