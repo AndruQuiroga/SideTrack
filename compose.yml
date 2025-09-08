@@ -9,19 +9,30 @@ services:
     volumes:
       - db_data:/var/lib/postgresql/data
     ports: ["5432:5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   cache:
     image: redis:7
     ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   api:
     build:
       context: .
       dockerfile: services/api/Dockerfile
     env_file: .env
-    depends_on: [db]
+    depends_on:
+      db:
+        condition: service_healthy
     ports: ["8000:8000"]
-    command: bash -c "alembic upgrade head && uvicorn sidetrack.api.main:app --host 0.0.0.0 --port 8000"
 
   extractor:
     build:
@@ -30,7 +41,9 @@ services:
     env_file: .env
     volumes:
       - ./data/audio:/audio:ro
-    depends_on: [db]
+    depends_on:
+      db:
+        condition: service_healthy
     command: python -m sidetrack.extractor.run --schedule "@daily"
 
   scheduler:
@@ -46,8 +59,12 @@ services:
       context: .
       dockerfile: services/worker/Dockerfile
     env_file: .env
-    depends_on: [cache, db]
-    command: python -m worker.run
+    depends_on:
+      cache:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    command: python -m sidetrack.worker.run
 
   ui:
     build: ./services/ui
