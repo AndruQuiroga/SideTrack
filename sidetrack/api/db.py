@@ -4,6 +4,7 @@ from collections.abc import AsyncGenerator
 
 import structlog
 from sqlalchemy import create_engine
+from sqlalchemy.engine import make_url
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import Session, sessionmaker
@@ -25,15 +26,17 @@ engine = None
 def _get_sessionmakers() -> None:
     global _async_engine, _sync_engine, _AsyncSessionLocal, _SyncSessionLocal, _current_url
     settings = get_settings()
-    if _AsyncSessionLocal is None or _current_url != settings.db_url:
-        _async_engine = create_async_engine(settings.db_url, pool_pre_ping=True)
-        sync_url = settings.db_url.replace("+aiosqlite", "")
-        _sync_engine = create_engine(sync_url, pool_pre_ping=True)
+    url = make_url(settings.db_url)
+    if _AsyncSessionLocal is None or _current_url != str(url):
+        _async_engine = create_async_engine(str(url), pool_pre_ping=True)
+        sync_driver = url.drivername.split("+")[0]
+        sync_url = url.set(drivername=sync_driver)
+        _sync_engine = create_engine(str(sync_url), pool_pre_ping=True)
         _AsyncSessionLocal = async_sessionmaker(
             bind=_async_engine, autoflush=False, autocommit=False
         )
         _SyncSessionLocal = sessionmaker(bind=_sync_engine, autoflush=False, autocommit=False)
-        _current_url = settings.db_url
+        _current_url = str(url)
 
         # expose synchronous engine globally for tests while keeping async engine for sessions
         globals()["engine"] = _sync_engine
