@@ -103,14 +103,23 @@ import redis
 from rq import Queue
 
 _REDIS_CONN: redis.Redis | None = None
+_REDIS_URL: str | None = None
 
 
 def _get_redis_connection(settings: Settings) -> redis.Redis:
     """Return a cached Redis connection using ``REDIS_URL``."""
 
-    global _REDIS_CONN
-    if _REDIS_CONN is None:
-        _REDIS_CONN = redis.from_url(settings.redis_url)
+    global _REDIS_CONN, _REDIS_URL
+    url = settings.redis_url
+    if _REDIS_CONN is None or _REDIS_URL != url:
+        _REDIS_CONN = redis.from_url(url)
+        _REDIS_URL = url
+    else:
+        try:
+            _REDIS_CONN.ping()
+        except redis.ConnectionError:
+            _REDIS_CONN = redis.from_url(url)
+            _REDIS_URL = url
     return _REDIS_CONN
 
 
