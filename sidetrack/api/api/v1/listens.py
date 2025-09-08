@@ -7,16 +7,49 @@ from pathlib import Path
 import httpx
 import structlog
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from sidetrack.common.models import Artist, Listen, Track
 
 from ...clients.listenbrainz import ListenBrainzClient, get_listenbrainz_client
 from ...config import Settings, get_settings
-from ...schemas.listens import IngestResponse, ListenIn
+from ...db import get_db
+from ...schemas.listens import IngestResponse, ListenIn, RecentListensResponse
 from ...security import get_current_user
 from ...services.listen_service import ListenService, get_listen_service
 
 router = APIRouter()
 
 logger = structlog.get_logger(__name__)
+
+
+@router.get("/listens/recent", response_model=RecentListensResponse)
+async def recent_listens(
+    limit: int = Query(50, ge=1, le=200),
+    db: AsyncSession = Depends(get_db),
+    user_id: str = Depends(get_current_user),
+):
+    rows = (
+        await db.execute(
+            select(Listen.played_at, Track.track_id, Track.title, Artist.name)
+            .join(Track, Track.track_id == Listen.track_id)
+            .join(Artist, Track.artist_id == Artist.artist_id, isouter=True)
+            .where(Listen.user_id == user_id)
+            .order_by(Listen.played_at.desc())
+            .limit(limit)
+        )
+    ).all()
+    listens = [
+        {
+            "track_id": tid,
+            "title": title,
+            "artist": artist,
+            "played_at": played_at,
+        }
+        for played_at, tid, title, artist in rows
+    ]
+    return {"listens": listens}
 
 
 @router.post("/ingest/listens", response_model=IngestResponse)

@@ -120,6 +120,7 @@ TZ=America/New_York
 
 - `GET /health` – service liveness
 - `POST /api/v1/ingest/listens?since=YYYY-MM-DD` – sync listens
+- `GET /api/v1/listens/recent?limit=50` – most recent listens
 - `POST /tags/lastfm/sync?since=YYYY-MM-DD` – fetch & cache Last.fm tags
 - `POST /analyze/track/{track_id}` – compute features/embeddings
 - `POST /score/track/{track_id}` – compute mood scores
