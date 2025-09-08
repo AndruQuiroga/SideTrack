@@ -23,3 +23,14 @@ class IngestResponse(BaseModel):
     detail: str
     ingested: int
     source: str | None = None
+
+
+class RecentListen(BaseModel):
+    track_id: int
+    title: str
+    artist: str | None
+    played_at: datetime
+
+
+class RecentListensResponse(BaseModel):
+    listens: list[RecentListen]
