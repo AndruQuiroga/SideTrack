@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import (
     JSON,
@@ -116,7 +116,9 @@ class MoodScore(Base):
     axis: Mapped[str] = mapped_column(String(64))
     method: Mapped[str] = mapped_column(String(64))
     value: Mapped[float] = mapped_column(Float)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
 
 
 class UserLabel(Base):
@@ -127,7 +129,9 @@ class UserLabel(Base):
     track_id: Mapped[int] = mapped_column(ForeignKey("track.track_id"), index=True)
     axis: Mapped[str] = mapped_column(String(64))
     value: Mapped[float] = mapped_column(Float)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
 
 
 class GraphEdge(Base):
@@ -164,7 +168,9 @@ class LastfmTags(Base):
     track_id: Mapped[int] = mapped_column(ForeignKey("track.track_id"), index=True)
     source: Mapped[str] = mapped_column(String(16), default="track")
     tags: Mapped[dict | None] = mapped_column(JSON, nullable=True)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
 
 
 class UserSettings(Base):
@@ -195,4 +201,6 @@ class UserAccount(Base):
     password_hash: Mapped[str] = mapped_column(String(128))
     token_hash: Mapped[str | None] = mapped_column(String(256), nullable=True)
     role: Mapped[str] = mapped_column(String(32), default="user")
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
