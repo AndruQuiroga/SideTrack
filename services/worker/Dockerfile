@@ -1,13 +1,13 @@
-FROM python:3.11-slim
+# syntax=docker/dockerfile:1
 
-# Copy the project sources and install the sidetrack package with
-# worker-specific extras.
-WORKDIR /src
-COPY pyproject.toml ./
-COPY sidetrack ./sidetrack
-RUN pip install --no-cache-dir .[worker]
+# Build stage: install worker extras using cached wheels
+FROM sidetrack-base AS builder
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential \
+    && rm -rf /var/lib/apt/lists/*
+RUN pip install --no-cache-dir --find-links /wheels 'sidetrack[worker]'
 
-# Run the worker from the installed package location.
-WORKDIR /usr/local/lib/python3.11/site-packages/sidetrack
+# Runtime stage: copy installed packages into base image
+FROM sidetrack-base AS runtime
+COPY --from=builder /usr/local /usr/local
+
 CMD ["python", "-m", "sidetrack.worker.run"]
-
