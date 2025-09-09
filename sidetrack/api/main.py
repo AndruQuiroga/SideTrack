@@ -136,6 +136,29 @@ def _week_start(dt: datetime) -> date:
     return d - timedelta(days=d.weekday())
 
 
+@app.get("/health")
+async def health(db: AsyncSession = Depends(get_db)):
+    """Lightweight health check reporting DB and Redis readiness."""
+    status = "ok"
+    details: dict[str, object] = {}
+    # DB check
+    try:
+        await db.execute(text("SELECT 1"))
+        details["db"] = "ok"
+    except Exception as exc:  # pragma: no cover
+        details["db"] = f"error: {exc.__class__.__name__}"
+        status = "degraded"
+    # Redis check
+    try:
+        r = _get_redis_connection(get_app_settings())
+        r.ping()
+        details["redis"] = "ok"
+    except Exception as exc:  # pragma: no cover
+        details["redis"] = f"error: {exc.__class__.__name__}"
+        status = "degraded"
+    return {"status": status, **details}
+
+
 @app.get("/auth/lastfm/login")
 async def lastfm_login(
     callback: str,
