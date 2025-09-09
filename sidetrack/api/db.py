@@ -75,8 +75,8 @@ def _init_engines() -> None:
     except Exception:  # pragma: no cover
         pass
 
-    _async_engine = create_async_engine(str(async_url), pool_pre_ping=True)
-    _sync_engine = create_engine(str(sync_url), pool_pre_ping=True)
+    _async_engine = create_async_engine(async_url, pool_pre_ping=True)
+    _sync_engine = create_engine(sync_url, pool_pre_ping=True)
     _AsyncSessionLocal = async_sessionmaker(bind=_async_engine, autoflush=False, autocommit=False)
     _SyncSessionLocal = sessionmaker(bind=_sync_engine, autoflush=False, autocommit=False)
     _current_key = key
@@ -87,12 +87,19 @@ def _init_engines() -> None:
 
     # Log configured URLs (masked)
     try:
-        safe_base = base_url._replace(password="***")  # type: ignore[attr-defined]
-        safe_async = async_url._replace(password="***")  # type: ignore[attr-defined]
-        safe_sync = sync_url._replace(password="***")  # type: ignore[attr-defined]
-        logger.info("DB configured", base=str(safe_base), async_url=str(safe_async), sync_url=str(safe_sync))
+        logger.info(
+            "DB configured",
+            base=base_url.render_as_string(hide_password=True),
+            async_url=async_url.render_as_string(hide_password=True),
+            sync_url=sync_url.render_as_string(hide_password=True),
+        )
     except Exception:  # pragma: no cover
-        logger.info("DB configured", base=str(base_url), async_url=str(async_url), sync_url=str(sync_url))
+        logger.info(
+            "DB configured",
+            base=str(base_url),
+            async_url=str(async_url),
+            sync_url=str(sync_url),
+        )
 
 
 def SessionLocal(async_session: bool | None = None) -> Session | AsyncSession:
