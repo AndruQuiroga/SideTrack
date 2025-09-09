@@ -13,8 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
 from sidetrack.common.models import LastfmTags
-
-from ..config import Settings, get_settings
+from sidetrack.common.config import Settings, get_settings
 
 logger = structlog.get_logger(__name__)
 

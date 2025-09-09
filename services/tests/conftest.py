@@ -16,7 +16,7 @@ from redis import Redis
 from testcontainers.postgres import PostgresContainer
 from testcontainers.redis import RedisContainer
 
-from sidetrack.api.config import get_settings
+from sidetrack.common.config import get_settings
 
 ROOT = Path(__file__).resolve().parents[2]
 
