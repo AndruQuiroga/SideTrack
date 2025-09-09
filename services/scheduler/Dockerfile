@@ -9,5 +9,6 @@ RUN pip install --no-cache-dir --find-links /wheels 'sidetrack[scheduler]'
 # Runtime stage: copy installed packages into base image
 FROM sidetrack-base AS runtime
 COPY --from=builder /usr/local /usr/local
+RUN python -c "import sidetrack; print('scheduler runtime deps OK')"
 
 CMD ["python", "-m", "sidetrack.scheduler.run"]

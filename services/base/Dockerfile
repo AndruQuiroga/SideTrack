@@ -10,13 +10,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
+# Ensure modern packaging tooling
+RUN python -m pip install --upgrade pip setuptools wheel
+
 WORKDIR /src
 # Copy project metadata and sources
 COPY pyproject.toml ./
 COPY sidetrack ./sidetrack
 
-# Build wheels for the core package and dependencies
-RUN pip wheel --no-cache-dir --wheel-dir /wheels .
+# Build wheels for the core package and all extras so downstream builds don't
+# need internet access to resolve dependencies
+RUN pip wheel --no-cache-dir --wheel-dir /wheels \
+    '.[api]' '.[worker]' '.[scheduler]' '.[extractor]' \
+    && ls -l /wheels
 
 FROM python:3.11-slim AS base
 

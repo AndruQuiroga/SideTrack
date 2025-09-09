@@ -9,5 +9,6 @@ RUN pip install --no-cache-dir --find-links /wheels 'sidetrack[worker]'
 # Runtime stage: copy installed packages into base image
 FROM sidetrack-base AS runtime
 COPY --from=builder /usr/local /usr/local
+RUN python -c "import sidetrack; print('worker runtime deps OK')"
 
 CMD ["python", "-m", "sidetrack.worker.run"]
