@@ -1,3 +1,7 @@
+import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
+import ChartContainer from '../../components/ChartContainer';
+import Skeleton from '../../components/Skeleton';
 import { apiFetch } from '../../lib/api';
 
 type RadarData = {
@@ -20,35 +24,27 @@ async function getRadar(): Promise<RadarData> {
   return (await res.json()) as RadarData;
 }
 
+const RadarChart = dynamic(() => import('../../components/charts/RadarChart'), {
+  ssr: false,
+  loading: () => <Skeleton className="aspect-[4/3] h-[clamp(240px,40vh,380px)]" />,
+});
+
 export default async function Radar() {
   const data = await getRadar();
   return (
-    <section>
-      <h2>Weekly Radar</h2>
+    <section className="space-y-4">
+      <h2 className="text-xl font-semibold">Weekly Radar</h2>
       {!data.week ? (
         <p>No data yet. Ingest some listens to begin.</p>
       ) : (
-        <>
-          <p>
-            Week: <code>{data.week}</code>
-          </p>
-          <h3>Axes</h3>
-          <ul>
-            {Object.entries(data.axes as Record<string, unknown>).map(([k, v]) => (
-              <li key={k}>
-                <strong>{k}</strong>: {Number(v).toFixed(3)}
-              </li>
-            ))}
-          </ul>
-          <h3>Baseline (prev 24w)</h3>
-          <ul>
-            {Object.entries(data.baseline as Record<string, unknown>).map(([k, v]) => (
-              <li key={k}>
-                <strong>{k}</strong>: {Number(v).toFixed(3)}
-              </li>
-            ))}
-          </ul>
-        </>
+        <ChartContainer title="Radar" subtitle="Current week vs baseline">
+          <Suspense fallback={<Skeleton className="aspect-[4/3] h-[clamp(240px,40vh,380px)]" />}>
+            <RadarChart
+              axes={data.axes as Record<string, number>}
+              baseline={data.baseline as Record<string, number>}
+            />
+          </Suspense>
+        </ChartContainer>
       )}
     </section>
   );
