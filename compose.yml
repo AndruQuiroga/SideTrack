@@ -1,11 +1,8 @@
 version: "3.9"
-services:
-  base:
-    build:
-      context: .
-      dockerfile: services/base/Dockerfile
-    image: sidetrack-base
 
+# Build the shared base image before starting services:
+#   docker build -f services/base/Dockerfile -t sidetrack-base .
+services:
   db:
     image: timescale/timescaledb:latest-pg16
     environment:
@@ -36,8 +33,6 @@ services:
       dockerfile: services/api/Dockerfile
     env_file: .env
     depends_on:
-      base:
-        condition: service_started
       db:
         condition: service_healthy
     ports: ["8000:8000"]
@@ -50,8 +45,6 @@ services:
     volumes:
       - ./data/audio:/audio:ro
     depends_on:
-      base:
-        condition: service_started
       db:
         condition: service_healthy
     command: python -m sidetrack.extractor.run --schedule "@daily"
@@ -62,8 +55,6 @@ services:
       dockerfile: services/scheduler/Dockerfile
     env_file: .env
     depends_on:
-      base:
-        condition: service_started
       api:
         condition: service_started
       extractor:
@@ -76,8 +67,6 @@ services:
       dockerfile: services/worker/Dockerfile
     env_file: .env
     depends_on:
-      base:
-        condition: service_started
       cache:
         condition: service_healthy
       db:
