@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from collections.abc import AsyncGenerator
+from typing import Tuple
 
 import structlog
 from sqlalchemy import create_engine
-from sqlalchemy.engine import make_url
+from sqlalchemy.engine import URL, make_url
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import Session, sessionmaker
@@ -18,62 +19,90 @@ _async_engine = None
 _sync_engine = None
 _AsyncSessionLocal: async_sessionmaker[AsyncSession] | None = None
 _SyncSessionLocal: sessionmaker[Session] | None = None
-_current_url = None
+_current_key: str | None = None
 engine = None
 
 
-def _get_sessionmakers() -> None:
-    global _async_engine, _sync_engine, _AsyncSessionLocal, _SyncSessionLocal, _current_url
-    settings = get_settings()
-    url = make_url(settings.db_url)
-    if _AsyncSessionLocal is None or _current_url != str(url):
-        # Build async engine using an async-capable driver
-        drv = url.drivername
-        if drv.startswith("postgresql"):
-            async_drivername = "postgresql+asyncpg"
-        elif drv.startswith("sqlite"):
-            async_drivername = "sqlite+aiosqlite"
-        else:
-            async_drivername = drv
-        async_url = url.set(drivername=async_drivername)
-        _async_engine = create_async_engine(str(async_url), pool_pre_ping=True)
+def _derive_urls(base_url: URL) -> Tuple[URL, URL]:
+    """Return (async_url, sync_url) derived from a base URL.
 
-        # Build a synchronous URL that uses a sync-capable driver for the same database
-        # - For PostgreSQL, prefer psycopg (psycopg3) to avoid requiring psycopg2
-        # - For SQLite, drop the "+aiosqlite" suffix
-        # - Otherwise, fall back to the base driver without "+" extras
-        drv = url.drivername
-        if drv.startswith("postgresql"):
-            sync_drivername = "postgresql+psycopg"
-        elif drv.startswith("sqlite"):
-            sync_drivername = "sqlite"
-        else:
-            sync_drivername = drv.split("+")[0]
-        sync_url = url.set(drivername=sync_drivername)
-        _sync_engine = create_engine(str(sync_url), pool_pre_ping=True)
-        _AsyncSessionLocal = async_sessionmaker(
-            bind=_async_engine, autoflush=False, autocommit=False
+    - PostgreSQL: async = postgresql+asyncpg, sync = postgresql+psycopg
+    - SQLite:     async = sqlite+aiosqlite,  sync = sqlite
+    Other drivers fall back to the provided driver for both.
+    """
+    drv = base_url.drivername
+    if drv.startswith("postgresql"):
+        return (
+            base_url.set(drivername="postgresql+asyncpg"),
+            base_url.set(drivername="postgresql+psycopg"),
         )
-        _SyncSessionLocal = sessionmaker(bind=_sync_engine, autoflush=False, autocommit=False)
-        _current_url = str(url)
+    if drv.startswith("sqlite"):
+        return (
+            base_url.set(drivername="sqlite+aiosqlite"),
+            base_url.set(drivername="sqlite"),
+        )
+    return (base_url, base_url)
 
-        # expose synchronous engine globally for tests while keeping async engine for sessions
-        globals()["engine"] = _sync_engine
-        setattr(globals()["engine"], "sync_engine", _sync_engine)
+
+def _dsn_key(url: URL) -> str:
+    try:
+        safe = url._replace(password="***")  # type: ignore[attr-defined]
+    except Exception:  # pragma: no cover
+        safe = url
+    return str(safe)
+
+
+def _init_engines() -> None:
+    global _async_engine, _sync_engine, _AsyncSessionLocal, _SyncSessionLocal, _current_key, engine
+
+    settings = get_settings()
+    base_url = make_url(settings.db_url)
+    async_url, sync_url = _derive_urls(base_url)
+    key = _dsn_key(base_url)
+
+    if _AsyncSessionLocal is not None and _current_key == key:
+        return
+
+    # Dispose previous engines if any
+    try:
+        if _async_engine is not None:
+            _async_engine.sync_engine.dispose()  # type: ignore[attr-defined]
+    except Exception:  # pragma: no cover
+        pass
+    try:
+        if _sync_engine is not None:
+            _sync_engine.dispose()
+    except Exception:  # pragma: no cover
+        pass
+
+    _async_engine = create_async_engine(str(async_url), pool_pre_ping=True)
+    _sync_engine = create_engine(str(sync_url), pool_pre_ping=True)
+    _AsyncSessionLocal = async_sessionmaker(bind=_async_engine, autoflush=False, autocommit=False)
+    _SyncSessionLocal = sessionmaker(bind=_sync_engine, autoflush=False, autocommit=False)
+    _current_key = key
+
+    # Expose sync engine for tests
+    engine = _sync_engine
+    globals()["engine"] = _sync_engine
+
+    # Log configured URLs (masked)
+    try:
+        safe_base = base_url._replace(password="***")  # type: ignore[attr-defined]
+        safe_async = async_url._replace(password="***")  # type: ignore[attr-defined]
+        safe_sync = sync_url._replace(password="***")  # type: ignore[attr-defined]
+        logger.info("DB configured", base=str(safe_base), async_url=str(safe_async), sync_url=str(safe_sync))
+    except Exception:  # pragma: no cover
+        logger.info("DB configured", base=str(base_url), async_url=str(async_url), sync_url=str(sync_url))
 
 
 def SessionLocal(async_session: bool | None = None) -> Session | AsyncSession:
     """Return a session appropriate for the current context.
 
-    When ``async_session`` is ``True`` or ``False`` the return value is forced
-    to be asynchronous or synchronous respectively, regardless of whether an
-    event loop is running.  If ``None`` (the default) an ``AsyncSession`` is
-    returned only when an event loop is active, otherwise a regular ``Session``
-    is provided.  This avoids ``MissingGreenlet`` errors when synchronous code
-    is executed from within an async test harness.
+    - async_session=True  -> always AsyncSession
+    - async_session=False -> always sync Session
+    - async_session=None  -> AsyncSession when an event loop is running, else sync Session
     """
-
-    _get_sessionmakers()
+    _init_engines()
     import asyncio
 
     if async_session is True:
@@ -89,7 +118,7 @@ def SessionLocal(async_session: bool | None = None) -> Session | AsyncSession:
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    _get_sessionmakers()
+    _init_engines()
     db = _AsyncSessionLocal()
     try:
         yield db
@@ -98,16 +127,18 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def maybe_create_all() -> None:
-    """Create tables automatically when using SQLite or when AUTO_MIGRATE is enabled."""
+    """Create tables automatically for SQLite or when AUTO_MIGRATE is enabled."""
     try:
-        _get_sessionmakers()
-        url = _current_url or ""
-        if get_settings().auto_migrate or url.startswith("sqlite"):
-            async with _async_engine.begin() as conn:
-                await conn.run_sync(Base.metadata.create_all)
+        _init_engines()
+        settings = get_settings()
+        base_url = make_url(settings.db_url)
+        if settings.auto_migrate or base_url.drivername.startswith("sqlite"):
+            async with _async_engine.begin():
+                await _async_engine.run_sync(Base.metadata.create_all)
     except SQLAlchemyError as exc:
         logger.warning("DB init failed", error=str(exc))
 
 
-# initialize on module import
-_get_sessionmakers()
+# Initialize on import
+_init_engines()
+
