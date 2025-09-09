@@ -26,9 +26,11 @@ engine = None
 def _derive_urls(base_url: URL) -> Tuple[URL, URL]:
     """Return (async_url, sync_url) derived from a base URL.
 
-    - PostgreSQL: async = postgresql+asyncpg, sync = postgresql+psycopg
-    - SQLite:     async = sqlite+aiosqlite,  sync = sqlite
-    Other drivers fall back to the provided driver for both.
+    Supports PostgreSQL only:
+    - async = postgresql+asyncpg
+    - sync  = postgresql+psycopg
+
+    Raises ValueError for SQLite or other unsupported schemes.
     """
     drv = base_url.drivername
     if drv.startswith("postgresql"):
@@ -37,11 +39,8 @@ def _derive_urls(base_url: URL) -> Tuple[URL, URL]:
             base_url.set(drivername="postgresql+psycopg"),
         )
     if drv.startswith("sqlite"):
-        return (
-            base_url.set(drivername="sqlite+aiosqlite"),
-            base_url.set(drivername="sqlite"),
-        )
-    return (base_url, base_url)
+        raise ValueError("SQLite is not supported. Use PostgreSQL.")
+    raise ValueError(f"Unsupported database driver: {drv}")
 
 
 def _dsn_key(url: URL) -> str:
@@ -127,18 +126,16 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def maybe_create_all() -> None:
-    """Create tables automatically for SQLite or when AUTO_MIGRATE is enabled."""
+    """Create tables automatically when AUTO_MIGRATE is enabled."""
     try:
         _init_engines()
         settings = get_settings()
         base_url = make_url(settings.db_url)
-        if settings.auto_migrate or base_url.drivername.startswith("sqlite"):
+        if settings.auto_migrate:
             async with _async_engine.begin():
                 await _async_engine.run_sync(Base.metadata.create_all)
     except SQLAlchemyError as exc:
         logger.warning("DB init failed", error=str(exc))
 
 
-# Initialize on import
-_init_engines()
-
+# Do not initialize engines at import time; defer to first usage.

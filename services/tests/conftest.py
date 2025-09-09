@@ -20,11 +20,7 @@ from sidetrack.common.config import get_settings
 
 ROOT = Path(__file__).resolve().parents[2]
 
-# Configure a default SQLite database before importing the app
-os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
-os.environ["AUTO_MIGRATE"] = "1"
-get_settings.cache_clear()
-
+# Import application modules after fixtures set DATABASE_URL
 from sidetrack.api import main as app_main
 from sidetrack.api.db import SessionLocal, get_db, maybe_create_all
 
@@ -49,29 +45,19 @@ def load_env() -> None:
 
 @pytest.fixture
 def db(tmp_path, request):
-    """Configure database per test, using Postgres for integration tests."""
-    if request.node.get_closest_marker("integration"):
-        if not _docker_available():
-            pytest.skip("Docker not available for integration tests")
-        try:
-            with PostgresContainer("postgres:16") as pg:
-                url = pg.get_connection_url().replace("postgresql://", "postgresql+psycopg://")
-                os.environ["DATABASE_URL"] = url
-                os.environ.setdefault("AUTO_MIGRATE", "1")
-                get_settings.cache_clear()
-                asyncio.run(maybe_create_all())
-                yield Path("/tmp/postgres")
-        except Exception as exc:  # pragma: no cover - infrastructure failure
-            pytest.skip(f"Postgres container unavailable: {exc}")
-    else:
-        db_file = tmp_path / "test.db"
-        os.environ["DATABASE_URL"] = f"sqlite+aiosqlite:///{db_file}"
-        os.environ.setdefault("AUTO_MIGRATE", "1")
-        get_settings.cache_clear()
-        asyncio.run(maybe_create_all())
-        yield db_file
-        if db_file.exists():
-            db_file.unlink()
+    """Configure a Postgres database per test using testcontainers."""
+    if not _docker_available():
+        pytest.skip("Docker not available for Postgres tests")
+    try:
+        with PostgresContainer("postgres:16") as pg:
+            url = pg.get_connection_url().replace("postgresql://", "postgresql+psycopg://")
+            os.environ["DATABASE_URL"] = url
+            os.environ.setdefault("AUTO_MIGRATE", "1")
+            get_settings.cache_clear()
+            asyncio.run(maybe_create_all())
+            yield Path("/tmp/postgres")
+    except Exception as exc:  # pragma: no cover - infrastructure failure
+        pytest.skip(f"Postgres container unavailable: {exc}")
 
 
 @pytest.fixture

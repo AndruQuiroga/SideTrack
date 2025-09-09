@@ -30,5 +30,5 @@ stale connections from leaking between tests.
 ## Environment
 
 - Python 3.11
-- SQLite database for tests
+- PostgreSQL database for tests (via testcontainers)
 - HTTP requests mocked via `sidetrack.api.main.HTTP_SESSION`

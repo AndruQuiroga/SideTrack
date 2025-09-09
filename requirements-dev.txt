@@ -4,8 +4,6 @@
 #
 #    pip-compile requirements-dev.in
 #
-aiosqlite==0.21.0
-    # via -r requirements-dev.in
 alembic==1.13.2
     # via sidetrack
 annotated-types==0.7.0

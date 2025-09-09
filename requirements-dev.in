@@ -1,6 +1,5 @@
 .[api,scheduler,worker]
 # Development and testing tools
-aiosqlite
 pip-tools
 pytest
 pytest-cov

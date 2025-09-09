@@ -3,6 +3,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 import soundfile as sf
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
@@ -36,7 +37,10 @@ def test_estimate_features(tmp_path):
 
 def test_analyze_one_with_embeddings(tmp_path, monkeypatch):
     wav = synth_audio(tmp_path / "b.wav")
-    engine = create_engine("sqlite://")
+    url = os.environ.get("DATABASE_URL", "")
+    if not url.startswith("postgresql+"):
+        pytest.skip("Postgres DATABASE_URL not configured for test")
+    engine = create_engine(url)
     Base.metadata.create_all(engine)
     with Session(engine) as db:
         tr = TrackFactory(track_id=1, title="t", path_local=str(wav), duration=2)
