@@ -2,10 +2,13 @@
 
 from datetime import UTC, date, datetime, timedelta
 
+import math
+import inspect
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from sidetrack.common.models import Artist, Listen, MoodAggWeek, MoodScore, Track
 
@@ -15,6 +18,64 @@ from ...security import get_current_user
 
 router = APIRouter()
 logger = structlog.get_logger(__name__)
+
+
+async def _maybe(val):
+    if inspect.isawaitable(val):
+        return await val
+    return val
+
+
+@router.get("/dashboard/overview")
+async def dashboard_overview(
+    days: int = Query(30, ge=1, le=365),
+    db: Session | AsyncSession = Depends(get_db),
+    user_id: str = Depends(get_current_user),
+):
+    """Return basic dashboard statistics for recent listens."""
+
+    since = datetime.now(UTC) - timedelta(days=days)
+
+    listen_count = await _maybe(db.scalar(
+        select(func.count())
+        .select_from(Listen)
+        .where(and_(Listen.user_id == user_id, Listen.played_at >= since))
+    ))
+    listen_count = int(listen_count or 0)
+
+    artist_count = await _maybe(db.scalar(
+        select(func.count(func.distinct(Artist.artist_id)))
+        .select_from(Listen)
+        .join(Track, Track.track_id == Listen.track_id)
+        .join(Artist, Track.artist_id == Artist.artist_id)
+        .where(and_(Listen.user_id == user_id, Listen.played_at >= since))
+    ))
+    artist_diversity = int(artist_count or 0)
+
+    latest_week = await _maybe(
+        db.scalar(select(func.max(MoodAggWeek.week)).where(MoodAggWeek.user_id == user_id))
+    )
+    momentum = 0.0
+    if latest_week is not None:
+        result = await _maybe(
+            db.execute(
+                select(MoodAggWeek.momentum).where(
+                    and_(
+                        MoodAggWeek.user_id == user_id,
+                        MoodAggWeek.week == latest_week,
+                    )
+                )
+            )
+        )
+        vals = [float(v or 0.0) for v in result.scalars()]
+        if vals:
+            momentum = math.sqrt(sum(v * v for v in vals))
+
+    return {
+        "listen_count": listen_count,
+        "artist_diversity": artist_diversity,
+        "momentum": momentum,
+    }
 
 
 @router.get("/dashboard/trajectory")
