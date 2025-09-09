@@ -132,6 +132,7 @@ numpy==1.26.4
     #   scipy
     #   sidetrack
     #   soxr
+
 opentelemetry-api==1.36.0
     # via
     #   opentelemetry-instrumentation
