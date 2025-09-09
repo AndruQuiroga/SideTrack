@@ -28,8 +28,8 @@ from sidetrack.common.telemetry import setup_tracing
 from . import scoring
 from .clients.lastfm import LastfmClient, get_lastfm_client
 from .clients.spotify import SpotifyClient, get_spotify_client
-from sidetrack.common.config import Settings
-from sidetrack.common.config import get_settings as get_app_settings
+from .config import Settings
+from .config import get_settings as get_app_settings
 from .constants import AXES, DEFAULT_METHOD
 from .db import get_db, maybe_create_all
 from .schemas.labels import LabelResponse
