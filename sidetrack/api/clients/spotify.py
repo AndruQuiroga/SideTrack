@@ -5,7 +5,7 @@ from typing import Any
 import httpx
 from fastapi import Depends
 
-from ..config import Settings, get_settings
+from sidetrack.common.config import Settings, get_settings
 
 
 class SpotifyClient:

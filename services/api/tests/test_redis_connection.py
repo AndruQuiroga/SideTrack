@@ -2,7 +2,7 @@ import types
 import pytest
 
 import sidetrack.api.main as main
-from sidetrack.api.config import Settings
+from sidetrack.common.config import Settings
 
 pytestmark = pytest.mark.unit
 

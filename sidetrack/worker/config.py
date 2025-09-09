@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 
-from app.config import Settings as AppSettings  # type: ignore
+from sidetrack.common.config import Settings as AppSettings
 
 
 class WorkerSettings(AppSettings):

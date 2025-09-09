@@ -10,8 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from sqlalchemy.orm import Session, sessionmaker
 
 from sidetrack.common.models import Base
-
-from .config import get_settings
+from sidetrack.common.config import get_settings
 
 logger = structlog.get_logger(__name__)
 
