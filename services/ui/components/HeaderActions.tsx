@@ -5,9 +5,9 @@ import dynamic from 'next/dynamic';
 import { useToast } from './ToastProvider';
 import { useTheme } from './ThemeContext';
 
-const Sync = dynamic(() => import('lucide-react/lib/esm/icons/sync'));
-const Sun = dynamic(() => import('lucide-react/lib/esm/icons/sun'));
-const Moon = dynamic(() => import('lucide-react/lib/esm/icons/moon'));
+const RefreshCw = dynamic(async () => (await import('lucide-react')).RefreshCw);
+const Sun = dynamic(async () => (await import('lucide-react')).Sun);
+const Moon = dynamic(async () => (await import('lucide-react')).Moon);
 
 export default function HeaderActions() {
   const toast = useToast();
@@ -46,7 +46,7 @@ export default function HeaderActions() {
           transition={{ repeat: syncing ? Infinity : 0, duration: 1, ease: 'linear' }}
           className="inline-block"
         >
-          <Sync size={14} />
+          <RefreshCw size={14} />
         </motion.span>
         Sync
       </button>
