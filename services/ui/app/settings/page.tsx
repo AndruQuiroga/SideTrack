@@ -1,6 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Input } from '../../components/ui/input';
+import { Button } from '../../components/ui/button';
+import { Card } from '../../components/ui/card';
+import { useToast } from '../../components/ToastProvider';
 
 interface SettingsData {
   listenBrainzUser: string;
@@ -26,6 +30,7 @@ export default function Settings() {
   const [useExcerpts, setUseExcerpts] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
   const [message, setMessage] = useState('');
+  const { show } = useToast();
 
   useEffect(() => {
     fetch('/api/settings')
@@ -54,7 +59,10 @@ export default function Settings() {
     }
     setErrors(errs);
     setMessage('');
-    if (errs.length > 0) return;
+    if (errs.length > 0) {
+      show({ title: errs.join(', '), kind: 'error' });
+      return;
+    }
 
     const body: SettingsData = {
       listenBrainzUser: lbUser,
@@ -76,9 +84,11 @@ export default function Settings() {
           ? [data.detail]
           : ['Error saving settings'];
       setErrors(serverErrors);
+      show({ title: serverErrors.join(', '), kind: 'error' });
       return;
     }
     setMessage('Settings saved');
+    show({ title: 'Settings saved', kind: 'success' });
   }
 
   async function handleConnect() {
@@ -87,13 +97,20 @@ export default function Settings() {
     const data = await res.json().catch(() => ({}));
     if (data.url) {
       window.location.href = data.url;
+    } else {
+      show({ title: 'Failed to connect to Last.fm', kind: 'error' });
     }
   }
 
   async function handleDisconnect() {
-    await fetch('/api/auth/lastfm/session', { method: 'DELETE' });
+    const res = await fetch('/api/auth/lastfm/session', { method: 'DELETE' });
+    if (!res.ok) {
+      show({ title: 'Failed to disconnect Last.fm', kind: 'error' });
+      return;
+    }
     setLfmUser('');
     setLfmConnected(false);
+    show({ title: 'Disconnected from Last.fm', kind: 'success' });
   }
 
   async function handleSpotifyConnect() {
@@ -102,94 +119,125 @@ export default function Settings() {
     const data = await res.json().catch(() => ({}));
     if (data.url) {
       window.location.href = data.url;
+    } else {
+      show({ title: 'Failed to connect to Spotify', kind: 'error' });
     }
   }
 
   async function handleSpotifyDisconnect() {
-    await fetch('/api/auth/spotify/disconnect', { method: 'DELETE' });
+    const res = await fetch('/api/auth/spotify/disconnect', { method: 'DELETE' });
+    if (!res.ok) {
+      show({ title: 'Failed to disconnect Spotify', kind: 'error' });
+      return;
+    }
     setSpUser('');
     setSpConnected(false);
+    show({ title: 'Disconnected from Spotify', kind: 'success' });
   }
 
   return (
-    <section>
+    <section className="space-y-6">
       <h2>Settings</h2>
       {errors.length > 0 && <div role="alert">{errors.join(', ')}</div>}
       {message && <div role="status">{message}</div>}
-      <form onSubmit={handleSubmit}>
-        <fieldset>
-          <legend>Connect ListenBrainz</legend>
-          <label>
-            Username
-            <input
-              placeholder="ListenBrainz username"
-              value={lbUser}
-              onChange={(e) => setLbUser(e.target.value)}
-            />
-          </label>
-          <label>
-            Token
-            <input
-              placeholder="Token"
-              value={lbToken}
-              onChange={(e) => setLbToken(e.target.value)}
-            />
-          </label>
-        </fieldset>
-        <fieldset>
-          <legend>Connect Last.fm</legend>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <Card className="space-y-4 p-4">
+          <h3 className="text-lg font-semibold">Connect ListenBrainz</h3>
+          <div className="space-y-2">
+            <div className="space-y-1">
+              <label htmlFor="lb-user" className="text-sm font-medium">
+                Username
+              </label>
+              <Input
+                id="lb-user"
+                placeholder="ListenBrainz username"
+                value={lbUser}
+                onChange={(e) => setLbUser(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <label htmlFor="lb-token" className="text-sm font-medium">
+                Token
+              </label>
+              <Input
+                id="lb-token"
+                placeholder="Token"
+                value={lbToken}
+                onChange={(e) => setLbToken(e.target.value)}
+              />
+            </div>
+          </div>
+        </Card>
+
+        <Card className="space-y-4 p-4">
+          <h3 className="text-lg font-semibold">Connect Last.fm</h3>
           {lfmConnected ? (
-            <div>
-              Connected as {lfmUser}{' '}
-              <button type="button" onClick={handleDisconnect}>
+            <div className="flex items-center gap-2">
+              <span>Connected as {lfmUser}</span>
+              <Button type="button" onClick={handleDisconnect}>
                 Disconnect
-              </button>
+              </Button>
             </div>
           ) : (
-            <button type="button" onClick={handleConnect}>
+            <Button type="button" onClick={handleConnect}>
               Connect Last.fm
-            </button>
+            </Button>
           )}
-        </fieldset>
-        <fieldset>
-          <legend>Connect Spotify</legend>
+        </Card>
+
+        <Card className="space-y-4 p-4">
+          <h3 className="text-lg font-semibold">Connect Spotify</h3>
           {spConnected ? (
-            <div>
-              Connected as {spUser}{' '}
-              <button type="button" onClick={handleSpotifyDisconnect}>
+            <div className="flex items-center gap-2">
+              <span>Connected as {spUser}</span>
+              <Button type="button" onClick={handleSpotifyDisconnect}>
                 Disconnect
-              </button>
+              </Button>
             </div>
           ) : (
-            <button type="button" onClick={handleSpotifyConnect}>
+            <Button type="button" onClick={handleSpotifyConnect}>
               Connect Spotify
-            </button>
+            </Button>
           )}
-        </fieldset>
-        <fieldset>
-          <legend>Options</legend>
-          <label>
-            <input type="checkbox" checked={useGpu} onChange={(e) => setUseGpu(e.target.checked)} />
-            Use GPU
-          </label>
-          <label>
-            <input
-              type="checkbox"
-              checked={useStems}
-              onChange={(e) => setUseStems(e.target.checked)}
-            />
-            Extract stems
-          </label>
-          <label>
-            <input
-              type="checkbox"
-              checked={useExcerpts}
-              onChange={(e) => setUseExcerpts(e.target.checked)}
-            />
-            Use excerpts
-          </label>
-        </fieldset>
-        <button type="submit">Save</button>
+        </Card>
+
+        <Card className="space-y-4 p-4">
+          <h3 className="text-lg font-semibold">Options</h3>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Input
+                id="use-gpu"
+                type="checkbox"
+                className="h-4 w-4"
+                checked={useGpu}
+                onChange={(e) => setUseGpu(e.target.checked)}
+              />
+              <label htmlFor="use-gpu">Use GPU</label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Input
+                id="use-stems"
+                type="checkbox"
+                className="h-4 w-4"
+                checked={useStems}
+                onChange={(e) => setUseStems(e.target.checked)}
+              />
+              <label htmlFor="use-stems">Extract stems</label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Input
+                id="use-excerpts"
+                type="checkbox"
+                className="h-4 w-4"
+                checked={useExcerpts}
+                onChange={(e) => setUseExcerpts(e.target.checked)}
+              />
+              <label htmlFor="use-excerpts">Use excerpts</label>
+            </div>
+          </div>
+        </Card>
+
+        <Button type="submit">Save</Button>
       </form>
     </section>
   );
