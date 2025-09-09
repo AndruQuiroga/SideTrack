@@ -8,18 +8,21 @@ import AppShell from '../components/AppShell';
 import PageTransition from '../components/PageTransition';
 import { Inter } from 'next/font/google';
 import Providers from './providers';
+import ThemeProvider from '../components/ThemeProvider';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className="dark" suppressHydrationWarning>
       <body className={`${inter.variable} font-sans antialiased`}>
-        <Providers>
-          <PageTransition>
-            <AppShell>{children}</AppShell>
-          </PageTransition>
-        </Providers>
+        <ThemeProvider>
+          <Providers>
+            <PageTransition>
+              <AppShell>{children}</AppShell>
+            </PageTransition>
+          </Providers>
+        </ThemeProvider>
       </body>
     </html>
   );

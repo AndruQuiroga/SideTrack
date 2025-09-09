@@ -1,13 +1,17 @@
 'use client';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { useToast } from './ToastProvider';
 import dynamic from 'next/dynamic';
+import { useToast } from './ToastProvider';
+import { useTheme } from './ThemeContext';
 
 const Sync = dynamic(() => import('lucide-react/lib/esm/icons/sync'));
+const Sun = dynamic(() => import('lucide-react/lib/esm/icons/sun'));
+const Moon = dynamic(() => import('lucide-react/lib/esm/icons/moon'));
 
 export default function HeaderActions() {
   const toast = useToast();
+  const { theme, toggleTheme } = useTheme();
   const [syncing, setSyncing] = useState(false);
 
   const handleSync = async () => {
@@ -24,19 +28,29 @@ export default function HeaderActions() {
   };
 
   return (
-    <button
-      onClick={handleSync}
-      disabled={syncing}
-      className="inline-flex items-center gap-2 rounded-full bg-white/5 px-3 py-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-50"
-    >
-      <motion.span
-        animate={syncing ? { rotate: 360 } : { rotate: 0 }}
-        transition={{ repeat: syncing ? Infinity : 0, duration: 1, ease: 'linear' }}
-        className="inline-block"
+    <div className="flex items-center gap-2">
+      <button
+        onClick={toggleTheme}
+        className="inline-flex items-center justify-center rounded-full bg-white/5 p-2 text-muted-foreground hover:text-foreground"
       >
-        <Sync size={14} />
-      </motion.span>
-      Sync
-    </button>
+        {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+        <span className="sr-only">Toggle theme</span>
+      </button>
+      <button
+        onClick={handleSync}
+        disabled={syncing}
+        className="inline-flex items-center gap-2 rounded-full bg-white/5 px-3 py-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-50"
+      >
+        <motion.span
+          animate={syncing ? { rotate: 360 } : { rotate: 0 }}
+          transition={{ repeat: syncing ? Infinity : 0, duration: 1, ease: 'linear' }}
+          className="inline-block"
+        >
+          <Sync size={14} />
+        </motion.span>
+        Sync
+      </button>
+    </div>
   );
 }
+

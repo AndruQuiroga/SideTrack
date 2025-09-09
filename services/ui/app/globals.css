@@ -3,22 +3,6 @@
 @tailwind utilities;
 
 :root {
-  --background: 228 16% 6%; /* #0E0F12 */
-  --foreground: 220 14% 96%; /* off-white */
-  --muted: 228 12% 14%;
-  --muted-foreground: 220 10% 70%;
-  --card: 228 12% 10%;
-  --card-foreground: var(--foreground);
-  --border: 228 12% 18%;
-  --input: 228 12% 18%;
-  --primary: 158 84% 58%; /* #2FE08B */
-  --primary-foreground: 222 14% 12%;
-  --secondary: 196 100% 62%; /* #39D2FF */
-  --secondary-foreground: 222 14% 12%;
-  --accent: 196 100% 62%;
-  --accent-foreground: 222 14% 12%;
-  --ring: 196 100% 62%;
-
   --light-background: 0 0% 100%;
   --light-foreground: 222 14% 12%;
   --light-muted: 210 40% 96%;
@@ -35,15 +19,22 @@
   --light-accent-foreground: 222 14% 12%;
   --light-ring: 196 100% 62%;
 
-  --space-1: 0.25rem;
-  --space-2: 0.5rem;
-  --space-3: 0.75rem;
-  --space-4: 1rem;
-  --space-5: 1.25rem;
-  --space-6: 1.5rem;
-}
+  --dark-background: 228 16% 6%; /* #0E0F12 */
+  --dark-foreground: 220 14% 96%; /* off-white */
+  --dark-muted: 228 12% 14%;
+  --dark-muted-foreground: 220 10% 70%;
+  --dark-card: 228 12% 10%;
+  --dark-card-foreground: var(--dark-foreground);
+  --dark-border: 228 12% 18%;
+  --dark-input: 228 12% 18%;
+  --dark-primary: 158 84% 58%; /* #2FE08B */
+  --dark-primary-foreground: 222 14% 12%;
+  --dark-secondary: 196 100% 62%; /* #39D2FF */
+  --dark-secondary-foreground: 222 14% 12%;
+  --dark-accent: 196 100% 62%;
+  --dark-accent-foreground: 222 14% 12%;
+  --dark-ring: 196 100% 62%;
 
-.light {
   --background: var(--light-background);
   --foreground: var(--light-foreground);
   --muted: var(--light-muted);
@@ -59,6 +50,31 @@
   --accent: var(--light-accent);
   --accent-foreground: var(--light-accent-foreground);
   --ring: var(--light-ring);
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+}
+
+.dark {
+  --background: var(--dark-background);
+  --foreground: var(--dark-foreground);
+  --muted: var(--dark-muted);
+  --muted-foreground: var(--dark-muted-foreground);
+  --card: var(--dark-card);
+  --card-foreground: var(--dark-card-foreground);
+  --border: var(--dark-border);
+  --input: var(--dark-input);
+  --primary: var(--dark-primary);
+  --primary-foreground: var(--dark-primary-foreground);
+  --secondary: var(--dark-secondary);
+  --secondary-foreground: var(--dark-secondary-foreground);
+  --accent: var(--dark-accent);
+  --accent-foreground: var(--dark-accent-foreground);
+  --ring: var(--dark-ring);
 }
 
 html,
@@ -76,3 +92,4 @@ body {
   backdrop-filter: saturate(140%) blur(8px);
   border: 1px solid hsl(var(--border));
 }
+
