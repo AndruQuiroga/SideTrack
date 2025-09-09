@@ -44,11 +44,12 @@ def _derive_urls(base_url: URL) -> Tuple[URL, URL]:
 
 
 def _dsn_key(url: URL) -> str:
-    try:
-        safe = url._replace(password="***")  # type: ignore[attr-defined]
-    except Exception:  # pragma: no cover
-        safe = url
-    return str(safe)
+    """Return a key that changes whenever any credential or host detail changes.
+
+    Important: Do NOT mask the password here — we want engine/sessionmakers to
+    be reinitialized when only the password changes. Password is masked only in logs.
+    """
+    return str(url)
 
 
 def _init_engines() -> None:
