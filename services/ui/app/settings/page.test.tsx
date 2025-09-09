@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Settings from './page';
+import ToastProvider from '../../components/ToastProvider';
 
 describe('Settings page', () => {
   beforeEach(() => {
@@ -12,7 +13,11 @@ describe('Settings page', () => {
   });
 
   it('validates ListenBrainz fields', async () => {
-    render(<Settings />);
+    render(
+      <ToastProvider>
+        <Settings />
+      </ToastProvider>,
+    );
     const userInput = screen.getByPlaceholderText('ListenBrainz username');
     await userEvent.type(userInput, 'tester');
     await userEvent.click(screen.getByRole('button', { name: /save/i }));
@@ -31,7 +36,11 @@ describe('Settings page', () => {
       json: () => Promise.resolve({ ok: true }),
     }); // POST
 
-    render(<Settings />);
+    render(
+      <ToastProvider>
+        <Settings />
+      </ToastProvider>,
+    );
     await userEvent.type(screen.getByPlaceholderText('ListenBrainz username'), 'lbuser');
     await userEvent.type(screen.getByPlaceholderText('Token'), 'lbtoken');
     await userEvent.click(screen.getByLabelText('Use GPU'));
