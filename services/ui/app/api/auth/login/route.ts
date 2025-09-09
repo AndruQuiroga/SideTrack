@@ -10,5 +10,14 @@ export async function POST(req: NextRequest) {
     body: JSON.stringify(body),
   });
   const data = await r.json().catch(() => ({}));
-  return NextResponse.json(data, { status: r.status });
+  const res = NextResponse.json(data, { status: r.status });
+  if (r.ok && (data as any)?.user_id) {
+    res.cookies.set('uid', String((data as any).user_id), {
+      httpOnly: true,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 30, // 30 days
+    });
+  }
+  return res;
 }
