@@ -4,7 +4,7 @@
 FROM sidetrack-base AS builder
 RUN apt-get update && apt-get install -y --no-install-recommends build-essential \
     && rm -rf /var/lib/apt/lists/*
-RUN pip install --no-cache-dir --find-links /wheels 'sidetrack[extractor]'
+RUN pip install --no-cache-dir --no-index --find-links /wheels 'sidetrack[extractor]'
 
 # Runtime stage: minimal image with ffmpeg and installed packages
 FROM sidetrack-base AS runtime

@@ -4,8 +4,8 @@
 FROM sidetrack-base AS builder
 RUN apt-get update && apt-get install -y --no-install-recommends build-essential \
     && rm -rf /var/lib/apt/lists/*
-# Install uvicorn explicitly to guarantee availability, then API extras
-RUN pip install --no-cache-dir --find-links /wheels \
+# Install from cached wheels only to avoid PyPI name conflicts
+RUN pip install --no-cache-dir --no-index --find-links /wheels \
     'uvicorn[standard]==0.30.1' \
     'sidetrack[api]'
 # Verify uvicorn is present to fail fast at build time
