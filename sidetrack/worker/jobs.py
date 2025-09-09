@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import logging
 
-import numpy as np
+"""Heavy numerical deps are imported lazily inside functions to keep
+API-only environments lightweight when importing this module.
+"""
 
 from sidetrack.api.clients.spotify import SpotifyClient
 from sidetrack.api.db import SessionLocal
@@ -17,6 +19,7 @@ logger = logging.getLogger("worker")
 def _basic_features(path: str) -> dict[str, float]:
     """Estimate a couple of simple audio features."""
     # Import heavy deps lazily inside the function
+    import numpy as np
     import librosa
 
     y, sr = librosa.load(path, sr=None, mono=True)
