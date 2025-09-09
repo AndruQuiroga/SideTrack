@@ -4,10 +4,7 @@ import { motion } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import { useToast } from './ToastProvider';
 import { useTheme } from './ThemeContext';
-
-const RefreshCw = dynamic(async () => (await import('lucide-react')).RefreshCw);
-const Sun = dynamic(async () => (await import('lucide-react')).Sun);
-const Moon = dynamic(async () => (await import('lucide-react')).Moon);
+import { RefreshCw, Sun, Moon } from 'lucide-react';
 
 export default function HeaderActions() {
   const toast = useToast();
@@ -53,4 +50,3 @@ export default function HeaderActions() {
     </div>
   );
 }
-

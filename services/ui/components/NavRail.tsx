@@ -8,15 +8,17 @@ import * as Tooltip from '@radix-ui/react-tooltip';
 import { useNav } from './NavContext';
 import Avatar from './ui/Avatar';
 
-const Home = dynamic(() => import('lucide-react/lib/esm/icons/home'));
-const Compass = dynamic(() => import('lucide-react/lib/esm/icons/compass'));
-const Activity = dynamic(() => import('lucide-react/lib/esm/icons/activity'));
-const Radar = dynamic(() => import('lucide-react/lib/esm/icons/radar'));
-const Target = dynamic(() => import('lucide-react/lib/esm/icons/target'));
-const Settings = dynamic(() => import('lucide-react/lib/esm/icons/settings'));
-const User = dynamic(() => import('lucide-react/lib/esm/icons/user'));
-const ChevronLeft = dynamic(() => import('lucide-react/lib/esm/icons/chevron-left'));
-const ChevronRight = dynamic(() => import('lucide-react/lib/esm/icons/chevron-right'));
+import {
+  Home,
+  Compass,
+  Activity,
+  Radar,
+  Target,
+  Settings,
+  User,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
 
 export const nav = [
   { href: '/', label: 'Overview', icon: Home },

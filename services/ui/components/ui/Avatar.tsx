@@ -2,8 +2,7 @@ import Image from 'next/image';
 import type { HTMLAttributes } from 'react';
 import dynamic from 'next/dynamic';
 import { cn } from '../../lib/utils';
-
-const UserIcon = dynamic(() => import('lucide-react/lib/esm/icons/user'));
+import { User as UserIcon } from 'lucide-react';
 
 export interface AvatarProps extends HTMLAttributes<HTMLDivElement> {
   src?: string;
