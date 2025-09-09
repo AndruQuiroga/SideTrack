@@ -46,6 +46,7 @@ extractor = [
     "librosa==0.10.2.post1",
     "soundfile==0.12.1",
     "openl3==0.4.2",
+    "croniter==1.4.1",
 ]
 
 scheduler = [

@@ -1,13 +1,31 @@
+"""Extractor CLI for computing audio features and embeddings.
+
+Examples
+--------
+Run every 10 seconds (default interval)::
+
+    python -m sidetrack.extractor.run --schedule 10
+
+Run on a cron schedule (every 5 minutes)::
+
+    python -m sidetrack.extractor.run --schedule "*/5 * * * *"
+
+The ``--schedule`` option accepts either a floating-point interval in seconds or a
+standard cron expression.  Cron expressions are validated before the extractor starts.
+"""
+
 from __future__ import annotations
 
 import asyncio
 import contextlib
 import os
 import signal
+from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
 import typer
+from croniter import croniter
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
 
@@ -314,9 +332,24 @@ def main(
         help="Seconds between extraction passes",
         envvar="EXTRACTOR_INTERVAL",
     ),
+    schedule: str | None = typer.Option(
+        None,
+        "--schedule",
+        help="Cron expression or seconds between passes",
+        envvar="EXTRACTOR_SCHEDULE",
+    ),
     once: bool = typer.Option(False, help="Run one pass then exit"),
     batch_size: int = typer.Option(4, help="Tracks to process per pass"),
 ):
+    if schedule is not None:
+        try:
+            interval = float(schedule)
+            if interval <= 0:
+                raise ValueError
+            schedule = None
+        except ValueError:
+            if not croniter.is_valid(schedule):
+                raise typer.BadParameter("Schedule must be seconds or a cron expression")
     audio_root = os.getenv("AUDIO_ROOT", "/audio")
     url = get_db_url()
     engine = create_engine(url, pool_pre_ping=True)
@@ -329,11 +362,16 @@ def main(
             typer.echo(f"[extractor] DB not ready: {e}")
             return
 
-    asyncio.run(_run_loop(engine, audio_root, batch_size, interval, once))
+    asyncio.run(_run_loop(engine, audio_root, batch_size, interval, once, schedule))
 
 
 async def _run_loop(
-    engine: any, audio_root: str, batch_size: int, interval: float, once: bool
+    engine: any,
+    audio_root: str,
+    batch_size: int,
+    interval: float,
+    once: bool,
+    schedule: str | None,
 ) -> None:
     stop_event = asyncio.Event()
 
@@ -359,7 +397,13 @@ async def _run_loop(
                     typer.echo(f"[extractor] track {tr.track_id} analyzed: {ok}")
             if once:
                 break
-            sleep_task = asyncio.create_task(asyncio.sleep(interval))
+            if schedule:
+                now = datetime.now(timezone.utc)
+                next_time = croniter(schedule, now).get_next(datetime)
+                delay = (next_time - now).total_seconds()
+            else:
+                delay = interval
+            sleep_task = asyncio.create_task(asyncio.sleep(delay))
             stop_task = asyncio.create_task(stop_event.wait())
             done, pending_tasks = await asyncio.wait(
                 {sleep_task, stop_task}, return_when=asyncio.FIRST_COMPLETED
