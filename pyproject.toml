@@ -21,6 +21,7 @@ build-backend = "setuptools.build_meta"
 api = [
     "fastapi==0.111.1",
     "uvicorn[standard]==0.30.1",
+    "asyncpg==0.29.0",
     "alembic==1.13.2",
     "httpx==0.27.0",
     "tenacity==8.2.3",

@@ -27,8 +27,16 @@ def _get_sessionmakers() -> None:
     settings = get_settings()
     url = make_url(settings.db_url)
     if _AsyncSessionLocal is None or _current_url != str(url):
-        # Build async engine using the configured URL as-is
-        _async_engine = create_async_engine(str(url), pool_pre_ping=True)
+        # Build async engine using an async-capable driver
+        drv = url.drivername
+        if drv.startswith("postgresql"):
+            async_drivername = "postgresql+asyncpg"
+        elif drv.startswith("sqlite"):
+            async_drivername = "sqlite+aiosqlite"
+        else:
+            async_drivername = drv
+        async_url = url.set(drivername=async_drivername)
+        _async_engine = create_async_engine(str(async_url), pool_pre_ping=True)
 
         # Build a synchronous URL that uses a sync-capable driver for the same database
         # - For PostgreSQL, prefer psycopg (psycopg3) to avoid requiring psycopg2
