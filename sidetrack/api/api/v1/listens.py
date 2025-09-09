@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sidetrack.common.models import Artist, Listen, Track
 
 from ...clients.listenbrainz import ListenBrainzClient, get_listenbrainz_client
-from sidetrack.common.config import Settings, get_settings
+from ...config import Settings, get_settings
 from ...db import get_db
 from ...schemas.listens import IngestResponse, ListenIn, RecentListensResponse
 from ...security import get_current_user

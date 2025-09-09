@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from sidetrack.common.models import UserAccount, UserSettings
 
-from sidetrack.common.config import Settings, get_settings
+from ...config import Settings, get_settings
 from ...db import get_db
 from ...schemas.auth import Credentials, GoogleToken, MeOut, UserOut
 from ...security import hash_password, require_role, verify_password
