@@ -12,3 +12,5 @@ testcontainers
 black
 isort
 ruff
+freezegun
+pytest-socket
