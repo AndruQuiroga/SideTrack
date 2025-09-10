@@ -31,6 +31,9 @@ class FeatureFactory(factory.Factory):
     bpm = 120.0
     pumpiness = 0.5
     percussive_harmonic_ratio = 0.3
+    source = "full"
+    seconds = 0.0
+    model = None
 
     class Params:
         zero = factory.Trait(bpm=0.0, pumpiness=0.0, percussive_harmonic_ratio=0.0)

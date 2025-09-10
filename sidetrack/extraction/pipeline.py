@@ -51,11 +51,16 @@ def analyze_tracks(db: Session, track_ids: Iterable[int], cfg: ExtractionConfig,
         y = dsp.resample_audio(y, sr_orig, 44100)
         sr = 44100
         y = dsp.excerpt_audio(y, sr, cfg.excerpt_seconds)
-        stems_out = stems.separate(y, sr, cfg.use_demucs)
-        # use mixture for features/embeddings
-        mix = next(iter(stems_out.values()))
-        feats = feat_mod.extract_features(tid, mix, sr, cache_dir / "mel")
-        embeds = emb_mod.compute_embeddings(tid, mix, sr, cfg, redis_conn=redis_conn)
+        seconds = y.shape[-1] / sr
+        _stems, stem_model = stems.separate(
+            y, sr, cfg.use_demucs, tr.path_local, cache_dir / "stems"
+        )
+        feats = feat_mod.extract_features(tid, y, sr, cache_dir / "mel")
+        source = "excerpt" if cfg.excerpt_seconds else "full"
+        if stem_model:
+            source = "stems"
+        feats.update({"source": source, "seconds": seconds, "model": stem_model})
+        embeds = emb_mod.compute_embeddings(tid, y, sr, cfg, redis_conn=redis_conn)
         _upsert_feature(db, tid, feats, cfg.dataset_version)
         for name, vec in embeds.items():
             _upsert_embedding(db, tid, name, vec, cfg.dataset_version)
