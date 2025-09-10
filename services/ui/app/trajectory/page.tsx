@@ -11,7 +11,7 @@ const TrajectoryClient = dynamic(() => import('../../components/charts/Trajector
 
 export default async function Trajectory() {
   return (
-    <section className="space-y-4">
+    <section className="@container space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold">Taste Trajectory</h2>

@@ -63,6 +63,8 @@ describe('Settings page', () => {
       useStems: true,
       useExcerpts: true,
     });
-    expect(await screen.findByRole('status')).toHaveTextContent(/saved/i);
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent(/saved/i),
+    );
   });
 });

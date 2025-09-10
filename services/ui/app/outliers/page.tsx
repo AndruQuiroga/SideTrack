@@ -30,7 +30,7 @@ export default function Outliers() {
   }
 
   return (
-    <section className="space-y-4">
+    <section className="@container space-y-6">
       <h2 className="text-xl font-semibold">Outliers</h2>
       <ChartContainer title="Outliers" subtitle="Far from your recent centroid">
         {content}

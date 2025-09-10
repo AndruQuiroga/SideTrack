@@ -144,7 +144,7 @@ export default function Settings() {
   }
 
   return (
-    <section className="space-y-6">
+    <section className="@container space-y-6">
       <h2>Settings</h2>
       {errors.length > 0 && <div role="alert">{errors.join(', ')}</div>}
       {message && <div role="status">{message}</div>}
