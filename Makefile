@@ -1,22 +1,16 @@
-.PHONY: test test-unit test-contract test-integration test-e2e test-all
+.PHONY: test.unit test.int test.all test.slow test.e2e
 
-# Fast default suite (excludes slow/gpu/e2e)
-test:
-	pytest -q
+test.unit:
+	pytest -m "unit and not slow and not gpu"
 
-# Sub-suites
-test-unit:
-	pytest -m unit -q
+test.int:
+	pytest -m "integration"
 
-test-contract:
-	pytest -m contract -q
+test.all:
+	pytest -m "not gpu and not slow"
 
-test-integration:
-	pytest -m integration -q
+test.slow:
+	pytest -m "slow"
 
-test-e2e:
-	pytest -m e2e -q
-
-# Run everything including slow/gpu/e2e
-test-all:
-	pytest -q -m ""
+test.e2e:
+	pytest -m "e2e"
