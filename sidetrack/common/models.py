@@ -227,6 +227,27 @@ class LastfmTags(Base):
     )
 
 
+class MBTag(Base):
+    __tablename__ = "mb_tag"
+    __table_args__ = (UniqueConstraint("track_id", "tag", name="mb_tag_unique"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    track_id: Mapped[int] = mapped_column(ForeignKey("track.track_id"), index=True)
+    tag: Mapped[str] = mapped_column(String(64), index=True)
+    score: Mapped[float] = mapped_column(Float, default=0.0)
+
+
+class MBLabel(Base):
+    __tablename__ = "mb_label"
+    __table_args__ = (UniqueConstraint("track_id", name="mb_label_unique"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    track_id: Mapped[int] = mapped_column(ForeignKey("track.track_id"), index=True)
+    primary_label: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    label_country: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    era: Mapped[str | None] = mapped_column(String(8), nullable=True)
+
+      
 class MusicBrainzRecording(Base):
     """Cached MusicBrainz lookups by ISRC."""
 
