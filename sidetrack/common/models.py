@@ -113,6 +113,9 @@ class Feature(Base):
     stereo: Mapped[dict | None] = mapped_column(JSON)
     percussive_harmonic_ratio: Mapped[float | None] = mapped_column(Float)
     pumpiness: Mapped[float | None] = mapped_column(Float)
+    source: Mapped[str] = mapped_column(String(16), default="full")
+    seconds: Mapped[float | None] = mapped_column(Float)
+    model: Mapped[str | None] = mapped_column(String(64))
 
 
 class MoodScore(Base):

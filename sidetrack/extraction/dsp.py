@@ -17,13 +17,31 @@ def resample_audio(y: np.ndarray, orig_sr: int, target_sr: int) -> np.ndarray:
 
 
 def excerpt_audio(y: np.ndarray, sr: int, seconds: float | None) -> np.ndarray:
+    """Return an excerpt of ``seconds`` centered on the loudest region.
+
+    The loudest region is approximated by the frame with the maximum RMS
+    energy.  If ``seconds`` is ``None`` or non-positive, the full signal is
+    returned unchanged.
+    """
+
     if not seconds or seconds <= 0:
         return y
     n = int(seconds * sr)
     if y.shape[-1] <= n:
         return y
-    start = (y.shape[-1] - n) // 2
-    return y[start : start + n]
+
+    # Compute frame-wise RMS energy and locate the frame with the maximum
+    # value.  Use this frame's centre as the centre of the excerpt.
+    hop = 512
+    rms = librosa.feature.rms(y=y, hop_length=hop)[0]
+    idx = int(rms.argmax())
+    centre = idx * hop
+    start = max(0, centre - n // 2)
+    end = start + n
+    if end > y.shape[-1]:
+        end = y.shape[-1]
+        start = end - n
+    return y[start:end]
 
 
 def melspectrogram(track_id: int, y: np.ndarray, sr: int, cache_dir: Path) -> np.ndarray:

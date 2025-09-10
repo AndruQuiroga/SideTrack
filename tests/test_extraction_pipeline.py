@@ -30,6 +30,9 @@ def test_pipeline_extracts_and_upserts(session, redis_conn, tmp_path):
 
     feat = session.execute(select(Feature).where(Feature.track_id == tid)).scalar_one()
     assert feat.dataset_version == cfg.dataset_version
+    assert feat.source == "full"
+    assert feat.seconds == pytest.approx(1.0)
+    assert feat.model is None
     emb = session.execute(select(Embedding).where(Embedding.track_id == tid)).scalar_one()
     assert emb.model == cfg.embedding_model
 

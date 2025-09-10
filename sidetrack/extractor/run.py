@@ -175,6 +175,12 @@ def compute_embeddings(wav_path: str, models: list[str]) -> dict[str, list[float
 
 
 def estimate_features(wav_path: str) -> dict:
+    import os
+    import tempfile
+
+    # Ensure numba has a writable cache directory to avoid RuntimeError during
+    # librosa's lazy imports.
+    os.environ.setdefault("NUMBA_CACHE_DIR", os.path.join(tempfile.gettempdir(), "numba-cache"))
     import librosa as lb
 
     y_st, sr = safe_load_audio(wav_path, sr=44100, mono=False)
