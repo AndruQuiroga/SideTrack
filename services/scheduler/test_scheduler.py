@@ -8,7 +8,7 @@ def test_all_jobs_run(monkeypatch):
     calls = []
 
     def fake_post(url, timeout=10, headers=None):
-        calls.append((url, headers))
+        calls.append((url, headers.get("X-User-Id") if headers else None))
 
         class Resp:
             status_code = 200
@@ -23,18 +23,25 @@ def test_all_jobs_run(monkeypatch):
     monkeypatch.setenv("SPOTIFY_LISTENS_INTERVAL_MINUTES", "1")
     monkeypatch.setenv("LASTFM_SYNC_INTERVAL_MINUTES", "1")
     monkeypatch.setenv("AGGREGATE_WEEKS_INTERVAL_MINUTES", "1")
-    monkeypatch.setenv("DEFAULT_USER_ID", "u1")
     import importlib
 
     run = importlib.import_module("sidetrack.scheduler.run")
     monkeypatch.setattr(run.requests, "post", fake_post)
+    monkeypatch.setattr(run, "fetch_user_ids", lambda: ["u1", "u2"])
 
     schedule.clear()
     run.schedule_jobs()
     schedule.run_all(delay_seconds=0)
 
-    expected_headers = {"X-User-Id": "u1"}
-    assert ("http://api/ingest/listens", expected_headers) in calls
-    assert ("http://api/spotify/listens", expected_headers) in calls
-    assert ("http://api/tags/lastfm/sync", expected_headers) in calls
-    assert ("http://api/aggregate/weeks", expected_headers) in calls
+    expected = [
+        ("http://api/ingest/listens", "u1"),
+        ("http://api/ingest/listens", "u2"),
+        ("http://api/spotify/listens", "u1"),
+        ("http://api/spotify/listens", "u2"),
+        ("http://api/tags/lastfm/sync", "u1"),
+        ("http://api/tags/lastfm/sync", "u2"),
+        ("http://api/aggregate/weeks", "u1"),
+        ("http://api/aggregate/weeks", "u2"),
+    ]
+    for item in expected:
+        assert item in calls
