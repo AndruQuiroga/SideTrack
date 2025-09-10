@@ -10,9 +10,11 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from sidetrack.common.models import Artist, Listen, Track
+from sidetrack.common.models import Artist, Listen, Track, UserSettings
 
 from ...clients.listenbrainz import ListenBrainzClient, get_listenbrainz_client
+from ...clients.lastfm import LastfmClient, get_lastfm_client
+from ...clients.spotify import SpotifyClient, get_spotify_client
 from ...config import Settings, get_settings
 from ...db import get_db
 from ...schemas.listens import IngestResponse, ListenIn, RecentListensResponse
@@ -56,13 +58,24 @@ async def recent_listens(
 async def ingest_listens(
     since: date | None = Query(None),
     listens: list[ListenIn] | None = Body(None, description="List of listens to ingest"),
-    source: str = Query("auto", description="auto|listenbrainz|body|sample"),
+    source: str = Query(
+        "auto", description="auto|spotify|lastfm|listenbrainz|body|sample"
+    ),
     listen_service: ListenService = Depends(get_listen_service),
     lb_client: ListenBrainzClient = Depends(get_listenbrainz_client),
+    lf_client: LastfmClient = Depends(get_lastfm_client),
+    sp_client: SpotifyClient = Depends(get_spotify_client),
+    db: AsyncSession = Depends(get_db),
     user_id: str = Depends(get_current_user),
     settings: Settings = Depends(get_settings),
 ):
-    # 3 modes: body, ListenBrainz, or sample file
+    """Ingest listens from a variety of external services.
+
+    ``source`` determines which backend to use.  In ``auto`` mode the function
+    attempts Spotify, then Last.fm, and finally ListenBrainz before falling
+    back to bundled sample data.
+    """
+    # multiple modes: body, Spotify, Last.fm, ListenBrainz, or sample file
     if source == "body" and listens is None:
         raise HTTPException(status_code=400, detail="Body listens required for source=body")
 
@@ -85,10 +98,54 @@ async def ingest_listens(
         created = await listen_service.ingest_lb_rows(rows, user_id)
         return IngestResponse(detail="ok", ingested=created)
 
+    # Load user settings for external tokens
+    settings_row = (
+        await db.execute(select(UserSettings).where(UserSettings.user_id == user_id))
+    ).scalar_one_or_none()
+
+    # Try Spotify first
+    if source in ("auto", "spotify"):
+        token = settings_row.spotify_access_token if settings_row else None
+        if token:
+            try:
+                since_dt = datetime.combine(since, datetime.min.time()) if since else None
+                items = await sp_client.fetch_recently_played(token, after=since_dt)
+                created = await listen_service.ingest_spotify_rows(items, user_id)
+                return IngestResponse(detail="ok", ingested=created, source="spotify")
+            except httpx.HTTPError as exc:
+                logger.error("Spotify fetch failed", error=str(exc))
+                if source == "spotify":
+                    raise HTTPException(status_code=502, detail=f"Spotify error: {exc}")
+        elif source == "spotify":
+            raise HTTPException(status_code=400, detail="Spotify not connected")
+
+    # Next try Last.fm
+    if source in ("auto", "lastfm"):
+        if settings_row and settings_row.lastfm_user and settings_row.lastfm_session_key:
+            try:
+                since_dt = datetime.combine(since, datetime.min.time()) if since else None
+                tracks = await lf_client.fetch_recent_tracks(
+                    settings_row.lastfm_user, since_dt
+                )
+                created = await listen_service.ingest_lastfm_rows(tracks, user_id)
+                return IngestResponse(detail="ok", ingested=created, source="lastfm")
+            except httpx.HTTPError as exc:
+                logger.error("Last.fm fetch failed", error=str(exc))
+                if source == "lastfm":
+                    raise HTTPException(status_code=502, detail=f"Last.fm error: {exc}")
+        elif source == "lastfm":
+            raise HTTPException(status_code=400, detail="Last.fm not connected")
+
+    # Finally fall back to ListenBrainz
     if source in ("auto", "listenbrainz"):
-        token = settings.listenbrainz_token
+        token = (
+            settings_row.listenbrainz_token if settings_row else settings.listenbrainz_token
+        )
+        lb_user = (
+            settings_row.listenbrainz_user if settings_row else user_id
+        )
         try:
-            rows = await lb_client.fetch_listens(user_id, since, token)
+            rows = await lb_client.fetch_listens(lb_user, since, token)
             created = await listen_service.ingest_lb_rows(rows, user_id)
             return IngestResponse(detail="ok", ingested=created, source="listenbrainz")
         except httpx.HTTPError as exc:
