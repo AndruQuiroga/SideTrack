@@ -154,7 +154,7 @@ def _week_start(dt: datetime) -> date:
 
 @app.get("/health")
 async def health(db: AsyncSession = Depends(get_db)):
-    """Lightweight health check reporting DB and Redis readiness."""
+    """Lightweight health check reporting service readiness."""
     status = "ok"
     details: dict[str, object] = {}
     # DB check
@@ -172,7 +172,31 @@ async def health(db: AsyncSession = Depends(get_db)):
     except Exception as exc:  # pragma: no cover
         details["redis"] = f"error: {exc.__class__.__name__}"
         status = "degraded"
+    # Extractor check
+    try:
+        from sidetrack.extraction import pipeline  # noqa: F401
+
+        details["extractor"] = "ok"
+    except Exception as exc:  # pragma: no cover
+        details["extractor"] = f"error: {exc.__class__.__name__}"
+        status = "degraded"
+    # Enrichment check
+    try:
+        from sidetrack.enrichment.mb import MusicBrainzAdapter
+
+        adapter = MusicBrainzAdapter()
+        await adapter.close()
+        details["enrichment"] = "ok"
+    except Exception as exc:  # pragma: no cover
+        details["enrichment"] = f"error: {exc.__class__.__name__}"
+        status = "degraded"
     return {"status": status, **details}
+
+
+@app.get("/ready")
+async def ready(db: AsyncSession = Depends(get_db)):
+    """Readiness probe using the same checks as :func:`health`."""
+    return await health(db)
 
 
 @app.get("/auth/lastfm/login")
