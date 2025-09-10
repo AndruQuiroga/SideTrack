@@ -1,6 +1,6 @@
 [
   {
-    "user_id": "demo",
+    "user_id": "user1",
     "played_at": "2024-05-06T12:34:00Z",
     "source": "listenbrainz",
     "track": {
@@ -11,7 +11,7 @@
     }
   },
   {
-    "user_id": "demo",
+    "user_id": "user2",
     "played_at": "2024-05-07T18:20:00Z",
     "source": "listenbrainz",
     "track": {
@@ -22,7 +22,7 @@
     }
   },
   {
-    "user_id": "demo",
+    "user_id": "user3",
     "played_at": "2024-05-15T09:10:00Z",
     "source": "listenbrainz",
     "track": {
@@ -33,7 +33,7 @@
     }
   },
   {
-    "user_id": "demo",
+    "user_id": "user4",
     "played_at": "2024-06-03T21:05:00Z",
     "source": "listenbrainz",
     "track": {
@@ -44,7 +44,7 @@
     }
   },
   {
-    "user_id": "demo",
+    "user_id": "user5",
     "played_at": "2024-06-17T07:55:00Z",
     "source": "listenbrainz",
     "track": {

@@ -12,52 +12,69 @@ logger = logging.getLogger("scheduler")
 settings = get_settings()
 
 
-def ingest_listens():
+def fetch_user_ids() -> list[str]:
     try:
-        r = requests.post(
-            f"{settings.api_url}/ingest/listens",
-            timeout=10,
-            headers={"X-User-Id": settings.default_user_id},
-        )
-        logger.info("ingest listens: %s", r.status_code)
-    except Exception:
-        logger.exception("ingest listens error")
+        resp = requests.get(f"{settings.api_url}/auth/users", timeout=10)
+        resp.raise_for_status()
+        data = resp.json()
+        if isinstance(data, dict):
+            return data.get("users", [])
+        return data
+    except Exception:  # pragma: no cover - network errors
+        logger.exception("fetch user ids error")
+        return []
+
+
+def ingest_listens():
+    for user_id in fetch_user_ids():
+        try:
+            r = requests.post(
+                f"{settings.api_url}/ingest/listens",
+                timeout=10,
+                headers={"X-User-Id": user_id},
+            )
+            logger.info("ingest listens %s: %s", user_id, r.status_code)
+        except Exception:
+            logger.exception("ingest listens error for %s", user_id)
 
 
 def import_spotify_listens():
-    try:
-        r = requests.post(
-            f"{settings.api_url}/spotify/listens",
-            timeout=10,
-            headers={"X-User-Id": settings.default_user_id},
-        )
-        logger.info("spotify listens: %s", r.status_code)
-    except Exception:
-        logger.exception("spotify listens error")
+    for user_id in fetch_user_ids():
+        try:
+            r = requests.post(
+                f"{settings.api_url}/spotify/listens",
+                timeout=10,
+                headers={"X-User-Id": user_id},
+            )
+            logger.info("spotify listens %s: %s", user_id, r.status_code)
+        except Exception:
+            logger.exception("spotify listens error for %s", user_id)
 
 
 def sync_lastfm_tags():
-    try:
-        r = requests.post(
-            f"{settings.api_url}/tags/lastfm/sync",
-            timeout=10,
-            headers={"X-User-Id": settings.default_user_id},
-        )
-        logger.info("lastfm sync: %s", r.status_code)
-    except Exception:
-        logger.exception("lastfm sync error")
+    for user_id in fetch_user_ids():
+        try:
+            r = requests.post(
+                f"{settings.api_url}/tags/lastfm/sync",
+                timeout=10,
+                headers={"X-User-Id": user_id},
+            )
+            logger.info("lastfm sync %s: %s", user_id, r.status_code)
+        except Exception:
+            logger.exception("lastfm sync error for %s", user_id)
 
 
 def aggregate_weeks():
-    try:
-        r = requests.post(
-            f"{settings.api_url}/aggregate/weeks",
-            timeout=30,
-            headers={"X-User-Id": settings.default_user_id},
-        )
-        logger.info("aggregate weeks: %s", r.status_code)
-    except Exception:
-        logger.exception("aggregate weeks error")
+    for user_id in fetch_user_ids():
+        try:
+            r = requests.post(
+                f"{settings.api_url}/aggregate/weeks",
+                timeout=30,
+                headers={"X-User-Id": user_id},
+            )
+            logger.info("aggregate weeks %s: %s", user_id, r.status_code)
+        except Exception:
+            logger.exception("aggregate weeks error for %s", user_id)
 
 
 def schedule_jobs():

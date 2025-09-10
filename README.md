@@ -48,7 +48,7 @@ cd SideTrack
 
 # 1) Configure environment
 cp .env.example .env
-# (Optional) set LASTFM_API_KEY, DEFAULT_USER_ID, and NEXT_PUBLIC_API_BASE if needed
+# (Optional) set LASTFM_API_KEY and NEXT_PUBLIC_API_BASE if needed
 
 # 2) Build the base image
 docker build -f services/base/Dockerfile -t sidetrack-base .
@@ -63,6 +63,7 @@ docker compose exec api alembic upgrade head
 curl -H "X-User-Id: YOUR_USER" -X POST "http://localhost:8000/api/v1/ingest/listens?since=2024-01-01"
 curl -H "X-User-Id: YOUR_USER" -X POST "http://localhost:8000/tags/lastfm/sync?since=2024-01-01"
 curl -H "X-User-Id: YOUR_USER" -X POST "http://localhost:8000/aggregate/weeks"
+# Sample listens file uses placeholder user IDs (`user1`–`user5`).
 
 # 6) Open the UI
 open http://localhost:3000
