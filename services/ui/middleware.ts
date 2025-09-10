@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 // Protect all routes except public ones
 export function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
+  const { pathname, search } = req.nextUrl;
 
   // Allow public assets and routes
   const publicPaths = [
@@ -23,7 +23,7 @@ export function middleware(req: NextRequest) {
   if (!uid) {
     const url = req.nextUrl.clone();
     url.pathname = '/login';
-    url.searchParams.set('next', pathname);
+    url.searchParams.set('next', pathname + search);
     return NextResponse.redirect(url);
   }
 

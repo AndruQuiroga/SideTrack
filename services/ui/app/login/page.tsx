@@ -1,11 +1,15 @@
 'use client';
 
 import { useState, FormEvent } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const params = useSearchParams();
+  const router = useRouter();
+  const next = params.get('next');
 
   async function handleLogin(e: FormEvent) {
     e.preventDefault();
@@ -16,7 +20,7 @@ export default function LoginPage() {
       body: JSON.stringify({ username, password }),
     });
     if (res.ok) {
-      window.location.href = '/account';
+      router.push(next || '/');
     } else {
       setError('Login failed');
     }
