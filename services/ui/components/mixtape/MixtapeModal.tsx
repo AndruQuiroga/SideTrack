@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '../ui/dialog';
 import { Button } from '../ui/button';
 import type { Rec } from '../recs/RecCard';
 import { createPlaylist } from '../../lib/spotifyClient';
@@ -39,9 +39,7 @@ export default function MixtapeModal({ open, onOpenChange, tracks }: Props) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-sm">
-        <DialogHeader>
-          <DialogTitle>Build Mixtape</DialogTitle>
-        </DialogHeader>
+        <DialogTitle>Build Mixtape</DialogTitle>
         <div className="space-y-4">
           <label className="flex items-center gap-2 text-sm">
             Length

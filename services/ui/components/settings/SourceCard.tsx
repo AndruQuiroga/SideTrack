@@ -102,7 +102,7 @@ export default function SourceCard({
         )}
         <Button
           type="button"
-          variant="secondary"
+          variant="outline"
           onClick={handleTest}
           aria-label={`${name} test`}
         >

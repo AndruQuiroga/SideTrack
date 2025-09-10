@@ -88,7 +88,7 @@ export const tokens = {
     red: 'hsl(var(--brand-red))',
     purple: 'hsl(var(--brand-purple))',
   },
-};
+} as const;
 
 const config: Config = {
   content: ['./app/**/*.{ts,tsx}', './components/**/*.{ts,tsx}', './lib/**/*.{ts,tsx}'],
@@ -99,7 +99,7 @@ const config: Config = {
       colors: { ...tokens.colors, brand: tokens.brand },
       borderRadius: tokens.radii,
       boxShadow: tokens.shadows,
-      fontSize: tokens.fontSize,
+      fontSize: tokens.fontSize as any,
       fontFamily: {
         sans: ['var(--font-sans)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
