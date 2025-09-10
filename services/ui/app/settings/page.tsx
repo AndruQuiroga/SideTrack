@@ -1,211 +1,104 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { z } from 'zod';
-import { ZForm } from '../../components/forms/ZForm';
-import { FormSection } from '../../components/forms/FormSection';
-import { Field } from '../../components/forms/Field';
-import { SubmitBar } from '../../components/forms/SubmitBar';
-import { Input } from '../../components/ui/input';
-import { Button } from '../../components/ui/button';
-import Skeleton from '../../components/Skeleton';
-import { useToast } from '../../components/ToastProvider';
-import { useAuth } from '../../lib/auth';
+import SourceCard, { SourceStatus } from '../../components/settings/SourceCard';
+import RankerControls from '../../components/settings/RankerControls';
+import DataControls from '../../components/settings/DataControls';
 import { apiFetch } from '../../lib/api';
+import { useAuth } from '../../lib/auth';
 
-const schema = z
-  .object({
-    listenBrainzUser: z.string().optional(),
-    listenBrainzToken: z.string().optional(),
-    useGpu: z.boolean().default(false),
-    useStems: z.boolean().default(false),
-    useExcerpts: z.boolean().default(false),
-  })
-  .refine(
-    (d) =>
-      (!d.listenBrainzUser && !d.listenBrainzToken) ||
-      (d.listenBrainzUser && d.listenBrainzToken),
-    {
-      path: ['listenBrainzToken'],
-      message: 'ListenBrainz user and token required together',
-    },
-  );
+interface SourceState {
+  spotify: SourceStatus;
+  lastfm: SourceStatus;
+  lb: SourceStatus;
+  mb: SourceStatus;
+}
 
-type SettingsValues = z.infer<typeof schema>;
-
-export default function Settings() {
-  const [defaults, setDefaults] = useState<SettingsValues>();
-  const [lfmUser, setLfmUser] = useState('');
-  const [lfmConnected, setLfmConnected] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState('');
-  const { show } = useToast();
+export default function SettingsPage() {
   const { userId } = useAuth();
+  const [sources, setSources] = useState<SourceState>({
+    spotify: 'disconnected',
+    lastfm: 'disconnected',
+    lb: 'disconnected',
+    mb: 'disconnected',
+  });
 
   useEffect(() => {
     if (!userId) return;
-    setLoading(true);
     apiFetch('/api/settings')
       .then((r) => r.json())
-      .then(
-        (data: Partial<
-          SettingsValues & { lastfmUser: string; lastfmConnected: boolean }
-        >) => {
-          setDefaults({
-            listenBrainzUser: data.listenBrainzUser || '',
-            listenBrainzToken: data.listenBrainzToken || '',
-            useGpu: !!data.useGpu,
-            useStems: !!data.useStems,
-            useExcerpts: !!data.useExcerpts,
-          });
-          setLfmUser(data.lastfmUser || '');
-          setLfmConnected(!!data.lastfmConnected);
-        },
-      )
+      .then((data) => {
+        setSources({
+          spotify: data.spotifyConnected ? 'connected' : 'disconnected',
+          lastfm: data.lastfmConnected ? 'connected' : 'disconnected',
+          lb:
+            data.listenBrainzUser && data.listenBrainzToken
+              ? 'connected'
+              : 'disconnected',
+          mb: 'disconnected',
+        });
+      })
       .catch(() => {
         /* ignore */
-      })
-      .finally(() => setLoading(false));
+      });
   }, [userId]);
 
-  async function handleSubmit(values: SettingsValues) {
-    setMessage('');
-    const res = await apiFetch('/api/settings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(values),
-    });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      const errs = Array.isArray(data.detail)
-        ? data.detail
-        : data.detail
-        ? [data.detail]
-        : ['Error saving settings'];
-      show({ title: errs.join(', '), kind: 'error' });
-      return;
-    }
-    setMessage('Settings saved');
-    show({ title: 'Settings saved', kind: 'success' });
-  }
-
-  async function handleConnect() {
-    const callback = encodeURIComponent(
-      `${window.location.origin}/lastfm/callback`,
-    );
-    const res = await apiFetch(`/api/auth/lastfm/login?callback=${callback}`);
-    const data = await res.json().catch(() => ({}));
-    if (data.url) {
-      window.location.href = data.url;
-    } else {
-      show({ title: 'Failed to connect to Last.fm', kind: 'error' });
-    }
-  }
-
-  async function handleDisconnect() {
-    const res = await apiFetch('/api/auth/lastfm/session', {
-      method: 'DELETE',
-    });
-    if (!res.ok) {
-      show({ title: 'Failed to disconnect Last.fm', kind: 'error' });
-      return;
-    }
-    setLfmUser('');
-    setLfmConnected(false);
-    show({ title: 'Disconnected Last.fm', kind: 'success' });
-  }
-
   return (
-    <section className="space-y-6">
-      <ZForm
-        schema={schema}
-        defaultValues={defaults}
-        onSubmit={handleSubmit}
-        className="space-y-6"
-      >
-        <FormSection title="ListenBrainz">
-          {loading ? (
-            <Skeleton className="h-24" />
-          ) : (
-            <>
-              <Field name="listenBrainzUser" label="Username">
-                {(field) => (
-                  <Input
-                    placeholder="ListenBrainz username"
-                    {...field}
-                  />
-                )}
-              </Field>
-              <Field
-                name="listenBrainzToken"
-                label="Token"
-                help="Find this token in your ListenBrainz settings"
-              >
-                {(field) => <Input placeholder="Token" {...field} />}
-              </Field>
-            </>
-          )}
-        </FormSection>
-
-        <FormSection title="Last.fm">
-          {loading ? (
-            <Skeleton className="h-24" />
-          ) : lfmConnected ? (
-            <div className="flex items-center gap-2">
-              <span>Connected as {lfmUser}</span>
-              <Button type="button" onClick={handleDisconnect}>
-                Disconnect
-              </Button>
-            </div>
-          ) : (
-            <Button type="button" onClick={handleConnect}>
-              Connect Last.fm
-            </Button>
-          )}
-        </FormSection>
-
-        <FormSection title="Options">
-          {loading ? (
-            <Skeleton className="h-24" />
-          ) : (
-            <>
-              <Field name="useGpu" label="Use GPU">
-                {(field) => (
-                  <Input
-                    type="checkbox"
-                    className="h-4 w-4"
-                    {...field}
-                    checked={field.value}
-                  />
-                )}
-              </Field>
-              <Field name="useStems" label="Extract stems">
-                {(field) => (
-                  <Input
-                    type="checkbox"
-                    className="h-4 w-4"
-                    {...field}
-                    checked={field.value}
-                  />
-                )}
-              </Field>
-              <Field name="useExcerpts" label="Use excerpts">
-                {(field) => (
-                  <Input
-                    type="checkbox"
-                    className="h-4 w-4"
-                    {...field}
-                    checked={field.value}
-                  />
-                )}
-              </Field>
-            </>
-          )}
-        </FormSection>
-
-        <SubmitBar />
-        {message && <div role="status">{message}</div>}
-      </ZForm>
-    </section>
+    <div className="space-y-10">
+      <section className="space-y-4">
+        <h2 className="text-xl font-semibold">Sources</h2>
+        <div className="grid gap-4 md:grid-cols-2">
+          <SourceCard
+            id="spotify"
+            name="Spotify"
+            scopes={['User library', 'Modify playlists']}
+            status={sources.spotify}
+            connectUrl="/api/auth/spotify/login"
+            disconnectUrl="/api/auth/spotify/disconnect"
+            testUrl="/api/auth/spotify/test"
+            onStatusChange={(s) => setSources((prev) => ({ ...prev, spotify: s }))}
+          />
+          <SourceCard
+            id="lastfm"
+            name="Last.fm"
+            scopes={['Read scrobbles', 'Write scrobbles']}
+            status={sources.lastfm}
+            connectUrl="/api/auth/lastfm/login"
+            disconnectUrl="/api/auth/lastfm/session"
+            testUrl="/api/auth/lastfm/session"
+            onStatusChange={(s) => setSources((prev) => ({ ...prev, lastfm: s }))}
+          />
+          <SourceCard
+            id="lb"
+            name="ListenBrainz"
+            scopes={['Read listens', 'Submit feedback']}
+            status={sources.lb}
+            connectUrl="/api/auth/lb/login"
+            disconnectUrl="/api/auth/lb/disconnect"
+            testUrl="/api/auth/lb/test"
+            onStatusChange={(s) => setSources((prev) => ({ ...prev, lb: s }))}
+          />
+          <SourceCard
+            id="mb"
+            name="MusicBrainz"
+            scopes={['Read metadata', 'Submit tags']}
+            status={sources.mb}
+            connectUrl="/api/auth/mb/login"
+            disconnectUrl="/api/auth/mb/disconnect"
+            testUrl="/api/auth/mb/test"
+            onStatusChange={(s) => setSources((prev) => ({ ...prev, mb: s }))}
+          />
+        </div>
+      </section>
+      <section className="space-y-4">
+        <h2 className="text-xl font-semibold">Ranker</h2>
+        <RankerControls />
+      </section>
+      <section className="space-y-4">
+        <h2 className="text-xl font-semibold">Data</h2>
+        <DataControls />
+      </section>
+    </div>
   );
 }
+
