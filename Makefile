@@ -1,10 +1,13 @@
-.PHONY: test.unit test.int test.all test.slow test.e2e
+.PHONY: test.unit test.int test.contract test.all test.slow test.e2e
 
 test.unit:
 	pytest -m "unit and not slow and not gpu"
 
 test.int:
-	pytest -m "integration"
+        pytest -m "integration"
+
+test.contract:
+        pytest -m "contract"
 
 test.all:
 	pytest -m "not gpu and not slow"
