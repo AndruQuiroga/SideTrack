@@ -9,7 +9,10 @@ export type Source = {
 export function useSources() {
   return useQuery<Source[]>({
     queryKey: ['sources'],
-    queryFn: async () => apiFetch('/api/sources'),
+    queryFn: async () => {
+      const res = await apiFetch('/api/sources');
+      return (await res.json()) as Source[];
+    },
   });
 }
 

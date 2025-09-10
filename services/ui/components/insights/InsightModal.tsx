@@ -1,6 +1,6 @@
 'use client';
 import dynamic from 'next/dynamic';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '../ui/dialog';
 import type { Data } from 'plotly.js';
 import type { Insight } from './InsightCard';
 
@@ -17,9 +17,7 @@ export default function InsightModal({ insight, onOpenChange }: Props) {
       <DialogContent className="sm:max-w-md">
         {insight && (
           <>
-            <DialogHeader>
-              <DialogTitle>{insight.summary}</DialogTitle>
-            </DialogHeader>
+            <DialogTitle>{insight.summary}</DialogTitle>
             {Array.isArray((insight.details as { data?: unknown } | undefined)?.data) && (
               <Plot
                 data={(insight.details as { data?: Data[] } | undefined)?.data ?? []}
