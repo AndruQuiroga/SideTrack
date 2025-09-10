@@ -118,6 +118,53 @@ class Feature(Base):
     model: Mapped[str | None] = mapped_column(String(64))
 
 
+class TrackFeature(Base):
+    __tablename__ = "track_features"
+
+    track_id: Mapped[int] = mapped_column(ForeignKey("track.track_id"), primary_key=True)
+    sr: Mapped[int | None] = mapped_column(Integer)
+    duration: Mapped[float | None] = mapped_column(Float)
+    rms: Mapped[float | None] = mapped_column(Float)
+    tempo: Mapped[float | None] = mapped_column(Float)
+    key: Mapped[str | None] = mapped_column(String(16))
+    mfcc: Mapped[dict | None] = mapped_column(JSON)
+    spectral: Mapped[dict | None] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
+    dataset_version: Mapped[str] = mapped_column(
+        String(16), default="v1", primary_key=True
+    )
+
+
+class TrackEmbedding(Base):
+    __tablename__ = "track_embeddings"
+
+    track_id: Mapped[int] = mapped_column(ForeignKey("track.track_id"), primary_key=True)
+    model: Mapped[str] = mapped_column(String(64), primary_key=True)
+    dataset_version: Mapped[str] = mapped_column(
+        String(16), default="v1", primary_key=True
+    )
+    dim: Mapped[int] = mapped_column(Integer)
+    vec: Mapped[list[float] | None] = mapped_column(Vector(), nullable=True)
+    norm: Mapped[float | None] = mapped_column(Float)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
+
+
+class TrackScore(Base):
+    __tablename__ = "track_scores"
+
+    track_id: Mapped[int] = mapped_column(ForeignKey("track.track_id"), primary_key=True)
+    metric: Mapped[str] = mapped_column(String(64), primary_key=True)
+    model: Mapped[str | None] = mapped_column(String(64), primary_key=True)
+    value: Mapped[float] = mapped_column(Float)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
+
+
 class MoodScore(Base):
     __tablename__ = "mood_scores"
     __table_args__ = (UniqueConstraint("track_id", "axis", "method", name="mood_scores_unique"),)
