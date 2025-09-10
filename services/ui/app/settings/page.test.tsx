@@ -22,10 +22,12 @@ describe('Settings page', () => {
         </AuthProvider>
       </ToastProvider>,
     );
-    const userInput = screen.getByPlaceholderText('ListenBrainz username');
+    const userInput = await screen.findByPlaceholderText('ListenBrainz username');
     await userEvent.type(userInput, 'tester');
     await userEvent.click(screen.getByRole('button', { name: /save/i }));
-    expect(screen.getByRole('alert')).toHaveTextContent(/listenbrainz user and token required/i);
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      /listenbrainz user and token required/i,
+    );
     // only initial GET
     expect(fetch).toHaveBeenCalledTimes(1);
   });
@@ -47,11 +49,17 @@ describe('Settings page', () => {
         </AuthProvider>
       </ToastProvider>,
     );
-    await userEvent.type(screen.getByPlaceholderText('ListenBrainz username'), 'lbuser');
-    await userEvent.type(screen.getByPlaceholderText('Token'), 'lbtoken');
-    await userEvent.click(screen.getByLabelText('Use GPU'));
-    await userEvent.click(screen.getByLabelText('Extract stems'));
-    await userEvent.click(screen.getByLabelText('Use excerpts'));
+    await userEvent.type(
+      await screen.findByPlaceholderText('ListenBrainz username'),
+      'lbuser',
+    );
+    await userEvent.type(
+      await screen.findByPlaceholderText('Token'),
+      'lbtoken',
+    );
+    await userEvent.click(await screen.findByLabelText('Use GPU'));
+    await userEvent.click(await screen.findByLabelText('Extract stems'));
+    await userEvent.click(await screen.findByLabelText('Use excerpts'));
     await userEvent.click(screen.getByRole('button', { name: /save/i }));
 
     await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
