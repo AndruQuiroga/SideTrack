@@ -19,3 +19,7 @@ class MeOut(BaseModel):
     user_id: str
     lastfmUser: str | None = None
     lastfmConnected: bool = False
+    spotifyUser: str | None = None
+    spotifyConnected: bool = False
+    listenbrainzUser: str | None = None
+    listenbrainzConnected: bool = False

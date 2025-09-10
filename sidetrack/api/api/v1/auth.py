@@ -95,6 +95,10 @@ async def me(
         user_id=user.user_id,
         lastfmUser=settings.lastfm_user if settings else None,
         lastfmConnected=bool(settings and settings.lastfm_session_key),
+        spotifyUser=settings.spotify_user if settings else None,
+        spotifyConnected=bool(settings and settings.spotify_access_token),
+        listenbrainzUser=settings.listenbrainz_user if settings else None,
+        listenbrainzConnected=bool(settings and settings.listenbrainz_token),
     )
 
 

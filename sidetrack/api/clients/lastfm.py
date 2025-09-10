@@ -79,6 +79,26 @@ class LastfmClient:
             raise RuntimeError("Invalid session response")
         return key, name
 
+    async def fetch_recent_tracks(
+        self, user: str, since: datetime | None = None, limit: int = 200
+    ) -> list[dict[str, Any]]:
+        """Fetch a user's recent tracks from Last.fm."""
+
+        if not self.api_key:
+            raise RuntimeError("LASTFM_API_KEY not configured")
+        params: dict[str, Any] = {
+            "method": "user.getrecenttracks",
+            "user": user,
+            "api_key": self.api_key,
+            "limit": min(limit, 200),
+            "format": "json",
+        }
+        if since:
+            params["from"] = int(since.timestamp())
+        r = await self._get(params)
+        data = r.json()
+        return data.get("recenttracks", {}).get("track", [])
+
     async def get_track_tags(
         self,
         db: AsyncSession,

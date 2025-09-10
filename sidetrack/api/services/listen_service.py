@@ -61,6 +61,58 @@ class ListenService:
         await self.listens.commit()
         return created
 
+    async def ingest_spotify_rows(self, items: list[dict], user_id: str) -> int:
+        """Ingest Spotify ``recently played`` items.
+
+        The input is expected to be in the format returned by
+        :meth:`SpotifyClient.fetch_recently_played`.  This method converts each
+        item into the ListenBrainz-style dictionary and delegates to
+        :meth:`ingest_lb_rows`.
+        """
+
+        rows: list[dict] = []
+        for item in items:
+            track_data = item.get("track") or {}
+            artist_name = (track_data.get("artists") or [{}])[0].get("name")
+            title = track_data.get("name")
+            played_at = datetime.fromisoformat(item.get("played_at", "").replace("Z", "+00:00"))
+            rows.append(
+                {
+                    "track_metadata": {
+                        "artist_name": artist_name,
+                        "track_name": title,
+                        "mbid_mapping": {"recording_mbid": track_data.get("mbid")},
+                    },
+                    "listened_at": int(played_at.timestamp()),
+                    "user_name": user_id,
+                }
+            )
+        return await self.ingest_lb_rows(rows, user_id)
+
+    async def ingest_lastfm_rows(self, tracks: list[dict], user_id: str) -> int:
+        """Ingest Last.fm ``recenttracks`` data."""
+
+        rows: list[dict] = []
+        for item in tracks:
+            artist = (item.get("artist") or {}).get("#text") or item.get("artist")
+            title = item.get("name") or item.get("track")
+            ts = item.get("date", {}).get("uts") or item.get("uts")
+            try:
+                listened_at = int(ts)
+            except (TypeError, ValueError):
+                continue
+            rows.append(
+                {
+                    "track_metadata": {
+                        "artist_name": artist,
+                        "track_name": title,
+                    },
+                    "listened_at": listened_at,
+                    "user_name": user_id,
+                }
+            )
+        return await self.ingest_lb_rows(rows, user_id)
+
 
 def get_listen_service(db: AsyncSession = Depends(get_db)) -> ListenService:
     """FastAPI dependency that provides a :class:`ListenService` instance."""

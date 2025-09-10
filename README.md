@@ -2,7 +2,7 @@
 
 Hosted mood/taste analytics for your music listening history.
 
-Pull listens from ListenBrainz → resolve MusicBrainz metadata → compute audio features/embeddings locally → score tracks on interpretable axes → aggregate to weekly trends → visualize in a dashboard. Fully containerized; GPU optional.
+Pull listens from Spotify or Last.fm (with ListenBrainz as a fallback) → resolve MusicBrainz metadata → compute audio features/embeddings locally → score tracks on interpretable axes → aggregate to weekly trends → visualize in a dashboard. Fully containerized; GPU optional.  The application now assumes a logged‑in user and links their Spotify or Last.fm accounts to build a unified picture of listening habits.
 
 ---
 
@@ -60,6 +60,8 @@ docker compose up -d --build
 docker compose exec api alembic upgrade head
 
 # 5) Pull listens and aggregate for a user
+# The ingest endpoint now attempts Spotify, then Last.fm, and finally ListenBrainz
+# (using bundled sample data as a last resort).
 curl -H "X-User-Id: some_user" -X POST "http://localhost:8000/api/v1/ingest/listens?since=2024-01-01"
 curl -H "X-User-Id: some_user" -X POST "http://localhost:8000/tags/lastfm/sync?since=2024-01-01"
 curl -H "X-User-Id: some_user" -X POST "http://localhost:8000/aggregate/weeks"
