@@ -20,8 +20,8 @@ def test_all_jobs_run(monkeypatch):
 
     monkeypatch.setenv("API_URL", "http://api")
     monkeypatch.setenv("INGEST_LISTENS_INTERVAL_MINUTES", "1")
-    monkeypatch.setenv("SPOTIFY_LISTENS_INTERVAL_MINUTES", "1")
     monkeypatch.setenv("LASTFM_SYNC_INTERVAL_MINUTES", "1")
+    monkeypatch.setenv("ENRICH_IDS_INTERVAL_MINUTES", "1")
     monkeypatch.setenv("AGGREGATE_WEEKS_INTERVAL_MINUTES", "1")
     import importlib
 
@@ -36,12 +36,30 @@ def test_all_jobs_run(monkeypatch):
     expected = [
         ("http://api/ingest/listens", "u1"),
         ("http://api/ingest/listens", "u2"),
-        ("http://api/spotify/listens", "u1"),
-        ("http://api/spotify/listens", "u2"),
         ("http://api/tags/lastfm/sync", "u1"),
         ("http://api/tags/lastfm/sync", "u2"),
+        ("http://api/enrich/ids", "u1"),
+        ("http://api/enrich/ids", "u2"),
         ("http://api/aggregate/weeks", "u1"),
         ("http://api/aggregate/weeks", "u2"),
     ]
     for item in expected:
         assert item in calls
+
+
+def test_schedule_jobs_idempotent(monkeypatch):
+    monkeypatch.setenv("API_URL", "http://api")
+    monkeypatch.setenv("INGEST_LISTENS_INTERVAL_MINUTES", "1")
+    monkeypatch.setenv("LASTFM_SYNC_INTERVAL_MINUTES", "1")
+    monkeypatch.setenv("ENRICH_IDS_INTERVAL_MINUTES", "1")
+    monkeypatch.setenv("AGGREGATE_WEEKS_INTERVAL_MINUTES", "1")
+    import importlib
+
+    run = importlib.import_module("sidetrack.scheduler.run")
+    monkeypatch.setattr(run, "fetch_user_ids", lambda: ["u1", "u2"])
+    schedule.clear()
+    run.schedule_jobs()
+    first = len(schedule.jobs)
+    run.schedule_jobs()
+    second = len(schedule.jobs)
+    assert first == second == 8

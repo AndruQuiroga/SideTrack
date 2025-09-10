@@ -634,6 +634,19 @@ async def aggregate_weeks(
     return {"detail": "ok", "rows": int(total)}
 
 
+@app.post("/enrich/ids")
+async def enrich_ids_endpoint(
+    db: AsyncSession = Depends(get_db),
+    user_id: str = Depends(get_current_user),
+):
+    """Resolve external identifiers for tracks.
+
+    The implementation is a stub used by the scheduler service.  The endpoint
+    simply returns a success response.
+    """
+    return {"detail": "ok"}
+
+
 @app.post("/labels", response_model=LabelResponse)
 async def submit_label(
     track_id: int,
