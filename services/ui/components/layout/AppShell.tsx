@@ -11,6 +11,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     const stored = localStorage.getItem('sidebar-collapsed');
     if (stored !== null) {
       setCollapsed(stored === 'true');
+    } else if (window.innerWidth < 768) {
+      setCollapsed(true);
     }
   }, []);
 
@@ -19,7 +21,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }, [collapsed]);
 
   return (
-    <div className="min-h-dvh overflow-x-hidden md:flex">
+    <div className="min-h-dvh overflow-x-hidden flex">
       <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
       <div className="flex min-h-dvh flex-1 flex-col">
         <Header />

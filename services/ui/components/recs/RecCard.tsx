@@ -36,7 +36,7 @@ export default function RecCard({ rec, onLike, onSkip, onHideArtist }: Props) {
 
   return (
     <div
-      className="space-y-4 rounded-lg border p-4"
+      className="space-y-4 rounded-lg border p-4 touch-pan-y"
       onPointerDown={(e) => {
         startX.current = e.clientX;
       }}

@@ -2,6 +2,7 @@
 
 import { Button } from '../ui/button';
 import { useToast } from '../ToastProvider';
+import { Dialog, DialogContent, DialogTrigger } from '../ui/dialog';
 
 interface Props {
   onLike: () => void | Promise<void>;
@@ -12,8 +13,8 @@ interface Props {
 export default function RecActions({ onLike, onSkip, onHideArtist }: Props) {
   const { show } = useToast();
 
-  return (
-    <div className="flex gap-2">
+  const ActionButtons = () => (
+    <>
       <Button
         onClick={async () => {
           await onLike();
@@ -40,7 +41,25 @@ export default function RecActions({ onLike, onSkip, onHideArtist }: Props) {
       >
         Hide artist
       </Button>
-    </div>
+    </>
+  );
+
+  return (
+    <>
+      <div className="hidden gap-2 md:flex">
+        <ActionButtons />
+      </div>
+      <Dialog>
+        <DialogTrigger asChild>
+          <Button className="w-full md:hidden">Actions</Button>
+        </DialogTrigger>
+        <DialogContent className="md:hidden bottom-0 left-0 right-0 top-auto translate-x-0 translate-y-0 max-w-full rounded-t-lg p-4">
+          <div className="grid gap-2">
+            <ActionButtons />
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
