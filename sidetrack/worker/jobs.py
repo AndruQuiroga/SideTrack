@@ -4,13 +4,12 @@ from __future__ import annotations
 
 import logging
 
-"""Heavy numerical deps are imported lazily inside functions to keep
-API-only environments lightweight when importing this module.
-"""
-
+# Heavy numerical deps are imported lazily inside functions to keep
+# API-only environments lightweight when importing this module.
 from sidetrack.api.clients.spotify import SpotifyClient
 from sidetrack.api.db import SessionLocal
 from sidetrack.common.models import Feature, Track
+from sidetrack.services.insights import compute_weekly_insights
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s:%(message)s")
 logger = logging.getLogger("worker")
@@ -19,8 +18,8 @@ logger = logging.getLogger("worker")
 def _basic_features(path: str) -> dict[str, float]:
     """Estimate a couple of simple audio features."""
     # Import heavy deps lazily inside the function
-    import numpy as np
     import librosa
+    import numpy as np
 
     y, sr = librosa.load(path, sr=None, mono=True)
     tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
@@ -107,3 +106,16 @@ async def fetch_spotify_features(track_id: int, access_token: str, client: Spoti
         fid = feature.id
         await db.commit()
         return fid
+
+
+def generate_weekly_insights(user_id: str) -> int:
+    """Compute weekly insights for ``user_id`` and return number of events."""
+
+    import asyncio
+
+    async def _run() -> int:
+        async with SessionLocal(async_session=True) as db:
+            events = await compute_weekly_insights(db, user_id)
+            return len(events)
+
+    return asyncio.run(_run())
