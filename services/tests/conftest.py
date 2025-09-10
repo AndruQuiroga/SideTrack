@@ -6,11 +6,13 @@ from pathlib import Path
 
 import docker
 import fakeredis
+import fakeredis.aioredis
 import pytest
 import pytest_asyncio
 import schedule
 from dotenv import load_dotenv
 from fastapi.testclient import TestClient
+from fastapi_limiter import FastAPILimiter
 from httpx import ASGITransport, AsyncClient
 from redis import Redis
 from testcontainers.postgres import PostgresContainer
@@ -103,6 +105,8 @@ def client(db, redis_conn):
     """Return a TestClient with DB and Redis fixtures configured."""
     app_main._REDIS_CONN = redis_conn
 
+    asyncio.run(FastAPILimiter.init(fakeredis.aioredis.FakeRedis()))
+
     def override_get_db():
         with SessionLocal(async_session=False) as db_session:
             yield db_session
@@ -111,12 +115,15 @@ def client(db, redis_conn):
     with TestClient(app_main.app) as c:
         yield c
     app_main.app.dependency_overrides.clear()
+    asyncio.run(FastAPILimiter.close())
 
 
 @pytest_asyncio.fixture
 async def async_client(db, redis_conn):
     """Return an AsyncClient with DB and Redis fixtures configured."""
     app_main._REDIS_CONN = redis_conn
+
+    await FastAPILimiter.init(fakeredis.aioredis.FakeRedis())
 
     async def override_get_db():
         async with SessionLocal(async_session=True) as db_session:
@@ -135,6 +142,7 @@ async def async_client(db, redis_conn):
             yield ac
 
     app_main.app.dependency_overrides.clear()
+    await FastAPILimiter.close()
 
 
 @pytest.fixture(autouse=True)
