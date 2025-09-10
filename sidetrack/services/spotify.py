@@ -143,3 +143,21 @@ class SpotifyService:
             "GET", f"{self.api_root}/recommendations", params=params
         )
         return data.get("tracks", [])
+
+    async def get_audio_features(self, ids: list[str]) -> list[dict[str, Any]]:
+        """Return Spotify audio features for the given track IDs.
+
+        Spotify's ``audio-features`` endpoint accepts up to 100 IDs per
+        request.  This helper batches requests as needed and flattens the
+        response into a list.  Missing or invalid IDs are ignored.
+        """
+
+        out: list[dict[str, Any]] = []
+        for i in range(0, len(ids), 100):
+            batch = ids[i : i + 100]
+            params = {"ids": ",".join(batch)}
+            data = await self._request(
+                "GET", f"{self.api_root}/audio-features", params=params
+            )
+            out.extend(x for x in data.get("audio_features", []) if x)
+        return out
