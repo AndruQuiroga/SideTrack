@@ -1,6 +1,6 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
-import { Theme, ThemeContext, useTheme } from './ThemeContext';
+import { Theme, ThemeContext } from './ThemeContext';
 
 const STORAGE_KEY = 'theme';
 
@@ -40,19 +40,6 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
     <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
-  );
-}
-
-export function ThemeToggle() {
-  const { theme, toggleTheme } = useTheme();
-  return (
-    <button
-      onClick={toggleTheme}
-      aria-label="Toggle theme"
-      className="inline-flex items-center justify-center"
-    >
-      {theme === 'dark' ? 'Light' : 'Dark'}
-    </button>
   );
 }
 
