@@ -7,13 +7,17 @@ from typing import Tuple
 import time
 
 import numpy as np
-import soundfile as sf
 import structlog
 
 try:  # pragma: no cover - optional dependency
-    import psutil
+    import soundfile as sf  # type: ignore
+except Exception:  # pragma: no cover - soundfile is optional
+    sf = None  # type: ignore
+
+try:  # pragma: no cover - optional dependency
+    import psutil  # type: ignore
 except Exception:  # pragma: no cover - psutil not installed
-    psutil = None
+    psutil = None  # type: ignore
 
 
 logger = structlog.get_logger(__name__)
@@ -32,6 +36,11 @@ def cache_path(cache_dir: Path, track_id: int, kind: str, suffix: str) -> Path:
 
 def decode(track_id: int, path: str, cache_dir: Path) -> Tuple[np.ndarray, int]:
     """Decode ``path`` into a waveform, optionally caching the result."""
+
+    if sf is None:
+        raise ImportError(
+            "soundfile is required for audio decoding; install sidetrack[extractor]"
+        )
 
     start = time.perf_counter()
     cp = cache_path(cache_dir, track_id, "raw", "npz")
