@@ -1,10 +1,9 @@
 'use client';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import dynamic from 'next/dynamic';
 import { useToast } from './ToastProvider';
 import { useTheme } from './ThemeContext';
-import { RefreshCw, Sun, Moon, LogOut } from 'lucide-react';
+import { RefreshCw, Sun, Moon } from 'lucide-react';
 
 export default function HeaderActions() {
   const toast = useToast();
@@ -47,25 +46,6 @@ export default function HeaderActions() {
         </motion.span>
         Sync
       </button>
-      <form
-        action="/api/auth/logout"
-        method="post"
-        onSubmit={(e) => {
-          // let the request go, then redirect client-side
-          setTimeout(() => {
-            window.location.href = '/login';
-          }, 50);
-        }}
-      >
-        <button
-          type="submit"
-          className="inline-flex items-center gap-2 rounded-full bg-white/5 px-3 py-1 text-xs text-muted-foreground hover:text-foreground"
-          title="Log out"
-        >
-          <LogOut size={14} />
-          <span className="hidden sm:inline">Logout</span>
-        </button>
-      </form>
     </div>
   );
 }
