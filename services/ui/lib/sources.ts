@@ -13,3 +13,25 @@ export function useSources() {
   });
 }
 
+export type Reason =
+  | { source: 'spotify' }
+  | { source: 'lastfm'; tags: string[] }
+  | { source: 'lb'; artist: string }
+  | { source: 'mb'; label: string; yearRange: string };
+
+export function chipFromReason(reason: Reason): { source: Source['type']; text: string } {
+  switch (reason.source) {
+    case 'spotify':
+      return { source: 'spotify', text: 'vibe match: energy + tempo' };
+    case 'lastfm':
+      return { source: 'lastfm', text: `tag overlap: ${(reason as any).tags?.join(', ')}` };
+    case 'lb':
+      return { source: 'lb', text: `co-listened with ${(reason as any).artist}` };
+    case 'mb':
+      const r = reason as any;
+      return { source: 'mb', text: `same label: ${r.label}, era: ${r.yearRange}` };
+    default:
+      return { source: 'spotify', text: '' };
+  }
+}
+
