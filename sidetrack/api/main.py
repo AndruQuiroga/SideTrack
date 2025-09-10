@@ -37,7 +37,13 @@ from .constants import AXES, DEFAULT_METHOD
 from .db import get_db, maybe_create_all
 from .schemas.labels import LabelResponse
 from .schemas.settings import SettingsIn, SettingsOut, SettingsUpdateResponse
-from .schemas.tracks import AnalyzeTrackResponse, TrackPathIn, TrackPathResponse
+from .schemas.tracks import (
+    AnalyzeBatchIn,
+    AnalyzeBatchResponse,
+    AnalyzeTrackResponse,
+    TrackPathIn,
+    TrackPathResponse,
+)
 from .security import get_current_user, require_role
 
 setup_logging()
@@ -397,6 +403,30 @@ async def analyze_track(
 
     background_tasks.add_task(_enqueue_analysis, track_id, settings)
     return AnalyzeTrackResponse(detail="scheduled", track_id=track_id, status="scheduled")
+
+
+@app.post("/analyze/batch", response_model=AnalyzeBatchResponse)
+async def analyze_batch(
+    payload: AnalyzeBatchIn,
+    background_tasks: BackgroundTasks,
+    settings: Settings = Depends(get_app_settings),
+    db: AsyncSession = Depends(get_db),
+):
+    scheduled: list[int] = []
+    already: list[int] = []
+    for tid in payload.track_ids:
+        tr = await db.get(Track, tid)
+        if not tr or not tr.path_local:
+            continue
+        existing = (
+            await db.execute(select(Feature).where(Feature.track_id == tid))
+        ).scalar_one_or_none()
+        if existing:
+            already.append(tid)
+        else:
+            background_tasks.add_task(_enqueue_analysis, tid, settings)
+            scheduled.append(tid)
+    return AnalyzeBatchResponse(detail="scheduled", scheduled=scheduled, already=already)
 
 
 @app.post("/score/track/{track_id}")

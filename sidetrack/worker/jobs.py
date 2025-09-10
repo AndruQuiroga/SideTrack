@@ -10,45 +10,24 @@ from sidetrack.api.clients.spotify import SpotifyClient
 from sidetrack.api.db import SessionLocal
 from sidetrack.common.models import Feature, Track
 from sidetrack.services.insights import compute_weekly_insights
+from sidetrack.config.extraction import ExtractionConfig
+from sidetrack.extraction.pipeline import analyze_tracks
+from sqlalchemy import select
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s:%(message)s")
 logger = logging.getLogger("worker")
 
 
-def _basic_features(path: str) -> dict[str, float]:
-    """Estimate a couple of simple audio features."""
-    # Import heavy deps lazily inside the function
-    import librosa
-    import numpy as np
-
-    y, sr = librosa.load(path, sr=None, mono=True)
-    tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
-    pump = float(np.sqrt(np.mean(y**2)))
-    return {"bpm": float(tempo), "pumpiness": pump}
-
-
 def analyze_track(track_id: int) -> int:
-    """Extract basic features for ``track_id`` and persist them.
+    """Run the modular extraction pipeline for ``track_id``."""
 
-    Parameters
-    ----------
-    track_id:
-        Identifier of the track to analyze.
-
-    Returns
-    -------
-    int
-        The newly created features row id.
-    """
-
+    cfg = ExtractionConfig()
+    cfg.set_seed(0)
     with SessionLocal() as db:
-        track = db.get(Track, track_id)
-        if not track or not track.path_local:
+        processed = analyze_tracks(db, [track_id], cfg)
+        if not processed:
             raise ValueError("track missing")
-        feats = _basic_features(track.path_local)
-        feature = Feature(track_id=track_id, bpm=feats["bpm"], pumpiness=feats["pumpiness"])
-        db.add(feature)
-        db.commit()
+        feature = db.execute(select(Feature).where(Feature.track_id == track_id)).scalar_one()
         return feature.id
 
 

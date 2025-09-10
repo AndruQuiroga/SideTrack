@@ -80,12 +80,15 @@ class Embedding(Base):
     __tablename__ = "embeddings"
     __table_args__ = (
         Index("embeddings_idx", "track_id"),
-        UniqueConstraint("track_id", "model", name="embeddings_track_model_unique"),
+        UniqueConstraint(
+            "track_id", "model", "dataset_version", name="embeddings_track_model_dataset_unique"
+        ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     track_id: Mapped[int] = mapped_column(ForeignKey("track.track_id"))
     model: Mapped[str] = mapped_column(String(64))
+    dataset_version: Mapped[str] = mapped_column(String(16), default="v1")
     dim: Mapped[int] = mapped_column(Integer)
     # store as JSON array for now; swap to pgvector later
     vector: Mapped[list[float] | None] = mapped_column(JSON, nullable=True)
@@ -93,10 +96,13 @@ class Embedding(Base):
 
 class Feature(Base):
     __tablename__ = "features"
-    __table_args__ = (UniqueConstraint("track_id", name="features_track_unique"),)
+    __table_args__ = (
+        UniqueConstraint("track_id", "dataset_version", name="features_track_dataset_unique"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     track_id: Mapped[int] = mapped_column(ForeignKey("track.track_id"), index=True)
+    dataset_version: Mapped[str] = mapped_column(String(16), default="v1", index=True)
     bpm: Mapped[float | None] = mapped_column(Float)
     bpm_conf: Mapped[float | None] = mapped_column(Float)
     key: Mapped[str | None] = mapped_column(String(8))
