@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { useToast } from './ToastProvider';
 import { useTheme } from './ThemeContext';
 import { RefreshCw, Sun, Moon } from 'lucide-react';
+import { apiFetch } from '../lib/api';
 
 export default function HeaderActions() {
   const toast = useToast();
@@ -14,7 +15,7 @@ export default function HeaderActions() {
     setSyncing(true);
     toast.show({ title: 'Sync started', description: 'Fetching listens…', kind: 'info' });
     try {
-      await fetch('/api/lastfm/sync', { method: 'POST' });
+      await apiFetch('/api/lastfm/sync', { method: 'POST' });
       toast.show({ title: 'Sync complete', description: 'Listens updated', kind: 'success' });
     } catch {
       toast.show({ title: 'Sync failed', description: 'Please try again later', kind: 'error' });
