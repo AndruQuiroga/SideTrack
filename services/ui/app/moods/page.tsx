@@ -5,11 +5,11 @@ import { apiFetch } from '../../lib/api';
 import { useTrajectory } from '../../lib/query';
 import ChartContainer from '../../components/ChartContainer';
 import FilterBar from '../../components/FilterBar';
-import Skeleton from '../../components/Skeleton';
+import ChartSkeleton from '../../components/ChartSkeleton';
 import EmptyState from '../../components/EmptyState';
 
 const MoodsStreamgraph = dynamic(() => import('../../components/charts/MoodsStreamgraph'), {
-  loading: () => <Skeleton className="aspect-[4/3] h-[clamp(240px,40vh,340px)]" />,
+  loading: () => <ChartSkeleton className="h-[clamp(240px,40vh,340px)]" />,
   ssr: false,
 });
 
@@ -54,11 +54,11 @@ export default function Moods() {
   const loading = trajLoading || radarLoading;
 
   const content = useMemo(() => {
-    if (loading) return <Skeleton className="aspect-[4/3] h-[clamp(240px,40vh,340px)]" />;
+    if (loading) return <ChartSkeleton className="h-[clamp(240px,40vh,340px)]" />;
     if (!series.length)
       return <EmptyState title="No data yet" description="Ingest some listens to begin." />;
     return (
-      <Suspense fallback={<Skeleton className="aspect-[4/3] h-[clamp(240px,40vh,340px)]" />}>
+      <Suspense fallback={<ChartSkeleton className="h-[clamp(240px,40vh,340px)]" />}> 
         <MoodsStreamgraph data={series} axes={axes} />
       </Suspense>
     );
