@@ -659,5 +659,7 @@ async def submit_label(
 
 
 from .api import router as api_router
+from .routers import ops as ops_router
 
 app.include_router(api_router)
+app.include_router(ops_router.router)
