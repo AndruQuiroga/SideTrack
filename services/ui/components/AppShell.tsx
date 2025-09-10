@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { LogOut } from 'lucide-react';
 import clsx from 'clsx';
 
 import NavRail from '../components/NavRail';
@@ -11,9 +13,19 @@ import MobileNav from './MobileNav';
 import { NavContext } from './NavContext';
 import Avatar from './ui/Avatar';
 import RouteProgress from './RouteProgress';
+import { useAuth } from '../lib/auth';
+import { apiFetch } from '../lib/api';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
+  const { setUserId } = useAuth();
+  const router = useRouter();
+
+  async function handleLogout() {
+    await apiFetch('/api/auth/logout', { method: 'POST' });
+    setUserId('');
+    router.push('/login');
+  }
 
   useEffect(() => {
     const stored = localStorage.getItem('nav-collapsed');
@@ -41,6 +53,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               </div>
               <div className="flex items-center gap-3 text-sm text-muted-foreground">
                 <HeaderActions />
+                <button
+                  onClick={handleLogout}
+                  className="inline-flex items-center gap-2 rounded-full bg-white/5 px-3 py-1 text-xs text-muted-foreground hover:text-foreground"
+                >
+                  <LogOut size={14} />
+                  <span className="hidden sm:inline">Logout</span>
+                </button>
                 <span>
                   API: <ApiStatus />
                 </span>

@@ -4,9 +4,10 @@ import { createContext, useContext, useEffect, useState } from 'react';
 
 interface AuthContextValue {
   userId: string;
+  setUserId: (id: string) => void;
 }
 
-const AuthContext = createContext<AuthContextValue>({ userId: '' });
+const AuthContext = createContext<AuthContextValue>({ userId: '', setUserId: () => {} });
 
 let currentUserId = '';
 export function getUserId() {
@@ -27,7 +28,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     currentUserId = userId;
   }, [userId]);
 
-  return <AuthContext.Provider value={{ userId }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ userId, setUserId }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
