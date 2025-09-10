@@ -2,10 +2,12 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Settings from './page';
 import ToastProvider from '../../components/ToastProvider';
+import { AuthProvider } from '../../lib/auth';
 
 describe('Settings page', () => {
   beforeEach(() => {
     global.fetch = jest.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({}) });
+    document.cookie = 'uid=test';
   });
 
   afterEach(() => {
@@ -15,7 +17,9 @@ describe('Settings page', () => {
   it('validates ListenBrainz fields', async () => {
     render(
       <ToastProvider>
-        <Settings />
+        <AuthProvider>
+          <Settings />
+        </AuthProvider>
       </ToastProvider>,
     );
     const userInput = screen.getByPlaceholderText('ListenBrainz username');
@@ -38,7 +42,9 @@ describe('Settings page', () => {
 
     render(
       <ToastProvider>
-        <Settings />
+        <AuthProvider>
+          <Settings />
+        </AuthProvider>
       </ToastProvider>,
     );
     await userEvent.type(screen.getByPlaceholderText('ListenBrainz username'), 'lbuser');

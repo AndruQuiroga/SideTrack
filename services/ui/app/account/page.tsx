@@ -4,17 +4,18 @@ import { useEffect, useState } from 'react';
 import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
 import { useToast } from '../../components/ToastProvider';
+import { useAuth } from '../../lib/auth';
 
 export default function AccountPage() {
   const [user, setUser] = useState('');
   const [lfmUser, setLfmUser] = useState('');
   const [lfmConnected, setLfmConnected] = useState(false);
   const { show } = useToast();
+  const { userId } = useAuth();
 
   useEffect(() => {
-    const uid = localStorage.getItem('user_id') || '';
-    if (!uid) return;
-    fetch('/api/auth/me', { headers: { 'X-User-Id': uid } })
+    if (!userId) return;
+    fetch('/api/auth/me', { headers: { 'X-User-Id': userId } })
       .then((r) => r.json())
       .then((data) => {
         setUser(data.user_id || '');
@@ -24,13 +25,12 @@ export default function AccountPage() {
       .catch(() => {
         /* ignore */
       });
-  }, []);
+  }, [userId]);
 
   async function handleConnect() {
     const callback = encodeURIComponent(`${window.location.origin}/lastfm/callback`);
-    const uid = localStorage.getItem('user_id') || '';
     const res = await fetch(`/api/auth/lastfm/login?callback=${callback}`, {
-      headers: { 'X-User-Id': uid },
+      headers: { 'X-User-Id': userId },
     });
     const data = await res.json().catch(() => ({}));
     if (data.url) {
@@ -41,10 +41,9 @@ export default function AccountPage() {
   }
 
   async function handleDisconnect() {
-    const uid = localStorage.getItem('user_id') || '';
     const res = await fetch('/api/auth/lastfm/session', {
       method: 'DELETE',
-      headers: { 'X-User-Id': uid },
+      headers: { 'X-User-Id': userId },
     });
     if (!res.ok) {
       show({ title: 'Failed to disconnect Last.fm', kind: 'error' });
