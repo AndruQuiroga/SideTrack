@@ -1,11 +1,11 @@
 'use client';
-import MetricCard from '../components/MetricCard';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import ChartContainer from '../components/ChartContainer';
 import FilterBar from '../components/FilterBar';
 import Avatar from '../components/ui/Avatar';
 import RecentListensTable from '../components/RecentListensTable';
+import KpiCard from '../components/dashboard/KpiCard';
+import ChartCard from '../components/dashboard/ChartCard';
 
 export default function Home() {
   return (
@@ -23,25 +23,34 @@ export default function Home() {
         </Link>
       </div>
 
-      <div className="grid gap-4 @[640px]:grid-cols-2 @[1024px]:grid-cols-4">
+      <div className="grid gap-4 @[640px]:grid-cols-2 @[1024px]:grid-cols-3">
         {[
-          <MetricCard
-            key="m1"
-            title="Listens (7d)"
-            value={128}
-            delta={{ value: 12, suffix: '%' }}
-          />,
-          <MetricCard key="m2" title="Energy" value={0.67} delta={{ value: -0.03 }} />,
-          <MetricCard key="m3" title="Valence" value={0.51} delta={{ value: 0.02 }} />,
-          <MetricCard key="m4" title="Momentum" value={'+0.08'} />,
+          {
+            title: 'Listens (7d)',
+            value: 128,
+            delta: { value: 12, suffix: '%' },
+            series: [80, 96, 102, 110, 115, 120, 128],
+          },
+          {
+            title: 'Diversity',
+            value: 0.82,
+            delta: { value: -0.02 },
+            series: [0.78, 0.8, 0.81, 0.83, 0.82, 0.82, 0.82],
+          },
+          {
+            title: 'Momentum',
+            value: '+0.08',
+            delta: { value: 0.01 },
+            series: [0.02, 0.04, 0.05, 0.06, 0.07, 0.08, 0.08],
+          },
         ].map((card, i) => (
           <motion.div
-            key={i}
+            key={card.title}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 * i, duration: 0.35, ease: 'easeOut' }}
           >
-            {card}
+            <KpiCard {...card} />
           </motion.div>
         ))}
       </div>
@@ -63,7 +72,7 @@ export default function Home() {
           viewport={{ once: true }}
           transition={{ duration: 0.4 }}
         >
-          <ChartContainer
+          <ChartCard
             title="Recent Weeks"
             subtitle="Quick glance at your trajectory"
             actions={
@@ -71,14 +80,19 @@ export default function Home() {
                 Open
               </Link>
             }
-          >
-            <motion.div
-              className="h-48 rounded-md bg-white/5"
-              initial={{ scale: 0.98, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.4 }}
-            />
-          </ChartContainer>
+            plot={{
+              ariaLabel: 'recent weeks trend',
+              data: [
+                {
+                  x: ['W1', 'W2', 'W3', 'W4', 'W5', 'W6', 'W7'],
+                  y: [0.2, 0.35, 0.4, 0.5, 0.45, 0.6, 0.65],
+                  type: 'scatter',
+                  mode: 'lines+markers',
+                  line: { color: '#2FE08B' },
+                },
+              ],
+            }}
+          />
         </motion.div>
         <motion.div
           initial={{ opacity: 0, y: 8 }}
@@ -86,7 +100,7 @@ export default function Home() {
           viewport={{ once: true }}
           transition={{ duration: 0.4, delay: 0.05 }}
         >
-          <ChartContainer
+          <ChartCard
             title="Outliers"
             subtitle="Far from your recent centroid"
             actions={
@@ -114,7 +128,7 @@ export default function Home() {
                 </motion.div>
               ))}
             </div>
-          </ChartContainer>
+          </ChartCard>
         </motion.div>
       </div>
       <motion.div
@@ -123,9 +137,9 @@ export default function Home() {
         viewport={{ once: true }}
         transition={{ duration: 0.4, delay: 0.1 }}
       >
-        <ChartContainer title="Recent Listens">
+        <ChartCard title="Recent Listens">
           <RecentListensTable />
-        </ChartContainer>
+        </ChartCard>
       </motion.div>
     </section>
   );

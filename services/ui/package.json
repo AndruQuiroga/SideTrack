@@ -42,6 +42,9 @@
     "react-hook-form": "^7.62.0",
     "react-use-measure": "^2.1.7",
     "zod": "^4.1.5"
+    "plotly.js": "^2.31.0",
+    "react-plotly.js": "^2.6.0"
+
   },
   "devDependencies": {
     "@tailwindcss/container-queries": "^0.1.1",
