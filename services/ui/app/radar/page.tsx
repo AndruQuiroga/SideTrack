@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import ChartContainer from '../../components/ChartContainer';
 import Skeleton from '../../components/Skeleton';
+import EmptyState from '../../components/EmptyState';
 import { apiFetch } from '../../lib/api';
 
 type RadarData = {
@@ -35,7 +36,7 @@ export default async function Radar() {
     <section className="space-y-4">
       <h2 className="text-xl font-semibold">Weekly Radar</h2>
       {!data.week ? (
-        <p>No data yet. Ingest some listens to begin.</p>
+        <EmptyState title="No data yet" description="Ingest some listens to begin." />
       ) : (
         <ChartContainer title="Radar" subtitle="Current week vs baseline">
           <Suspense fallback={<Skeleton className="aspect-[4/3] h-[clamp(240px,40vh,380px)]" />}>
