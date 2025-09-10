@@ -10,6 +10,10 @@
    pytest -q
    ```
 
+See [`tests/README.md`](tests/README.md) for the test pyramid, markers, and
+speed budgets. `pytest` skips tests marked `slow`, `gpu`, and `e2e` unless
+explicitly included via `-m` or the Makefile test targets.
+
 The database layer uses both synchronous and asynchronous SQLAlchemy engines.
 `SessionLocal(async_session: bool | None = None)` returns an async session when
 called inside an event loop. Pass `async_session=False` to force a synchronous
