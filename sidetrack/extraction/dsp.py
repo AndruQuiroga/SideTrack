@@ -3,11 +3,17 @@ from __future__ import annotations
 """Signal processing helpers for the extraction pipeline."""
 
 from pathlib import Path
+import time
 
 import numpy as np
 import librosa
+import structlog
 
 from .io import load_melspec, save_melspec
+from .io import _resources
+
+
+logger = structlog.get_logger(__name__)
 
 
 def resample_audio(y: np.ndarray, orig_sr: int, target_sr: int) -> np.ndarray:
@@ -45,9 +51,18 @@ def excerpt_audio(y: np.ndarray, sr: int, seconds: float | None) -> np.ndarray:
 
 
 def melspectrogram(track_id: int, y: np.ndarray, sr: int, cache_dir: Path) -> np.ndarray:
+    start = time.perf_counter()
     mel = load_melspec(track_id, cache_dir)
-    if mel is not None:
-        return mel
-    mel = librosa.feature.melspectrogram(y=y, sr=sr)
-    save_melspec(track_id, cache_dir, mel)
+    cache_hit = mel is not None
+    if not cache_hit:
+        mel = librosa.feature.melspectrogram(y=y, sr=sr)
+        save_melspec(track_id, cache_dir, mel)
+    duration = time.perf_counter() - start
+    logger.info(
+        "extract_melspectrogram",
+        track_id=track_id,
+        duration=duration,
+        cache_hit=cache_hit,
+        **_resources(),
+    )
     return mel
