@@ -67,6 +67,7 @@ curl -H "X-User-Id: some_user" -X POST "http://localhost:8000/aggregate/weeks"
 
 # 6) Open the UI
 open http://localhost:3000
+# Use the "Continue with Google" button on the login page to sign in
 # Production: https://sidetrack.network
 ```
 

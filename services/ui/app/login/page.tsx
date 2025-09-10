@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { apiFetch } from '../../lib/api';
+import { useAuth } from '../../lib/auth';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
@@ -10,7 +11,19 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const params = useSearchParams();
   const router = useRouter();
+  const { setUserId } = useAuth();
   const next = params.get('next');
+
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    document.body.appendChild(script);
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
 
   async function loginRequest() {
     return apiFetch('/api/auth/login', {
@@ -53,6 +66,34 @@ export default function LoginPage() {
     }
   }
 
+  async function handleGoogle() {
+    setError('');
+    const g: any = (window as any).google;
+    if (!g?.accounts?.id) {
+      setError('Google services unavailable');
+      return;
+    }
+    g.accounts.id.initialize({
+      client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '',
+      callback: async (response: any) => {
+        const r = await apiFetch('/api/auth/continue/google', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: response.credential }),
+        });
+        if (r.ok) {
+          const data = await r.json().catch(() => ({}));
+          setUserId((data as any)?.user_id || '');
+          router.push(next || '/');
+        } else {
+          const data = await r.json().catch(() => ({}));
+          setError(data.detail || `${r.status} ${r.statusText}`);
+        }
+      },
+    });
+    g.accounts.id.prompt();
+  }
+
   return (
     <section className="max-w-sm mx-auto mt-20 space-y-4">
       <h2 className="text-xl font-bold">Login</h2>
@@ -88,6 +129,13 @@ export default function LoginPage() {
           </button>
         </div>
       </form>
+      <button
+        type="button"
+        onClick={handleGoogle}
+        className="w-full rounded border bg-white px-3 py-1 text-black"
+      >
+        Continue with Google
+      </button>
     </section>
   );
 }
