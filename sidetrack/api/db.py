@@ -138,10 +138,9 @@ async def maybe_create_all() -> None:
     try:
         _init_engines()
         settings = get_settings()
-        base_url = make_url(settings.db_url)
         if settings.auto_migrate:
-            async with _async_engine.begin():
-                await _async_engine.run_sync(Base.metadata.create_all)
+            async with _async_engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
     except SQLAlchemyError as exc:
         logger.warning("DB init failed", error=str(exc))
 

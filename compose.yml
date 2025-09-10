@@ -33,6 +33,9 @@ services:
       context: .
       dockerfile: services/api/Dockerfile
     env_file: .env
+    environment:
+      # one source of truth; base driver only (your code derives async/sync)
+      DATABASE_URL: postgresql://sidetrack:${POSTGRES_PASSWORD}@db:5432/sidetrack
     depends_on:
       base:
         condition: service_started

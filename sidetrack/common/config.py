@@ -10,9 +10,9 @@ class Settings(BaseSettings):
     database_url: str | None = Field(default=None, env="DATABASE_URL")
     # In Docker, default to the Compose service name
     postgres_host: str = Field(default="db", env="POSTGRES_HOST")
-    postgres_db: str = Field(default="vibescope", env="POSTGRES_DB")
-    postgres_user: str = Field(default="vibe", env="POSTGRES_USER")
-    postgres_password: str = Field(default="vibe", env="POSTGRES_PASSWORD")
+    postgres_db: str = Field(default="sidetrack", env="POSTGRES_DB")
+    postgres_user: str = Field(default="sidetrack", env="POSTGRES_USER")
+    postgres_password: str = Field(default="sidetrack", env="POSTGRES_PASSWORD")
     postgres_port: int = Field(default=5432, env="POSTGRES_PORT")
 
     auto_migrate: bool = Field(default=True, env="AUTO_MIGRATE")
@@ -34,10 +34,11 @@ class Settings(BaseSettings):
     def db_url(self) -> str:
         if self.database_url:
             return self.database_url
-        return (
-            f"postgresql+psycopg://{self.postgres_user}:{self.postgres_password}"
-            f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
-        )
+        return "None"
+        # return (
+        #     f"postgresql+psycopg://{self.postgres_user}:{self.postgres_password}"
+        #     f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
+        # )
 
 
 @lru_cache
