@@ -65,7 +65,7 @@ export default function Moods() {
   }, [loading, series, axes]);
 
   return (
-    <section className="space-y-4">
+    <section className="@container space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold">Moods</h2>

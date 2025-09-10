@@ -12,7 +12,10 @@ type Props = {
 
 export default function FilterBar({ options, value, onChange }: Props) {
   return (
-    <div className="inline-flex items-center gap-1 rounded-full bg-white/5 p-1" role="group">
+    <div
+      className="flex flex-wrap items-center gap-2 overflow-x-auto rounded-full bg-white/5 p-1"
+      role="group"
+    >
       {options.map((opt) => {
         const active = value === opt.value;
         return (
@@ -22,7 +25,7 @@ export default function FilterBar({ options, value, onChange }: Props) {
             aria-pressed={active}
             onClick={() => onChange?.(opt.value)}
             className={clsx(
-              'relative rounded-full px-3 py-1 text-xs',
+              'relative h-11 min-w-[44px] rounded-full px-4 text-sm',
               active ? 'text-emerald-300' : 'text-muted-foreground hover:text-foreground',
             )}
           >

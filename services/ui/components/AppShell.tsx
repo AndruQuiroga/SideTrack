@@ -40,7 +40,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <ToastProvider>
       <NavContext.Provider value={{ collapsed, setCollapsed }}>
-        <div className="min-h-dvh md:flex">
+        <div className="min-h-dvh overflow-x-hidden md:flex">
           <aside className={clsx('hidden md:block transition-all', collapsed ? 'w-16' : 'w-60')}>
             <NavRail />
           </aside>
@@ -55,7 +55,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 <HeaderActions />
                 <button
                   onClick={handleLogout}
-                  className="inline-flex items-center gap-2 rounded-full bg-white/5 px-3 py-1 text-xs text-muted-foreground hover:text-foreground"
+                  className="inline-flex h-11 items-center gap-2 rounded-full bg-white/5 px-4 text-sm text-muted-foreground hover:text-foreground"
                 >
                   <LogOut size={14} />
                   <span className="hidden sm:inline">Logout</span>
@@ -65,7 +65,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 </span>
               </div>
             </header>
-            <main className="container mx-auto w-full max-w-6xl flex-1 px-4 py-6">{children}</main>
+            <main className="container mx-auto w-full max-w-6xl flex-1 overflow-x-hidden px-4 py-6">
+              {children}
+            </main>
           </div>
         </div>
         <MobileNav />

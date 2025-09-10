@@ -33,7 +33,7 @@ const RadarChart = dynamic(() => import('../../components/charts/RadarChart'), {
 export default async function Radar() {
   const data = await getRadar();
   return (
-    <section className="space-y-4">
+    <section className="@container space-y-6">
       <h2 className="text-xl font-semibold">Weekly Radar</h2>
       {!data.week ? (
         <EmptyState title="No data yet" description="Ingest some listens to begin." />

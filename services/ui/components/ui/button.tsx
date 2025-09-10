@@ -13,8 +13,8 @@ const buttonVariants = cva(
         ghost: 'hover:bg-accent hover:text-accent-foreground',
       },
       size: {
-        sm: 'h-8 px-2',
-        md: 'h-10 px-4',
+        sm: 'h-11 px-3',
+        md: 'h-11 px-4',
         lg: 'h-12 px-6',
       },
     },

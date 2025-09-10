@@ -16,7 +16,7 @@ export default function Home() {
         </div>
         <Link
           href="/trajectory"
-          className="rounded-full bg-emerald-500/10 px-4 py-2 text-sm text-emerald-300 hover:bg-emerald-500/20"
+          className="h-11 rounded-full bg-emerald-500/10 px-4 text-sm text-emerald-300 hover:bg-emerald-500/20"
         >
           View trajectory
         </Link>
