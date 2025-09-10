@@ -5,6 +5,7 @@ import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
 import { useToast } from '../../components/ToastProvider';
 import { useAuth } from '../../lib/auth';
+import { apiFetch } from '../../lib/api';
 
 export default function AccountPage() {
   const [user, setUser] = useState('');
@@ -15,7 +16,7 @@ export default function AccountPage() {
 
   useEffect(() => {
     if (!userId) return;
-    fetch('/api/auth/me', { headers: { 'X-User-Id': userId } })
+    apiFetch('/api/auth/me')
       .then((r) => r.json())
       .then((data) => {
         setUser(data.user_id || '');
@@ -29,9 +30,7 @@ export default function AccountPage() {
 
   async function handleConnect() {
     const callback = encodeURIComponent(`${window.location.origin}/lastfm/callback`);
-    const res = await fetch(`/api/auth/lastfm/login?callback=${callback}`, {
-      headers: { 'X-User-Id': userId },
-    });
+    const res = await apiFetch(`/api/auth/lastfm/login?callback=${callback}`);
     const data = await res.json().catch(() => ({}));
     if (data.url) {
       window.location.href = data.url;
@@ -41,9 +40,8 @@ export default function AccountPage() {
   }
 
   async function handleDisconnect() {
-    const res = await fetch('/api/auth/lastfm/session', {
+    const res = await apiFetch('/api/auth/lastfm/session', {
       method: 'DELETE',
-      headers: { 'X-User-Id': userId },
     });
     if (!res.ok) {
       show({ title: 'Failed to disconnect Last.fm', kind: 'error' });

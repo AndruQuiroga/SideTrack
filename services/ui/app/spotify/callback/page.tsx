@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '../../../lib/auth';
+import { apiFetch } from '../../../lib/api';
 
 export default function SpotifyCallback() {
   const params = useSearchParams();
@@ -17,9 +18,9 @@ export default function SpotifyCallback() {
     }
     if (!userId) return;
     const callback = encodeURIComponent(`${window.location.origin}/spotify/callback`);
-    fetch(`/api/auth/spotify/callback?code=${code}&callback=${callback}`, {
-      headers: { 'X-User-Id': userId },
-    }).finally(() => router.replace('/settings'));
+    apiFetch(`/api/auth/spotify/callback?code=${code}&callback=${callback}`).finally(() =>
+      router.replace('/settings'),
+    );
   }, [params, router, userId]);
 
   return <p>Connecting to Spotify...</p>;

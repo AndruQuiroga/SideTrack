@@ -6,6 +6,7 @@ import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
 import { useToast } from '../../components/ToastProvider';
 import { useAuth } from '../../lib/auth';
+import { apiFetch } from '../../lib/api';
 
 interface SettingsData {
   listenBrainzUser: string;
@@ -36,7 +37,7 @@ export default function Settings() {
 
   useEffect(() => {
     if (!userId) return;
-    fetch('/api/settings', { headers: { 'X-User-Id': userId } })
+    apiFetch('/api/settings')
       .then((r) => r.json())
       .then((data: Partial<SettingsData>) => {
         setLbUser(data.listenBrainzUser || '');
@@ -74,9 +75,9 @@ export default function Settings() {
       useStems,
       useExcerpts,
     };
-    const res = await fetch('/api/settings', {
+    const res = await apiFetch('/api/settings', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-User-Id': userId },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
     if (!res.ok) {
@@ -96,9 +97,7 @@ export default function Settings() {
 
   async function handleConnect() {
     const callback = encodeURIComponent(`${window.location.origin}/lastfm/callback`);
-    const res = await fetch(`/api/auth/lastfm/login?callback=${callback}`, {
-      headers: { 'X-User-Id': userId },
-    });
+    const res = await apiFetch(`/api/auth/lastfm/login?callback=${callback}`);
     const data = await res.json().catch(() => ({}));
     if (data.url) {
       window.location.href = data.url;
@@ -108,9 +107,8 @@ export default function Settings() {
   }
 
   async function handleDisconnect() {
-    const res = await fetch('/api/auth/lastfm/session', {
+    const res = await apiFetch('/api/auth/lastfm/session', {
       method: 'DELETE',
-      headers: { 'X-User-Id': userId },
     });
     if (!res.ok) {
       show({ title: 'Failed to disconnect Last.fm', kind: 'error' });
@@ -123,9 +121,7 @@ export default function Settings() {
 
   async function handleSpotifyConnect() {
     const callback = encodeURIComponent(`${window.location.origin}/spotify/callback`);
-    const res = await fetch(`/api/auth/spotify/login?callback=${callback}`, {
-      headers: { 'X-User-Id': userId },
-    });
+    const res = await apiFetch(`/api/auth/spotify/login?callback=${callback}`);
     const data = await res.json().catch(() => ({}));
     if (data.url) {
       window.location.href = data.url;
@@ -135,9 +131,8 @@ export default function Settings() {
   }
 
   async function handleSpotifyDisconnect() {
-    const res = await fetch('/api/auth/spotify/disconnect', {
+    const res = await apiFetch('/api/auth/spotify/disconnect', {
       method: 'DELETE',
-      headers: { 'X-User-Id': userId },
     });
     if (!res.ok) {
       show({ title: 'Failed to disconnect Spotify', kind: 'error' });

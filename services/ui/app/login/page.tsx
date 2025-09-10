@@ -2,6 +2,7 @@
 
 import { useState, FormEvent } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { apiFetch } from '../../lib/api';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
@@ -14,7 +15,7 @@ export default function LoginPage() {
   async function handleLogin(e: FormEvent) {
     e.preventDefault();
     setError('');
-    const res = await fetch('/api/auth/login', {
+    const res = await apiFetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),
@@ -28,7 +29,7 @@ export default function LoginPage() {
 
   async function handleRegister() {
     setError('');
-    const res = await fetch('/api/auth/register', {
+    const res = await apiFetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),
