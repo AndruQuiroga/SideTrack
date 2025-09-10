@@ -140,6 +140,8 @@ async def maybe_create_all() -> None:
         settings = get_settings()
         if settings.auto_migrate:
             async with _async_engine.begin() as conn:
+                # Ensure pgvector extension exists for Vector columns
+                await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
                 await conn.run_sync(Base.metadata.create_all)
     except SQLAlchemyError as exc:
         logger.warning("DB init failed", error=str(exc))

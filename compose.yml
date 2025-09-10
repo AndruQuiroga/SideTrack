@@ -5,7 +5,7 @@ services:
       dockerfile: services/base/Dockerfile
     image: sidetrack/base:dev
   db:
-    image: timescale/timescaledb:latest-pg16
+    image: pgvector/pgvector:pg16
     environment:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
