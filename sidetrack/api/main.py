@@ -1,19 +1,18 @@
 from datetime import date, datetime, timedelta
 
 import httpx
+import redis.asyncio as redis_async
 import structlog
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi_limiter import FastAPILimiter
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
 from sqlalchemy import and_, delete, func, select, text
-from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-import redis.asyncio as redis_async
-from fastapi_limiter import FastAPILimiter
-
+import sidetrack.scoring as track_scoring
 from sidetrack.common.logging import setup_logging
 from sidetrack.common.models import (
     Artist,
@@ -23,12 +22,13 @@ from sidetrack.common.models import (
     MoodAggWeek,
     MoodScore,
     Track,
+    TrackScore,
     UserLabel,
     UserSettings,
 )
 from sidetrack.common.telemetry import setup_tracing
 
-from . import scoring
+from . import scoring as mood_scoring
 from .clients.lastfm import LastfmClient, get_lastfm_client
 from .clients.spotify import SpotifyClient, get_spotify_client
 from .config import Settings
@@ -36,6 +36,7 @@ from .config import get_settings as get_app_settings
 from .constants import AXES, DEFAULT_METHOD
 from .db import get_db, maybe_create_all
 from .schemas.labels import LabelResponse
+from .schemas.scoring import ScoreBatchIn
 from .schemas.settings import SettingsIn, SettingsOut, SettingsUpdateResponse
 from .schemas.tracks import (
     AnalyzeBatchIn,
@@ -102,9 +103,7 @@ async def _startup():
     await maybe_create_all()
     if FastAPILimiter.redis is None:
         settings = get_app_settings()
-        redis = redis_async.from_url(
-            settings.redis_url, encoding="utf-8", decode_responses=True
-        )
+        redis = redis_async.from_url(settings.redis_url, encoding="utf-8", decode_responses=True)
         await FastAPILimiter.init(redis)
 
 
@@ -331,16 +330,6 @@ async def post_settings(
     return SettingsUpdateResponse(ok=True)
 
 
-@app.get("/health")
-async def health(db: AsyncSession = Depends(get_db)):
-    try:
-        await db.execute(text("SELECT 1"))
-        return {"status": "ok", "db": "up"}
-    except SQLAlchemyError as exc:
-        logger.error("Health check failed", error=str(exc))
-        return {"status": "degraded", "db": str(exc)}
-
-
 @app.post("/tags/lastfm/sync")
 async def sync_lastfm_tags(
     since: date | None = Query(None),
@@ -440,10 +429,10 @@ async def score_track(
     if not tr:
         raise HTTPException(status_code=404, detail="track not found")
     try:
-        scores = await scoring.score_axes(db, tr.track_id, method=method, version=version)
+        scores = await mood_scoring.score_axes(db, tr.track_id, method=method, version=version)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    method_name = scoring.method_version(method, version)
+    method_name = mood_scoring.method_version(method, version)
     upserts = 0
     for ax, data in scores.items():
         val = data["value"]
@@ -480,6 +469,57 @@ async def score_track(
         "upserts": upserts,
         "method": method_name,
     }
+
+
+@app.post("/score/batch")
+async def score_batch(payload: ScoreBatchIn, db: AsyncSession = Depends(get_db)):
+    upserts = 0
+    for tid in payload.track_ids:
+        feat = (
+            await db.execute(select(Feature).where(Feature.track_id == tid))
+        ).scalar_one_or_none()
+        emb = (
+            await db.execute(
+                select(Embedding).where(
+                    Embedding.track_id == tid,
+                    Embedding.model == payload.model,
+                )
+            )
+        ).scalar_one_or_none()
+        if not feat or not emb or not emb.vector:
+            continue
+        scores = track_scoring.compute_axes(
+            {"bpm": feat.bpm or 0.0, "pumpiness": feat.pumpiness or 0.0},
+            {payload.model: emb.vector},
+            model=payload.model,
+        )
+        for metric, val in scores.items():
+            existing = (
+                await db.execute(
+                    select(TrackScore).where(
+                        TrackScore.track_id == tid,
+                        TrackScore.metric == metric,
+                        TrackScore.model == payload.model,
+                    )
+                )
+            ).scalar_one_or_none()
+            now = datetime.utcnow()
+            if existing:
+                existing.value = val
+                existing.created_at = now
+            else:
+                db.add(
+                    TrackScore(
+                        track_id=tid,
+                        metric=metric,
+                        model=payload.model,
+                        value=val,
+                        created_at=now,
+                    )
+                )
+                upserts += 1
+    await db.commit()
+    return {"detail": "scored", "upserts": upserts}
 
 
 @app.post("/tracks/{track_id}/path", response_model=TrackPathResponse)
