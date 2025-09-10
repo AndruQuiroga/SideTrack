@@ -7,6 +7,7 @@ import Avatar from '../components/ui/Avatar';
 import RecentListensTable from '../components/RecentListensTable';
 import KpiCard from '../components/dashboard/KpiCard';
 import ChartCard from '../components/dashboard/ChartCard';
+import DaypartHeatmap from '../components/dashboard/DaypartHeatmap';
 import InsightCard, { Insight } from '../components/insights/InsightCard';
 import InsightModal from '../components/insights/InsightModal';
 
@@ -151,6 +152,14 @@ export default function Home() {
                 ))}
               </div>
             </ChartCard>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.4, delay: 0.1 }}
+          >
+            <DaypartHeatmap />
           </motion.div>
         </div>
         <motion.div

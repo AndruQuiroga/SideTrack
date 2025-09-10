@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from ...routers import insights, moods, similar
+from ...routers import daypart, insights, moods, similar
 from . import auth, dashboard, listens, musicbrainz, spotify
 
 router = APIRouter(prefix="/api/v1")
@@ -12,3 +12,4 @@ router.include_router(spotify.router)
 router.include_router(insights.router)
 router.include_router(moods.router)
 router.include_router(similar.router)
+router.include_router(daypart.router)
