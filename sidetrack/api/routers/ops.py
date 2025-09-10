@@ -62,3 +62,37 @@ def queue_metrics() -> dict[str, dict[str, float | int]]:
             "p95": _percentile(durations, 95),
         }
     return metrics
+
+
+@router.get("/schedules")
+def list_schedules() -> dict[str, list[dict[str, str | None]]]:
+    """Return scheduler job information.
+
+    Reports the next run time and last execution status for all scheduled jobs.
+    """
+    import schedule
+    from sidetrack.scheduler import run as scheduler_run
+
+    out: list[dict[str, str | None]] = []
+    for job in schedule.jobs:
+        tag_map: dict[str, str] = {}
+        for tag in job.tags:
+            if ":" in tag:
+                k, v = tag.split(":", 1)
+                tag_map[k] = v
+        user_id = tag_map.get("user")
+        job_type = tag_map.get("job")
+        if not user_id or not job_type:
+            continue
+        state = scheduler_run.JOB_STATE.get((user_id, job_type), {})
+        last_run = state.get("last_run")
+        out.append(
+            {
+                "user_id": user_id,
+                "job_type": job_type,
+                "next_run": job.next_run.isoformat() if job.next_run else None,
+                "last_status": state.get("last_status"),
+                "last_run": last_run.isoformat() if last_run else None,
+            }
+        )
+    return {"schedules": out}
