@@ -330,7 +330,7 @@ async def post_settings(
     return SettingsUpdateResponse(ok=True)
 
 
-@app.post("/tags/lastfm/sync")
+@app.get("/tags/lastfm/sync")
 async def sync_lastfm_tags(
     since: date | None = Query(None),
     db: AsyncSession = Depends(get_db),
