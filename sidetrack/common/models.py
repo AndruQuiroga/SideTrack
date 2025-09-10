@@ -132,9 +132,7 @@ class TrackFeature(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
-    dataset_version: Mapped[str] = mapped_column(
-        String(16), default="v1", primary_key=True
-    )
+    dataset_version: Mapped[str] = mapped_column(String(16), default="v1", primary_key=True)
 
 
 class TrackEmbedding(Base):
@@ -142,9 +140,7 @@ class TrackEmbedding(Base):
 
     track_id: Mapped[int] = mapped_column(ForeignKey("track.track_id"), primary_key=True)
     model: Mapped[str] = mapped_column(String(64), primary_key=True)
-    dataset_version: Mapped[str] = mapped_column(
-        String(16), default="v1", primary_key=True
-    )
+    dataset_version: Mapped[str] = mapped_column(String(16), default="v1", primary_key=True)
     dim: Mapped[int] = mapped_column(Integer)
     vec: Mapped[list[float] | None] = mapped_column(Vector(), nullable=True)
     norm: Mapped[float | None] = mapped_column(Float)
@@ -250,6 +246,20 @@ class MBLabel(Base):
     primary_label: Mapped[str | None] = mapped_column(String(128), nullable=True)
     label_country: Mapped[str | None] = mapped_column(String(64), nullable=True)
     era: Mapped[str | None] = mapped_column(String(8), nullable=True)
+
+      
+class MusicBrainzRecording(Base):
+    """Cached MusicBrainz lookups by ISRC."""
+
+    __tablename__ = "mb_recording"
+
+    isrc: Mapped[str] = mapped_column(String(16), primary_key=True)
+    recording_mbid: Mapped[str | None] = mapped_column(String(36), index=True)
+    artist_mbid: Mapped[str | None] = mapped_column(String(36), index=True)
+    release_group_mbid: Mapped[str | None] = mapped_column(String(36), index=True)
+    year: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    label: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    tags: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
 
 
 class UserSettings(Base):
