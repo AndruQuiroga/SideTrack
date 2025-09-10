@@ -1,20 +1,19 @@
 'use client';
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { apiFetch } from '../../../lib/api';
-import { useTrajectory } from '../../../lib/query';
-import ChartContainer from '../../../components/ChartContainer';
-import FilterBar from '../../../components/FilterBar';
-import ChartSkeleton from '../../../components/ChartSkeleton';
-import EmptyState from '../../../components/EmptyState';
-import ShiftMarkers, { type Shift } from '../../../components/moods/ShiftMarkers';
+import { apiFetch } from '../../lib/api';
+import { useTrajectory } from '../../lib/query';
+import ChartContainer from '../ChartContainer';
+import ChartSkeleton from '../ChartSkeleton';
+import EmptyState from '../EmptyState';
+import ShiftMarkers, { type Shift } from '../moods/ShiftMarkers';
 
-const MoodsStreamgraph = dynamic(() => import('../../../components/charts/MoodsStreamgraph'), {
+const MoodsStreamgraph = dynamic(() => import('../charts/MoodsStreamgraph'), {
   loading: () => <ChartSkeleton className="h-[clamp(240px,40vh,340px)]" />,
   ssr: false,
 });
 
-export default function Moods() {
+export default function MoodsPanel() {
   const { data: traj, isLoading: trajLoading } = useTrajectory();
   const [radarLoading, setRadarLoading] = useState(false);
   const [series, setSeries] = useState<{ week: Date; [axis: string]: number | Date }[]>([]);
@@ -107,7 +106,7 @@ export default function Moods() {
     if (!displaySeries.length)
       return <EmptyState title="No data yet" description="Ingest some listens to begin." />;
     return (
-      <Suspense fallback={<ChartSkeleton className="h-[clamp(240px,40vh,340px)]" />}> 
+      <Suspense fallback={<ChartSkeleton className="h-[clamp(240px,40vh,340px)]" />}>\
         <MoodsStreamgraph data={displaySeries} axes={axes} />
       </Suspense>
     );
@@ -120,13 +119,6 @@ export default function Moods() {
           <h2 className="text-xl font-semibold">Moods</h2>
           <p className="text-sm text-muted-foreground">Stacked axes over the last 12 weeks</p>
         </div>
-        <FilterBar
-          options={[
-            { label: '12w', value: '12w' },
-            { label: '24w', value: '24w' },
-          ]}
-          value="12w"
-        />
       </div>
       <ShiftMarkers shifts={shifts} onSelect={(w) => setSelectedWeek(new Date(w))} />
       <ChartContainer title="Mood streamgraph" subtitle="Axes stacked by week">

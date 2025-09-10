@@ -8,6 +8,7 @@ import { LegendOrdinal } from '@visx/legend';
 import { localPoint } from '@visx/event';
 import useMeasure from 'react-use-measure';
 import { useMemo } from 'react';
+import { useInspector } from '../../hooks/useInspector';
 
 type Series = { week: Date; [axis: string]: number | Date };
 
@@ -36,6 +37,7 @@ export default function MoodsStreamgraph({ data, axes }: { data: Series[]; axes:
   );
 
   const { tooltipData, tooltipLeft, tooltipTop, showTooltip, hideTooltip } = useTooltip<Series>();
+  const { inspect } = useInspector();
 
   const dateBisect = useMemo(() => bisector<Series, Date>((d) => d.week as Date).left, []);
 
@@ -97,6 +99,7 @@ export default function MoodsStreamgraph({ data, axes }: { data: Series[]; axes:
             fill="transparent"
             onMouseMove={handleMouseMove}
             onMouseLeave={hideTooltip}
+            onClick={() => tooltipData && inspect({ type: 'mood', data: tooltipData })}
           />
         </svg>
         <div className="mt-2 flex justify-center">
