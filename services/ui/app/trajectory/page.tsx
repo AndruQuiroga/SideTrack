@@ -2,10 +2,10 @@ import { Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import ChartContainer from '../../components/ChartContainer';
 import FilterBar from '../../components/FilterBar';
-import Skeleton from '../../components/Skeleton';
+import ChartSkeleton from '../../components/ChartSkeleton';
 
 const TrajectoryClient = dynamic(() => import('../../components/charts/TrajectoryClient'), {
-  loading: () => <Skeleton className="aspect-[4/3] h-[clamp(240px,40vh,380px)]" />,
+  loading: () => <ChartSkeleton />,
   ssr: false,
 });
 
@@ -27,7 +27,7 @@ export default async function Trajectory() {
         />
       </div>
       <ChartContainer title="Trajectory" subtitle="Recent weekly bubbles and positions">
-        <Suspense fallback={<Skeleton className="aspect-[4/3] h-[clamp(240px,40vh,380px)]" />}>
+        <Suspense fallback={<ChartSkeleton />}>
           <TrajectoryClient />
         </Suspense>
       </ChartContainer>

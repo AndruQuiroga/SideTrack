@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import ChartContainer from '../../components/ChartContainer';
-import Skeleton from '../../components/Skeleton';
+import ChartSkeleton from '../../components/ChartSkeleton';
 import EmptyState from '../../components/EmptyState';
 import { apiFetch } from '../../lib/api';
 
@@ -27,7 +27,7 @@ async function getRadar(): Promise<RadarData> {
 
 const RadarChart = dynamic(() => import('../../components/charts/RadarChart'), {
   ssr: false,
-  loading: () => <Skeleton className="aspect-[4/3] h-[clamp(240px,40vh,380px)]" />,
+  loading: () => <ChartSkeleton />,
 });
 
 export default async function Radar() {
@@ -39,7 +39,7 @@ export default async function Radar() {
         <EmptyState title="No data yet" description="Ingest some listens to begin." />
       ) : (
         <ChartContainer title="Radar" subtitle="Current week vs baseline">
-          <Suspense fallback={<Skeleton className="aspect-[4/3] h-[clamp(240px,40vh,380px)]" />}>
+          <Suspense fallback={<ChartSkeleton />}>
             <RadarChart
               axes={data.axes as Record<string, number>}
               baseline={data.baseline as Record<string, number>}
