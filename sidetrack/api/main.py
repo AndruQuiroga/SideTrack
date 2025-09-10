@@ -11,6 +11,9 @@ from sqlalchemy import and_, delete, func, select, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+import redis.asyncio as redis_async
+from fastapi_limiter import FastAPILimiter
+
 from sidetrack.common.logging import setup_logging
 from sidetrack.common.models import (
     Artist,
@@ -91,12 +94,20 @@ async def _startup():
     global HTTP_SESSION
     HTTP_SESSION = httpx.AsyncClient()
     await maybe_create_all()
+    if FastAPILimiter.redis is None:
+        settings = get_app_settings()
+        redis = redis_async.from_url(
+            settings.redis_url, encoding="utf-8", decode_responses=True
+        )
+        await FastAPILimiter.init(redis)
 
 
 @app.on_event("shutdown")
 async def _shutdown() -> None:
     if HTTP_SESSION is not None:
         await HTTP_SESSION.aclose()
+    if FastAPILimiter.redis:
+        await FastAPILimiter.close()
 
 
 import redis

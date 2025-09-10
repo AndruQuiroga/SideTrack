@@ -1,4 +1,4 @@
-.[api,scheduler,worker]
+.[api,extractor,scheduler,worker]
 # Development and testing tools
 pip-tools
 pytest

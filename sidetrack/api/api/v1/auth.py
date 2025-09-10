@@ -1,5 +1,6 @@
 """Authentication and account endpoints."""
 
+import re
 import secrets
 from datetime import datetime
 from hashlib import sha256
@@ -7,6 +8,7 @@ from hashlib import sha256
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.concurrency import run_in_threadpool
 from fastapi.security import OAuth2PasswordRequestForm
+from fastapi_limiter.depends import RateLimiter
 from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -21,8 +23,27 @@ from ...security import hash_password, require_role, verify_password
 router = APIRouter()
 
 
-@router.post("/auth/register", response_model=UserOut)
+def _validate_password(password: str) -> None:
+    """Validate password against length and complexity requirements."""
+    if len(password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters long")
+    if not re.search(r"[A-Z]", password):
+        raise HTTPException(status_code=400, detail="Password must contain an uppercase letter")
+    if not re.search(r"[a-z]", password):
+        raise HTTPException(status_code=400, detail="Password must contain a lowercase letter")
+    if not re.search(r"\d", password):
+        raise HTTPException(status_code=400, detail="Password must contain a digit")
+    if not re.search(r"[^A-Za-z0-9]", password):
+        raise HTTPException(status_code=400, detail="Password must contain a special character")
+
+
+@router.post(
+    "/auth/register",
+    response_model=UserOut,
+    dependencies=[Depends(RateLimiter(times=5, seconds=60))],
+)
 async def register(creds: Credentials, db: AsyncSession = Depends(get_db)):
+    _validate_password(creds.password)
     if await db.get(UserAccount, creds.username):
         raise HTTPException(status_code=400, detail="User already exists")
     user = UserAccount(
@@ -35,7 +56,11 @@ async def register(creds: Credentials, db: AsyncSession = Depends(get_db)):
     return UserOut.model_validate(user)
 
 
-@router.post("/auth/login", response_model=UserOut)
+@router.post(
+    "/auth/login",
+    response_model=UserOut,
+    dependencies=[Depends(RateLimiter(times=5, seconds=60))],
+)
 async def login(creds: Credentials, db: AsyncSession = Depends(get_db)):
     user = await db.get(UserAccount, creds.username)
     if not user or not verify_password(creds.password, user.password_hash):
