@@ -1,0 +1,45 @@
+# serializer version: 1
+# name: test_get_cf_recommendations_contract
+  list([
+    dict({
+      'artist_name': 'Artist A',
+      'recording_mbid': 'rec1',
+      'recording_name': 'Track A',
+      'score': 0.9,
+    }),
+    dict({
+      'artist_name': 'Artist B',
+      'recording_mbid': 'rec2',
+      'recording_name': 'Track B',
+      'score': 0.8,
+    }),
+  ])
+# ---
+# name: test_listenbrainz_candidates_normalization
+  list([
+    dict({
+      'artist': 'Artist A',
+      'isrc': None,
+      'recording_mbid': 'rec1',
+      'score_cf': 0.9,
+      'seeds': dict({
+        'user': 'alice',
+      }),
+      'source': 'listenbrainz',
+      'spotify_id': None,
+      'title': 'Track A',
+    }),
+    dict({
+      'artist': 'Artist B',
+      'isrc': None,
+      'recording_mbid': 'rec2',
+      'score_cf': 0.8,
+      'seeds': dict({
+        'user': 'alice',
+      }),
+      'source': 'listenbrainz',
+      'spotify_id': None,
+      'title': 'Track B',
+    }),
+  ])
+# ---

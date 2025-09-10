@@ -14,3 +14,5 @@ isort
 ruff
 freezegun
 pytest-socket
+respx
+syrupy

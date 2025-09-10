@@ -30,7 +30,7 @@
 - `@pytest.mark.slow` – anything exceeding the budgets
 - `@pytest.mark.gpu` – requires a GPU
 
-`pytest` excludes `slow`, `gpu` and `e2e` by default. Use `-m` to include them when needed.
+`pytest` excludes `slow`, `gpu`, `e2e`, and `contract` by default. Use `-m` to include them when needed.
 
 ## Adding Tests
 
@@ -51,10 +51,9 @@
 Use the make targets:
 
 ```
-make test          # fast suite (no slow/gpu/e2e)
-make test-unit     # just unit tests
-make test-contract # contract tests
-make test-integration
-make test-e2e      # end-to-end smoke
-make test-all      # everything
+make test.unit       # unit tests
+make test.contract   # contract tests
+make test.int        # integration tests
+make test.e2e        # end-to-end smoke
+make test.all        # everything
 ```
