@@ -26,15 +26,15 @@ export default function Sidebar({
   return (
     <aside
       className={clsx(
-        'hidden border-r bg-background md:flex md:flex-col',
-        collapsed ? 'w-16' : 'w-56',
+        'flex flex-col shrink-0 border-r bg-background',
+        collapsed ? 'w-16' : 'w-16 md:w-56',
         'motion-safe:transition-[width]'
       )}
     >
       <button
         onClick={() => setCollapsed(!collapsed)}
         aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        className="m-2 inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-white/5 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+        className="m-2 hidden h-8 w-8 items-center justify-center rounded-md hover:bg-white/5 focus:outline-none focus:ring-2 focus:ring-emerald-500 md:inline-flex"
       >
         <Menu size={16} />
       </button>
@@ -52,7 +52,7 @@ export default function Sidebar({
               )}
             >
               <item.icon size={18} />
-              {!collapsed && <span>{item.label}</span>}
+              {!collapsed && <span className="hidden md:inline">{item.label}</span>}
             </Link>
           );
         })}

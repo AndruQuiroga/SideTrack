@@ -30,7 +30,7 @@ export default function Header() {
       <button
         onClick={openSearch}
         aria-label="Open search (⌘K)"
-        className="flex flex-1 items-center gap-2 rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground hover:text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 md:max-w-sm"
+        className="flex h-9 w-9 items-center justify-center gap-0 rounded-md bg-muted text-sm text-muted-foreground hover:text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 sm:h-auto sm:w-auto sm:flex-1 sm:gap-2 sm:px-3 sm:py-2 sm:justify-start md:max-w-sm"
       >
         <Search size={16} />
         <span className="hidden sm:inline">Search</span>
