@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import ChartContainer from '../components/ChartContainer';
 import FilterBar from '../components/FilterBar';
 import Avatar from '../components/ui/Avatar';
+import RecentListensTable from '../components/RecentListensTable';
 
 export default function Home() {
   return (
@@ -116,6 +117,16 @@ export default function Home() {
           </ChartContainer>
         </motion.div>
       </div>
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.4, delay: 0.1 }}
+      >
+        <ChartContainer title="Recent Listens">
+          <RecentListensTable />
+        </ChartContainer>
+      </motion.div>
     </section>
   );
 }
