@@ -26,6 +26,7 @@ export default function RecActions({ onLike, onSkip, onHideArtist }: Props) {
         variant="outline"
         onClick={async () => {
           await onSkip();
+          show({ title: 'Skipped', kind: 'info' });
         }}
       >
         Skip

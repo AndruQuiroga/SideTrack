@@ -2,23 +2,37 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import RecCard, { type Rec } from '../../components/recs/RecCard';
+import FiltersBar from '../../components/recs/FiltersBar';
+import MixtapeButton from '../../components/mixtape/MixtapeButton';
 import { apiFetch } from '../../lib/api';
-import { saveTrack, createPlaylist } from '../../lib/spotifyClient';
+import { saveTrack } from '../../lib/spotifyClient';
 
 export default function RecommendationsPage() {
   const [recs, setRecs] = useState<Rec[]>([]);
   const [index, setIndex] = useState(0);
   const [liked, setLiked] = useState<Rec[]>([]);
   const [hidden, setHidden] = useState<Set<string>>(new Set());
-  const [newOnly, setNewOnly] = useState(false);
-  const [freshness, setFreshness] = useState(0);
+  const [filters, setFilters] = useState({
+    newOnly: false,
+    freshness: 0,
+    diversity: 0,
+    energy: 0,
+  });
 
   useEffect(() => {
-    apiFetch('/api/v1/recs/ranked')
+    const params = new URLSearchParams();
+    if (filters.newOnly) params.set('new', '1');
+    if (filters.freshness) params.set('min_freshness', String(filters.freshness));
+    if (filters.diversity) params.set('diversity', String(filters.diversity));
+    if (filters.energy) params.set('energy', String(filters.energy));
+    apiFetch(`/api/v1/recs/ranked?${params.toString()}`)
       .then((r) => r.json())
-      .then((j) => setRecs(j ?? []))
+      .then((j) => {
+        setRecs(j ?? []);
+        setIndex(0);
+      })
       .catch(() => setRecs([]));
-  }, []);
+  }, [filters]);
 
   const filtered = useMemo(() => recs.filter((r) => !hidden.has(r.artist)), [recs, hidden]);
   const current = filtered[index];
@@ -43,48 +57,19 @@ export default function RecommendationsPage() {
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'ArrowRight') like();
       if (e.key === 'ArrowLeft') skip();
+      if (e.key === 'ArrowDown') hideArtist();
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [like, skip]);
-
-  const buildMixtape = useCallback(async () => {
-    const uris = liked.map((t) => t.spotify_id || '').filter(Boolean);
-    if (!uris.length) return;
-    await createPlaylist('Mixtape', uris);
-  }, [liked]);
+  }, [like, skip, hideArtist]);
 
   return (
     <section className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Recommendations</h2>
-        {liked.length > 0 && (
-          <button onClick={buildMixtape} className="text-sm underline">
-            Build Mixtape
-          </button>
-        )}
+        <MixtapeButton tracks={liked} />
       </div>
-      <div className="flex items-center gap-4">
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={newOnly}
-            onChange={() => setNewOnly((v) => !v)}
-          />
-          New artists only
-        </label>
-        <label className="flex items-center gap-2 text-sm">
-          Min freshness
-          <input
-            type="range"
-            min={0}
-            max={1}
-            step={0.1}
-            value={freshness}
-            onChange={(e) => setFreshness(parseFloat(e.target.value))}
-          />
-        </label>
-      </div>
+      <FiltersBar filters={filters} onChange={setFilters} />
       {current ? (
         <RecCard rec={current} onLike={like} onSkip={skip} onHideArtist={hideArtist} />
       ) : (
