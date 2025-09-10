@@ -173,6 +173,15 @@ Built with **Next.js 14**, **Tailwind**, **shadcn/ui**, **framer‑motion**, **P
 
 - Smooth transitions (framer‑motion), dark/light theme, keyboard nav, persistent filters.
 
+### Adding charts
+
+Dashboard charts live in `services/ui/components/charts` and are wrapped on pages with
+`ChartCard`. `ChartCard` ensures Plotly charts are responsive and accessible – pass
+`ariaLabel` and data/layout just like you would to `react-plotly.js`.
+
+Use **Plotly** for highly interactive or exploratory visuals (scatter plots, UMAP, etc.).
+Use **Recharts/Visx** for lightweight trend or stream graphs.
+
 ---
 
 ## Local Development
