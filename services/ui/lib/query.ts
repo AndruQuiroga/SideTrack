@@ -29,3 +29,22 @@ export function useOutliers() {
     },
   });
 }
+
+export type RecentListen = {
+  track_id: number;
+  title: string;
+  artist?: string;
+  played_at: string;
+};
+export type RecentListensResponse = { listens: RecentListen[] };
+
+export function useRecentListens(limit = 50) {
+  return useQuery<RecentListensResponse>({
+    queryKey: ['recent-listens', limit],
+    queryFn: async () => {
+      const res = await apiFetch(`/listens/recent?limit=${limit}`);
+      if (!res.ok) throw new Error('Failed to fetch recent listens');
+      return (await res.json()) as RecentListensResponse;
+    },
+  });
+}
