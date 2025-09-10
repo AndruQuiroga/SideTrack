@@ -1,8 +1,8 @@
 'use client';
 import { useEffect, useState } from 'react';
-import InsightCard, { Insight } from '../../../components/insights/InsightCard';
-import InsightModal from '../../../components/insights/InsightModal';
-import Skeleton from '../../../components/Skeleton';
+import InsightCard, { Insight } from '../../components/insights/InsightCard';
+import InsightModal from '../../components/insights/InsightModal';
+import Skeleton from '../../components/Skeleton';
 
 export default function InsightsPage() {
   const [insights, setInsights] = useState<Insight[]>([]);

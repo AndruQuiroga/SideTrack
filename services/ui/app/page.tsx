@@ -31,7 +31,7 @@ export default function Home() {
             <p className="text-sm text-muted-foreground">Your listening vibe at a glance</p>
           </div>
           <Link
-            href="/trajectory"
+            href="/explore/trajectory"
             className="h-11 rounded-full bg-emerald-500/10 px-4 text-sm text-emerald-300 hover:bg-emerald-500/20"
           >
             View trajectory
@@ -99,7 +99,7 @@ export default function Home() {
               title="Recent Weeks"
               subtitle="Quick glance at your trajectory"
               actions={
-                <Link href="/trajectory" className="text-xs text-muted-foreground hover:underline">
+                <Link href="/explore/trajectory" className="text-xs text-muted-foreground hover:underline">
                   Open
                 </Link>
               }
@@ -127,7 +127,7 @@ export default function Home() {
               title="Outliers"
               subtitle="Far from your recent centroid"
               actions={
-                <Link href="/outliers" className="text-xs text-muted-foreground hover:underline">
+                <Link href="/explore/outliers" className="text-xs text-muted-foreground hover:underline">
                   Open
                 </Link>
               }

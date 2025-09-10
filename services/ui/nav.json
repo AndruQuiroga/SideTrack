@@ -1,0 +1,7 @@
+[
+  { "path": "/", "label": "Home", "icon": "Home", "featureFlag": null },
+  { "path": "/recommendations", "label": "Recommendations", "icon": "Wand2", "featureFlag": "recommendations" },
+  { "path": "/explore", "label": "Explore", "icon": "Compass", "featureFlag": null },
+  { "path": "/insights", "label": "Insights", "icon": "Lightbulb", "featureFlag": null },
+  { "path": "/settings", "label": "Settings", "icon": "Settings", "featureFlag": null }
+]
