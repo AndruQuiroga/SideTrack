@@ -10,6 +10,7 @@ import useMeasure from 'react-use-measure';
 import { motion } from 'framer-motion';
 import { useMemo, useState } from 'react';
 import { LegendOrdinal } from '@visx/legend';
+import { useInspector } from '../../hooks/useInspector';
 
 type Point = { week: string; x: number; y: number; r?: number };
 type Arrow = { from: Point; to: Point };
@@ -37,6 +38,7 @@ export default function TrajectoryBubble({ data }: { data: TrajectoryData }) {
 
   const { tooltipData, tooltipLeft, tooltipTop, showTooltip, hideTooltip } = useTooltip<Point>();
   const [highlight, setHighlight] = useState<number | null>(null);
+  const { inspect } = useInspector();
 
   return (
     <div ref={ref} className="relative w-full aspect-[4/3] h-[clamp(240px,40vh,380px)]">
@@ -101,6 +103,7 @@ export default function TrajectoryBubble({ data }: { data: TrajectoryData }) {
                       cy={yScale(p.y)}
                       r={highlight === i ? (p.r ? p.r : 8) * 1.3 : p.r ? p.r : 8}
                       fill={highlight === i ? '#FF7A7A' : color}
+                      onClick={() => inspect({ type: 'trajectory', point: p })}
                       onMouseMove={(event) => {
                         const point = localPoint(event);
                         if (!point) return;

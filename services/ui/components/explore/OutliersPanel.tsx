@@ -1,16 +1,18 @@
 'use client';
+import ChartContainer from '../ChartContainer';
+import EmptyState from '../EmptyState';
+import Skeleton from '../Skeleton';
+import { useOutliers } from '../../lib/query';
+import { useInspector } from '../../hooks/useInspector';
 
-import { useState } from 'react';
-import ChartContainer from '../../../components/ChartContainer';
-import EmptyState from '../../../components/EmptyState';
-import Skeleton from '../../../components/Skeleton';
-import FilterBar from '../../../components/FilterBar';
-import { useOutliers } from '../../../lib/query';
+type Props = {
+  range: string;
+};
 
-export default function Outliers() {
-  const [range, setRange] = useState('12w');
+export default function OutliersPanel({ range }: Props) {
   const { data, isLoading } = useOutliers(range);
   const tracks = data?.tracks ?? [];
+  const { inspect } = useInspector();
 
   let content;
   if (isLoading) {
@@ -21,7 +23,11 @@ export default function Outliers() {
     content = (
       <ul className="space-y-2 text-sm">
         {tracks.map((t) => (
-          <li key={t.track_id} className="flex items-center justify-between">
+          <li
+            key={t.track_id}
+            className="flex items-center justify-between cursor-pointer"
+            onClick={() => inspect({ type: 'track', track: t })}
+          >
             <span>
               {t.title} – {t.artist || 'Unknown'}
             </span>
@@ -36,15 +42,6 @@ export default function Outliers() {
     <section className="@container space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Outliers</h2>
-        <FilterBar
-          options={[
-            { label: '4w', value: '4w' },
-            { label: '12w', value: '12w' },
-            { label: '24w', value: '24w' },
-          ]}
-          value={range}
-          onChange={setRange}
-        />
       </div>
       <ChartContainer title="Outliers" subtitle="Far from your recent centroid">
         {content}

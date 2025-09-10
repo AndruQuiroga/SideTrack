@@ -1,15 +1,14 @@
 import { Suspense } from 'react';
 import dynamic from 'next/dynamic';
-import ChartContainer from '../../../components/ChartContainer';
-import FilterBar from '../../../components/FilterBar';
-import ChartSkeleton from '../../../components/ChartSkeleton';
+import ChartContainer from '../ChartContainer';
+import ChartSkeleton from '../ChartSkeleton';
 
-const TrajectoryClient = dynamic(() => import('../../../components/charts/TrajectoryClient'), {
+const TrajectoryClient = dynamic(() => import('../charts/TrajectoryClient'), {
   loading: () => <ChartSkeleton />,
   ssr: false,
 });
 
-export default async function Trajectory() {
+export default function TrajectoryPanel() {
   return (
     <section className="@container space-y-6">
       <div className="flex items-center justify-between">
@@ -17,14 +16,6 @@ export default async function Trajectory() {
           <h2 className="text-xl font-semibold">Taste Trajectory</h2>
           <p className="text-sm text-muted-foreground">Weekly points (x = valence, y = energy)</p>
         </div>
-        <FilterBar
-          options={[
-            { label: '12w', value: '12w' },
-            { label: '24w', value: '24w' },
-            { label: '52w', value: '52w' },
-          ]}
-          value="12w"
-        />
       </div>
       <ChartContainer title="Trajectory" subtitle="Recent weekly bubbles and positions">
         <Suspense fallback={<ChartSkeleton />}>

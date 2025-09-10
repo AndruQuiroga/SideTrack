@@ -11,6 +11,7 @@ import {
   Legend,
 } from 'chart.js';
 import { motion } from 'framer-motion';
+import { useInspector } from '../../hooks/useInspector';
 
 ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend);
 
@@ -21,6 +22,7 @@ type RadarChartProps = {
 
 export default function RadarChart({ axes, baseline }: RadarChartProps) {
   const labels = Object.keys(axes);
+  const { inspect } = useInspector();
   const data = {
     labels,
     datasets: [
@@ -44,6 +46,13 @@ export default function RadarChart({ axes, baseline }: RadarChartProps) {
   const options = {
     responsive: true,
     animation: { duration: 500 },
+    onClick: (_: any, elements: any) => {
+      if (elements && elements.length) {
+        const idx = elements[0].index;
+        const label = labels[idx];
+        inspect({ type: 'radar', axis: label, value: axes[label] });
+      }
+    },
     plugins: {
       tooltip: { enabled: true },
       legend: { position: 'top' as const },
