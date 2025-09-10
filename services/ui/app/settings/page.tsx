@@ -3,7 +3,9 @@
 import { useState, useEffect } from 'react';
 import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';
-import { Card } from '../../components/ui/card';
+import ChartContainer from '../../components/ChartContainer';
+import FilterBar from '../../components/FilterBar';
+import Skeleton from '../../components/Skeleton';
 import { useToast } from '../../components/ToastProvider';
 import { useAuth } from '../../lib/auth';
 import { apiFetch } from '../../lib/api';
@@ -32,11 +34,14 @@ export default function Settings() {
   const [useExcerpts, setUseExcerpts] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
   const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<'connections' | 'options'>('connections');
   const { show } = useToast();
   const { userId } = useAuth();
 
   useEffect(() => {
     if (!userId) return;
+    setLoading(true);
     apiFetch('/api/settings')
       .then((r) => r.json())
       .then((data: Partial<SettingsData>) => {
@@ -52,7 +57,8 @@ export default function Settings() {
       })
       .catch(() => {
         /* ignore */
-      });
+      })
+      .finally(() => setLoading(false));
   }, [userId]);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -145,106 +151,130 @@ export default function Settings() {
 
   return (
     <section className="@container space-y-6">
-      <h2>Settings</h2>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-semibold">Settings</h2>
+          <p className="text-sm text-muted-foreground">Configure integrations and options</p>
+        </div>
+        <FilterBar
+          options={[
+            { label: 'Connections', value: 'connections' },
+            { label: 'Options', value: 'options' },
+          ]}
+          value={tab}
+          onChange={(v) => setTab(v as 'connections' | 'options')}
+        />
+      </div>
       {errors.length > 0 && <div role="alert">{errors.join(', ')}</div>}
       {message && <div role="status">{message}</div>}
       <form onSubmit={handleSubmit} className="space-y-6">
-        <Card className="space-y-4 p-4">
-          <h3 className="text-lg font-semibold">Connect ListenBrainz</h3>
-          <div className="space-y-2">
-            <div className="space-y-1">
-              <label htmlFor="lb-user" className="text-sm font-medium">
-                Username
-              </label>
-              <Input
-                id="lb-user"
-                placeholder="ListenBrainz username"
-                value={lbUser}
-                onChange={(e) => setLbUser(e.target.value)}
-              />
-            </div>
-            <div className="space-y-1">
-              <label htmlFor="lb-token" className="text-sm font-medium">
-                Token
-              </label>
-              <Input
-                id="lb-token"
-                placeholder="Token"
-                value={lbToken}
-                onChange={(e) => setLbToken(e.target.value)}
-              />
-            </div>
-          </div>
-        </Card>
+        {tab === 'connections' ? (
+          <>
+            <ChartContainer title="ListenBrainz">
+              {loading ? (
+                <Skeleton className="h-24" />
+              ) : (
+                <div className="space-y-2">
+                  <div className="space-y-1">
+                    <label htmlFor="lb-user" className="text-sm font-medium">
+                      Username
+                    </label>
+                    <Input
+                      id="lb-user"
+                      placeholder="ListenBrainz username"
+                      value={lbUser}
+                      onChange={(e) => setLbUser(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label htmlFor="lb-token" className="text-sm font-medium">
+                      Token
+                    </label>
+                    <Input
+                      id="lb-token"
+                      placeholder="Token"
+                      value={lbToken}
+                      onChange={(e) => setLbToken(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+            </ChartContainer>
 
-        <Card className="space-y-4 p-4">
-          <h3 className="text-lg font-semibold">Connect Last.fm</h3>
-          {lfmConnected ? (
-            <div className="flex items-center gap-2">
-              <span>Connected as {lfmUser}</span>
-              <Button type="button" onClick={handleDisconnect}>
-                Disconnect
-              </Button>
-            </div>
-          ) : (
-            <Button type="button" onClick={handleConnect}>
-              Connect Last.fm
-            </Button>
-          )}
-        </Card>
+            <ChartContainer title="Last.fm">
+              {loading ? (
+                <Skeleton className="h-24" />
+              ) : lfmConnected ? (
+                <div className="flex items-center gap-2">
+                  <span>Connected as {lfmUser}</span>
+                  <Button type="button" onClick={handleDisconnect}>
+                    Disconnect
+                  </Button>
+                </div>
+              ) : (
+                <Button type="button" onClick={handleConnect}>
+                  Connect Last.fm
+                </Button>
+              )}
+            </ChartContainer>
 
-        <Card className="space-y-4 p-4">
-          <h3 className="text-lg font-semibold">Connect Spotify</h3>
-          {spConnected ? (
-            <div className="flex items-center gap-2">
-              <span>Connected as {spUser}</span>
-              <Button type="button" onClick={handleSpotifyDisconnect}>
-                Disconnect
-              </Button>
-            </div>
-          ) : (
-            <Button type="button" onClick={handleSpotifyConnect}>
-              Connect Spotify
-            </Button>
-          )}
-        </Card>
-
-        <Card className="space-y-4 p-4">
-          <h3 className="text-lg font-semibold">Options</h3>
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Input
-                id="use-gpu"
-                type="checkbox"
-                className="h-4 w-4"
-                checked={useGpu}
-                onChange={(e) => setUseGpu(e.target.checked)}
-              />
-              <label htmlFor="use-gpu">Use GPU</label>
-            </div>
-            <div className="flex items-center gap-2">
-              <Input
-                id="use-stems"
-                type="checkbox"
-                className="h-4 w-4"
-                checked={useStems}
-                onChange={(e) => setUseStems(e.target.checked)}
-              />
-              <label htmlFor="use-stems">Extract stems</label>
-            </div>
-            <div className="flex items-center gap-2">
-              <Input
-                id="use-excerpts"
-                type="checkbox"
-                className="h-4 w-4"
-                checked={useExcerpts}
-                onChange={(e) => setUseExcerpts(e.target.checked)}
-              />
-              <label htmlFor="use-excerpts">Use excerpts</label>
-            </div>
-          </div>
-        </Card>
-
+            <ChartContainer title="Spotify">
+              {loading ? (
+                <Skeleton className="h-24" />
+              ) : spConnected ? (
+                <div className="flex items-center gap-2">
+                  <span>Connected as {spUser}</span>
+                  <Button type="button" onClick={handleSpotifyDisconnect}>
+                    Disconnect
+                  </Button>
+                </div>
+              ) : (
+                <Button type="button" onClick={handleSpotifyConnect}>
+                  Connect Spotify
+                </Button>
+              )}
+            </ChartContainer>
+          </>
+        ) : (
+          <ChartContainer title="Options">
+            {loading ? (
+              <Skeleton className="h-24" />
+            ) : (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="use-gpu"
+                    type="checkbox"
+                    className="h-4 w-4"
+                    checked={useGpu}
+                    onChange={(e) => setUseGpu(e.target.checked)}
+                  />
+                  <label htmlFor="use-gpu">Use GPU</label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="use-stems"
+                    type="checkbox"
+                    className="h-4 w-4"
+                    checked={useStems}
+                    onChange={(e) => setUseStems(e.target.checked)}
+                  />
+                  <label htmlFor="use-stems">Extract stems</label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="use-excerpts"
+                    type="checkbox"
+                    className="h-4 w-4"
+                    checked={useExcerpts}
+                    onChange={(e) => setUseExcerpts(e.target.checked)}
+                  />
+                  <label htmlFor="use-excerpts">Use excerpts</label>
+                </div>
+              </div>
+            )}
+          </ChartContainer>
+        )}
         <Button type="submit">Save</Button>
       </form>
     </section>

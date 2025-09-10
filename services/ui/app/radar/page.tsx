@@ -3,6 +3,7 @@ import dynamic from 'next/dynamic';
 import ChartContainer from '../../components/ChartContainer';
 import ChartSkeleton from '../../components/ChartSkeleton';
 import EmptyState from '../../components/EmptyState';
+import FilterBar from '../../components/FilterBar';
 import { apiFetch } from '../../lib/api';
 
 type RadarData = {
@@ -34,7 +35,10 @@ export default async function Radar() {
   const data = await getRadar();
   return (
     <section className="@container space-y-6">
-      <h2 className="text-xl font-semibold">Weekly Radar</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold">Weekly Radar</h2>
+        <FilterBar options={[{ label: 'wk', value: 'wk' }]} value="wk" />
+      </div>
       {!data.week ? (
         <EmptyState title="No data yet" description="Ingest some listens to begin." />
       ) : (
