@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sidetrack.common.models import UserSettings
 from sidetrack.services.candidates import generate_candidates
 from sidetrack.services.lastfm import LastfmService
+from sidetrack.services.listenbrainz import ListenBrainzService
 from sidetrack.services.mb_map import recording_by_isrc
 from sidetrack.services.ranker import profile_from_spotify, rank
 from sidetrack.services.spotify import SpotifyService
@@ -43,14 +44,23 @@ async def list_recs(
     spotify_service: SpotifyService | None = None
     lastfm_service: LastfmService | None = None
     lastfm_user: str | None = None
-    if row.spotify_access_token:
+    lb_service: ListenBrainzService | None = None
+    lb_user: str | None = None
+    if settings.spotify_recs_enabled and row.spotify_access_token:
         spotify_service = SpotifyService(client, access_token=row.spotify_access_token)
-    elif row.lastfm_user:
+    elif settings.lastfm_similar_enabled and row.lastfm_user:
         lastfm_service = LastfmService(client, settings.lastfm_api_key)
         lastfm_user = row.lastfm_user
+    elif settings.lb_cf_enabled and row.listenbrainz_user:
+        lb_service = ListenBrainzService(client)
+        lb_user = row.listenbrainz_user
 
     candidates = await generate_candidates(
-        spotify=spotify_service, lastfm=lastfm_service, lastfm_user=lastfm_user
+        spotify=spotify_service,
+        lastfm=lastfm_service,
+        lastfm_user=lastfm_user,
+        listenbrainz=lb_service,
+        listenbrainz_user=lb_user,
     )
 
     redis_conn = _get_redis_connection(settings)
@@ -64,6 +74,7 @@ async def list_recs(
             "score_cf": cand.get("score_cf"),
         }
         isrc = cand.get("isrc")
+        rec_mbid = cand.get("recording_mbid")
         if isrc:
             rec_mbid, art_mbid, year, label, tags = await recording_by_isrc(
                 isrc, client=client, redis_conn=redis_conn
@@ -77,6 +88,8 @@ async def list_recs(
                     "tags": tags,
                 }
             )
+        elif rec_mbid:
+            item["recording_mbid"] = rec_mbid
         else:
             item["spotify_id"] = cand.get("spotify_id")
         enriched.append(item)
@@ -103,14 +116,23 @@ async def ranked_recs(
     spotify_service: SpotifyService | None = None
     lastfm_service: LastfmService | None = None
     lastfm_user: str | None = None
-    if row.spotify_access_token:
+    lb_service: ListenBrainzService | None = None
+    lb_user: str | None = None
+    if settings.spotify_recs_enabled and row.spotify_access_token:
         spotify_service = SpotifyService(client, access_token=row.spotify_access_token)
-    elif row.lastfm_user:
+    elif settings.lastfm_similar_enabled and row.lastfm_user:
         lastfm_service = LastfmService(client, settings.lastfm_api_key)
         lastfm_user = row.lastfm_user
+    elif settings.lb_cf_enabled and row.listenbrainz_user:
+        lb_service = ListenBrainzService(client)
+        lb_user = row.listenbrainz_user
 
     candidates = await generate_candidates(
-        spotify=spotify_service, lastfm=lastfm_service, lastfm_user=lastfm_user
+        spotify=spotify_service,
+        lastfm=lastfm_service,
+        lastfm_user=lastfm_user,
+        listenbrainz=lb_service,
+        listenbrainz_user=lb_user,
     )
 
     redis_conn = _get_redis_connection(settings)
@@ -124,6 +146,7 @@ async def ranked_recs(
             "score_cf": cand.get("score_cf"),
         }
         isrc = cand.get("isrc")
+        rec_mbid = cand.get("recording_mbid")
         if isrc:
             rec_mbid, art_mbid, year, label, _tags = await recording_by_isrc(
                 isrc, client=client, redis_conn=redis_conn
@@ -135,6 +158,8 @@ async def ranked_recs(
                     "label": label,
                 }
             )
+        elif rec_mbid:
+            item["recording_mbid"] = rec_mbid
         else:
             sid = cand.get("spotify_id")
             if sid:
@@ -159,7 +184,14 @@ async def ranked_recs(
         out.append(
             {
                 k: item.get(k)
-                for k in ("title", "artist", "spotify_id", "recording_mbid", "reasons", "final_score")
+                for k in (
+                    "title",
+                    "artist",
+                    "spotify_id",
+                    "recording_mbid",
+                    "reasons",
+                    "final_score",
+                )
                 if item.get(k) is not None
             }
         )

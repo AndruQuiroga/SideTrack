@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     spotify_client_id: str | None = Field(default=None, env="SPOTIFY_CLIENT_ID")
     spotify_client_secret: str | None = Field(default=None, env="SPOTIFY_CLIENT_SECRET")
     google_client_id: str | None = Field(default=None, env="GOOGLE_CLIENT_ID")
+    spotify_recs_enabled: bool = Field(default=True, env="SPOTIFY_RECS_ENABLED")
+    lastfm_similar_enabled: bool = Field(default=True, env="LASTFM_SIMILAR_ENABLED")
+    lb_cf_enabled: bool = Field(default=False, env="LB_CF_ENABLED")
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
