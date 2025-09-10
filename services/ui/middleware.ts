@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
 // Protect all routes except public ones
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
 
   // Allow public assets and routes
@@ -25,6 +25,20 @@ export function middleware(req: NextRequest) {
     url.pathname = '/login';
     url.searchParams.set('next', pathname + search);
     return NextResponse.redirect(url);
+  }
+
+  try {
+    const r = await fetch(`${req.nextUrl.origin}/api/auth/me`, {
+      headers: { cookie: req.headers.get('cookie') ?? '' },
+    });
+    if (!r.ok) throw new Error('unauthorized');
+  } catch {
+    const url = req.nextUrl.clone();
+    url.pathname = '/login';
+    url.searchParams.set('next', pathname + search);
+    const res = NextResponse.redirect(url);
+    res.cookies.delete('uid');
+    return res;
   }
 
   return NextResponse.next();
