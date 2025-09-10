@@ -1,6 +1,6 @@
 'use client';
 
-import SourceBadge from '../layout/SourceBadge';
+import SourceBadge from '../common/SourceBadge';
 import { chipFromReason, type Reason, type Source } from '../../lib/sources';
 
 export default function BecauseChips({ reasons }: { reasons: Reason[] }) {

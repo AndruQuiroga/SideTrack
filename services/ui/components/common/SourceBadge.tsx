@@ -2,14 +2,9 @@
 
 import { useRouter } from 'next/navigation';
 import * as Tooltip from '@radix-ui/react-tooltip';
-import {
-  Spotify,
-  Radio,
-  Brain,
-  Globe,
-} from 'lucide-react';
+import { Spotify, Radio, Brain, Globe } from 'lucide-react';
 import clsx from 'clsx';
-import { Source } from '../../lib/sources';
+import type { Source } from '../../lib/sources';
 
 const icons: Record<Source['type'], React.ElementType> = {
   spotify: Spotify,
@@ -28,7 +23,7 @@ const titles: Record<Source['type'], string> = {
 const statusColors: Record<Source['status'], string> = {
   connected: 'text-emerald-400',
   disconnected: 'text-rose-400',
-  syncing: 'text-amber-400 animate-pulse',
+  syncing: 'text-amber-400 motion-safe:animate-pulse',
 };
 
 export default function SourceBadge({ source }: { source: Source }) {
