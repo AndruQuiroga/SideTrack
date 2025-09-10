@@ -65,10 +65,28 @@ export const tokens = {
     ring: 'hsl(var(--light-ring))',
   },
   radii: {
-    lg: '12px',
-    md: '10px',
-    sm: '8px',
-    full: '9999px',
+    lg: 'var(--radius-lg)',
+    md: 'var(--radius-md)',
+    sm: 'var(--radius-sm)',
+    full: 'var(--radius-full)',
+  },
+  fontSize: {
+    xs: ['var(--text-xs)', { lineHeight: '1rem' }],
+    sm: ['var(--text-sm)', { lineHeight: '1.25rem' }],
+    base: ['var(--text-base)', { lineHeight: '1.5rem' }],
+    lg: ['var(--text-lg)', { lineHeight: '1.75rem' }],
+    xl: ['var(--text-xl)', { lineHeight: '1.75rem' }],
+    '2xl': ['var(--text-2xl)', { lineHeight: '2rem' }],
+  },
+  shadows: {
+    soft: 'var(--shadow-soft)',
+  },
+  brand: {
+    green: 'hsl(var(--brand-green))',
+    blue: 'hsl(var(--brand-blue))',
+    orange: 'hsl(var(--brand-orange))',
+    red: 'hsl(var(--brand-red))',
+    purple: 'hsl(var(--brand-purple))',
   },
 };
 
@@ -78,11 +96,10 @@ const config: Config = {
   theme: {
     extend: {
       spacing: tokens.spacing,
-      colors: tokens.colors,
+      colors: { ...tokens.colors, brand: tokens.brand },
       borderRadius: tokens.radii,
-      boxShadow: {
-        soft: '0 10px 30px rgba(0,0,0,0.12)',
-      },
+      boxShadow: tokens.shadows,
+      fontSize: tokens.fontSize,
       fontFamily: {
         sans: ['var(--font-sans)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
