@@ -12,18 +12,23 @@ export default function LoginPage() {
   const router = useRouter();
   const next = params.get('next');
 
-  async function handleLogin(e: FormEvent) {
-    e.preventDefault();
-    setError('');
-    const res = await apiFetch('/api/auth/login', {
+  async function loginRequest() {
+    return apiFetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),
     });
+  }
+
+  async function handleLogin(e: FormEvent) {
+    e.preventDefault();
+    setError('');
+    const res = await loginRequest();
     if (res.ok) {
       router.push(next || '/');
     } else {
-      setError('Login failed');
+      const data = await res.json().catch(() => ({}));
+      setError(data.detail || `${res.status} ${res.statusText}`);
     }
   }
 
@@ -35,9 +40,16 @@ export default function LoginPage() {
       body: JSON.stringify({ username, password }),
     });
     if (res.ok) {
-      await handleLogin(new Event('submit') as unknown as FormEvent);
+      const loginRes = await loginRequest();
+      if (loginRes.ok) {
+        router.push(next || '/');
+      } else {
+        const data = await loginRes.json().catch(() => ({}));
+        setError(data.detail || `${loginRes.status} ${loginRes.statusText}`);
+      }
     } else {
-      setError('Registration failed');
+      const data = await res.json().catch(() => ({}));
+      setError(data.detail || `${res.status} ${res.statusText}`);
     }
   }
 
