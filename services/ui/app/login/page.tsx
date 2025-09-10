@@ -16,11 +16,7 @@ export default function LoginPage() {
       body: JSON.stringify({ username, password }),
     });
     if (res.ok) {
-      const data = await res.json();
-      if (data.user_id) {
-        localStorage.setItem('user_id', data.user_id);
-        window.location.href = '/account';
-      }
+      window.location.href = '/account';
     } else {
       setError('Login failed');
     }
