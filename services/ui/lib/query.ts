@@ -19,11 +19,11 @@ export function useTrajectory() {
 export type OutlierTrack = { track_id: number; title: string; artist?: string; distance: number };
 export type OutliersResponse = { tracks: OutlierTrack[] };
 
-export function useOutliers() {
+export function useOutliers(range = '12w') {
   return useQuery<OutliersResponse>({
-    queryKey: ['outliers'],
+    queryKey: ['outliers', range],
     queryFn: async () => {
-      const res = await apiFetch('/dashboard/outliers');
+      const res = await apiFetch(`/dashboard/outliers?range=${encodeURIComponent(range)}`);
       if (!res.ok) throw new Error('Failed to fetch outliers');
       return (await res.json()) as OutliersResponse;
     },
