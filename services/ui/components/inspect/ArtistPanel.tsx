@@ -13,7 +13,7 @@ type ArtistData = {
   name?: string;
   tags?: string[];
   similar?: SimilarArtist[];
-  mb?: { label?: string; area?: string; firstReleaseYear?: number };
+  mb?: { label?: string; area?: string; era?: string };
   alsoListened?: AlsoListened[];
 };
 
@@ -82,7 +82,7 @@ export default function ArtistPanel({ artistId }: { artistId: number }) {
           <h3 className="mb-2 font-semibold">MusicBrainz</h3>
           <p>Label: {data.mb.label ?? '—'}</p>
           <p>Area: {data.mb.area ?? '—'}</p>
-          <p>First release: {data.mb.firstReleaseYear ?? '—'}</p>
+          <p>Era: {data.mb.era ?? '—'}</p>
         </section>
       )}
       {data?.alsoListened && data.alsoListened.length > 0 && (

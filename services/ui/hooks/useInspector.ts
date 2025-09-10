@@ -1,6 +1,13 @@
 "use client";
 
-import { createContext, ReactNode, useCallback, useContext, useState } from 'react';
+import {
+  createContext,
+  ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
 
 export type InspectTarget =
   | { type: 'artist'; id: number }
@@ -19,6 +26,26 @@ export function InspectorProvider({ children }: { children: ReactNode }) {
 
   const inspect = useCallback((t: InspectTarget) => setTarget(t), []);
   const close = useCallback(() => setTarget(null), []);
+
+  const handleLinkClick = useCallback(
+    (e: MouseEvent) => {
+      const el = (e.target as HTMLElement).closest<HTMLAnchorElement>('a[data-inspect]');
+      if (!el) return;
+      const val = el.getAttribute('data-inspect');
+      if (!val) return;
+      const [type, id] = val.split(':');
+      if ((type === 'artist' || type === 'track') && id) {
+        e.preventDefault();
+        inspect({ type: type as 'artist' | 'track', id: Number(id) });
+      }
+    },
+    [inspect]
+  );
+
+  useEffect(() => {
+    document.addEventListener('click', handleLinkClick);
+    return () => document.removeEventListener('click', handleLinkClick);
+  }, [handleLinkClick]);
 
   return (
     <InspectorContext.Provider value={{ target, inspect, close }}>
