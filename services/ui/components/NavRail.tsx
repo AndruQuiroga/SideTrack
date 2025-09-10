@@ -1,34 +1,24 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import dynamic from 'next/dynamic';
 import clsx from 'clsx';
 import { motion } from 'framer-motion';
 import * as Tooltip from '@radix-ui/react-tooltip';
+import * as Icons from 'lucide-react';
+import nav from '../nav.json';
 import { useNav } from './NavContext';
 import Avatar from './ui/Avatar';
 
-import {
-  Home,
-  Compass,
-  Activity,
-  Radar,
-  Target,
-  Settings,
-  User,
-  ChevronLeft,
-  ChevronRight,
-} from 'lucide-react';
+const { ChevronLeft, ChevronRight } = Icons;
 
-export const nav = [
-  { href: '/', label: 'Overview', icon: Home },
-  { href: '/trajectory', label: 'Trajectory', icon: Compass },
-  { href: '/moods', label: 'Moods', icon: Activity },
-  { href: '/radar', label: 'Radar', icon: Radar },
-  { href: '/outliers', label: 'Outliers', icon: Target },
-  { href: '/account', label: 'Account', icon: User },
-  { href: '/settings', label: 'Settings', icon: Settings },
-];
+type NavItem = {
+  path: string;
+  label: string;
+  icon: keyof typeof Icons;
+  featureFlag?: string | null;
+};
+
+const items = nav as NavItem[];
 
 export default function NavRail() {
   const pathname = usePathname();
@@ -41,14 +31,14 @@ export default function NavRail() {
       </div>
       <Tooltip.Provider>
         <nav className="flex flex-col gap-2">
-          {nav.map((item) => {
-            const Icon = item.icon;
-            const active = pathname === item.href;
+          {items.map((item) => {
+            const Icon = Icons[item.icon];
+            const active = pathname === item.path || pathname.startsWith(`${item.path}/`);
             return (
-              <Tooltip.Root key={item.href}>
+              <Tooltip.Root key={item.path}>
                 <Tooltip.Trigger asChild>
                   <Link
-                    href={item.href}
+                    href={item.path}
                     className={clsx(
                       'relative flex h-11 items-center gap-3 rounded-lg px-4 text-sm transition-colors',
                       active

@@ -1,5 +1,5 @@
-import ChartContainer from '../../components/ChartContainer';
-import Skeleton from '../../components/Skeleton';
+import ChartContainer from '../../../components/ChartContainer';
+import Skeleton from '../../../components/Skeleton';
 
 export default function Loading() {
   return (
