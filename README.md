@@ -59,10 +59,10 @@ docker compose up -d --build
 # 4) Apply DB migrations
 docker compose exec api alembic upgrade head
 
-# 5) Pull listens and aggregate (replace YOUR_USER)
-curl -H "X-User-Id: YOUR_USER" -X POST "http://localhost:8000/api/v1/ingest/listens?since=2024-01-01"
-curl -H "X-User-Id: YOUR_USER" -X POST "http://localhost:8000/tags/lastfm/sync?since=2024-01-01"
-curl -H "X-User-Id: YOUR_USER" -X POST "http://localhost:8000/aggregate/weeks"
+# 5) Pull listens and aggregate for a user
+curl -H "X-User-Id: some_user" -X POST "http://localhost:8000/api/v1/ingest/listens?since=2024-01-01"
+curl -H "X-User-Id: some_user" -X POST "http://localhost:8000/tags/lastfm/sync?since=2024-01-01"
+curl -H "X-User-Id: some_user" -X POST "http://localhost:8000/aggregate/weeks"
 # Sample listens file uses placeholder user IDs (`user1`–`user5`).
 
 # 6) Open the UI
@@ -91,8 +91,9 @@ POSTGRES_PASSWORD=vibe
 POSTGRES_PORT=5432
 
 # ListenBrainz / MusicBrainz
-LISTENBRAINZ_USER=your_user          # ListenBrainz username for ingestion
-LISTENBRAINZ_TOKEN=lb_xxx            # ListenBrainz API token
+# Per-user credentials are managed via the API/UI
+# LISTENBRAINZ_USER=
+# LISTENBRAINZ_TOKEN=
 MUSICBRAINZ_RATE_LIMIT=1.0   # req/sec
 
 # Last.fm
@@ -197,10 +198,10 @@ docker compose up -d --build
 # 5) Bootstrap DB (migrations)
 docker compose exec api alembic upgrade head
 
-# 6) First sync + analysis
-curl -H "X-User-Id: your-user" -X POST http://localhost:8000/api/v1/ingest/listens?since=2024-01-01
-curl -H "X-User-Id: your-user" -X POST http://localhost:8000/tags/lastfm/sync?since=2024-01-01
-curl -H "X-User-Id: your-user" -X POST http://localhost:8000/aggregate/weeks
+# 6) First sync + analysis for a user
+curl -H "X-User-Id: some_user" -X POST http://localhost:8000/api/v1/ingest/listens?since=2024-01-01
+curl -H "X-User-Id: some_user" -X POST http://localhost:8000/tags/lastfm/sync?since=2024-01-01
+curl -H "X-User-Id: some_user" -X POST http://localhost:8000/aggregate/weeks
 
 # 7) Open UI (default port)
 http://localhost:3000
