@@ -8,6 +8,11 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue>({ userId: '' });
 
+let currentUserId = '';
+export function getUserId() {
+  return currentUserId;
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userId, setUserId] = useState('');
 
@@ -17,6 +22,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUserId(decodeURIComponent(match[1]));
     }
   }, []);
+
+  useEffect(() => {
+    currentUserId = userId;
+  }, [userId]);
 
   return <AuthContext.Provider value={{ userId }}>{children}</AuthContext.Provider>;
 }

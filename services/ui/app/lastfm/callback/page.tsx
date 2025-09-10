@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '../../../lib/auth';
+import { apiFetch } from '../../../lib/api';
 
 export default function LastfmCallback() {
   const params = useSearchParams();
@@ -16,9 +17,7 @@ export default function LastfmCallback() {
       return;
     }
     if (!userId) return;
-    fetch(`/api/auth/lastfm/session?token=${token}`, {
-      headers: { 'X-User-Id': userId },
-    }).finally(() => router.replace('/settings'));
+    apiFetch(`/api/auth/lastfm/session?token=${token}`).finally(() => router.replace('/settings'));
   }, [params, router, userId]);
 
   return <p>Connecting to Last.fm...</p>;
