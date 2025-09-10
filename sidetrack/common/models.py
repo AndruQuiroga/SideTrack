@@ -16,6 +16,7 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from pgvector.sqlalchemy import Vector
 
 
 class Base(DeclarativeBase):
@@ -59,6 +60,7 @@ class Track(Base):
     duration: Mapped[int | None] = mapped_column(Integer, nullable=True)
     path_local: Mapped[str | None] = mapped_column(Text, nullable=True)
     fingerprint: Mapped[str | None] = mapped_column(String(128), index=True)
+    embeddings: Mapped[list[float] | None] = mapped_column(Vector(1536), nullable=True)
 
     artist: Mapped[Artist | None] = relationship("Artist", back_populates="tracks")
     release: Mapped[Release | None] = relationship("Release", back_populates="tracks")

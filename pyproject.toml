@@ -37,6 +37,7 @@ api = [
     "opentelemetry-instrumentation-sqlalchemy==0.57b0",
     "pytest-asyncio==0.23.7",
     "fastapi-limiter==0.1.6",
+    "pgvector==0.3.5",
 ]
 
 extractor = [
