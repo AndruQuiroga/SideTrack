@@ -18,3 +18,13 @@ class AnalyzeTrackResponse(BaseModel):
     track_id: int
     status: Literal["scheduled", "done"]
     features_id: int | None = None
+
+
+class AnalyzeBatchIn(BaseModel):
+    track_ids: list[int]
+
+
+class AnalyzeBatchResponse(BaseModel):
+    detail: str
+    scheduled: list[int]
+    already: list[int]
