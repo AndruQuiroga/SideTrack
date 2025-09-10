@@ -262,6 +262,9 @@ http://localhost:3000
 
 ## Testing
 
+See [`tests/README.md`](tests/README.md) for the full pyramid, speed budget and
+fixture layout.
+
 - Synthetic audio fixtures; golden feature vectors
 - Deterministic seeds for embeddings/UMAP
 - Snapshot tests for API responses and charts
