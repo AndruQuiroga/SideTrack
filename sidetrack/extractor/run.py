@@ -22,6 +22,7 @@ import os
 import signal
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 import typer
@@ -338,7 +339,7 @@ def main(
         help="Seconds between extraction passes",
         envvar="EXTRACTOR_INTERVAL",
     ),
-    schedule: str | None = typer.Option(
+    schedule: Optional[str] = typer.Option(
         None,
         "--schedule",
         help="Cron expression or seconds between passes",
@@ -377,7 +378,7 @@ async def _run_loop(
     batch_size: int,
     interval: float,
     once: bool,
-    schedule: str | None,
+    schedule: Optional[str],
 ) -> None:
     stop_event = asyncio.Event()
 
