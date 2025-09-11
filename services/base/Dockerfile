@@ -19,8 +19,10 @@ COPY pyproject.toml ./
 COPY sidetrack ./sidetrack
 
 # Build wheels for the core package and all extras so downstream builds don't
-# need internet access to resolve dependencies
-RUN pip wheel --no-cache-dir --wheel-dir /wheels \
+# need internet access to resolve dependencies. Use a BuildKit cache mount so
+# downloaded packages persist across builds.
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip wheel --wheel-dir /wheels \
     '.[api]' '.[worker]' '.[scheduler]' '.[extractor]' \
     && ls -l /wheels
 
