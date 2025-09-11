@@ -8,6 +8,7 @@ import * as Icons from 'lucide-react';
 import nav from '../nav.json';
 import { useNav } from './NavContext';
 import Avatar from './ui/Avatar';
+import useFeatureFlag from '../hooks/useFeatureFlag';
 
 const { ChevronLeft, ChevronRight } = Icons;
 
@@ -23,6 +24,7 @@ const items = nav as NavItem[];
 export default function NavRail() {
   const pathname = usePathname();
   const { collapsed, setCollapsed } = useNav();
+  const visibleItems = items.filter((item) => useFeatureFlag(item.featureFlag));
   return (
     <div className="flex h-full flex-col gap-2 p-3 glass">
       <div className="flex items-center gap-2 px-2 py-3">
@@ -30,8 +32,8 @@ export default function NavRail() {
         {!collapsed && <strong className="text-lg">SideTrack</strong>}
       </div>
       <Tooltip.Provider>
-        <nav className="flex flex-col gap-2">
-          {items.map((item) => {
+        <nav className="flex flex-col gap-2" aria-label="Primary">
+          {visibleItems.map((item, idx) => {
             const Icon = Icons[item.icon];
             const active = pathname === item.path || pathname.startsWith(`${item.path}/`);
             return (
@@ -39,6 +41,9 @@ export default function NavRail() {
                 <Tooltip.Trigger asChild>
                   <Link
                     href={item.path}
+                    aria-label={item.label}
+                    aria-current={active ? 'page' : undefined}
+                    accessKey={(idx + 1).toString()}
                     className={clsx(
                       'relative flex h-11 items-center gap-3 rounded-lg px-4 text-sm transition-colors',
                       active
@@ -81,6 +86,8 @@ export default function NavRail() {
       </Tooltip.Provider>
       <button
         onClick={() => setCollapsed(!collapsed)}
+        aria-label={collapsed ? 'Expand navigation' : 'Collapse navigation'}
+        accessKey="b"
         className="mt-auto flex h-11 items-center gap-2 px-4 text-sm text-muted-foreground"
       >
         {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
