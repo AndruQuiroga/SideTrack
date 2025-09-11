@@ -55,3 +55,11 @@ def test_register_rate_limit(client):
         json={"username": "rate-final", "password": "ValidPass1!"},
     )
     assert resp.status_code == 429
+
+
+def test_register_without_version_prefix(client):
+    resp = client.post(
+        "/auth/register",
+        json={"username": "noversion", "password": "ValidPass1!"},
+    )
+    assert resp.status_code == 200
