@@ -4,6 +4,8 @@ import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 import BecauseChips from './BecauseChips';
 import RecActions from './RecActions';
+import Skeleton from '../Skeleton';
+import { getArtworkUrl } from '../../lib/artwork';
 import type { Reason } from '../../lib/sources';
 
 export type Rec = {
@@ -23,16 +25,15 @@ interface Props {
 
 export default function RecCard({ rec, onLike, onSkip, onHideArtist }: Props) {
   const [img, setImg] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const startX = useRef<number | null>(null);
 
   useEffect(() => {
-    if (rec.spotify_id) {
-      fetch(`https://open.spotify.com/oembed?url=spotify:track:${rec.spotify_id}`)
-        .then((r) => r.json())
-        .then((j) => setImg(j?.thumbnail_url))
-        .catch(() => {});
-    }
-  }, [rec.spotify_id]);
+    setLoading(true);
+    getArtworkUrl(rec.spotify_id, rec.recording_mbid)
+      .then((url) => setImg(url))
+      .finally(() => setLoading(false));
+  }, [rec.spotify_id, rec.recording_mbid]);
 
   return (
     <div
@@ -48,9 +49,11 @@ export default function RecCard({ rec, onLike, onSkip, onHideArtist }: Props) {
         startX.current = null;
       }}
     >
-      {img && (
+      {loading ? (
+        <Skeleton className="h-[300px]" />
+      ) : (
         <Image
-          src={img}
+          src={img ?? '/default-cover.svg'}
           alt={`${rec.title} cover`}
           width={300}
           height={300}
