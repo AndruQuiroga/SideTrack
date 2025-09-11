@@ -18,6 +18,43 @@ export type TrajectoryPoint = { week: string; x: number; y: number; r?: number }
 export type TrajectoryArrow = { from: TrajectoryPoint; to: TrajectoryPoint };
 export type TrajectoryData = { points: TrajectoryPoint[]; arrows: TrajectoryArrow[] };
 
+export type DashboardKpi = {
+  id: string;
+  title: string;
+  value?: string | number | null;
+  delta?: { value: number; suffix?: string };
+  series?: number[];
+  error?: string;
+};
+
+export type DashboardInsight = {
+  id: string;
+  summary?: string;
+  error?: string;
+};
+
+export type DashboardData = {
+  lastArtist: string;
+  kpis: DashboardKpi[];
+  insights: DashboardInsight[];
+};
+
+export function useDashboard() {
+  return useQuery<DashboardData>({
+    queryKey: ['dashboard-summary'],
+    queryFn: async () => {
+      const res = await apiFetch('/dashboard/summary');
+      if (!res.ok) throw new Error('Failed to fetch dashboard summary');
+      const json = await res.json();
+      return {
+        lastArtist: json.last_artist ?? '',
+        kpis: json.kpis ?? [],
+        insights: json.insights ?? [],
+      } as DashboardData;
+    },
+  });
+}
+
 export function useTrajectory() {
   return useQuery<TrajectoryData>({
     queryKey: ['trajectory'],
