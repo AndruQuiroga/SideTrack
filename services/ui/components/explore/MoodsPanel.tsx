@@ -14,7 +14,7 @@ const MoodsStreamgraph = dynamic(() => import('../charts/MoodsStreamgraph'), {
 });
 
 export default function MoodsPanel() {
-  const { data: traj, isLoading: trajLoading } = useTrajectory();
+  const { data: traj, isLoading: trajLoading, isError: trajError } = useTrajectory();
   const [radarLoading, setRadarLoading] = useState(false);
   const [series, setSeries] = useState<{ week: Date; [axis: string]: number | Date }[]>([]);
   const [shifts, setShifts] = useState<Shift[]>([]);
@@ -103,6 +103,8 @@ export default function MoodsPanel() {
 
   const content = useMemo(() => {
     if (loading) return <ChartSkeleton className="h-[clamp(240px,40vh,340px)]" />;
+    if (trajError)
+      return <EmptyState title="Failed to load moods" description="Please try again later." />;
     if (!displaySeries.length)
       return <EmptyState title="No data yet" description="Ingest some listens to begin." />;
     return (

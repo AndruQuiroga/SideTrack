@@ -1,5 +1,5 @@
 'use client';
-import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import {
   ToastProvider as RadixToastProvider,
   ToastViewport,
@@ -7,13 +7,9 @@ import {
   ToastTitle,
   ToastDescription,
 } from './ui/Toast';
+import { setToastListener, type Toast as ToastType } from '../lib/toast';
 
-type Toast = {
-  id: number;
-  title: string;
-  description?: string;
-  kind?: 'success' | 'error' | 'info';
-};
+type Toast = ToastType & { id: number };
 type Ctx = { show: (t: Omit<Toast, 'id'>) => void; dismiss: (id: number) => void };
 
 const ToastCtx = createContext<Ctx | null>(null);
@@ -35,6 +31,10 @@ export default function ToastProvider({ children }: { children: React.ReactNode 
     [],
   );
   const value = useMemo(() => ({ show, dismiss }), [show, dismiss]);
+
+  useEffect(() => {
+    setToastListener(show);
+  }, [show]);
 
   return (
     <ToastCtx.Provider value={value}>
