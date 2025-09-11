@@ -29,6 +29,7 @@ import typer
 from croniter import croniter
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import ProgrammingError
 
 from sidetrack.common.models import Embedding, Feature, Track
 
@@ -362,9 +363,9 @@ def main(
     engine = create_engine(url, pool_pre_ping=True)
     typer.echo(f"[extractor] connected to DB: {url}")
     with Session(engine) as db:
-        # quick ping
+        # quick ping to ensure required tables exist
         try:
-            db.execute(text("SELECT 1"))
+            db.execute(text("SELECT 1 FROM track LIMIT 1"))
         except Exception as e:
             typer.echo(f"[extractor] DB not ready: {e}")
             return
@@ -396,7 +397,11 @@ async def _run_loop(
     try:
         while not stop_event.is_set():
             with Session(engine) as db:
-                pending = find_pending_tracks(db, batch_size=batch_size)
+                try:
+                    pending = find_pending_tracks(db, batch_size=batch_size)
+                except ProgrammingError as e:
+                    typer.echo(f"[extractor] DB not ready: {e}")
+                    break
                 if not pending:
                     typer.echo("[extractor] no pending tracks; sleeping")
                 for tr in pending:
