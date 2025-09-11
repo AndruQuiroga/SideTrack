@@ -5,7 +5,9 @@ services:
       dockerfile: services/base/Dockerfile
     image: sidetrack/base:dev
   db:
-    image: pgvector/pgvector:pg16
+    build:
+      context: .
+      dockerfile: services/db/Dockerfile
     environment:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
