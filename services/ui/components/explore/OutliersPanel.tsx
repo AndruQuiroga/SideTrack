@@ -10,13 +10,15 @@ type Props = {
 };
 
 export default function OutliersPanel({ range }: Props) {
-  const { data, isLoading } = useOutliers(range);
+  const { data, isLoading, isError } = useOutliers(range);
   const tracks = data?.tracks ?? [];
   const { inspect } = useInspector();
 
   let content;
   if (isLoading) {
     content = <Skeleton className="h-[clamp(120px,25vh,160px)]" />;
+  } else if (isError) {
+    content = <EmptyState title="Failed to load outliers." />;
   } else if (!tracks.length) {
     content = <EmptyState title="No outliers found." />;
   } else {

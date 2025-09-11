@@ -1,5 +1,18 @@
-import { useQuery } from '@tanstack/react-query';
+import { QueryClient, useQuery } from '@tanstack/react-query';
 import { apiFetch } from './api';
+import { showToast } from './toast';
+
+export const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: (failureCount, error) => failureCount < 2,
+      onError: (err: unknown) => {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        showToast({ title: 'Request failed', description: message, kind: 'error' });
+      },
+    },
+  },
+});
 
 export type TrajectoryPoint = { week: string; x: number; y: number; r?: number };
 export type TrajectoryArrow = { from: TrajectoryPoint; to: TrajectoryPoint };
@@ -10,7 +23,6 @@ export function useTrajectory() {
     queryKey: ['trajectory'],
     queryFn: async () => {
       const res = await apiFetch('/dashboard/trajectory');
-      if (!res.ok) throw new Error('Failed to fetch trajectory');
       return (await res.json()) as TrajectoryData;
     },
   });
@@ -24,7 +36,6 @@ export function useOutliers(range = '12w') {
     queryKey: ['outliers', range],
     queryFn: async () => {
       const res = await apiFetch(`/dashboard/outliers?range=${encodeURIComponent(range)}`);
-      if (!res.ok) throw new Error('Failed to fetch outliers');
       return (await res.json()) as OutliersResponse;
     },
   });
@@ -43,7 +54,6 @@ export function useRecentListens(limit = 50) {
     queryKey: ['recent-listens', limit],
     queryFn: async () => {
       const res = await apiFetch(`/listens/recent?limit=${limit}`);
-      if (!res.ok) throw new Error('Failed to fetch recent listens');
       return (await res.json()) as RecentListensResponse;
     },
   });
