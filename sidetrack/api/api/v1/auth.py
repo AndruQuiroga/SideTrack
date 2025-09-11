@@ -2,7 +2,7 @@
 
 import re
 import secrets
-from datetime import datetime
+from datetime import datetime, timezone
 from hashlib import sha256
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -49,7 +49,7 @@ async def register(creds: Credentials, db: AsyncSession = Depends(get_db)):
     user = UserAccount(
         user_id=creds.username,
         password_hash=hash_password(creds.password),
-        created_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
     )
     db.add(user)
     await db.commit()
