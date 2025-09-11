@@ -90,6 +90,8 @@ services:
   ui:
     build: ./services/ui
     env_file: .env
+    environment:
+      NEXT_PUBLIC_API_BASE: http://api:8000
     depends_on: [api]
     ports: ["3000:3000"]
 
