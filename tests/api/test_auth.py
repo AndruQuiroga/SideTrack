@@ -63,3 +63,13 @@ def test_register_without_version_prefix(client):
         json={"username": "noversion", "password": "ValidPass1!"},
     )
     assert resp.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_register_async_client(async_client):
+    resp = await async_client.post(
+        "/auth/register",
+        json={"username": "asyncuser", "password": "ValidPass1!"},
+    )
+    assert resp.status_code == 200
+    assert resp.json() == {"user_id": "asyncuser"}

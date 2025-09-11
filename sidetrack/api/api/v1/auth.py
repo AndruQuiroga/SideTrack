@@ -53,6 +53,7 @@ async def register(creds: Credentials, db: AsyncSession = Depends(get_db)):
     )
     db.add(user)
     await db.commit()
+    await db.refresh(user)
     return UserOut.model_validate(user)
 
 
