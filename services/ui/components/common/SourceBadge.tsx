@@ -2,12 +2,13 @@
 
 import { useRouter } from 'next/navigation';
 import * as Tooltip from '@radix-ui/react-tooltip';
-import { Spotify, Radio, Brain, Globe } from 'lucide-react';
+import { Radio, Brain, Globe } from 'lucide-react';
+import SpotifyIcon from './SpotifyIcon';
 import clsx from 'clsx';
 import type { Source } from '../../lib/sources';
 
 const icons: Record<Source['type'], React.ElementType> = {
-  spotify: Spotify,
+  spotify: SpotifyIcon,
   lastfm: Radio,
   lb: Brain,
   mb: Globe,
