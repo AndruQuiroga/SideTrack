@@ -1,141 +1,120 @@
 'use client';
 
-import { useState, FormEvent, useEffect } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import Script from 'next/script';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { Input } from '../../components/ui/input';
+import { Button } from '../../components/ui/button';
 import { apiFetch } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
+import { handleGoogle } from '../../lib/handleGoogle';
+import { useToast } from '../../components/ToastProvider';
+
+interface LoginFields {
+  username: string;
+  password: string;
+}
+
+interface AuthResponse {
+  user_id?: string;
+  detail?: string;
+}
 
 export default function LoginPage() {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
   const params = useSearchParams();
   const router = useRouter();
-  const { setUserId } = useAuth();
   const next = params.get('next');
+  const { setUserId } = useAuth();
+  const { show } = useToast();
 
-  useEffect(() => {
-    const script = document.createElement('script');
-    script.src = 'https://accounts.google.com/gsi/client';
-    script.async = true;
-    script.defer = true;
-    document.body.appendChild(script);
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, []);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFields>();
 
-  async function loginRequest() {
+  async function loginRequest(values: LoginFields) {
     return apiFetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify(values),
     });
   }
 
-  async function handleLogin(e: FormEvent) {
-    e.preventDefault();
-    setError('');
-    const res = await loginRequest();
+  const onSubmit = handleSubmit(async (values) => {
+    show({ title: 'Logging in…', kind: 'info' });
+    const res = await loginRequest(values);
     if (res.ok) {
+      const data: AuthResponse = await res.json().catch(() => ({}) as AuthResponse);
+      setUserId(data.user_id || '');
       router.push(next || '/');
     } else {
-      const data = await res.json().catch(() => ({}));
-      setError(data.detail || `${res.status} ${res.statusText}`);
+      const data: AuthResponse = await res.json().catch(() => ({}) as AuthResponse);
+      show({ title: data.detail || `${res.status} ${res.statusText}`, kind: 'error' });
     }
-  }
+  });
 
-  async function handleRegister() {
-    setError('');
+  const onRegister = handleSubmit(async (values) => {
+    show({ title: 'Registering…', kind: 'info' });
     const res = await apiFetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify(values),
     });
     if (res.ok) {
-      const loginRes = await loginRequest();
+      const loginRes = await loginRequest(values);
       if (loginRes.ok) {
+        const data: AuthResponse = await loginRes.json().catch(() => ({}) as AuthResponse);
+        setUserId(data.user_id || '');
         router.push(next || '/');
       } else {
-        const data = await loginRes.json().catch(() => ({}));
-        setError(data.detail || `${loginRes.status} ${loginRes.statusText}`);
+        const data: AuthResponse = await loginRes.json().catch(() => ({}) as AuthResponse);
+        show({
+          title: data.detail || `${loginRes.status} ${loginRes.statusText}`,
+          kind: 'error',
+        });
       }
     } else {
-      const data = await res.json().catch(() => ({}));
-      setError(data.detail || `${res.status} ${res.statusText}`);
+      const data: AuthResponse = await res.json().catch(() => ({}) as AuthResponse);
+      show({ title: data.detail || `${res.status} ${res.statusText}`, kind: 'error' });
     }
-  }
+  });
 
-  async function handleGoogle() {
-    setError('');
-    const g: any = (window as any).google;
-    if (!g?.accounts?.id) {
-      setError('Google services unavailable');
-      return;
-    }
-    g.accounts.id.initialize({
-      client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '',
-      callback: async (response: any) => {
-        const r = await apiFetch('/api/auth/continue/google', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: response.credential }),
-        });
-        if (r.ok) {
-          const data = await r.json().catch(() => ({}));
-          setUserId((data as any)?.user_id || '');
-          router.push(next || '/');
-        } else {
-          const data = await r.json().catch(() => ({}));
-          setError(data.detail || `${r.status} ${r.statusText}`);
-        }
-      },
-    });
-    g.accounts.id.prompt();
+  async function handleGoogleClick() {
+    await handleGoogle({ next, setUserId, router, show });
   }
 
   return (
     <section className="max-w-sm mx-auto mt-20 space-y-4">
+      <Script src="https://accounts.google.com/gsi/client" strategy="afterInteractive" />
       <h2 className="text-xl font-bold">Login</h2>
-      {error && (
-        <div role="alert" className="text-red-500">
-          {error}
-        </div>
-      )}
-      <form onSubmit={handleLogin} className="space-y-2">
-        <input
+      <form onSubmit={onSubmit} className="space-y-2">
+        <Input
           placeholder="Username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          className="w-full rounded border px-2 py-1 text-black"
+          {...register('username', { required: 'Username is required' })}
         />
-        <input
+        {errors.username && <p className="text-sm text-red-500">{errors.username.message}</p>}
+        <Input
           type="password"
           placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full rounded border px-2 py-1 text-black"
+          {...register('password', { required: 'Password is required' })}
         />
+        {errors.password && <p className="text-sm text-red-500">{errors.password.message}</p>}
         <div className="flex gap-2">
-          <button type="submit" className="rounded bg-emerald-500 px-3 py-1 text-white">
-            Login
-          </button>
-          <button
-            type="button"
-            onClick={handleRegister}
-            className="rounded bg-sky-500 px-3 py-1 text-white"
-          >
+          <Button type="submit">Login</Button>
+          <Button type="button" variant="outline" onClick={onRegister}>
             Register
-          </button>
+          </Button>
         </div>
       </form>
-      <button
+      <Button
         type="button"
-        onClick={handleGoogle}
-        className="w-full rounded border bg-white px-3 py-1 text-black"
+        onClick={handleGoogleClick}
+        variant="outline"
+        className="w-full bg-white text-black"
       >
         Continue with Google
-      </button>
+      </Button>
     </section>
   );
 }
