@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Sparkles, ChevronRight, Compass, Flame, Music, TrendingUp } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import KpiCard from '../../components/dashboard/KpiCard';
 import InsightCard from '../../components/dashboard/InsightCard';
 import QuickActions from '../../components/dashboard/QuickActions';
@@ -42,6 +43,10 @@ function VibeSummary({ lastArtist }: { lastArtist: string }) {
 function MiniTrajectory() {
   const { data } = useTrajectory();
   const points = data?.points ?? [];
+  const pathD =
+    points.length > 1
+      ? `M${points.map((p, i) => `${(i / (points.length - 1)) * 100},${40 - p.y * 40}`).join(' L')}`
+      : '';
   return (
     <Card variant="glass" className="p-4 md:p-6">
       <div className="flex items-center gap-2 text-violet-300">
@@ -55,15 +60,17 @@ function MiniTrajectory() {
             <stop offset="100%" stopColor="rgba(244,114,182,0.6)" />
           </linearGradient>
         </defs>
-        {points.length > 1 && (
-          <path
-            d={`M${points
-              .map((p, i) => `${(i / (points.length - 1)) * 100},${40 - p.y * 40}`)
-              .join(' L')}`}
+        {pathD && (
+          <motion.path
+            key={`traj-${points.length}`}
+            d={pathD}
             fill="none"
             stroke="url(#traj-grad)"
             strokeWidth={2.5}
             strokeLinecap="round"
+            initial={{ pathLength: 0, opacity: 0.6 }}
+            animate={{ pathLength: 1, opacity: 1 }}
+            transition={{ duration: 0.8, ease: 'easeInOut' }}
           />
         )}
       </svg>
@@ -219,9 +226,24 @@ export default function DashboardPage() {
 
       {/* Insights carousel */}
       <div className="flex gap-4 overflow-x-auto pb-2">
-        {isLoading
-          ? [1, 2, 3].map((i) => <Skeleton key={i} className="h-24 min-w-[220px]" />)
-          : (data?.insights || []).map((ins) => <InsightCard key={ins.id} insight={ins} />)}
+        {isLoading ? (
+          [1, 2, 3].map((i) => <Skeleton key={i} className="h-24 min-w-[220px]" />)
+        ) : (
+          <AnimatePresence mode="popLayout">
+            {(data?.insights || []).map((ins) => (
+              <motion.div
+                key={ins.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.35, ease: 'easeOut' }}
+                whileHover={{ scale: 1.02 }}
+              >
+                <InsightCard insight={ins} />
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        )}
       </div>
 
       {/* Subtle KPIs */}
