@@ -111,6 +111,19 @@ body {
   color: hsl(var(--foreground));
 }
 
+/* Subtle grid background utility for app shell */
+.bg-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size:
+    24px 24px,
+    24px 24px;
+  background-position:
+    -1px -1px,
+    -1px -1px;
+}
+
 .glass {
   background: rgba(255, 255, 255, 0.04);
   backdrop-filter: saturate(140%) blur(8px);
