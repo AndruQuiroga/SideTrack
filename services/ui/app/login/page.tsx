@@ -9,7 +9,8 @@ import { apiFetch } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { handleGoogle } from '../../lib/handleGoogle';
 import { useToast } from '../../components/ToastProvider';
-import { Music, Sparkles, Spotify, Radio } from 'lucide-react';
+import { Music, Sparkles, Radio } from 'lucide-react';
+import SpotifyIcon from '../../components/common/SpotifyIcon';
 
 interface LoginFields {
   username: string;
@@ -157,7 +158,7 @@ export default function LoginPage() {
             <Sparkles size={16} className="mr-2" /> Continue with Google
           </Button>
           <Button type="button" variant="outline" className="w-full" onClick={handleSpotifyClick}>
-            <Spotify size={16} className="mr-2" /> Continue with Spotify
+            <SpotifyIcon size={16} className="mr-2" /> Continue with Spotify
           </Button>
           <Button type="button" variant="outline" className="w-full" onClick={handleLastfmClick}>
             <Radio size={16} className="mr-2" /> Continue with Last.fm
