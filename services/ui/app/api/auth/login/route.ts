@@ -14,14 +14,16 @@ export async function POST(req: NextRequest) {
   if (r.ok && data?.user_id) {
     const host = req.nextUrl.hostname;
     const secure = req.nextUrl.protocol === 'https:';
-    res.cookies.set('uid', String(data.user_id), {
+    const isLocal = host === 'localhost' || /^\d+\.\d+\.\d+\.\d+$/.test(host);
+    const baseCookie = {
       httpOnly: true,
-      sameSite: 'lax',
+      sameSite: 'lax' as const,
       path: '/',
       maxAge: 60 * 60 * 24 * 30, // 30 days
-      domain: host,
-      secure,
-    });
+      ...(secure ? { secure: true } : {}),
+      ...(!isLocal ? { domain: host } : {}),
+    };
+    res.cookies.set('uid', String(data.user_id), baseCookie);
     // Exchange to a bearer token for Authorization header usage
     const tokenRes = await fetch(`${API_BASE}/auth/token/exchange`, {
       method: 'POST',
@@ -31,14 +33,7 @@ export async function POST(req: NextRequest) {
       access_token?: string;
     };
     if (tokenRes.ok && tokenData.access_token) {
-      res.cookies.set('at', tokenData.access_token, {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 60 * 60 * 24 * 30,
-        domain: host,
-        secure,
-      });
+      res.cookies.set('at', tokenData.access_token, baseCookie);
     }
   }
   return res;
