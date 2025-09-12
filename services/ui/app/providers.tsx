@@ -1,6 +1,7 @@
 'use client';
 
 import { QueryClientProvider } from '@tanstack/react-query';
+import * as Tooltip from '@radix-ui/react-tooltip';
 import { AuthProvider } from '../lib/auth';
 import { queryClient } from '../lib/query';
 import { NavProvider } from '../components/NavContext';
@@ -11,7 +12,9 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     <ToastProvider>
       <AuthProvider>
         <QueryClientProvider client={queryClient}>
-          <NavProvider>{children}</NavProvider>
+          <Tooltip.Provider delayDuration={150} skipDelayDuration={300} disableHoverableContent>
+            <NavProvider>{children}</NavProvider>
+          </Tooltip.Provider>
         </QueryClientProvider>
       </AuthProvider>
     </ToastProvider>
