@@ -226,6 +226,15 @@ async def lastfm_session(
     row.lastfm_session_key = key
     db.add(row)
     await db.commit()
+    try:
+        logger.info(
+            "LastFM session stored user=%s lfm_user=%s has_key=%s",
+            user_id,
+            name,
+            bool(key),
+        )
+    except Exception:
+        pass
     return {"ok": True, "lastfmUser": name}
 
 

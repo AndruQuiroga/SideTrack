@@ -17,7 +17,12 @@ export default function LastfmCallback() {
     }
     if (fired.current) return;
     fired.current = true;
-    apiFetch(`/api/auth/lastfm/session?token=${token}`).finally(() => router.replace('/settings'));
+    apiFetch(`/api/auth/lastfm/session?token=${token}`)
+      .then(() => {
+        // Prime settings so the Settings page reflects connection immediately
+        return apiFetch('/api/settings').catch(() => undefined);
+      })
+      .finally(() => router.replace('/settings'));
   }, [params, router]);
 
   return <p>Connecting to Last.fm...</p>;
