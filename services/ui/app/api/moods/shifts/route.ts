@@ -9,13 +9,7 @@ export async function GET(req: NextRequest) {
   const at = req.headers.get('authorization') || req.cookies.get('at')?.value || '';
   if (at && !headers['Authorization'])
     headers['Authorization'] = at.startsWith('Bearer ') ? at : `Bearer ${at}`;
-  const range = req.nextUrl.searchParams.get('range') || '12w';
-  const r = await fetch(
-    `${API_BASE}/api/v1/dashboard/outliers?range=${encodeURIComponent(range)}`,
-    {
-      headers,
-    },
-  );
+  const r = await fetch(`${API_BASE}/api/v1/moods/shifts`, { headers });
   const data = await r.json().catch(() => ({}));
   return NextResponse.json(data, { status: r.status });
 }

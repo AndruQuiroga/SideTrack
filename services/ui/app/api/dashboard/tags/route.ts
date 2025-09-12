@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
   const limit = req.nextUrl.searchParams.get('limit') || '12';
   const days = req.nextUrl.searchParams.get('days') || '90';
   const r = await fetch(
-    `${API_BASE}/v1/dashboard/tags?limit=${encodeURIComponent(limit)}&days=${encodeURIComponent(days)}`,
+    `${API_BASE}/api/v1/dashboard/tags?limit=${encodeURIComponent(limit)}&days=${encodeURIComponent(days)}`,
     { headers },
   );
   const data = await r.json().catch(() => ({}));

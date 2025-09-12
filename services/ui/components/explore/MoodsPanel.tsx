@@ -38,7 +38,7 @@ export default function MoodsPanel() {
         const weeks = (traj.points ?? []).slice(-12).map((p) => p.week);
         const rows = await Promise.all(
           weeks.map(async (w) => {
-            const r = await apiFetch(`/v1/dashboard/radar?week=${encodeURIComponent(w)}`);
+            const r = await apiFetch(`/api/dashboard/radar?week=${encodeURIComponent(w)}`);
             const j = await r.json();
             return { week: new Date(j.week), ...j.axes };
           }),
@@ -59,7 +59,7 @@ export default function MoodsPanel() {
     let mounted = true;
     (async () => {
       try {
-        const r = await apiFetch('/v1/moods/shifts');
+        const r = await apiFetch('/api/moods/shifts');
         const j = await r.json();
         if (mounted) setShifts(j);
       } catch {

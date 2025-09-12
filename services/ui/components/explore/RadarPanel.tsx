@@ -25,7 +25,7 @@ async function fetchRadar(cohort?: string): Promise<RadarData> {
   const week = last?.week;
   if (!week) return { week: null, axes: {}, baseline: {} } as RadarData;
   const cohortParam = cohort ? `&cohort=${encodeURIComponent(cohort)}` : '';
-  const res = await apiFetch(`/v1/dashboard/radar?week=${encodeURIComponent(week)}${cohortParam}`);
+  const res = await apiFetch(`/api/dashboard/radar?week=${encodeURIComponent(week)}${cohortParam}`);
   return (await res.json()) as RadarData;
 }
 
