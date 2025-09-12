@@ -37,8 +37,8 @@ export default function SourceCard({
 
   async function handleConnect() {
     try {
-      const callback = encodeURIComponent(`${window.location.origin}/${id}/callback`);
-      const res = await apiFetch(`${connectUrl}?callback=${callback}`);
+      const callback = `${window.location.origin}/${id}/callback`;
+      const res = await apiFetch(`${connectUrl}?callback=${encodeURIComponent(callback)}`);
       const data = await res.json().catch(() => ({}));
       if (res.ok && data.url) {
         window.location.href = data.url as string;
@@ -76,11 +76,7 @@ export default function SourceCard({
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">{name}</h3>
         <span
-          className={
-            status === 'connected'
-              ? 'text-emerald-500 text-sm'
-              : 'text-rose-500 text-sm'
-          }
+          className={status === 'connected' ? 'text-emerald-500 text-sm' : 'text-rose-500 text-sm'}
         >
           {status}
         </span>
@@ -100,16 +96,10 @@ export default function SourceCard({
             Connect
           </Button>
         )}
-        <Button
-          type="button"
-          variant="outline"
-          onClick={handleTest}
-          aria-label={`${name} test`}
-        >
+        <Button type="button" variant="outline" onClick={handleTest} aria-label={`${name} test`}>
           Test
         </Button>
       </div>
     </Card>
   );
 }
-
