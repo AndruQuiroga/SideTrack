@@ -108,6 +108,17 @@ class SpotifyClient:
         resp.raise_for_status()
         return resp.json()
 
+    async def get_currently_playing(self, access_token: str) -> dict[str, Any] | None:
+        """Return the user's currently playing track, or None if nothing playing."""
+        headers = {"Authorization": f"Bearer {access_token}"}
+        resp = await self._client.get(
+            f"{self.api_root}/me/player/currently-playing", headers=headers, timeout=30
+        )
+        if resp.status_code == 204:
+            return None
+        resp.raise_for_status()
+        return resp.json()
+
 
 async def get_spotify_client(
     settings: Settings = Depends(get_settings),

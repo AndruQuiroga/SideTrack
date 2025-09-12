@@ -119,3 +119,26 @@ async def spotify_track_features(
 
     fid = await fetch_spotify_features(track_id, row.spotify_access_token, sp_client)
     return {"detail": "ok", "status": "created", "feature_id": fid}
+
+
+@router.get("/spotify/now")
+async def spotify_now_playing(
+    sp_client: SpotifyClient = Depends(get_spotify_client),
+    db: AsyncSession = Depends(get_db),
+    user_id: str = Depends(get_current_user),
+):
+    row = (
+        await db.execute(select(UserSettings).where(UserSettings.user_id == user_id))
+    ).scalar_one_or_none()
+    if not row or not row.spotify_access_token:
+        return {"playing": False}
+    try:
+        data = await sp_client.get_currently_playing(row.spotify_access_token)
+    except Exception:
+        return {"playing": False}
+    if not data or not data.get("item"):
+        return {"playing": False}
+    item = data.get("item") or {}
+    title = item.get("name") or ""
+    artists = ", ".join([a.get("name") for a in (item.get("artists") or []) if a.get("name")])
+    return {"playing": True, "title": title, "artist": artists}

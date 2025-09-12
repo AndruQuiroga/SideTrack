@@ -2,6 +2,8 @@
 
 import { useSources } from '../../lib/sources';
 import HeaderActions from '../HeaderActions';
+import { useEffect, useState } from 'react';
+import { apiFetch } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { Disc3 } from 'lucide-react';
 import Breadcrumbs from '../common/Breadcrumbs';
@@ -10,6 +12,26 @@ import SourceBadge from '../common/SourceBadge';
 export default function Header() {
   const { data: sources } = useSources();
   const { userId } = useAuth();
+  const [now, setNow] = useState<{ playing: boolean; title?: string; artist?: string }>({
+    playing: false,
+  });
+  useEffect(() => {
+    let timer: ReturnType<typeof setInterval> | null = null;
+    async function load() {
+      try {
+        const r = await apiFetch('/api/spotify/now');
+        const j = await r.json();
+        setNow(j || { playing: false });
+      } catch {
+        setNow({ playing: false });
+      }
+    }
+    load();
+    timer = setInterval(load, 20000);
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, []);
   const initials = (userId || 'U').slice(0, 2).toUpperCase();
 
   return (
@@ -21,7 +43,15 @@ export default function Header() {
 
       <div className="hidden md:flex items-center gap-2 text-xs text-muted-foreground">
         <span className="rounded-full bg-white/5 px-2 py-1">Now playing</span>
-        <span className="truncate max-w-[220px]">— nothing yet</span>
+        <span className="truncate max-w-[260px]">
+          {now.playing ? (
+            <>
+              {now.title} <span className="text-foreground/70">— {now.artist}</span>
+            </>
+          ) : (
+            '— nothing yet'
+          )}
+        </span>
       </div>
 
       <div className="ml-auto flex items-center gap-3">
