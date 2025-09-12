@@ -6,6 +6,7 @@ import { AuthProvider } from '../lib/auth';
 import { queryClient } from '../lib/query';
 import { NavProvider } from '../components/NavContext';
 import ToastProvider from '../components/ToastProvider';
+import { InspectorProvider } from '../hooks/useInspector';
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -13,7 +14,9 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       <AuthProvider>
         <QueryClientProvider client={queryClient}>
           <Tooltip.Provider delayDuration={150} skipDelayDuration={300} disableHoverableContent>
-            <NavProvider>{children}</NavProvider>
+            <InspectorProvider>
+              <NavProvider>{children}</NavProvider>
+            </InspectorProvider>
           </Tooltip.Provider>
         </QueryClientProvider>
       </AuthProvider>
