@@ -32,7 +32,7 @@ from .clients.spotify import SpotifyClient, get_spotify_client
 from .config import Settings
 from .config import get_settings as get_app_settings
 from .constants import AXES, DEFAULT_METHOD
-from .db import get_db, maybe_create_all
+from .db import SessionLocal, get_db, maybe_create_all
 from .schemas.labels import LabelResponse
 from .schemas.scoring import ScoreBatchIn
 from .schemas.settings import SettingsIn, SettingsOut, SettingsUpdateResponse
@@ -43,7 +43,7 @@ from .schemas.tracks import (
     TrackPathIn,
     TrackPathResponse,
 )
-from .security import get_current_user, require_role
+from .security import get_current_user, hash_password, require_role
 
 setup_logging()
 setup_tracing("sidetrack-api")
@@ -101,6 +101,27 @@ async def _startup():
         settings = get_app_settings()
         redis = redis_async.from_url(settings.redis_url, encoding="utf-8", decode_responses=True)
         await FastAPILimiter.init(redis)
+
+    # Seed a default user for local/dev if configured
+    import os
+
+    from sidetrack.common.models import UserAccount as _UserAccount
+
+    default_user = os.getenv("DEFAULT_USER") or os.getenv("ADMIN_USER")
+    default_password = os.getenv("DEFAULT_PASSWORD") or os.getenv("ADMIN_PASSWORD")
+    if default_user and default_password:
+        try:
+            async with SessionLocal(async_session=True) as s:  # type: ignore[arg-type]
+                existing = await s.get(_UserAccount, default_user)
+                if not existing:
+                    u = _UserAccount(
+                        user_id=default_user, password_hash=hash_password(default_password)
+                    )
+                    s.add(u)
+                    await s.commit()
+                    logger.info("Seeded default user", user=default_user)
+        except Exception as exc:  # pragma: no cover
+            logger.warning("Default user seed failed", error=str(exc))
 
 
 @app.on_event("shutdown")
