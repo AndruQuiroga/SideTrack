@@ -137,45 +137,6 @@ numpy==1.26.4
     #   sidetrack
     #   soxr
 
-opentelemetry-api==1.36.0
-    # via
-    #   opentelemetry-instrumentation
-    #   opentelemetry-instrumentation-asgi
-    #   opentelemetry-instrumentation-fastapi
-    #   opentelemetry-instrumentation-httpx
-    #   opentelemetry-instrumentation-sqlalchemy
-    #   opentelemetry-sdk
-    #   opentelemetry-semantic-conventions
-    #   sidetrack
-opentelemetry-instrumentation==0.57b0
-    # via
-    #   opentelemetry-instrumentation-asgi
-    #   opentelemetry-instrumentation-fastapi
-    #   opentelemetry-instrumentation-httpx
-    #   opentelemetry-instrumentation-sqlalchemy
-opentelemetry-instrumentation-asgi==0.57b0
-    # via opentelemetry-instrumentation-fastapi
-opentelemetry-instrumentation-fastapi==0.57b0
-    # via sidetrack
-opentelemetry-instrumentation-httpx==0.57b0
-    # via sidetrack
-opentelemetry-instrumentation-sqlalchemy==0.57b0
-    # via sidetrack
-opentelemetry-sdk==1.36.0
-    # via sidetrack
-opentelemetry-semantic-conventions==0.57b0
-    # via
-    #   opentelemetry-instrumentation
-    #   opentelemetry-instrumentation-asgi
-    #   opentelemetry-instrumentation-fastapi
-    #   opentelemetry-instrumentation-httpx
-    #   opentelemetry-instrumentation-sqlalchemy
-    #   opentelemetry-sdk
-opentelemetry-util-http==0.57b0
-    # via
-    #   opentelemetry-instrumentation-asgi
-    #   opentelemetry-instrumentation-fastapi
-    #   opentelemetry-instrumentation-httpx
 packaging==25.0
     # via
     #   black
@@ -314,8 +275,7 @@ sqlalchemy==2.0.32
     #   sidetrack
 starlette==0.37.2
     # via fastapi
-structlog==25.4.0
-    # via sidetrack
+
 syrupy==4.9.1
     # via -r requirements-dev.in
 tenacity==8.2.3
@@ -333,9 +293,7 @@ typing-extensions==4.15.0
     #   anyio
     #   fastapi
     #   librosa
-    #   opentelemetry-api
-    #   opentelemetry-sdk
-    #   opentelemetry-semantic-conventions
+
     #   psycopg
     #   pydantic
     #   pydantic-core

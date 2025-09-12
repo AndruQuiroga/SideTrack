@@ -1,14 +1,12 @@
+import logging
 from datetime import date, datetime, timedelta
 
 import httpx
 import redis.asyncio as redis_async
-import structlog
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi_limiter import FastAPILimiter
-from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
 from sqlalchemy import and_, delete, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -60,8 +58,6 @@ async def get_http_client():
 
 
 app = FastAPI(title="SideTrack API", version="0.1.0")
-FastAPIInstrumentor().instrument_app(app)
-HTTPXClientInstrumentor().instrument()
 
 app.add_middleware(
     CORSMiddleware,
@@ -72,7 +68,7 @@ app.add_middleware(
 )
 
 
-logger = structlog.get_logger("sidetrack.auth")
+logger = logging.getLogger("sidetrack.auth")
 
 
 @app.middleware("http")
@@ -82,7 +78,7 @@ async def handle_exceptions(request: Request, call_next):
     except HTTPException:
         raise
     except Exception:  # pragma: no cover - fallback
-        logger.exception("Unhandled exception", path=request.url.path)
+        logger.exception("Unhandled exception path=%s", request.url.path)
         return JSONResponse(status_code=500, content={"detail": "Internal Server Error"})
 
 
@@ -91,7 +87,7 @@ async def log_unauthorized(request: Request, call_next):
     """Log and propagate unauthorized access attempts."""
     response = await call_next(request)
     if response.status_code == 401:
-        logger.warning("Unauthorized access", method=request.method, path=request.url.path)
+        logger.warning("Unauthorized access method=%s path=%s", request.method, request.url.path)
     return response
 
 
@@ -221,7 +217,7 @@ async def lastfm_session(
     try:
         key, name = await lf_client.get_session(token)
     except (RuntimeError, httpx.HTTPError) as exc:
-        logger.error("LastFM session error", error=str(exc))
+        logger.error("LastFM session error: %s", str(exc))
         raise HTTPException(status_code=400, detail=str(exc))
     row = await db.get(UserSettings, user_id)
     if not row:
@@ -275,7 +271,7 @@ async def spotify_callback(
         profile = await sp_client.get_current_user(access_token)
         username = profile.get("id") or profile.get("display_name")
     except (RuntimeError, httpx.HTTPError) as exc:
-        logger.error("Spotify auth error", error=str(exc))
+        logger.error("Spotify auth error: %s", str(exc))
         raise HTTPException(status_code=400, detail=str(exc))
     row = await db.get(UserSettings, user_id)
     if not row:
@@ -378,7 +374,7 @@ async def sync_lastfm_tags(
             await lf_client.get_track_tags(db, tid, artist_name, title)
             updated += 1
         except (RuntimeError, httpx.HTTPError) as exc:
-            logger.warning("Tag sync failed", track_id=tid, error=str(exc))
+            logger.warning("Tag sync failed track_id=%s error=%s", tid, str(exc))
             continue
     return {"detail": "ok", "updated": updated}
 

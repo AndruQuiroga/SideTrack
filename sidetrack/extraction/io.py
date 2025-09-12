@@ -1,13 +1,12 @@
-from __future__ import annotations
-
 """I/O utilities for the extraction pipeline."""
 
-from pathlib import Path
-from typing import Tuple
+from __future__ import annotations
+
+import logging
 import time
+from pathlib import Path
 
 import numpy as np
-import structlog
 
 try:  # pragma: no cover - optional dependency
     import soundfile as sf  # type: ignore
@@ -20,7 +19,7 @@ except Exception:  # pragma: no cover - psutil not installed
     psutil = None  # type: ignore
 
 
-logger = structlog.get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def _resources() -> dict:
@@ -29,18 +28,17 @@ def _resources() -> dict:
     # GPU stats are environment specific; default to ``0`` when unavailable.
     return {"cpu": cpu, "gpu": 0.0}
 
+
 def cache_path(cache_dir: Path, track_id: int, kind: str, suffix: str) -> Path:
     cache_dir.mkdir(parents=True, exist_ok=True)
     return cache_dir / f"{track_id}-{kind}.{suffix}"
 
 
-def decode(track_id: int, path: str, cache_dir: Path) -> Tuple[np.ndarray, int]:
+def decode(track_id: int, path: str, cache_dir: Path) -> tuple[np.ndarray, int]:
     """Decode ``path`` into a waveform, optionally caching the result."""
 
     if sf is None:
-        raise ImportError(
-            "soundfile is required for audio decoding; install sidetrack[extractor]"
-        )
+        raise ImportError("soundfile is required for audio decoding; install sidetrack[extractor]")
 
     start = time.perf_counter()
     cp = cache_path(cache_dir, track_id, "raw", "npz")
@@ -55,7 +53,11 @@ def decode(track_id: int, path: str, cache_dir: Path) -> Tuple[np.ndarray, int]:
         np.savez(cp, y=y, sr=orig_sr)
     duration = time.perf_counter() - start
     logger.info(
-        "extract_decode", track_id=track_id, duration=duration, cache_hit=cache_hit, **_resources()
+        "extract_decode track_id=%s duration=%.3fs cache_hit=%s resources=%s",
+        track_id,
+        duration,
+        cache_hit,
+        _resources(),
     )
     return y, orig_sr
 

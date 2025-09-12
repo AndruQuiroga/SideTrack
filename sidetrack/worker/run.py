@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-import redis
-from rq import Connection, Queue, Worker
+import logging
 import threading
 import time
-import structlog
+
+import redis
+from rq import Connection, Queue, Worker
 
 # Import job functions so the worker process knows about them.
 from . import jobs  # noqa: F401
@@ -17,7 +18,7 @@ def main() -> None:
     """Start an RQ worker listening to analysis queues."""
     settings = get_settings()
     connection = redis.from_url(settings.redis_url)
-    logger = structlog.get_logger("sidetrack.worker")
+    logger = logging.getLogger("sidetrack.worker")
 
     queues = ["analysis"]
     with Connection(connection):
@@ -26,7 +27,7 @@ def main() -> None:
         def _heartbeat() -> None:
             q = Queue("analysis", connection=connection)
             while True:
-                logger.info("worker_heartbeat", queue_depth=q.count)
+                logger.info("worker heartbeat - queue_depth=%s", q.count)
                 time.sleep(30)
 
         threading.Thread(target=_heartbeat, daemon=True).start()

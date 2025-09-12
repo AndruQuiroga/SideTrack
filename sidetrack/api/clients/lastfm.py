@@ -1,21 +1,22 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 from collections.abc import AsyncGenerator
 from datetime import datetime, timedelta
 from typing import Any
 
 import httpx
-import structlog
 from fastapi import Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
 from sidetrack.common.models import LastfmTags
+
 from ..config import Settings, get_settings
 
-logger = structlog.get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def _retryable(exc: Exception) -> bool:

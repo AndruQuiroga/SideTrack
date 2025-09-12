@@ -1,10 +1,10 @@
 """Dashboard-related endpoints."""
 
+import inspect
+import logging
+import math
 from datetime import UTC, date, datetime, timedelta
 
-import math
-import inspect
-import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,7 +17,7 @@ from ...db import get_db
 from ...security import get_current_user
 
 router = APIRouter()
-logger = structlog.get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 async def _maybe(val):
@@ -36,20 +36,24 @@ async def dashboard_overview(
 
     since = datetime.now(UTC) - timedelta(days=days)
 
-    listen_count = await _maybe(db.scalar(
-        select(func.count())
-        .select_from(Listen)
-        .where(and_(Listen.user_id == user_id, Listen.played_at >= since))
-    ))
+    listen_count = await _maybe(
+        db.scalar(
+            select(func.count())
+            .select_from(Listen)
+            .where(and_(Listen.user_id == user_id, Listen.played_at >= since))
+        )
+    )
     listen_count = int(listen_count or 0)
 
-    artist_count = await _maybe(db.scalar(
-        select(func.count(func.distinct(Artist.artist_id)))
-        .select_from(Listen)
-        .join(Track, Track.track_id == Listen.track_id)
-        .join(Artist, Track.artist_id == Artist.artist_id)
-        .where(and_(Listen.user_id == user_id, Listen.played_at >= since))
-    ))
+    artist_count = await _maybe(
+        db.scalar(
+            select(func.count(func.distinct(Artist.artist_id)))
+            .select_from(Listen)
+            .join(Track, Track.track_id == Listen.track_id)
+            .join(Artist, Track.artist_id == Artist.artist_id)
+            .where(and_(Listen.user_id == user_id, Listen.played_at >= since))
+        )
+    )
     artist_diversity = int(artist_count or 0)
 
     latest_week = await _maybe(
@@ -94,7 +98,7 @@ async def dashboard_trajectory(
         else:
             n_weeks = 12
     except ValueError:
-        logger.warning("Invalid window format", window=window)
+        logger.warning("Invalid window format: %s", window)
         n_weeks = 12
 
     # collect recent weeks
@@ -151,7 +155,7 @@ async def dashboard_radar(
             y, w = week.split("-")
             wk_date = datetime.fromisocalendar(int(y), int(w), 1).date()
         except ValueError:
-            logger.warning("Invalid week format", week=week)
+            logger.warning("Invalid week format: %s", week)
             pass
     if wk_date is None:
         raise HTTPException(status_code=400, detail="Invalid week format")

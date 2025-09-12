@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import time
-from typing import Any, List
 
 import httpx
-import structlog
 
 from . import TrackRef
 
@@ -19,7 +18,7 @@ class MusicBrainzAdapter:
         headers = {"User-Agent": "SideTrack/0.1 (+https://example.com)"}
         self._client = client or httpx.AsyncClient(headers=headers)
 
-    logger = structlog.get_logger(__name__)
+    logger = logging.getLogger(__name__)
 
     async def close(self) -> None:
         await self._client.aclose()
@@ -43,15 +42,15 @@ class MusicBrainzAdapter:
             ]
             mbid = recording.get("id")
             duration = time.perf_counter() - start
-            self.logger.info("enrichment_mb_success", isrc=isrc, duration=duration)
+            self.logger.info("enrichment_mb_success isrc=%s duration=%.3fs", isrc, duration)
             return TrackRef(title=title, artists=artists, isrc=isrc, lastfm_mbid=mbid)
         except Exception as exc:
             duration = time.perf_counter() - start
             self.logger.warning(
-                "enrichment_mb_fail", isrc=isrc, duration=duration, error=str(exc)
+                "enrichment_mb_fail isrc=%s duration=%.3fs error=%s", isrc, duration, str(exc)
             )
             raise
         finally:
             # Honour MusicBrainz rate-limiting guidelines
             await asyncio.sleep(1)
-            self.logger.info("mb_rate_limit_sleep", seconds=1.0)
+            self.logger.info("mb_rate_limit_sleep seconds=1.0")

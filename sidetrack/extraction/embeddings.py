@@ -1,18 +1,17 @@
-from __future__ import annotations
-
 """Embedding computation using optional models."""
 
+from __future__ import annotations
+
 import json
+import logging
 import time
 from importlib import import_module
-from typing import Dict
 
 import numpy as np
-import structlog
 
 from sidetrack.config.extraction import ExtractionConfig
-from .io import _resources
 
+from .io import _resources
 
 MODEL_MAP = {
     "openl3": "sidetrack.extraction.models.openl3",
@@ -27,16 +26,18 @@ def _embed_one(name: str, y: np.ndarray, sr: int, device: str) -> np.ndarray:
     return mod.embed(y, sr, device=device)
 
 
-logger = structlog.get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
-def compute_embeddings(track_id: int, y: np.ndarray, sr: int, cfg: ExtractionConfig, redis_conn=None) -> Dict[str, list[float]]:
+def compute_embeddings(
+    track_id: int, y: np.ndarray, sr: int, cfg: ExtractionConfig, redis_conn=None
+) -> dict[str, list[float]]:
     models: list[str] = []
     if cfg.embedding_model:
         models.extend([m.strip() for m in cfg.embedding_model.split(",") if m.strip()])
     if cfg.use_clap and "clap" not in models:
         models.append("clap")
-    out: Dict[str, list[float]] = {}
+    out: dict[str, list[float]] = {}
     for name in models:
         key = f"emb:{name}:{track_id}:{cfg.dataset_version}"
         vec = None
@@ -54,12 +55,12 @@ def compute_embeddings(track_id: int, y: np.ndarray, sr: int, cfg: ExtractionCon
                 redis_conn.set(key, json.dumps(vec))
         duration = time.perf_counter() - start
         logger.info(
-            "extract_embedding",
-            track_id=track_id,
-            model=name,
-            duration=duration,
-            cache_hit=cache_hit,
-            **_resources(),
+            "extract_embedding track_id=%s model=%s duration=%.3fs cache_hit=%s resources=%s",
+            track_id,
+            name,
+            duration,
+            cache_hit,
+            _resources(),
         )
         out[name] = vec
     return out

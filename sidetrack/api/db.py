@@ -1,19 +1,19 @@
 from __future__ import annotations
 
+import logging
 from collections.abc import AsyncGenerator
-from typing import Tuple
 
-import structlog
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.engine import URL, make_url
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from sidetrack.common.models import Base
+
 from .config import get_settings
 
-logger = structlog.get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 _async_engine = None
 _sync_engine = None
@@ -23,7 +23,7 @@ _current_key: str | None = None
 engine = None
 
 
-def _derive_urls(base_url: URL) -> Tuple[URL, URL]:
+def _derive_urls(base_url: URL) -> tuple[URL, URL]:
     """Return (async_url, sync_url) derived from a base URL.
 
     Supports PostgreSQL only:
@@ -88,17 +88,17 @@ def _init_engines() -> None:
     # Log configured URLs (masked)
     try:
         logger.info(
-            "DB configured",
-            base=base_url.render_as_string(hide_password=True),
-            async_url=async_url.render_as_string(hide_password=True),
-            sync_url=sync_url.render_as_string(hide_password=True),
+            "DB configured base=%s async_url=%s sync_url=%s",
+            base_url.render_as_string(hide_password=True),
+            async_url.render_as_string(hide_password=True),
+            sync_url.render_as_string(hide_password=True),
         )
     except Exception:  # pragma: no cover
         logger.info(
-            "DB configured",
-            base=str(base_url),
-            async_url=str(async_url),
-            sync_url=str(sync_url),
+            "DB configured base=%s async_url=%s sync_url=%s",
+            str(base_url),
+            str(async_url),
+            str(sync_url),
         )
 
 
@@ -144,7 +144,7 @@ async def maybe_create_all() -> None:
                 await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
                 await conn.run_sync(Base.metadata.create_all)
     except SQLAlchemyError as exc:
-        logger.warning("DB init failed", error=str(exc))
+        logger.warning("DB init failed error=%s", str(exc))
 
 
 # Do not initialize engines at import time; defer to first usage.

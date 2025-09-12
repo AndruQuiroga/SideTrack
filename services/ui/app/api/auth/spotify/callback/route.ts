@@ -6,7 +6,7 @@ export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get('code') || '';
   const callback = req.nextUrl.searchParams.get('callback') || '';
   const headers: Record<string, string> = {};
-  const uid = req.headers.get('x-user-id');
+  const uid = req.headers.get('x-user-id') || req.cookies.get('uid')?.value || '';
   if (uid) headers['X-User-Id'] = uid;
   const r = await fetch(
     `${API_BASE}/auth/spotify/callback?code=${encodeURIComponent(code)}&callback=${encodeURIComponent(callback)}`,

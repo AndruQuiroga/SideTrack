@@ -5,7 +5,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'https://sidetrack.network/
 export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get('token') || '';
   const headers: Record<string, string> = {};
-  const uid = req.headers.get('x-user-id');
+  const uid = req.headers.get('x-user-id') || req.cookies.get('uid')?.value || '';
   if (uid) headers['X-User-Id'] = uid;
   const r = await fetch(`${API_BASE}/auth/lastfm/session?token=${encodeURIComponent(token)}`, {
     headers,
@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   const headers: Record<string, string> = {};
-  const uid = req.headers.get('x-user-id');
+  const uid = req.headers.get('x-user-id') || req.cookies.get('uid')?.value || '';
   if (uid) headers['X-User-Id'] = uid;
   const r = await fetch(`${API_BASE}/auth/lastfm/session`, {
     method: 'DELETE',

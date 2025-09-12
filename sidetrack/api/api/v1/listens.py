@@ -1,19 +1,19 @@
 """Endpoints for ingesting listen history."""
 
 import json
+import logging
 from datetime import date, datetime
 from pathlib import Path
 
 import httpx
-import structlog
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sidetrack.common.models import Artist, Listen, Track, UserSettings
 
-from ...clients.listenbrainz import ListenBrainzClient, get_listenbrainz_client
 from ...clients.lastfm import LastfmClient, get_lastfm_client
+from ...clients.listenbrainz import ListenBrainzClient, get_listenbrainz_client
 from ...clients.spotify import SpotifyClient, get_spotify_client
 from ...config import Settings, get_settings
 from ...db import get_db
@@ -23,7 +23,7 @@ from ...services.listen_service import ListenService, get_listen_service
 
 router = APIRouter()
 
-logger = structlog.get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 @router.get("/listens/recent", response_model=RecentListensResponse)
@@ -58,9 +58,7 @@ async def recent_listens(
 async def ingest_listens(
     since: date | None = Query(None),
     listens: list[ListenIn] | None = Body(None, description="List of listens to ingest"),
-    source: str = Query(
-        "auto", description="auto|spotify|lastfm|listenbrainz|body|sample"
-    ),
+    source: str = Query("auto", description="auto|spotify|lastfm|listenbrainz|body|sample"),
     listen_service: ListenService = Depends(get_listen_service),
     lb_client: ListenBrainzClient = Depends(get_listenbrainz_client),
     lf_client: LastfmClient = Depends(get_lastfm_client),
@@ -113,7 +111,7 @@ async def ingest_listens(
                 created = await listen_service.ingest_spotify_rows(items, user_id)
                 return IngestResponse(detail="ok", ingested=created, source="spotify")
             except httpx.HTTPError as exc:
-                logger.error("Spotify fetch failed", error=str(exc))
+                logger.error("Spotify fetch failed: %s", str(exc))
                 if source == "spotify":
                     raise HTTPException(status_code=502, detail=f"Spotify error: {exc}")
         elif source == "spotify":
@@ -124,13 +122,11 @@ async def ingest_listens(
         if settings_row and settings_row.lastfm_user and settings_row.lastfm_session_key:
             try:
                 since_dt = datetime.combine(since, datetime.min.time()) if since else None
-                tracks = await lf_client.fetch_recent_tracks(
-                    settings_row.lastfm_user, since_dt
-                )
+                tracks = await lf_client.fetch_recent_tracks(settings_row.lastfm_user, since_dt)
                 created = await listen_service.ingest_lastfm_rows(tracks, user_id)
                 return IngestResponse(detail="ok", ingested=created, source="lastfm")
             except httpx.HTTPError as exc:
-                logger.error("Last.fm fetch failed", error=str(exc))
+                logger.error("Last.fm fetch failed: %s", str(exc))
                 if source == "lastfm":
                     raise HTTPException(status_code=502, detail=f"Last.fm error: {exc}")
         elif source == "lastfm":
@@ -138,18 +134,14 @@ async def ingest_listens(
 
     # Finally fall back to ListenBrainz
     if source in ("auto", "listenbrainz"):
-        token = (
-            settings_row.listenbrainz_token if settings_row else settings.listenbrainz_token
-        )
-        lb_user = (
-            settings_row.listenbrainz_user if settings_row else user_id
-        )
+        token = settings_row.listenbrainz_token if settings_row else settings.listenbrainz_token
+        lb_user = settings_row.listenbrainz_user if settings_row else user_id
         try:
             rows = await lb_client.fetch_listens(lb_user, since, token)
             created = await listen_service.ingest_lb_rows(rows, user_id)
             return IngestResponse(detail="ok", ingested=created, source="listenbrainz")
         except httpx.HTTPError as exc:
-            logger.error("ListenBrainz fetch failed", error=str(exc))
+            logger.error("ListenBrainz fetch failed: %s", str(exc))
             if source == "listenbrainz":
                 raise HTTPException(status_code=502, detail=f"ListenBrainz error: {exc}")
             # fall through to sample

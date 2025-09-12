@@ -1,15 +1,14 @@
-from __future__ import annotations
-
 """Signal processing helpers for the extraction pipeline."""
 
-from pathlib import Path
+from __future__ import annotations
+
+import logging
 import time
+from pathlib import Path
 
 import numpy as np
-import structlog
 
-from .io import load_melspec, save_melspec
-from .io import _resources
+from .io import _resources, load_melspec, save_melspec
 
 try:  # pragma: no cover - optional dependency
     import librosa  # type: ignore
@@ -17,7 +16,7 @@ except Exception:  # pragma: no cover - librosa is optional
     librosa = None  # type: ignore
 
 
-logger = structlog.get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def resample_audio(y: np.ndarray, orig_sr: int, target_sr: int) -> np.ndarray:
@@ -71,10 +70,10 @@ def melspectrogram(track_id: int, y: np.ndarray, sr: int, cache_dir: Path) -> np
         save_melspec(track_id, cache_dir, mel)
     duration = time.perf_counter() - start
     logger.info(
-        "extract_melspectrogram",
-        track_id=track_id,
-        duration=duration,
-        cache_hit=cache_hit,
-        **_resources(),
+        "extract_melspectrogram track_id=%s duration=%.3fs cache_hit=%s resources=%s",
+        track_id,
+        duration,
+        cache_hit,
+        _resources(),
     )
     return mel

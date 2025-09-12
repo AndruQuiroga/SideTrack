@@ -1,10 +1,10 @@
 """Endpoints for MusicBrainz-related ingestion."""
 
+import asyncio
+import logging
 from datetime import datetime
 
-import asyncio
 import httpx
-import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,7 +16,7 @@ from ...main import get_http_client
 from ...schemas.musicbrainz import MusicbrainzIngestResponse
 from ...utils import get_or_create, mb_sanitize
 
-logger = structlog.get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -52,13 +52,13 @@ async def ingest_musicbrainz(
         status = exc.response.status_code
         if status == 404:
             raise HTTPException(status_code=404, detail="release not found")
-        logger.error("MusicBrainz HTTP error", error=str(exc))
+        logger.error("MusicBrainz HTTP error: %s", str(exc))
         raise HTTPException(status_code=502, detail=f"MusicBrainz error: {exc}")
     except httpx.RequestError as exc:
-        logger.error("MusicBrainz request error", error=str(exc))
+        logger.error("MusicBrainz request error: %s", str(exc))
         raise HTTPException(status_code=502, detail=f"MusicBrainz error: {exc}")
     except ValueError as exc:
-        logger.error("MusicBrainz parse error", error=str(exc))
+        logger.error("MusicBrainz parse error: %s", str(exc))
         raise HTTPException(status_code=502, detail=f"MusicBrainz error: {exc}")
 
     artist = None
