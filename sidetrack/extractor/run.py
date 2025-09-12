@@ -20,16 +20,16 @@ import asyncio
 import contextlib
 import os
 import signal
-from datetime import datetime, timezone
+import time
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
 import typer
 from croniter import croniter
 from sqlalchemy import create_engine, text
-from sqlalchemy.orm import Session
 from sqlalchemy.exc import ProgrammingError
+from sqlalchemy.orm import Session
 
 from sidetrack.common.models import Embedding, Feature, Track
 
@@ -340,7 +340,7 @@ def main(
         help="Seconds between extraction passes",
         envvar="EXTRACTOR_INTERVAL",
     ),
-    schedule: Optional[str] = typer.Option(
+    schedule: str | None = typer.Option(
         None,
         "--schedule",
         help="Cron expression or seconds between passes",
@@ -362,13 +362,20 @@ def main(
     url = get_db_url()
     engine = create_engine(url, pool_pre_ping=True)
     typer.echo(f"[extractor] connected to DB: {url}")
-    with Session(engine) as db:
-        # quick ping to ensure required tables exist
-        try:
-            db.execute(text("SELECT 1 FROM track LIMIT 1"))
-        except Exception as e:
-            typer.echo(f"[extractor] DB not ready: {e}")
-            return
+    # Wait for schema to be ready (track table exists) to avoid race with API migrations
+    deadline = time.time() + float(os.getenv("EXTRACTOR_DB_WAIT_SECS", "60"))
+    wait_interval = float(os.getenv("EXTRACTOR_DB_WAIT_INTERVAL", "2"))
+    while True:
+        with Session(engine) as db:
+            try:
+                db.execute(text("SELECT 1 FROM track LIMIT 1"))
+                break
+            except Exception as e:
+                if time.time() >= deadline:
+                    typer.echo(f"[extractor] DB not ready after wait: {e}")
+                    return
+                typer.echo(f"[extractor] DB not ready: {e}")
+        time.sleep(wait_interval)
 
     asyncio.run(_run_loop(engine, audio_root, batch_size, interval, once, schedule))
 
@@ -379,7 +386,7 @@ async def _run_loop(
     batch_size: int,
     interval: float,
     once: bool,
-    schedule: Optional[str],
+    schedule: str | None,
 ) -> None:
     stop_event = asyncio.Event()
 
@@ -400,8 +407,9 @@ async def _run_loop(
                 try:
                     pending = find_pending_tracks(db, batch_size=batch_size)
                 except ProgrammingError as e:
-                    typer.echo(f"[extractor] DB not ready: {e}")
-                    break
+                    typer.echo(f"[extractor] DB not ready during loop: {e}")
+                    await asyncio.sleep(3)
+                    continue
                 if not pending:
                     typer.echo("[extractor] no pending tracks; sleeping")
                 for tr in pending:
@@ -410,7 +418,7 @@ async def _run_loop(
             if once:
                 break
             if schedule:
-                now = datetime.now(timezone.utc)
+                now = datetime.now(UTC)
                 next_time = croniter(schedule, now).get_next(datetime)
                 delay = (next_time - now).total_seconds()
             else:
