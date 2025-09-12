@@ -43,8 +43,13 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-10">
-      <section className="space-y-4">
-        <h2 className="text-xl font-semibold">Sources</h2>
+      <section className="space-y-2">
+        <div>
+          <h2 className="bg-gradient-to-r from-emerald-400 via-cyan-400 to-fuchsia-400 bg-clip-text text-2xl font-extrabold text-transparent">
+            Settings
+          </h2>
+          <p className="text-sm text-muted-foreground">Connect sources and tune your experience</p>
+        </div>
         <div className="grid gap-4 md:grid-cols-2">
           <SourceCard
             id="spotify"
@@ -88,13 +93,19 @@ export default function SettingsPage() {
           />
         </div>
       </section>
-      <section className="space-y-4">
-        <h2 className="text-xl font-semibold">Ranker</h2>
-        <RankerControls />
+      <section className="space-y-2">
+        <h3 className="text-lg font-semibold text-foreground/90">Ranker</h3>
+        <div className="relative overflow-hidden rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-md">
+          <div className="pointer-events-none absolute -right-8 -top-10 h-24 w-24 rounded-full bg-gradient-to-br from-violet-400/50 via-fuchsia-400/40 to-pink-400/50 blur-2xl" />
+          <RankerControls />
+        </div>
       </section>
-      <section className="space-y-4">
-        <h2 className="text-xl font-semibold">Data</h2>
-        <DataControls />
+      <section className="space-y-2">
+        <h3 className="text-lg font-semibold text-foreground/90">Data</h3>
+        <div className="relative overflow-hidden rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-md">
+          <div className="pointer-events-none absolute -right-8 -top-10 h-24 w-24 rounded-full bg-gradient-to-br from-amber-400/50 via-orange-400/40 to-rose-400/50 blur-2xl" />
+          <DataControls />
+        </div>
       </section>
     </div>
   );

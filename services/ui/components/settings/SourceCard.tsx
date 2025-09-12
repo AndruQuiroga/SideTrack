@@ -3,6 +3,8 @@ import { Card } from '../ui/card';
 import { Button } from '../ui/button';
 import { useToast } from '../ToastProvider';
 import { apiFetch } from '../../lib/api';
+import { Radio, Brain, Globe } from 'lucide-react';
+import SpotifyIcon from '../common/SpotifyIcon';
 
 export type SourceStatus = 'connected' | 'disconnected';
 
@@ -86,22 +88,43 @@ export default function SourceCard({
     }
   }
 
+  const Icon =
+    id === 'spotify' ? SpotifyIcon : id === 'lastfm' ? Radio : id === 'lb' ? Brain : Globe;
+  const accent =
+    id === 'spotify'
+      ? 'from-emerald-400/60 via-teal-400/50 to-cyan-400/60'
+      : id === 'lastfm'
+        ? 'from-rose-400/60 via-pink-400/50 to-fuchsia-400/60'
+        : id === 'lb'
+          ? 'from-amber-400/60 via-orange-400/50 to-rose-400/60'
+          : 'from-sky-400/60 via-blue-400/50 to-emerald-400/60';
+
   return (
-    <Card id={id} className="p-4 space-y-2">
+    <Card id={id} variant="glass" className="relative overflow-hidden p-4">
+      <div
+        className={`pointer-events-none absolute -right-8 -top-10 h-24 w-24 rounded-full bg-gradient-to-br ${accent} blur-2xl`}
+      />
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">{name}</h3>
+        <div className="flex items-center gap-2">
+          <Icon size={16} />
+          <h3 className="text-sm font-semibold">{name}</h3>
+        </div>
         <span
-          className={status === 'connected' ? 'text-emerald-500 text-sm' : 'text-rose-500 text-sm'}
+          className={
+            status === 'connected'
+              ? 'rounded-full border border-white/10 bg-white/10 px-2 py-0.5 text-xs text-emerald-300'
+              : 'rounded-full border border-white/10 bg-white/10 px-2 py-0.5 text-xs text-rose-300'
+          }
         >
           {status}
         </span>
       </div>
-      <ul className="list-disc pl-5 text-sm">
+      <ul className="mt-2 list-disc pl-5 text-xs text-foreground/80">
         {scopes.map((s) => (
           <li key={s}>{s}</li>
         ))}
       </ul>
-      <div className="flex gap-2 pt-2">
+      <div className="mt-3 flex gap-2">
         {status === 'connected' ? (
           <Button type="button" onClick={handleDisconnect} aria-label={`${name} disconnect`}>
             Disconnect
