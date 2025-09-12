@@ -2,7 +2,7 @@
 
 import re
 import secrets
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from hashlib import sha256
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -49,7 +49,7 @@ async def register(creds: Credentials, db: AsyncSession = Depends(get_db)):
     user = UserAccount(
         user_id=creds.username,
         password_hash=hash_password(creds.password),
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
     db.add(user)
     await db.commit()
@@ -77,6 +77,25 @@ async def issue_token(
     user = await db.get(UserAccount, form_data.username)
     if not user or not verify_password(form_data.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")
+    token = secrets.token_urlsafe(32)
+    user.token_hash = sha256(token.encode()).hexdigest()
+    await db.commit()
+    return {"access_token": token, "token_type": "bearer"}
+
+
+@router.post("/auth/token/exchange")
+async def exchange_token(
+    user_id: str = Depends(require_role("user")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Issue a bearer token for the current authenticated user.
+
+    Useful for cookie-based sessions or federated logins where the client does
+    not have the user's password to request a token via the password grant.
+    """
+    user = await db.get(UserAccount, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
     token = secrets.token_urlsafe(32)
     user.token_hash = sha256(token.encode()).hexdigest()
     await db.commit()

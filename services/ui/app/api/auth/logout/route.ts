@@ -12,5 +12,13 @@ export async function POST(req: Request) {
     domain: url.hostname,
     secure: url.protocol === 'https:',
   });
+  res.cookies.set('at', '', {
+    path: '/',
+    httpOnly: true,
+    maxAge: 0,
+    sameSite: 'lax',
+    domain: url.hostname,
+    secure: url.protocol === 'https:',
+  });
   return res;
 }

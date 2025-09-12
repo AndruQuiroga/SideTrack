@@ -6,6 +6,9 @@ export async function GET(req: NextRequest) {
   const headers: Record<string, string> = {};
   const uid = req.headers.get('x-user-id') || req.cookies.get('uid')?.value || '';
   if (uid) headers['X-User-Id'] = uid;
+  const at = req.headers.get('authorization') || req.cookies.get('at')?.value || '';
+  if (at && !headers['Authorization'])
+    headers['Authorization'] = at.startsWith('Bearer ') ? at : `Bearer ${at}`;
   const r = await fetch(`${API_BASE}/settings`, { headers });
   const data = await r.json().catch(() => ({}));
   return NextResponse.json(data, { status: r.status });
@@ -15,6 +18,9 @@ export async function POST(req: NextRequest) {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   const uid = req.headers.get('x-user-id') || req.cookies.get('uid')?.value || '';
   if (uid) headers['X-User-Id'] = uid;
+  const at = req.headers.get('authorization') || req.cookies.get('at')?.value || '';
+  if (at && !headers['Authorization'])
+    headers['Authorization'] = at.startsWith('Bearer ') ? at : `Bearer ${at}`;
   const body = await req.json();
   const r = await fetch(`${API_BASE}/settings`, {
     method: 'POST',

@@ -1,12 +1,22 @@
 import { getUserId } from './auth';
 
+function getTokenFromCookie(): string {
+  if (typeof document === 'undefined') return '';
+  const m = document.cookie.match(/(?:^|; )at=([^;]+)/);
+  return m ? decodeURIComponent(m[1]) : '';
+}
+
 export const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'https://sidetrack.network/api';
 
 export async function apiFetch(path: string, init: RequestInit = {}) {
   const headers = new Headers(init.headers);
   const uid = getUserId();
   if (uid) headers.set('X-User-Id', uid);
-  const finalInit = { ...init, headers };
+  if (!headers.has('Authorization')) {
+    const at = getTokenFromCookie();
+    if (at) headers.set('Authorization', `Bearer ${at}`);
+  }
+  const finalInit: RequestInit = { ...init, headers };
   const url = path.startsWith('/api/') ? path : `${API_BASE}${path}`;
 
   try {

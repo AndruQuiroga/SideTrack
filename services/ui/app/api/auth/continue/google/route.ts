@@ -22,6 +22,24 @@ export async function POST(req: NextRequest) {
       domain: host,
       secure,
     });
+    // Exchange to a bearer token for Authorization header usage
+    const tokenRes = await fetch(`${API_BASE}/auth/token/exchange`, {
+      method: 'POST',
+      headers: { 'X-User-Id': String(data.user_id) },
+    });
+    const tokenData = (await tokenRes.json().catch(() => ({}))) as {
+      access_token?: string;
+    };
+    if (tokenRes.ok && tokenData.access_token) {
+      res.cookies.set('at', tokenData.access_token, {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 30,
+        domain: host,
+        secure,
+      });
+    }
   }
   return res;
 }
