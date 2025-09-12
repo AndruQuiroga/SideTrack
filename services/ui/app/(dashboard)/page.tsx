@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import React from 'react';
 import { Sparkles, ChevronRight, Compass, Flame, Music, TrendingUp, Play, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import KpiCard from '../../components/dashboard/KpiCard';
@@ -300,9 +301,21 @@ export default function DashboardPage() {
 
       {/* Hero header */}
       <div className="flex flex-col gap-2">
-        <h1 className="bg-gradient-to-r from-emerald-400 via-cyan-400 to-fuchsia-400 bg-clip-text text-3xl font-extrabold tracking-tight text-transparent md:text-4xl">
-          Your Sound, Evolving
-        </h1>
+        {(() => {
+          const TITLES = [
+            'Your Sound, Evolving',
+            'Find Your Flow',
+            'Taste in Motion',
+            'Vibes in Color',
+            'Music, Mapped',
+          ];
+          const title = React.useMemo(() => TITLES[Math.floor(Math.random() * TITLES.length)], []);
+          return (
+            <h1 className="inline-block bg-gradient-to-r from-emerald-400 via-cyan-400 to-fuchsia-400 bg-clip-text text-3xl font-extrabold tracking-tight text-transparent md:text-4xl animate-gradient">
+              {title}
+            </h1>
+          );
+        })()}
         <p className="text-sm text-muted-foreground">
           A playful snapshot of your listening energy, momentum, and flavor.
         </p>
