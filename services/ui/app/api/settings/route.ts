@@ -4,7 +4,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'https://sidetrack.network/
 
 export async function GET(req: NextRequest) {
   const headers: Record<string, string> = {};
-  const uid = req.headers.get('x-user-id');
+  const uid = req.headers.get('x-user-id') || req.cookies.get('uid')?.value || '';
   if (uid) headers['X-User-Id'] = uid;
   const r = await fetch(`${API_BASE}/settings`, { headers });
   const data = await r.json().catch(() => ({}));
@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  const uid = req.headers.get('x-user-id');
+  const uid = req.headers.get('x-user-id') || req.cookies.get('uid')?.value || '';
   if (uid) headers['X-User-Id'] = uid;
   const body = await req.json();
   const r = await fetch(`${API_BASE}/settings`, {

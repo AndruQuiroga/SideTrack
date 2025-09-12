@@ -15,6 +15,8 @@ interface SourceState {
 }
 
 export default function SettingsPage() {
+  // Keep hook to ensure auth provider mounts; value unused
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { userId } = useAuth();
   const [sources, setSources] = useState<SourceState>({
     spotify: 'disconnected',
@@ -24,24 +26,20 @@ export default function SettingsPage() {
   });
 
   useEffect(() => {
-    if (!userId) return;
     apiFetch('/api/settings')
       .then((r) => r.json())
       .then((data) => {
         setSources({
           spotify: data.spotifyConnected ? 'connected' : 'disconnected',
           lastfm: data.lastfmConnected ? 'connected' : 'disconnected',
-          lb:
-            data.listenBrainzUser && data.listenBrainzToken
-              ? 'connected'
-              : 'disconnected',
+          lb: data.listenBrainzUser && data.listenBrainzToken ? 'connected' : 'disconnected',
           mb: 'disconnected',
         });
       })
       .catch(() => {
         /* ignore */
       });
-  }, [userId]);
+  }, []);
 
   return (
     <div className="space-y-10">
@@ -65,7 +63,7 @@ export default function SettingsPage() {
             status={sources.lastfm}
             connectUrl="/api/auth/lastfm/login"
             disconnectUrl="/api/auth/lastfm/session"
-            testUrl="/api/auth/lastfm/session"
+            testUrl="/api/settings"
             onStatusChange={(s) => setSources((prev) => ({ ...prev, lastfm: s }))}
           />
           <SourceCard
@@ -101,4 +99,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-
