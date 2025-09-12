@@ -13,6 +13,7 @@ interface SourceCardProps {
   name: string;
   scopes: string[];
   status: SourceStatus;
+  connectedAs?: string;
   connectUrl: string;
   disconnectUrl: string;
   testUrl: string;
@@ -24,6 +25,7 @@ export default function SourceCard({
   name,
   scopes,
   status: initialStatus,
+  connectedAs,
   connectUrl,
   disconnectUrl,
   testUrl,
@@ -119,6 +121,9 @@ export default function SourceCard({
           {status}
         </span>
       </div>
+      {status === 'connected' && connectedAs && (
+        <div className="mt-1 text-xs text-muted-foreground">Connected as {connectedAs}</div>
+      )}
       <ul className="mt-2 list-disc pl-5 text-xs text-foreground/80">
         {scopes.map((s) => (
           <li key={s}>{s}</li>

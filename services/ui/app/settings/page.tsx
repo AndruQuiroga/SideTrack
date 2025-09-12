@@ -35,11 +35,20 @@ export default function SettingsPage() {
           lb: data.listenBrainzUser && data.listenBrainzToken ? 'connected' : 'disconnected',
           mb: 'disconnected',
         });
+        setConnectedUsers({
+          spotify: data.spotifyUser || '',
+          lastfm: data.lastfmUser || '',
+        });
       })
       .catch(() => {
         /* ignore */
       });
   }, []);
+
+  const [connectedUsers, setConnectedUsers] = useState<{ spotify: string; lastfm: string }>({
+    spotify: '',
+    lastfm: '',
+  });
 
   return (
     <div className="space-y-10">
@@ -56,6 +65,7 @@ export default function SettingsPage() {
             name="Spotify"
             scopes={['User library', 'Modify playlists']}
             status={sources.spotify}
+            connectedAs={connectedUsers.spotify}
             connectUrl="/api/auth/spotify/login"
             disconnectUrl="/api/auth/spotify/disconnect"
             testUrl="/api/auth/spotify/test"
@@ -66,6 +76,7 @@ export default function SettingsPage() {
             name="Last.fm"
             scopes={['Read scrobbles', 'Write scrobbles']}
             status={sources.lastfm}
+            connectedAs={connectedUsers.lastfm}
             connectUrl="/api/auth/lastfm/login"
             disconnectUrl="/api/auth/lastfm/session"
             testUrl="/api/settings"
@@ -105,6 +116,40 @@ export default function SettingsPage() {
         <div className="relative overflow-hidden rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-md">
           <div className="pointer-events-none absolute -right-8 -top-10 h-24 w-24 rounded-full bg-gradient-to-br from-amber-400/50 via-orange-400/40 to-rose-400/50 blur-2xl" />
           <DataControls />
+        </div>
+      </section>
+      <section className="space-y-2">
+        <h3 className="text-lg font-semibold text-foreground/90">Danger zone</h3>
+        <div className="relative overflow-hidden rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-md">
+          <div className="pointer-events-none absolute -right-8 -top-10 h-24 w-24 rounded-full bg-gradient-to-br from-rose-500/40 via-red-500/30 to-orange-500/40 blur-2xl" />
+          <p className="text-xs text-muted-foreground mb-3">
+            Be careful — these actions cannot be undone easily.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-rose-300 hover:bg-white/10"
+              onClick={async () => {
+                await apiFetch('/api/auth/logout', { method: 'POST' });
+                window.location.href = '/login';
+              }}
+            >
+              Log out
+            </button>
+            <button
+              className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-rose-300 hover:bg-white/10"
+              onClick={async () => {
+                await apiFetch('/api/auth/spotify/disconnect', { method: 'DELETE' }).catch(
+                  () => undefined,
+                );
+                await apiFetch('/api/auth/lastfm/session', { method: 'DELETE' }).catch(
+                  () => undefined,
+                );
+                setSources((s) => ({ ...s, spotify: 'disconnected', lastfm: 'disconnected' }));
+              }}
+            >
+              Disconnect all sources
+            </button>
+          </div>
         </div>
       </section>
     </div>
