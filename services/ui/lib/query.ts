@@ -2,12 +2,29 @@ import { QueryClient, useQuery } from '@tanstack/react-query';
 import { apiFetch } from './api';
 import { showToast } from './toast';
 
+let sessionRedirected = false;
+
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: (failureCount) => failureCount < 2,
       onError: (err: unknown) => {
         const message = err instanceof Error ? err.message : 'Unknown error';
+        // Friendly handling for unauthorized
+        if (typeof message === 'string' && message.trim().startsWith('401')) {
+          if (!sessionRedirected && typeof window !== 'undefined') {
+            sessionRedirected = true;
+            const next = encodeURIComponent(window.location.pathname + window.location.search);
+            showToast({
+              title: 'Session expired',
+              description: 'Please sign in again.',
+              kind: 'error',
+            });
+            window.location.assign(`/login?next=${next}`);
+            return;
+          }
+        }
+        // Generic fallback toast
         showToast({ title: 'Request failed', description: message, kind: 'error' });
       },
     },
