@@ -72,15 +72,11 @@ export default function TrajectoryBubble({ data }: { data: TrajectoryData }) {
                 onWheel={zoom.handleWheel}
               />
               <Group left={margin.left} top={margin.top}>
-                <GridColumns
-                  scale={zoom.applyToScale(xScale)}
-                  height={innerHeight}
-                  stroke="#e0e0e0"
-                />
-                <GridRows scale={zoom.applyToScale(yScale)} width={innerWidth} stroke="#e0e0e0" />
-                <AxisBottom top={innerHeight} scale={zoom.applyToScale(xScale)} numTicks={4} />
-                <AxisLeft scale={zoom.applyToScale(yScale)} numTicks={4} />
                 <Group transform={zoom.toString()}>
+                  <GridColumns scale={xScale} height={innerHeight} stroke="#e0e0e0" />
+                  <GridRows scale={yScale} width={innerWidth} stroke="#e0e0e0" />
+                  <AxisBottom top={innerHeight} scale={xScale} numTicks={4} />
+                  <AxisLeft scale={yScale} numTicks={4} />
                   {arrows.map((a, i) => (
                     <motion.line
                       key={i}
