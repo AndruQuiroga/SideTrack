@@ -47,24 +47,33 @@ export default function Sidebar({
         {navItems.map((item) => {
           const active = pathname === item.href || pathname.startsWith(item.href + '/');
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={clsx(
-                'relative flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500',
-                active && 'bg-white/10 text-foreground',
-              )}
-              title={item.label}
-            >
-              {active && (
+            <div key={item.href} className="relative group">
+              <Link
+                href={item.href}
+                className={clsx(
+                  'relative flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500',
+                  active && 'bg-white/10 text-foreground',
+                )}
+                aria-label={item.label}
+              >
+                {active && (
+                  <span
+                    className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-sm bg-emerald-400"
+                    aria-hidden
+                  />
+                )}
+                <item.icon size={18} />
+                {!collapsed && <span className="hidden md:inline">{item.label}</span>}
+              </Link>
+              {collapsed && (
                 <span
-                  className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-sm bg-emerald-400"
-                  aria-hidden
-                />
+                  className="pointer-events-none absolute left-full top-1/2 ml-2 -translate-y-1/2 whitespace-nowrap rounded-md border border-white/10 bg-white/10 px-2 py-1 text-xs text-foreground/90 opacity-0 backdrop-blur transition-opacity duration-150 group-hover:opacity-100"
+                  role="tooltip"
+                >
+                  {item.label}
+                </span>
               )}
-              <item.icon size={18} />
-              {!collapsed && <span className="hidden md:inline">{item.label}</span>}
-            </Link>
+            </div>
           );
         })}
       </nav>

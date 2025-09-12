@@ -21,7 +21,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }, [collapsed]);
 
   return (
-    <div className="min-h-dvh overflow-x-hidden flex bg-gradient-to-b from-background to-background/95">
+    <div className="min-h-dvh overflow-x-hidden flex bg-gradient-to-b from-background to-background/95 bg-grid">
       <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
       <div className="flex min-h-dvh flex-1 flex-col">
         <Header />
