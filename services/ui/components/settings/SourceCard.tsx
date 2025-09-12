@@ -65,6 +65,21 @@ export default function SourceCard({
     try {
       const res = await apiFetch(testUrl);
       if (!res.ok) throw new Error('bad');
+      // Try to reflect connection status when testUrl provides it (e.g. /api/settings)
+      try {
+        const data = (await res.json()) as {
+          lastfmConnected?: boolean;
+          spotifyConnected?: boolean;
+        };
+        if (id === 'lastfm' && typeof data.lastfmConnected === 'boolean') {
+          setAndNotify(data.lastfmConnected ? 'connected' : 'disconnected');
+        }
+        if (id === 'spotify' && typeof data.spotifyConnected === 'boolean') {
+          setAndNotify(data.spotifyConnected ? 'connected' : 'disconnected');
+        }
+      } catch {
+        // ignore body parse errors for non-JSON test endpoints
+      }
       show({ title: `${name} OK`, kind: 'success' });
     } catch {
       show({ title: `${name} test failed`, kind: 'error' });
