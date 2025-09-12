@@ -9,14 +9,18 @@ export async function POST(req: NextRequest) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  const data = await r.json().catch(() => ({}));
+  const data = (await r.json().catch(() => ({}))) as { user_id?: string };
   const res = NextResponse.json(data, { status: r.status });
-  if (r.ok && (data as any)?.user_id) {
-    res.cookies.set('uid', String((data as any).user_id), {
+  if (r.ok && data?.user_id) {
+    const host = req.nextUrl.hostname;
+    const secure = req.nextUrl.protocol === 'https:';
+    res.cookies.set('uid', String(data.user_id), {
       httpOnly: true,
       sameSite: 'lax',
       path: '/',
       maxAge: 60 * 60 * 24 * 30, // 30 days
+      domain: host,
+      secure,
     });
   }
   return res;
