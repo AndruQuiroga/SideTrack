@@ -128,21 +128,32 @@ function DiscoverRow() {
   ];
   return (
     <div className="grid gap-4 @[700px]:grid-cols-2">
-      {tiles.map((t) => (
-        <Card key={t.title} variant="glass" className="relative overflow-hidden p-5">
-          <div
-            className={`absolute -right-8 -top-10 h-24 w-24 rounded-full bg-gradient-to-br ${t.grad} blur-2xl`}
-          />
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm">
-              {t.icon}
-              <span>{t.title}</span>
+      {tiles.map((t, idx) => (
+        <motion.div
+          key={t.title}
+          initial={{ opacity: 0, y: 8 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.5 }}
+          transition={{ duration: 0.35, ease: 'easeOut', delay: idx * 0.05 }}
+          whileHover={{ y: -2, scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          className="will-change-transform"
+        >
+          <Card variant="glass" className="relative overflow-hidden p-5">
+            <div
+              className={`absolute -right-8 -top-10 h-24 w-24 rounded-full bg-gradient-to-br ${t.grad} blur-2xl`}
+            />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm">
+                {t.icon}
+                <span>{t.title}</span>
+              </div>
+              <Button asChild variant="outline" size="sm" className="backdrop-blur bg-white/5">
+                <Link href={t.href}>Open</Link>
+              </Button>
             </div>
-            <Button asChild variant="outline" size="sm" className="backdrop-blur bg-white/5">
-              <Link href={t.href}>Open</Link>
-            </Button>
-          </div>
-        </Card>
+          </Card>
+        </motion.div>
       ))}
     </div>
   );
