@@ -165,7 +165,7 @@ function TopTagsCloud() {
           : tags.map((t, idx) => (
               <span
                 key={t.name}
-                className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-foreground/90 backdrop-blur"
+                className="chip-shimmer rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-foreground/90 backdrop-blur"
                 title={`${t.count} mentions`}
                 style={{ opacity: 1 - Math.min(idx, 10) * 0.05 }}
               >

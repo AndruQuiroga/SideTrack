@@ -116,3 +116,32 @@ body {
   backdrop-filter: saturate(140%) blur(8px);
   border: 1px solid hsl(var(--border));
 }
+
+/* Subtle shimmer utility for chips/badges */
+@keyframes shimmer-slide {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+.chip-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.chip-shimmer::after {
+  content: '';
+  position: absolute;
+  top: -20%;
+  bottom: -20%;
+  left: -10%;
+  width: 40%;
+  background: linear-gradient(110deg, transparent, rgba(255, 255, 255, 0.12), transparent);
+  filter: blur(0.5px);
+  transform: translateX(-120%);
+  border-radius: inherit;
+  animation: shimmer-slide 2.4s linear infinite;
+  pointer-events: none;
+}
