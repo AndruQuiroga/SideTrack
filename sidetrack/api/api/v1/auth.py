@@ -1,5 +1,6 @@
 """Authentication and account endpoints."""
 
+import logging
 import re
 import secrets
 from datetime import UTC, datetime
@@ -21,6 +22,7 @@ from ...schemas.auth import Credentials, GoogleToken, MeOut, UserOut
 from ...security import hash_password, require_role, verify_password
 
 router = APIRouter()
+logger = logging.getLogger("sidetrack.auth")
 
 
 def _validate_password(password: str) -> None:
@@ -53,6 +55,10 @@ async def register(creds: Credentials, db: AsyncSession = Depends(get_db)):
     )
     db.add(user)
     await db.commit()
+    try:
+        logger.info("user_registered", extra={"user": creds.username})
+    except Exception:
+        pass
     await db.refresh(user)
     return UserOut.model_validate(user)
 
@@ -66,6 +72,10 @@ async def login(creds: Credentials, db: AsyncSession = Depends(get_db)):
     user = await db.get(UserAccount, creds.username)
     if not user or not verify_password(creds.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")
+    try:
+        logger.info("user_login", extra={"user": creds.username})
+    except Exception:
+        pass
     return UserOut.model_validate(user)
 
 
