@@ -82,6 +82,54 @@ async def dashboard_overview(
     }
 
 
+@router.get("/dashboard/summary")
+async def dashboard_summary(
+    db: AsyncSession = Depends(get_db),
+    user_id: str = Depends(get_current_user),
+):
+    """Return a summary payload expected by the UI dashboard.
+
+    Adapts the existing overview metrics and adds the most recent artist.
+    """
+    # Most recent artist listened to (if any)
+    last_artist = (
+        await db.execute(
+            select(Artist.name)
+            .join(Track, Track.artist_id == Artist.artist_id, isouter=True)
+            .join(Listen, Listen.track_id == Track.track_id)
+            .where(Listen.user_id == user_id)
+            .order_by(Listen.played_at.desc())
+            .limit(1)
+        )
+    ).scalar_one_or_none() or ""
+
+    # Reuse overview metrics for KPIs (30-day window)
+    try:
+        overview = await dashboard_overview(30, db, user_id)  # type: ignore[arg-type]
+    except Exception:
+        overview = {"listen_count": 0, "artist_diversity": 0, "momentum": 0.0}
+
+    kpis = [
+        {
+            "id": "listens",
+            "title": "Listens (30d)",
+            "value": overview.get("listen_count", 0),
+        },
+        {
+            "id": "artists",
+            "title": "Artist diversity (30d)",
+            "value": overview.get("artist_diversity", 0),
+        },
+        {
+            "id": "momentum",
+            "title": "Momentum",
+            "value": round(float(overview.get("momentum", 0.0)), 3),
+        },
+    ]
+
+    return {"last_artist": last_artist, "kpis": kpis, "insights": []}
+
+
 @router.get("/dashboard/trajectory")
 async def dashboard_trajectory(
     window: str = Query("12w"),
