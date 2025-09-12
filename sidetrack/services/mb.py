@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import json
-import os
 from typing import Any
 
 import httpx
@@ -12,6 +11,7 @@ from redis import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sidetrack.api.db import SessionLocal
+from sidetrack.common.config import get_settings
 from sidetrack.common.models import MusicBrainzRecording
 
 _MB_LOCK = asyncio.Lock()
@@ -19,7 +19,8 @@ _CACHE_TTL = 24 * 3600  # one day
 
 
 async def _rate_limit() -> None:
-    rate = float(os.getenv("MUSICBRAINZ_RATE_LIMIT", "1.0"))
+    settings = get_settings()
+    rate = float(settings.musicbrainz_rate_limit or 1.0)
     await asyncio.sleep(max(0.0, 1.0 / rate))
 
 

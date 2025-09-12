@@ -102,13 +102,12 @@ async def _startup():
         redis = redis_async.from_url(settings.redis_url, encoding="utf-8", decode_responses=True)
         await FastAPILimiter.init(redis)
 
-    # Seed a default user for local/dev if configured
-    import os
-
+    # Seed a default user for local/dev if configured (from pydantic settings)
     from sidetrack.common.models import UserAccount as _UserAccount
 
-    default_user = os.getenv("DEFAULT_USER") or os.getenv("ADMIN_USER")
-    default_password = os.getenv("DEFAULT_PASSWORD") or os.getenv("ADMIN_PASSWORD")
+    settings_seed = get_app_settings()
+    default_user = settings_seed.admin_user
+    default_password = settings_seed.admin_password
     if default_user and default_password:
         try:
             async with SessionLocal(async_session=True) as s:  # type: ignore[arg-type]

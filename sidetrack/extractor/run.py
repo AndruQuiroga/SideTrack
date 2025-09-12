@@ -31,22 +31,15 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.orm import Session
 
+from sidetrack.common.config import get_settings
 from sidetrack.common.models import Embedding, Feature, Track
 
 app = typer.Typer(add_completion=False)
 
 
 def get_db_url() -> str:
-    url = os.getenv("DATABASE_URL")
-    if url:
-        return url
-    # Default to the docker-compose service name for Postgres
-    host = os.getenv("POSTGRES_HOST", "db")
-    db = os.getenv("POSTGRES_DB", "vibescope")
-    user = os.getenv("POSTGRES_USER", "vibe")
-    pw = os.getenv("POSTGRES_PASSWORD", "vibe")
-    port = os.getenv("POSTGRES_PORT", "5432")
-    return f"postgresql+psycopg://{user}:{pw}@{host}:{port}/{db}"
+    settings = get_settings()
+    return settings.db_url
 
 
 def safe_load_audio(path: str, sr: int = 44100, mono: bool = False) -> tuple[np.ndarray, int]:
@@ -358,13 +351,14 @@ def main(
         except ValueError:
             if not croniter.is_valid(schedule):
                 raise typer.BadParameter("Schedule must be seconds or a cron expression")
-    audio_root = os.getenv("AUDIO_ROOT", "/audio")
+    audio_root = get_settings().audio_root
     url = get_db_url()
     engine = create_engine(url, pool_pre_ping=True)
     typer.echo(f"[extractor] connected to DB: {url}")
     # Wait for schema to be ready (track table exists) to avoid race with API migrations
-    deadline = time.time() + float(os.getenv("EXTRACTOR_DB_WAIT_SECS", "60"))
-    wait_interval = float(os.getenv("EXTRACTOR_DB_WAIT_INTERVAL", "2"))
+    settings = get_settings()
+    deadline = time.time() + float(settings.extractor_db_wait_secs)
+    wait_interval = float(settings.extractor_db_wait_interval)
     while True:
         with Session(engine) as db:
             try:

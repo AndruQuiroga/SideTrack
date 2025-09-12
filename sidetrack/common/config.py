@@ -36,17 +36,26 @@ class Settings(BaseSettings):
     lastfm_similar_enabled: bool = Field(default=True, env="LASTFM_SIMILAR_ENABLED")
     lb_cf_enabled: bool = Field(default=False, env="LB_CF_ENABLED")
 
+    # Admin seed (for dev/local seeding)
+    admin_user: str | None = Field(default=None, env="ADMIN_USER")
+    admin_password: str | None = Field(default=None, env="ADMIN_PASSWORD")
+
+    # Misc service settings
+    musicbrainz_rate_limit: float = Field(default=1.0, env="MUSICBRAINZ_RATE_LIMIT")
+    audio_root: str = Field(default="/audio", env="AUDIO_ROOT")
+    extractor_db_wait_secs: float = Field(default=60.0, env="EXTRACTOR_DB_WAIT_SECS")
+    extractor_db_wait_interval: float = Field(default=2.0, env="EXTRACTOR_DB_WAIT_INTERVAL")
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
     @property
     def db_url(self) -> str:
         if self.database_url:
             return self.database_url
-        return "None"
-        # return (
-        #     f"postgresql+psycopg://{self.postgres_user}:{self.postgres_password}"
-        #     f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
-        # )
+        return (
+            f"postgresql+psycopg://{self.postgres_user}:{self.postgres_password}"
+            f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
+        )
 
 
 @lru_cache
