@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
   const at = req.headers.get('authorization') || req.cookies.get('at')?.value || '';
   if (at && !headers['Authorization'])
     headers['Authorization'] = at.startsWith('Bearer ') ? at : `Bearer ${at}`;
-  const r = await fetch(`${API_BASE}/dashboard/trajectory`, { headers });
+  const r = await fetch(`${API_BASE}/v1/dashboard/trajectory`, { headers });
   const data = await r.json().catch(() => ({}));
   return NextResponse.json(data, { status: r.status });
 }

@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
   if (at && !headers['Authorization'])
     headers['Authorization'] = at.startsWith('Bearer ') ? at : `Bearer ${at}`;
   const range = req.nextUrl.searchParams.get('range') || '12w';
-  const r = await fetch(`${API_BASE}/dashboard/outliers?range=${encodeURIComponent(range)}`, {
+  const r = await fetch(`${API_BASE}/v1/dashboard/outliers?range=${encodeURIComponent(range)}`, {
     headers,
   });
   const data = await r.json().catch(() => ({}));

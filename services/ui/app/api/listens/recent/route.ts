@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
   if (at && !headers['Authorization'])
     headers['Authorization'] = at.startsWith('Bearer ') ? at : `Bearer ${at}`;
   const limit = req.nextUrl.searchParams.get('limit') || '50';
-  const r = await fetch(`${API_BASE}/listens/recent?limit=${encodeURIComponent(limit)}`, {
+  const r = await fetch(`${API_BASE}/v1/listens/recent?limit=${encodeURIComponent(limit)}`, {
     headers,
   });
   const data = await r.json().catch(() => ({}));
