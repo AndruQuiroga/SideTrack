@@ -43,7 +43,7 @@ export function useDashboard() {
   return useQuery<DashboardData>({
     queryKey: ['dashboard-summary'],
     queryFn: async () => {
-      const res = await apiFetch('/dashboard/summary');
+      const res = await apiFetch('/api/dashboard/summary');
       if (!res.ok) throw new Error('Failed to fetch dashboard summary');
       const json = await res.json();
       return {
@@ -59,7 +59,7 @@ export function useTrajectory() {
   return useQuery<TrajectoryData>({
     queryKey: ['trajectory'],
     queryFn: async () => {
-      const res = await apiFetch('/dashboard/trajectory');
+      const res = await apiFetch('/api/dashboard/trajectory');
       return (await res.json()) as TrajectoryData;
     },
   });
@@ -72,7 +72,7 @@ export function useOutliers(range = '12w') {
   return useQuery<OutliersResponse>({
     queryKey: ['outliers', range],
     queryFn: async () => {
-      const res = await apiFetch(`/dashboard/outliers?range=${encodeURIComponent(range)}`);
+      const res = await apiFetch(`/api/dashboard/outliers?range=${encodeURIComponent(range)}`);
       return (await res.json()) as OutliersResponse;
     },
   });
@@ -85,7 +85,7 @@ export function useTopTags(limit = 12, days = 90) {
   return useQuery<TopTagsResponse>({
     queryKey: ['top-tags', limit, days],
     queryFn: async () => {
-      const res = await apiFetch(`/dashboard/tags?limit=${limit}&days=${days}`);
+      const res = await apiFetch(`/api/dashboard/tags?limit=${limit}&days=${days}`);
       return (await res.json()) as TopTagsResponse;
     },
   });
@@ -103,7 +103,7 @@ export function useRecentListens(limit = 50) {
   return useQuery<RecentListensResponse>({
     queryKey: ['recent-listens', limit],
     queryFn: async () => {
-      const res = await apiFetch(`/listens/recent?limit=${limit}`);
+      const res = await apiFetch(`/api/listens/recent?limit=${limit}`);
       return (await res.json()) as RecentListensResponse;
     },
   });
