@@ -35,8 +35,8 @@ export default function AccountPage() {
   }, [userId]);
 
   async function handleConnect() {
-    const callback = encodeURIComponent(`${window.location.origin}/lastfm/callback`);
-    const res = await apiFetch(`/api/auth/lastfm/login?callback=${callback}`);
+    const callback = `${window.location.origin}/lastfm/callback`;
+    const res = await apiFetch(`/api/auth/lastfm/login?callback=${encodeURIComponent(callback)}`);
     const data = await res.json().catch(() => ({}));
     if (data.url) {
       window.location.href = data.url;

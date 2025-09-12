@@ -17,10 +17,10 @@ export default function SpotifyCallback() {
       return;
     }
     if (!userId) return;
-    const callback = encodeURIComponent(`${window.location.origin}/spotify/callback`);
-    apiFetch(`/api/auth/spotify/callback?code=${code}&callback=${callback}`).finally(() =>
-      router.replace('/settings'),
-    );
+    const callback = `${window.location.origin}/spotify/callback`;
+    apiFetch(
+      `/api/auth/spotify/callback?code=${code}&callback=${encodeURIComponent(callback)}`,
+    ).finally(() => router.replace('/settings'));
   }, [params, router, userId]);
 
   return <p>Connecting to Spotify...</p>;
