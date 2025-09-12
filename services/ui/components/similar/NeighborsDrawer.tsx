@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useEffect, useState } from 'react';
 import { apiFetch } from '../../lib/api';
@@ -19,7 +19,7 @@ export default function NeighborsDrawer({ trackId, open, onClose }: Props) {
     if (!open) return;
     (async () => {
       try {
-        const res = await apiFetch(`/similar/track/${trackId}`);
+        const res = await apiFetch(`/v1/similar/track/${trackId}`);
         if (res.ok) {
           setNeighbors((await res.json()) as Neighbor[]);
         } else {
@@ -63,4 +63,3 @@ export default function NeighborsDrawer({ trackId, open, onClose }: Props) {
     </aside>
   );
 }
-

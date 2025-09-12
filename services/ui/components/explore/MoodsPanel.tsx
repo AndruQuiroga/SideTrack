@@ -19,7 +19,8 @@ export default function MoodsPanel() {
   const [series, setSeries] = useState<{ week: Date; [axis: string]: number | Date }[]>([]);
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [selectedWeek, setSelectedWeek] = useState<Date | null>(null);
-  const [candidates, setCandidates] = useState<any[]>([]);
+  type Candidate = { track_id: number; title?: string; artist?: string };
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [axes] = useState<string[]>([
     'energy',
     'valence',
@@ -37,7 +38,7 @@ export default function MoodsPanel() {
         const weeks = (traj.points ?? []).slice(-12).map((p) => p.week);
         const rows = await Promise.all(
           weeks.map(async (w) => {
-            const r = await apiFetch(`/dashboard/radar?week=${encodeURIComponent(w)}`);
+            const r = await apiFetch(`/v1/dashboard/radar?week=${encodeURIComponent(w)}`);
             const j = await r.json();
             return { week: new Date(j.week), ...j.axes };
           }),
@@ -58,7 +59,7 @@ export default function MoodsPanel() {
     let mounted = true;
     (async () => {
       try {
-        const r = await apiFetch('/moods/shifts');
+        const r = await apiFetch('/v1/moods/shifts');
         const j = await r.json();
         if (mounted) setShifts(j);
       } catch {
@@ -78,7 +79,7 @@ export default function MoodsPanel() {
     let mounted = true;
     (async () => {
       try {
-        const r = await apiFetch('/dashboard/outliers?limit=5');
+        const r = await apiFetch('/api/dashboard/outliers?limit=5');
         const j = await r.json();
         if (mounted) setCandidates(j.tracks ?? []);
       } catch {
@@ -108,7 +109,8 @@ export default function MoodsPanel() {
     if (!displaySeries.length)
       return <EmptyState title="No data yet" description="Ingest some listens to begin." />;
     return (
-      <Suspense fallback={<ChartSkeleton className="h-[clamp(240px,40vh,340px)]" />}>\
+      <Suspense fallback={<ChartSkeleton className="h-[clamp(240px,40vh,340px)]" />}>
+        \
         <MoodsStreamgraph data={displaySeries} axes={axes} />
       </Suspense>
     );
@@ -129,8 +131,11 @@ export default function MoodsPanel() {
       {!!candidates.length && (
         <ChartContainer title="Mixtape candidates" subtitle="k-medoids picks">
           <ul className="text-sm space-y-1">
-            {candidates.map((t: any) => (
-              <li key={t.track_id}>{t.artist} – {t.title}</li>
+            {candidates.map((t) => (
+              <li key={t.track_id}>
+                {t.artist ? `${t.artist} – ` : ''}
+                {t.title ?? 'Unknown'}
+              </li>
             ))}
           </ul>
         </ChartContainer>

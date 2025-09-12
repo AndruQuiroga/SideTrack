@@ -19,15 +19,13 @@ type RadarData = {
 };
 
 async function fetchRadar(cohort?: string): Promise<RadarData> {
-  const trajRes = await apiFetch('/dashboard/trajectory');
+  const trajRes = await apiFetch('/api/dashboard/trajectory');
   const traj = await trajRes.json();
   const last = traj.points?.[traj.points.length - 1];
   const week = last?.week;
   if (!week) return { week: null, axes: {}, baseline: {} } as RadarData;
   const cohortParam = cohort ? `&cohort=${encodeURIComponent(cohort)}` : '';
-  const res = await apiFetch(
-    `/dashboard/radar?week=${encodeURIComponent(week)}${cohortParam}`,
-  );
+  const res = await apiFetch(`/v1/dashboard/radar?week=${encodeURIComponent(week)}${cohortParam}`);
   return (await res.json()) as RadarData;
 }
 
