@@ -23,6 +23,7 @@ import signal
 import time
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import typer
@@ -375,7 +376,7 @@ def main(
 
 
 async def _run_loop(
-    engine: any,
+    engine: Any,
     audio_root: str,
     batch_size: int,
     interval: float,
