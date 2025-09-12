@@ -5,7 +5,7 @@ import { showToast } from './toast';
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: (failureCount, error) => failureCount < 2,
+      retry: (failureCount) => failureCount < 2,
       onError: (err: unknown) => {
         const message = err instanceof Error ? err.message : 'Unknown error';
         showToast({ title: 'Request failed', description: message, kind: 'error' });
@@ -74,6 +74,19 @@ export function useOutliers(range = '12w') {
     queryFn: async () => {
       const res = await apiFetch(`/dashboard/outliers?range=${encodeURIComponent(range)}`);
       return (await res.json()) as OutliersResponse;
+    },
+  });
+}
+
+export type TopTag = { name: string; count: number };
+export type TopTagsResponse = { tags: TopTag[] };
+
+export function useTopTags(limit = 12, days = 90) {
+  return useQuery<TopTagsResponse>({
+    queryKey: ['top-tags', limit, days],
+    queryFn: async () => {
+      const res = await apiFetch(`/dashboard/tags?limit=${limit}&days=${days}`);
+      return (await res.json()) as TopTagsResponse;
     },
   });
 }

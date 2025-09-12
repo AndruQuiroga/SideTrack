@@ -10,7 +10,7 @@ from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
-from sidetrack.common.models import Artist, Listen, MoodAggWeek, MoodScore, Track
+from sidetrack.common.models import Artist, LastfmTags, Listen, MoodAggWeek, MoodScore, Track
 
 from ...constants import AXES, DEFAULT_METHOD
 from ...db import get_db
@@ -128,6 +128,57 @@ async def dashboard_summary(
     ]
 
     return {"last_artist": last_artist, "kpis": kpis, "insights": []}
+
+
+@router.get("/dashboard/tags")
+async def dashboard_top_tags(
+    limit: int = Query(12, ge=1, le=50),
+    days: int = Query(90, ge=1, le=365),
+    db: AsyncSession = Depends(get_db),
+    user_id: str = Depends(get_current_user),
+):
+    """Aggregate top Last.fm tags across the user's recent listens.
+
+    This endpoint scans listens within the given window, fetches cached
+    Last.fm tags for the associated tracks, and returns the most frequent
+    tags. Intended for a lightweight UI chip cloud.
+    """
+    since = datetime.now(UTC) - timedelta(days=days)
+    track_ids = (
+        (
+            await db.execute(
+                select(Listen.track_id)
+                .where(and_(Listen.user_id == user_id, Listen.played_at >= since))
+                .distinct()
+            )
+        )
+        .scalars()
+        .all()
+    )
+    if not track_ids:
+        return {"tags": []}
+
+    rows = (
+        await db.execute(select(LastfmTags.tags).where(LastfmTags.track_id.in_(track_ids)))
+    ).scalars()
+
+    counts: dict[str, int] = {}
+    for m in rows:
+        if not isinstance(m, dict):
+            continue
+        for name, cnt in m.items():
+            if not name:
+                continue
+            try:
+                val = int(cnt or 0)
+            except Exception:
+                val = 0
+            if val <= 0:
+                continue
+            counts[name] = counts.get(name, 0) + val
+
+    top = sorted(counts.items(), key=lambda x: x[1], reverse=True)[:limit]
+    return {"tags": [{"name": k, "count": int(v)} for k, v in top]}
 
 
 @router.get("/dashboard/trajectory")

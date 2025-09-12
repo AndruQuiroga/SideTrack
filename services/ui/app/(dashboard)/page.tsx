@@ -8,7 +8,7 @@ import QuickActions from '../../components/dashboard/QuickActions';
 import Skeleton from '../../components/Skeleton';
 import { Card } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
-import { useDashboard, useRecentListens, useTrajectory } from '../../lib/query';
+import { useDashboard, useRecentListens, useTopTags, useTrajectory } from '../../lib/query';
 
 function VibeSummary({ lastArtist }: { lastArtist: string }) {
   return (
@@ -141,6 +141,40 @@ function DiscoverRow() {
   );
 }
 
+function TopTagsCloud() {
+  const { data, isLoading } = useTopTags(12, 90);
+  const tags = data?.tags ?? [];
+  return (
+    <Card variant="glass" className="p-4 md:p-6">
+      <div className="flex items-center gap-2 text-cyan-300">
+        <Compass size={18} />
+        <span className="text-xs uppercase tracking-wider">Top tags</span>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {isLoading
+          ? Array.from({ length: 8 }, (_, i) => (
+              <span key={i} className="h-6 w-16 animate-pulse rounded-full bg-white/5" />
+            ))
+          : tags.map((t, idx) => (
+              <span
+                key={t.name}
+                className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-foreground/90 backdrop-blur"
+                title={`${t.count} mentions`}
+                style={{ opacity: 1 - Math.min(idx, 10) * 0.05 }}
+              >
+                {t.name}
+              </span>
+            ))}
+        {!isLoading && tags.length === 0 && (
+          <span className="text-sm text-muted-foreground">
+            No tags yet — sync Last.fm to see yours
+          </span>
+        )}
+      </div>
+    </Card>
+  );
+}
+
 export default function DashboardPage() {
   const { data, isLoading, error } = useDashboard();
 
@@ -175,9 +209,10 @@ export default function DashboardPage() {
       </div>
 
       {/* Trends & activity */}
-      <div className="grid gap-4 @[900px]:grid-cols-3">
-        <div className="@[900px]:col-span-2">
+      <div className="grid gap-4 @[1200px]:grid-cols-3">
+        <div className="@[1200px]:col-span-2 grid gap-4 @[900px]:grid-cols-2">
           {isLoading ? <Skeleton className="h-40" /> : <MiniTrajectory />}
+          {isLoading ? <Skeleton className="h-40" /> : <TopTagsCloud />}
         </div>
         <div>{isLoading ? <Skeleton className="h-40" /> : <RecentActivity />}</div>
       </div>
