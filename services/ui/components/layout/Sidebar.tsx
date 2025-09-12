@@ -26,31 +26,42 @@ export default function Sidebar({
   return (
     <aside
       className={clsx(
-        'flex flex-col shrink-0 border-r bg-background',
-        collapsed ? 'w-16' : 'w-16 md:w-56',
-        'motion-safe:transition-[width]'
+        'relative shrink-0 flex flex-col border-r border-white/10 bg-white/5 backdrop-blur-md supports-[backdrop-filter]:bg-white/5',
+        collapsed ? 'w-16' : 'w-16 md:w-60',
+        'transition-[width,background-color] duration-300',
       )}
     >
-      <button
-        onClick={() => setCollapsed(!collapsed)}
-        aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        className="m-2 hidden h-8 w-8 items-center justify-center rounded-md hover:bg-white/5 focus:outline-none focus:ring-2 focus:ring-emerald-500 md:inline-flex"
-      >
-        <Menu size={16} />
-      </button>
+      <div className="flex items-center justify-between px-3 py-3">
+        {!collapsed && (
+          <span className="text-sm font-semibold tracking-wide text-foreground/90">SideTrack</span>
+        )}
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          className="hidden h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-white/10 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 md:inline-flex"
+        >
+          <Menu size={16} />
+        </button>
+      </div>
       <nav className="flex-1 space-y-1 px-2">
         {navItems.map((item) => {
-          const active =
-            pathname === item.href || pathname.startsWith(item.href + '/');
+          const active = pathname === item.href || pathname.startsWith(item.href + '/');
           return (
             <Link
               key={item.href}
               href={item.href}
               className={clsx(
-                'flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-white/5 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500',
-                active && 'bg-white/10 text-foreground'
+                'relative flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500',
+                active && 'bg-white/10 text-foreground',
               )}
+              title={item.label}
             >
+              {active && (
+                <span
+                  className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-sm bg-emerald-400"
+                  aria-hidden
+                />
+              )}
               <item.icon size={18} />
               {!collapsed && <span className="hidden md:inline">{item.label}</span>}
             </Link>
@@ -63,4 +74,3 @@ export default function Sidebar({
     </aside>
   );
 }
-

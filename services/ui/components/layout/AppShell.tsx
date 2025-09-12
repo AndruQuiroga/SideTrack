@@ -21,13 +21,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }, [collapsed]);
 
   return (
-    <div className="min-h-dvh overflow-x-hidden flex">
+    <div className="min-h-dvh overflow-x-hidden flex bg-gradient-to-b from-background to-background/95">
       <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
       <div className="flex min-h-dvh flex-1 flex-col">
         <Header />
-        <main className="container mx-auto w-full max-w-6xl flex-1 overflow-x-hidden px-4 py-6">{children}</main>
+        <main className="w-full flex-1 overflow-x-hidden px-4 py-6 md:px-6">
+          <div className="mx-auto max-w-6xl">{children}</div>
+        </main>
       </div>
     </div>
   );
 }
-
