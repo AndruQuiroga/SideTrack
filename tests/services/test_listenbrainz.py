@@ -1,7 +1,7 @@
 import httpx
 import pytest
 
-from sidetrack.services.listenbrainz import ListenBrainzService
+from sidetrack.services.listenbrainz import ListenBrainzClient
 from sidetrack.services.candidates import _listenbrainz_candidates
 
 
@@ -54,7 +54,7 @@ async def test_get_cf_recommendations_contract(snapshot, respx_mock):
     ).respond(200, json=payload)
 
     async with httpx.AsyncClient() as client:
-        service = ListenBrainzService(client)
+        service = ListenBrainzClient(client)
         result = await service.get_cf_recommendations("alice")
 
     snapshot.assert_match(result)
