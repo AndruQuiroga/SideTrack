@@ -10,6 +10,7 @@ from sqlalchemy import engine_from_config, pool
 BASE_DIR = pathlib.Path(__file__).resolve().parents[1]
 sys.path.append(str(BASE_DIR))
 
+from sqlalchemy.engine import make_url
 from sidetrack.common.config import get_settings  # type: ignore
 from sidetrack.common.models import Base  # type: ignore
 
@@ -22,7 +23,19 @@ target_metadata = Base.metadata
 
 
 def get_url() -> str:
-    return get_settings().db_url
+    """Return a SQLAlchemy URL string with an explicit driver.
+
+    Ensures PostgreSQL uses psycopg (v3) instead of defaulting to psycopg2.
+    """
+    raw = get_settings().db_url
+    try:
+        url = make_url(raw)
+        if url.drivername == "postgresql":
+            url = url.set(drivername="postgresql+psycopg")
+        return str(url)
+    except Exception:
+        # Fallback to raw if parsing fails
+        return raw
 
 
 def run_migrations_offline() -> None:
