@@ -90,7 +90,6 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "migrations/env.py" = ["E402"]
-"services/api/alembic/env.py" = ["E402"]
 "services/api/app/main.py" = ["E402"]
 "services/api/tests/test_scoring.py" = ["E402"]
 "sidetrack/api/main.py" = ["E402"]

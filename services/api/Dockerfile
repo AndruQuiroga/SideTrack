@@ -19,8 +19,8 @@ RUN python -c "import sidetrack, uvicorn; print('api runtime deps OK')"
 
 # Provide Alembic config/scripts inside the image for DB migrations
 RUN mkdir -p /srv/api
-COPY services/api/alembic.ini /srv/api/alembic.ini
-COPY services/api/alembic /srv/api/alembic
+COPY alembic.ini /srv/api/alembic.ini
+COPY migrations /srv/api/migrations
 # Allow running `alembic upgrade head` without specifying -c each time
 ENV ALEMBIC_CONFIG=/srv/api/alembic.ini
 
