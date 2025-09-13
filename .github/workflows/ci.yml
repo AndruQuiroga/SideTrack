@@ -13,13 +13,10 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: "3.11"
-      - uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
       - run: pip install pip-tools
       - run: pip-compile requirements-dev.in --quiet && git diff --exit-code requirements-dev.txt
       - run: pip install nox coverage-badge
-      - run: nox -s lint unit integration
+      - run: nox -s lint unit integration -p 3.11
       - run: coverage xml
       - run: coverage-badge -o coverage.svg -f
       - uses: actions/upload-artifact@v4
