@@ -21,6 +21,8 @@ RUN python -c "import sidetrack, uvicorn; print('api runtime deps OK')"
 RUN mkdir -p /srv/api
 COPY alembic.ini /srv/api/alembic.ini
 COPY migrations /srv/api/migrations
+# Make the script location absolute in the in-image config
+RUN sed -i 's#^script_location\s*=.*#script_location = /srv/api/migrations#' /srv/api/alembic.ini
 # Allow running `alembic upgrade head` without specifying -c each time
 ENV ALEMBIC_CONFIG=/srv/api/alembic.ini
 
