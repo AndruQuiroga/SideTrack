@@ -48,12 +48,20 @@ async def get_current_user(
 
 
 def require_role(role: str) -> Callable:
+    """Require that the authenticated user has the given role.
+
+    Admins are allowed to access all user-level routes.
+    """
+
     async def _require_role(
         user_id: str = Depends(get_current_user),
         db: AsyncSession = Depends(get_db),
     ) -> str:
         user = await db.get(UserAccount, user_id)
-        if not user or user.role != role:
+        if not user:
+            raise HTTPException(status_code=401, detail="Not authenticated")
+        allowed = {role, "admin"}
+        if user.role not in allowed:
             raise HTTPException(status_code=403, detail="Insufficient role")
         return user.user_id
 
