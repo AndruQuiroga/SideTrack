@@ -13,7 +13,7 @@ from sidetrack.common.models import UserSettings
 from sidetrack.services.candidates import generate_candidates
 from sidetrack.services.lastfm import LastfmService
 from sidetrack.services.listenbrainz import ListenBrainzService
-from sidetrack.services.mb_map import recording_by_isrc
+from sidetrack.services.musicbrainz import MusicBrainzService
 from sidetrack.services.ranker import profile_from_spotify, rank
 from sidetrack.services.spotify import SpotifyService
 
@@ -64,6 +64,7 @@ async def list_recs(
     )
 
     redis_conn = _get_redis_connection(settings)
+    mb_service = MusicBrainzService(client, redis_conn=redis_conn, db=db)
 
     enriched: list[dict] = []
     for cand in candidates:
@@ -76,16 +77,16 @@ async def list_recs(
         isrc = cand.get("isrc")
         rec_mbid = cand.get("recording_mbid")
         if isrc:
-            rec_mbid, art_mbid, year, label, tags = await recording_by_isrc(
-                isrc, client=client, redis_conn=redis_conn
+            mb = await mb_service.recording_by_isrc(
+                isrc, title=item.get("title"), artist=item.get("artist")
             )
             item.update(
                 {
-                    "recording_mbid": rec_mbid,
-                    "artist_mbid": art_mbid,
-                    "release_year": year,
-                    "label": label,
-                    "tags": tags,
+                    "recording_mbid": mb.get("recording_mbid"),
+                    "artist_mbid": mb.get("artist_mbid"),
+                    "release_year": mb.get("year"),
+                    "label": mb.get("label"),
+                    "tags": mb.get("tags"),
                 }
             )
         elif rec_mbid:
@@ -136,6 +137,7 @@ async def ranked_recs(
     )
 
     redis_conn = _get_redis_connection(settings)
+    mb_service = MusicBrainzService(client, redis_conn=redis_conn, db=db)
 
     enriched: list[dict] = []
     spotify_ids: list[str] = []
@@ -148,14 +150,14 @@ async def ranked_recs(
         isrc = cand.get("isrc")
         rec_mbid = cand.get("recording_mbid")
         if isrc:
-            rec_mbid, art_mbid, year, label, _tags = await recording_by_isrc(
-                isrc, client=client, redis_conn=redis_conn
+            mb = await mb_service.recording_by_isrc(
+                isrc, title=item.get("title"), artist=item.get("artist")
             )
             item.update(
                 {
-                    "recording_mbid": rec_mbid,
-                    "artist_mbid": art_mbid,
-                    "label": label,
+                    "recording_mbid": mb.get("recording_mbid"),
+                    "artist_mbid": mb.get("artist_mbid"),
+                    "label": mb.get("label"),
                 }
             )
         elif rec_mbid:

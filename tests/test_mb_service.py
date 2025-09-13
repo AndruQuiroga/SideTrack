@@ -1,10 +1,9 @@
 import asyncio
-import asyncio
 import httpx
 import pytest
 
-from sidetrack.services.mb import recording_by_isrc
 from sidetrack.common.models import MusicBrainzRecording
+from sidetrack.services.musicbrainz import MusicBrainzService
 
 
 @pytest.mark.asyncio
@@ -45,9 +44,8 @@ async def test_recording_by_isrc_db_cache(redis_conn, async_session, monkeypatch
     monkeypatch.setattr(asyncio, "sleep", no_sleep)
 
     async with httpx.AsyncClient(transport=transport) as client:
-        res = await recording_by_isrc(
-            "US1234567890", client=client, redis_conn=redis_conn, db=async_session
-        )
+        svc = MusicBrainzService(client, redis_conn=redis_conn, db=async_session)
+        res = await svc.recording_by_isrc("US1234567890")
         assert res == {
             "recording_mbid": "rec-1",
             "artist_mbid": "art-1",
@@ -68,9 +66,7 @@ async def test_recording_by_isrc_db_cache(redis_conn, async_session, monkeypatch
             return httpx.Response(500)
 
         client._transport = httpx.MockTransport(fail_handler)
-        res2 = await recording_by_isrc(
-            "US1234567890", client=client, redis_conn=redis_conn, db=async_session
-        )
+        res2 = await svc.recording_by_isrc("US1234567890")
         assert res2["recording_mbid"] == "rec-1"
         assert not called
 
@@ -106,12 +102,8 @@ async def test_recording_by_isrc_fallback(redis_conn, async_session, monkeypatch
     monkeypatch.setattr(asyncio, "sleep", no_sleep)
 
     async with httpx.AsyncClient(transport=transport) as client:
-        res = await recording_by_isrc(
-            "MISSING",
-            title="Song",
-            artist="Artist",
-            client=client,
-            redis_conn=redis_conn,
-            db=async_session,
+        svc = MusicBrainzService(client, redis_conn=redis_conn, db=async_session)
+        res = await svc.recording_by_isrc(
+            "MISSING", title="Song", artist="Artist"
         )
         assert res["recording_mbid"] == "rec-fb"
