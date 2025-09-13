@@ -115,13 +115,20 @@ class SpotifyService:
         """Return the user's saved tracks, handling pagination."""
 
         items: list[dict[str, Any]] = []
+        remaining = limit
         url = f"{self.api_root}/me/tracks"
-        params: dict[str, Any] | None = {"limit": min(limit, 50)}
-        while url:
+        offset = 0
+
+        while url and remaining > 0:
+            params: dict[str, Any] = {"limit": min(remaining, 50), "offset": offset}
             data = await self._request("GET", url, params=params)
-            items.extend(data.get("items", []))
-            url = data.get("next")
-            params = None  # ``next`` already includes query parameters
+            batch = data.get("items", [])
+            items.extend(batch)
+            remaining -= len(batch)
+            if not data.get("next") or not batch:
+                break
+            offset += len(batch)
+
         return items
 
     async def get_recommendations(
