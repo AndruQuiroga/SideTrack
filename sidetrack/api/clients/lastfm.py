@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import logging
+import time
 from collections.abc import AsyncGenerator
 from datetime import datetime, timedelta
 from typing import Any
@@ -40,11 +42,19 @@ class LastfmClient:
     api_root = "https://ws.audioscrobbler.com/2.0/"
 
     def __init__(
-        self, client: httpx.AsyncClient, api_key: str | None, api_secret: str | None
+        self,
+        client: httpx.AsyncClient,
+        api_key: str | None,
+        api_secret: str | None,
+        *,
+        min_interval: float = 0.2,
     ) -> None:
         self._client = client
         self.api_key = api_key
         self.api_secret = api_secret
+        self._min_interval = min_interval
+        self._last_request = 0.0
+        self._rate_lock = asyncio.Lock()
 
     def auth_url(self, callback: str) -> str:
         if not self.api_key:
@@ -61,9 +71,23 @@ class LastfmClient:
 
     @_retry
     async def _get(self, params: dict[str, Any]) -> httpx.Response:
+        async with self._rate_lock:
+            wait = self._min_interval - (time.monotonic() - self._last_request)
+            if wait > 0:
+                await asyncio.sleep(wait)
+            self._last_request = time.monotonic()
         resp = await self._client.get(self.api_root, params=params, timeout=30)
         resp.raise_for_status()
         return resp
+
+    async def _request(self, params: dict[str, Any]) -> dict[str, Any]:
+        if not self.api_key:
+            raise RuntimeError("LASTFM_API_KEY not configured")
+        params = dict(params)
+        params["api_key"] = self.api_key
+        params["format"] = "json"
+        resp = await self._get(params)
+        return resp.json()
 
     async def get_session(self, token: str) -> tuple[str, str]:
         """Exchange an auth token for a session key and username."""
@@ -85,19 +109,14 @@ class LastfmClient:
     ) -> list[dict[str, Any]]:
         """Fetch a user's recent tracks from Last.fm."""
 
-        if not self.api_key:
-            raise RuntimeError("LASTFM_API_KEY not configured")
         params: dict[str, Any] = {
             "method": "user.getrecenttracks",
             "user": user,
-            "api_key": self.api_key,
             "limit": min(limit, 200),
-            "format": "json",
         }
         if since:
             params["from"] = int(since.timestamp())
-        r = await self._get(params)
-        data = r.json()
+        data = await self._request(params)
         return data.get("recenttracks", {}).get("track", [])
 
     async def get_track_tags(
@@ -126,11 +145,8 @@ class LastfmClient:
             "method": "track.gettoptags",
             "artist": artist,
             "track": track,
-            "api_key": self.api_key,
-            "format": "json",
         }
-        r = await self._get(params)
-        data = r.json()
+        data = await self._request(params)
         tags = data.get("toptags", {}).get("tag", [])
         out: dict[str, int] = {}
         for t in tags:
@@ -157,6 +173,69 @@ class LastfmClient:
             )
         await db.commit()
         return out
+
+    async def get_top_artists(
+        self, user: str, period: str = "7day", limit: int = 50
+    ) -> list[dict[str, Any]]:
+        params = {
+            "method": "user.gettopartists",
+            "user": user,
+            "period": period,
+            "limit": limit,
+        }
+        data = await self._request(params)
+        return data.get("topartists", {}).get("artist", [])
+
+    async def get_top_tracks(
+        self, user: str, period: str = "7day", limit: int = 50
+    ) -> list[dict[str, Any]]:
+        params = {
+            "method": "user.gettoptracks",
+            "user": user,
+            "period": period,
+            "limit": limit,
+        }
+        data = await self._request(params)
+        return data.get("toptracks", {}).get("track", [])
+
+    async def get_similar_artist(
+        self, *, name: str | None = None, mbid: str | None = None, limit: int = 50
+    ) -> list[dict[str, Any]]:
+        params = {"method": "artist.getsimilar", "limit": limit}
+        if mbid:
+            params["mbid"] = mbid
+        elif name:
+            params["artist"] = name
+        else:
+            raise ValueError("name or mbid required")
+        data = await self._request(params)
+        return data.get("similarartists", {}).get("artist", [])
+
+    async def get_similar_track(
+        self,
+        *,
+        artist: str | None = None,
+        track: str | None = None,
+        mbid: str | None = None,
+        limit: int = 50,
+    ) -> list[dict[str, Any]]:
+        params = {"method": "track.getsimilar", "limit": limit}
+        if mbid:
+            params["mbid"] = mbid
+        else:
+            if not artist or not track:
+                raise ValueError("artist and track required when mbid not provided")
+            params["artist"] = artist
+            params["track"] = track
+        data = await self._request(params)
+        return data.get("similartracks", {}).get("track", [])
+
+    async def get_artist_top_tracks(
+        self, artist: str, limit: int = 10
+    ) -> list[dict[str, Any]]:
+        params = {"method": "artist.gettoptracks", "artist": artist, "limit": limit}
+        data = await self._request(params)
+        return data.get("toptracks", {}).get("track", [])
 
 
 async def get_lastfm_client(

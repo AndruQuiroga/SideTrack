@@ -12,10 +12,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sidetrack.common.models import UserSettings
 from sidetrack.services.candidates import generate_candidates
 from sidetrack.services.lastfm import LastfmService
-from sidetrack.services.listenbrainz import ListenBrainzService
-from sidetrack.services.musicbrainz import MusicBrainzService
+from sidetrack.services.listenbrainz import ListenBrainzClient
+from sidetrack.services.mb_map import recording_by_isrc
 from sidetrack.services.ranker import profile_from_spotify, rank
 from sidetrack.services.spotify import SpotifyService
+from ...clients.lastfm import LastfmClient
 
 from ...config import Settings
 from ...config import get_settings as get_app_settings
@@ -42,24 +43,24 @@ async def list_recs(
         raise HTTPException(status_code=404, detail="user settings not found")
 
     spotify_service: SpotifyService | None = None
-    lastfm_service: LastfmService | None = None
+    lastfm_client: LastfmClient | None = None
     lastfm_user: str | None = None
-    lb_service: ListenBrainzService | None = None
+    lb_client: ListenBrainzClient | None = None
     lb_user: str | None = None
     if settings.spotify_recs_enabled and row.spotify_access_token:
         spotify_service = SpotifyService(client, access_token=row.spotify_access_token)
     elif settings.lastfm_similar_enabled and row.lastfm_user:
-        lastfm_service = LastfmService(client, settings.lastfm_api_key)
+        lastfm_client = LastfmClient(client, settings.lastfm_api_key, None)
         lastfm_user = row.lastfm_user
     elif settings.lb_cf_enabled and row.listenbrainz_user:
-        lb_service = ListenBrainzService(client)
+        lb_client = ListenBrainzClient(client)
         lb_user = row.listenbrainz_user
 
     candidates = await generate_candidates(
         spotify=spotify_service,
-        lastfm=lastfm_service,
+        lastfm=lastfm_client,
         lastfm_user=lastfm_user,
-        listenbrainz=lb_service,
+        listenbrainz=lb_client,
         listenbrainz_user=lb_user,
     )
 
@@ -115,24 +116,24 @@ async def ranked_recs(
         raise HTTPException(status_code=404, detail="user settings not found")
 
     spotify_service: SpotifyService | None = None
-    lastfm_service: LastfmService | None = None
+    lastfm_client: LastfmClient | None = None
     lastfm_user: str | None = None
-    lb_service: ListenBrainzService | None = None
+    lb_client: ListenBrainzClient | None = None
     lb_user: str | None = None
     if settings.spotify_recs_enabled and row.spotify_access_token:
         spotify_service = SpotifyService(client, access_token=row.spotify_access_token)
     elif settings.lastfm_similar_enabled and row.lastfm_user:
-        lastfm_service = LastfmService(client, settings.lastfm_api_key)
+        lastfm_client = LastfmClient(client, settings.lastfm_api_key, None)
         lastfm_user = row.lastfm_user
     elif settings.lb_cf_enabled and row.listenbrainz_user:
-        lb_service = ListenBrainzService(client)
+        lb_client = ListenBrainzClient(client)
         lb_user = row.listenbrainz_user
 
     candidates = await generate_candidates(
         spotify=spotify_service,
-        lastfm=lastfm_service,
+        lastfm=lastfm_client,
         lastfm_user=lastfm_user,
-        listenbrainz=lb_service,
+        listenbrainz=lb_client,
         listenbrainz_user=lb_user,
     )
 

@@ -27,7 +27,7 @@ def test_lb_cf_recs(client, session, monkeypatch, user_id):
         ]
 
     monkeypatch.setattr(
-        "sidetrack.services.listenbrainz.ListenBrainzService.get_cf_recommendations",
+        "sidetrack.services.listenbrainz.ListenBrainzClient.get_cf_recommendations",
         fake_cf,
     )
 
