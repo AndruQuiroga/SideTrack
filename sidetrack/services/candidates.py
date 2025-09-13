@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from .lastfm import LastfmService
+from sidetrack.api.clients.lastfm import LastfmClient
+
 from .listenbrainz import ListenBrainzService
 from .spotify import SpotifyService
 
@@ -51,7 +52,7 @@ async def _spotify_candidates(sp: SpotifyService) -> list[dict[str, Any]]:
     return out
 
 
-async def _lastfm_candidates(lfm: LastfmService, user: str) -> list[dict[str, Any]]:
+async def _lastfm_candidates(lfm: LastfmClient, user: str) -> list[dict[str, Any]]:
     """Generate candidate tracks for a Last.fm user."""
 
     out: list[dict[str, Any]] = []
@@ -129,7 +130,7 @@ async def _listenbrainz_candidates(lb: ListenBrainzService, user: str) -> list[d
 async def generate_candidates(
     *,
     spotify: SpotifyService | None = None,
-    lastfm: LastfmService | None = None,
+    lastfm: LastfmClient | None = None,
     lastfm_user: str | None = None,
     listenbrainz: ListenBrainzService | None = None,
     listenbrainz_user: str | None = None,
