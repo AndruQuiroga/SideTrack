@@ -11,9 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from sidetrack.common.models import UserSettings
 from sidetrack.services.candidates import generate_candidates
-from sidetrack.services.lastfm import LastfmService
 from sidetrack.services.listenbrainz import ListenBrainzClient
-from sidetrack.services.mb_map import recording_by_isrc
+from sidetrack.services.musicbrainz import MusicBrainzService
 from sidetrack.services.ranker import profile_from_spotify, rank
 from sidetrack.services.spotify import SpotifyService
 from ...clients.lastfm import LastfmClient
