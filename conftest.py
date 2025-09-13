@@ -11,7 +11,7 @@ from pytest_socket import disable_socket, enable_socket, socket_allow_hosts
 from sidetrack.api import main as api_main
 from sidetrack.api.config import ApiSettings
 
-pytest_plugins = ["services.tests.conftest"]
+from services.tests.conftest import *  # noqa: F401,F403
 
 _MARKERS = ["unit", "integration", "contract", "slow", "gpu", "e2e"]
 

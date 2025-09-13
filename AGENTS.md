@@ -2,8 +2,7 @@
 
 1. Install dependencies:
    ```bash
-   pip install -r requirements-dev.txt
-   pip install -e .
+   pip install -e ".[api,extractor,scheduler,worker,dev]"
    ```
 2. Run tests:
    ```bash

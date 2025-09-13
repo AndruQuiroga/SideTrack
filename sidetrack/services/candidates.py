@@ -6,7 +6,6 @@ from typing import Any
 
 
 from sidetrack.api.clients.lastfm import LastfmClient
-from .lastfm import LastfmService
 from .listenbrainz import ListenBrainzClient
 
 from .spotify import SpotifyService

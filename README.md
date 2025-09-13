@@ -77,7 +77,7 @@ Developer tooling (optional):
 
 ```bash
 python3.11 -m venv .venv && source .venv/bin/activate
-pip install pre-commit
+pip install -e ".[api,extractor,scheduler,worker,dev]"
 pre-commit install && pre-commit run --all-files
 ```
 
@@ -261,6 +261,14 @@ http://localhost:3000
 ---
 
 ## Testing
+
+Set up a virtual environment and install the test dependencies:
+
+```bash
+python3.11 -m venv .venv && source .venv/bin/activate
+pip install -e ".[api,extractor,scheduler,worker,dev]"
+pytest -q
+```
 
 See [`tests/README.md`](tests/README.md) for the full pyramid, speed budget and
 fixture layout.
