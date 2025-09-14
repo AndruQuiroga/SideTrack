@@ -42,6 +42,7 @@ class Settings(BaseSettings):
 
     # Misc service settings
     musicbrainz_rate_limit: float = Field(default=1.0, env="MUSICBRAINZ_RATE_LIMIT")
+    lastfm_rate_limit: float = Field(default=5.0, env="LASTFM_RATE_LIMIT")
     audio_root: str = Field(default="/audio", env="AUDIO_ROOT")
     extractor_db_wait_secs: float = Field(default=60.0, env="EXTRACTOR_DB_WAIT_SECS")
     extractor_db_wait_interval: float = Field(default=2.0, env="EXTRACTOR_DB_WAIT_INTERVAL")
