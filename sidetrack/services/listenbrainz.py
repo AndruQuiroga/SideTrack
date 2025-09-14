@@ -5,6 +5,7 @@ from datetime import UTC, date, datetime
 from typing import Any
 
 import httpx
+import logging
 from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
 
@@ -21,6 +22,9 @@ _retry = retry(
     wait=wait_exponential(multiplier=1, min=1, max=4),
     retry=retry_if_exception(_retryable),
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 class ListenBrainzClient:
@@ -64,12 +68,24 @@ class ListenBrainzClient:
         params = {"count": limit}
         resp = await self._get(url, params=params)
         data = resp.json()
-        return (
-            data.get("recommendations")
-            or data.get("recordings")
-            or data.get("recommended_recordings")
-            or []
-        )
+        if not isinstance(data, dict):
+            logger.warning(
+                "unexpected ListenBrainz recommendations payload: %s", data
+            )
+            raise RuntimeError("unexpected ListenBrainz response format")
+
+        for key in ("recommendations", "recordings", "recommended_recordings"):
+            if key in data:
+                items = data[key] or []
+                if isinstance(items, list):
+                    return items
+                logger.warning(
+                    "unexpected ListenBrainz recommendations payload: %s", data
+                )
+                raise RuntimeError("unexpected ListenBrainz response format")
+
+        logger.warning("unexpected ListenBrainz recommendations payload: %s", data)
+        raise RuntimeError("unexpected ListenBrainz response format")
 
 
 async def get_listenbrainz_client() -> AsyncGenerator[ListenBrainzClient, None]:
