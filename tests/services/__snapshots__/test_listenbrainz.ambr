@@ -1,5 +1,37 @@
 # serializer version: 1
-# name: test_get_cf_recommendations_contract
+# name: test_get_cf_recommendations_contract[recommendations]
+  list([
+    dict({
+      'artist_name': 'Artist A',
+      'recording_mbid': 'rec1',
+      'recording_name': 'Track A',
+      'score': 0.9,
+    }),
+    dict({
+      'artist_name': 'Artist B',
+      'recording_mbid': 'rec2',
+      'recording_name': 'Track B',
+      'score': 0.8,
+    }),
+  ])
+# ---
+# name: test_get_cf_recommendations_contract[recordings]
+  list([
+    dict({
+      'artist_name': 'Artist A',
+      'recording_mbid': 'rec1',
+      'recording_name': 'Track A',
+      'score': 0.9,
+    }),
+    dict({
+      'artist_name': 'Artist B',
+      'recording_mbid': 'rec2',
+      'recording_name': 'Track B',
+      'score': 0.8,
+    }),
+  ])
+# ---
+# name: test_get_cf_recommendations_contract[recommended_recordings]
   list([
     dict({
       'artist_name': 'Artist A',
