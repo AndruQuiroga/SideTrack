@@ -1,10 +1,15 @@
 from __future__ import annotations
 
+import asyncio
+import logging
 from typing import Any, List
 
 import httpx
 
 from . import TrackRef
+
+
+logger = logging.getLogger(__name__)
 
 
 class LastfmAdapter:
@@ -19,13 +24,37 @@ class LastfmAdapter:
     async def close(self) -> None:
         await self._client.aclose()
 
-    async def _request(self, params: dict[str, Any]) -> dict[str, Any]:
+    async def _request(
+        self, params: dict[str, Any], *, max_retries: int = 3
+    ) -> dict[str, Any]:
         params = dict(params)
         params["api_key"] = self.api_key
         params["format"] = "json"
-        resp = await self._client.get(self.api_root, params=params, timeout=30)
-        resp.raise_for_status()
-        return resp.json()
+
+        delay = 1.0
+        for attempt in range(1, max_retries + 1):
+            try:
+                resp = await self._client.get(
+                    self.api_root, params=params, timeout=30
+                )
+                resp.raise_for_status()
+                return resp.json()
+            except (httpx.RequestError, httpx.HTTPStatusError) as exc:
+                status = getattr(getattr(exc, "response", None), "status_code", None)
+                retryable = status is None or status >= 500 or status == 429
+                if not retryable or attempt == max_retries:
+                    logger.error(
+                        "Last.fm request failed after %d attempts", attempt, exc_info=exc
+                    )
+                    raise
+                logger.warning(
+                    "Last.fm request failed (attempt %d/%d): %s",
+                    attempt,
+                    max_retries,
+                    exc,
+                )
+                await asyncio.sleep(delay)
+                delay *= 2
 
     @staticmethod
     def _to_track_ref(track: dict[str, Any]) -> TrackRef:
