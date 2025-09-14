@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import JSON, DateTime, Integer, String, Text, func, select
+from sqlalchemy import JSON, DateTime, Integer, String, Text, distinct, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -44,20 +44,48 @@ async def compute_weekly_insights(db: AsyncSession, user_id: str) -> Sequence[In
         )
     ).scalar()
 
-    events: list[InsightEvent] = []
-    if total:
-        evt = InsightEvent(
-            user_id=user_id,
-            ts=now,
-            type="weekly_listens",
-            summary=f"{int(total)} listens this week",
-            details={"count": int(total)},
-            severity=0,
+    unique_tracks = (
+        await db.execute(
+            select(func.count(distinct(Listen.track_id)))
+            .select_from(Listen)
+            .where(Listen.user_id == user_id, Listen.played_at >= since)
         )
-        db.add(evt)
-        await db.commit()
+    ).scalar()
+
+    events: list[InsightEvent] = []
+
+    if total:
+        events.append(
+            InsightEvent(
+                user_id=user_id,
+                ts=now,
+                type="weekly_listens",
+                summary=f"{int(total)} listens this week",
+                details={"count": int(total)},
+                severity=0,
+            )
+        )
+    if unique_tracks:
+        events.append(
+            InsightEvent(
+                user_id=user_id,
+                ts=now,
+                type="weekly_unique_tracks",
+                summary=f"{int(unique_tracks)} unique tracks this week",
+                details={"count": int(unique_tracks)},
+                severity=0,
+            )
+        )
+
+    if not events:
+        return []
+
+    async with db.begin():
+        db.add_all(events)
+
+    for evt in events:
         await db.refresh(evt)
-        events.append(evt)
+
     return events
 
 
