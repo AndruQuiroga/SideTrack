@@ -1,14 +1,70 @@
-"""Candidate track generation from Spotify or Last.fm histories."""
+"""Candidate track generation from external services."""
 
 from __future__ import annotations
 
-from typing import Any
-
+from dataclasses import dataclass, field, asdict
+from typing import Any, Iterable
 
 from sidetrack.api.clients.lastfm import LastfmClient
 from .listenbrainz import ListenBrainzClient
 
 from .spotify import SpotifyService
+
+
+@dataclass
+class Candidate:
+    """Simple container for recommendation candidates."""
+
+    spotify_id: str | None = None
+    isrc: str | None = None
+    artist: str | None = None
+    title: str | None = None
+    source: str = ""
+    score_cf: float = 0.0
+    recording_mbid: str | None = None
+    seeds: dict[str, set[str]] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return a serialisable representation."""
+
+        return {
+            **asdict(self, dict_factory=dict),
+            "seeds": {k: sorted(v) for k, v in self.seeds.items()},
+        }
+
+
+def _make_candidate(**kwargs: Any) -> Candidate:
+    """Return a :class:`Candidate` with normalised seeds."""
+
+    seeds = kwargs.pop("seeds", {}) or {}
+    norm_seeds: dict[str, set[str]] = {}
+    for key, val in seeds.items():
+        if isinstance(val, (list, set, tuple)):
+            norm_seeds[key] = {str(v) for v in val if v}
+        elif val:
+            norm_seeds[key] = {str(val)}
+    return Candidate(seeds=norm_seeds, **kwargs)
+
+
+def _dedupe(cands: Iterable[Candidate]) -> list[Candidate]:
+    """Deduplicate ``cands`` and merge seeds/metadata."""
+
+    seen: dict[tuple[str | None, str | None, str | None], Candidate] = {}
+    for cand in cands:
+        key = (cand.spotify_id, cand.artist, cand.title)
+        existing = seen.get(key)
+        if existing:
+            for k, v in cand.seeds.items():
+                existing.seeds.setdefault(k, set()).update(v)
+            if cand.score_cf > existing.score_cf:
+                existing.score_cf = cand.score_cf
+            if not existing.isrc and cand.isrc:
+                existing.isrc = cand.isrc
+            if not existing.recording_mbid and cand.recording_mbid:
+                existing.recording_mbid = cand.recording_mbid
+        else:
+            seen[key] = cand
+    return list(seen.values())
 
 
 async def _spotify_candidates(sp: SpotifyService) -> list[dict[str, Any]]:
@@ -34,29 +90,29 @@ async def _spotify_candidates(sp: SpotifyService) -> list[dict[str, Any]]:
     }
     seen = recent_ids | saved_ids
 
-    out: list[dict[str, Any]] = []
+    out: list[Candidate] = []
     for track in recs:
         tid = track.get("id")
         if not tid or tid in seen:
             continue
         out.append(
-            {
-                "spotify_id": tid,
-                "isrc": (track.get("external_ids") or {}).get("isrc"),
-                "artist": ", ".join(a.get("name") for a in track.get("artists", [])),
-                "title": track.get("name"),
-                "seeds": seeds,
-                "source": "spotify",
-                "score_cf": float(track.get("popularity", 0)) / 100.0,
-            }
+            _make_candidate(
+                spotify_id=tid,
+                isrc=(track.get("external_ids") or {}).get("isrc"),
+                artist=", ".join(a.get("name") for a in track.get("artists", [])),
+                title=track.get("name"),
+                seeds=seeds,
+                source="spotify",
+                score_cf=float(track.get("popularity", 0)) / 100.0,
+            )
         )
-    return out
+    return [c.to_dict() for c in _dedupe(out)]
 
 
 async def _lastfm_candidates(lfm: LastfmClient, user: str) -> list[dict[str, Any]]:
     """Generate candidate tracks for a Last.fm user."""
 
-    out: list[dict[str, Any]] = []
+    out: list[Candidate] = []
 
     top_tracks = await lfm.get_top_tracks(user)
     for tr in top_tracks[:5]:
@@ -66,16 +122,14 @@ async def _lastfm_candidates(lfm: LastfmClient, user: str) -> list[dict[str, Any
             continue
         sims = await lfm.get_similar_track(artist=artist_name, track=track_name)
         for s in sims:
-            cand = {
-                "spotify_id": None,
-                "isrc": None,
-                "artist": (s.get("artist") or {}).get("name"),
-                "title": s.get("name"),
-                "seeds": {"artist": artist_name, "track": track_name},
-                "source": "lastfm",
-                "score_cf": float(s.get("match") or 0.0),
-            }
-            if cand["artist"] and cand["title"]:
+            cand = _make_candidate(
+                artist=(s.get("artist") or {}).get("name"),
+                title=s.get("name"),
+                seeds={"artist": artist_name, "track": track_name},
+                source="lastfm",
+                score_cf=float(s.get("match") or 0.0),
+            )
+            if cand.artist and cand.title:
                 out.append(cand)
 
     top_artists = await lfm.get_top_artists(user)
@@ -94,38 +148,34 @@ async def _lastfm_candidates(lfm: LastfmClient, user: str) -> list[dict[str, Any
             if not title:
                 continue
             out.append(
-                {
-                    "spotify_id": None,
-                    "isrc": None,
-                    "artist": sname,
-                    "title": title,
-                    "seeds": {"artist": name},
-                    "source": "lastfm",
-                    "score_cf": float(sa.get("match") or 0.0),
-                }
+                _make_candidate(
+                    artist=sname,
+                    title=title,
+                    seeds={"artist": name},
+                    source="lastfm",
+                    score_cf=float(sa.get("match") or 0.0),
+                )
             )
-    return out
+    return [c.to_dict() for c in _dedupe(out)]
 
 
 async def _listenbrainz_candidates(lb: ListenBrainzClient, user: str) -> list[dict[str, Any]]:
     """Generate candidate tracks for a ListenBrainz user."""
 
-    out: list[dict[str, Any]] = []
+    out: list[Candidate] = []
     recs = await lb.get_cf_recommendations(user)
     for r in recs:
         out.append(
-            {
-                "spotify_id": None,
-                "isrc": None,
-                "artist": r.get("artist_name"),
-                "title": r.get("recording_name"),
-                "recording_mbid": r.get("recording_mbid"),
-                "seeds": {"user": user},
-                "source": "listenbrainz",
-                "score_cf": float(r.get("score") or 0.0),
-            }
+            _make_candidate(
+                artist=r.get("artist_name"),
+                title=r.get("recording_name"),
+                recording_mbid=r.get("recording_mbid"),
+                seeds={"user": user},
+                source="listenbrainz",
+                score_cf=float(r.get("score") or 0.0),
+            )
         )
-    return out
+    return [c.to_dict() for c in _dedupe(out)]
 
 
 async def generate_candidates(
