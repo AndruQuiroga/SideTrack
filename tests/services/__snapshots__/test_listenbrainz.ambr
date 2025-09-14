@@ -23,7 +23,9 @@
       'recording_mbid': 'rec1',
       'score_cf': 0.9,
       'seeds': dict({
-        'user': 'alice',
+        'user': list([
+          'alice',
+        ]),
       }),
       'source': 'listenbrainz',
       'spotify_id': None,
@@ -35,7 +37,9 @@
       'recording_mbid': 'rec2',
       'score_cf': 0.8,
       'seeds': dict({
-        'user': 'alice',
+        'user': list([
+          'alice',
+        ]),
       }),
       'source': 'listenbrainz',
       'spotify_id': None,
