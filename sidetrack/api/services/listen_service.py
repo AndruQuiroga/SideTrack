@@ -11,6 +11,61 @@ from ..repositories.track_repository import TrackRepository
 from ..utils import mb_sanitize
 
 
+def convert_spotify_item(item: dict, user_id: str) -> dict | None:
+    """Convert a Spotify ``recently played`` item to a ListenBrainz-style row.
+
+    Returns ``None`` if the timestamp is missing or invalid.
+    """
+
+    track_data = item.get("track") or {}
+    played_at_raw = item.get("played_at")
+    if not played_at_raw:
+        return None
+    try:
+        played_at = datetime.fromisoformat(played_at_raw.replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+
+    artist_name = (track_data.get("artists") or [{}])[0].get("name")
+    title = track_data.get("name")
+
+    return {
+        "track_metadata": {
+            "artist_name": artist_name,
+            "track_name": title,
+            "mbid_mapping": {"recording_mbid": track_data.get("mbid")},
+        },
+        "listened_at": int(played_at.timestamp()),
+        "user_name": user_id,
+    }
+
+
+def convert_lastfm_track(item: dict, user_id: str) -> dict | None:
+    """Convert a Last.fm ``recenttracks`` entry to a ListenBrainz-style row.
+
+    Returns ``None`` if the timestamp is missing or invalid.
+    """
+
+    artist = (item.get("artist") or {}).get("#text") or item.get("artist")
+    title = item.get("name") or item.get("track")
+    ts = item.get("date", {}).get("uts") or item.get("uts")
+    if ts is None:
+        return None
+    try:
+        listened_at = int(ts)
+    except (TypeError, ValueError):
+        return None
+
+    return {
+        "track_metadata": {
+            "artist_name": artist,
+            "track_name": title,
+        },
+        "listened_at": listened_at,
+        "user_name": user_id,
+    }
+
+
 class ListenService:
     """Service layer handling listen ingestion."""
 
@@ -107,21 +162,9 @@ class ListenService:
 
         rows: list[dict] = []
         for item in items:
-            track_data = item.get("track") or {}
-            artist_name = (track_data.get("artists") or [{}])[0].get("name")
-            title = track_data.get("name")
-            played_at = datetime.fromisoformat(item.get("played_at", "").replace("Z", "+00:00"))
-            rows.append(
-                {
-                    "track_metadata": {
-                        "artist_name": artist_name,
-                        "track_name": title,
-                        "mbid_mapping": {"recording_mbid": track_data.get("mbid")},
-                    },
-                    "listened_at": int(played_at.timestamp()),
-                    "user_name": user_id,
-                }
-            )
+            row = convert_spotify_item(item, user_id)
+            if row:
+                rows.append(row)
         return await self.ingest_lb_rows(rows, user_id)
 
     async def ingest_lastfm_rows(self, tracks: list[dict], user_id: str) -> int:
@@ -129,23 +172,9 @@ class ListenService:
 
         rows: list[dict] = []
         for item in tracks:
-            artist = (item.get("artist") or {}).get("#text") or item.get("artist")
-            title = item.get("name") or item.get("track")
-            ts = item.get("date", {}).get("uts") or item.get("uts")
-            try:
-                listened_at = int(ts)
-            except (TypeError, ValueError):
-                continue
-            rows.append(
-                {
-                    "track_metadata": {
-                        "artist_name": artist,
-                        "track_name": title,
-                    },
-                    "listened_at": listened_at,
-                    "user_name": user_id,
-                }
-            )
+            row = convert_lastfm_track(item, user_id)
+            if row:
+                rows.append(row)
         return await self.ingest_lb_rows(rows, user_id)
 
 
