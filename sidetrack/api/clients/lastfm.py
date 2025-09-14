@@ -242,4 +242,11 @@ async def get_lastfm_client(
     settings: Settings = Depends(get_settings),
 ) -> AsyncGenerator[LastfmClient, None]:
     async with httpx.AsyncClient() as client:
-        yield LastfmClient(client, settings.lastfm_api_key, settings.lastfm_api_secret)
+        rate = settings.lastfm_rate_limit or 5.0
+        min_interval = 1.0 / rate if rate > 0 else 0.0
+        yield LastfmClient(
+            client,
+            settings.lastfm_api_key,
+            settings.lastfm_api_secret,
+            min_interval=min_interval,
+        )
