@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass, field, asdict
 from typing import Any, Iterable
 
@@ -49,25 +50,53 @@ def _make_candidate(**kwargs: Any) -> Candidate:
 def _dedupe(cands: Iterable[Candidate]) -> list[Candidate]:
     """Deduplicate ``cands`` and merge seeds/metadata."""
 
-    seen: dict[tuple[str | None, str | None, str | None], Candidate] = {}
+    by_mbid: dict[str, Candidate] = {}
+    by_isrc: dict[str, Candidate] = {}
+    by_spotify: dict[str, Candidate] = {}
+    by_at: dict[tuple[str | None, str | None], Candidate] = {}
+    out: list[Candidate] = []
+
     for cand in cands:
-        key = (cand.spotify_id, cand.artist, cand.title)
-        existing = seen.get(key)
-        if existing:
-            for k, v in cand.seeds.items():
-                existing.seeds.setdefault(k, set()).update(v)
-            if cand.score_cf > existing.score_cf:
-                existing.score_cf = cand.score_cf
-            if not existing.isrc and cand.isrc:
-                existing.isrc = cand.isrc
-            if not existing.recording_mbid and cand.recording_mbid:
-                existing.recording_mbid = cand.recording_mbid
-        else:
-            seen[key] = cand
-    return list(seen.values())
+        existing: Candidate | None = None
+        if cand.recording_mbid:
+            existing = by_mbid.get(cand.recording_mbid)
+        if existing is None and cand.isrc:
+            existing = by_isrc.get(cand.isrc)
+        if existing is None and cand.spotify_id:
+            existing = by_spotify.get(cand.spotify_id)
+        if existing is None:
+            key = (cand.artist, cand.title)
+            existing = by_at.get(key)
+
+        if existing is None:
+            out.append(cand)
+            if cand.recording_mbid:
+                by_mbid[cand.recording_mbid] = cand
+            if cand.isrc:
+                by_isrc[cand.isrc] = cand
+            if cand.spotify_id:
+                by_spotify[cand.spotify_id] = cand
+            by_at[(cand.artist, cand.title)] = cand
+            continue
+
+        for k, v in cand.seeds.items():
+            existing.seeds.setdefault(k, set()).update(v)
+        if cand.score_cf > existing.score_cf:
+            existing.score_cf = cand.score_cf
+        if cand.isrc and not existing.isrc:
+            existing.isrc = cand.isrc
+            by_isrc[cand.isrc] = existing
+        if cand.recording_mbid and not existing.recording_mbid:
+            existing.recording_mbid = cand.recording_mbid
+            by_mbid[cand.recording_mbid] = existing
+        if cand.spotify_id and not existing.spotify_id:
+            existing.spotify_id = cand.spotify_id
+            by_spotify[cand.spotify_id] = existing
+
+    return out
 
 
-async def _spotify_candidates(sp: SpotifyService) -> list[dict[str, Any]]:
+async def _spotify_candidates(sp: SpotifyService) -> list[Candidate]:
     """Generate candidate tracks for a Spotify user."""
 
     top_tracks = await sp.get_top_items("tracks")
@@ -106,10 +135,10 @@ async def _spotify_candidates(sp: SpotifyService) -> list[dict[str, Any]]:
                 score_cf=float(track.get("popularity", 0)) / 100.0,
             )
         )
-    return [c.to_dict() for c in _dedupe(out)]
+    return _dedupe(out)
 
 
-async def _lastfm_candidates(lfm: LastfmClient, user: str) -> list[dict[str, Any]]:
+async def _lastfm_candidates(lfm: LastfmClient, user: str) -> list[Candidate]:
     """Generate candidate tracks for a Last.fm user."""
 
     out: list[Candidate] = []
@@ -156,10 +185,10 @@ async def _lastfm_candidates(lfm: LastfmClient, user: str) -> list[dict[str, Any
                     score_cf=float(sa.get("match") or 0.0),
                 )
             )
-    return [c.to_dict() for c in _dedupe(out)]
+    return _dedupe(out)
 
 
-async def _listenbrainz_candidates(lb: ListenBrainzClient, user: str) -> list[dict[str, Any]]:
+async def _listenbrainz_candidates(lb: ListenBrainzClient, user: str) -> list[Candidate]:
     """Generate candidate tracks for a ListenBrainz user."""
 
     out: list[Candidate] = []
@@ -175,7 +204,7 @@ async def _listenbrainz_candidates(lb: ListenBrainzClient, user: str) -> list[di
                 score_cf=float(r.get("score") or 0.0),
             )
         )
-    return [c.to_dict() for c in _dedupe(out)]
+    return _dedupe(out)
 
 
 async def generate_candidates(
@@ -188,10 +217,18 @@ async def generate_candidates(
 ) -> list[dict[str, Any]]:
     """Return recommendation candidates for the given user."""
 
+    tasks = []
     if spotify is not None:
-        return await _spotify_candidates(spotify)
+        tasks.append(_spotify_candidates(spotify))
     if lastfm is not None and lastfm_user:
-        return await _lastfm_candidates(lastfm, lastfm_user)
+        tasks.append(_lastfm_candidates(lastfm, lastfm_user))
     if listenbrainz is not None and listenbrainz_user:
-        return await _listenbrainz_candidates(listenbrainz, listenbrainz_user)
-    return []
+        tasks.append(_listenbrainz_candidates(listenbrainz, listenbrainz_user))
+    if not tasks:
+        return []
+
+    results = await asyncio.gather(*tasks)
+    merged: list[Candidate] = []
+    for cands in results:
+        merged.extend(cands)
+    return [c.to_dict() for c in _dedupe(merged)]
