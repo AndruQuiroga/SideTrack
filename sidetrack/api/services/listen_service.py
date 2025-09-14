@@ -27,8 +27,17 @@ class ListenService:
         self.listens = listen_repo
 
     async def ingest_lb_rows(self, listens: list[dict], user_id: str | None = None) -> int:
-        """Ingest ListenBrainz-style listen rows into the database."""
-        created = 0
+        """Ingest ListenBrainz-style listen rows into the database.
+
+        Rows are collected and inserted in bulk while caching intermediate
+        lookups to minimize database queries.
+        """
+
+        artist_cache: dict[str, object] = {}
+        release_cache: dict[tuple[str, int], object] = {}
+        track_cache: dict[tuple[str | None, str, int, int | None], object] = {}
+        listen_rows: list[dict] = []
+
         for item in listens:
             tm = item.get("track_metadata", {})
             artist_name = (
@@ -43,21 +52,47 @@ class ListenService:
             played_at = datetime.utcfromtimestamp(played_at_ts)
             uid = (user_id or item.get("user_name") or "lb").lower()
 
-            artist = await self.artists.get_or_create(name=artist_name)
+            artist = artist_cache.get(artist_name)
+            if artist is None:
+                artist = await self.artists.get_or_create(name=artist_name)
+                artist_cache[artist_name] = artist
+
             rel = None
             if release_title:
-                rel = await self.releases.get_or_create(
-                    title=release_title, artist_id=artist.artist_id
-                )
-            track = await self.tracks.get_or_create(
-                mbid=recording_mbid,
-                title=track_title,
-                artist_id=artist.artist_id,
-                release_id=rel.release_id if rel else None,
+                rel_key = (release_title, artist.artist_id)
+                rel = release_cache.get(rel_key)
+                if rel is None:
+                    rel = await self.releases.get_or_create(
+                        title=release_title, artist_id=artist.artist_id
+                    )
+                    release_cache[rel_key] = rel
+
+            track_key = (
+                recording_mbid,
+                track_title,
+                artist.artist_id,
+                rel.release_id if rel else None,
             )
-            if not await self.listens.exists(uid, track.track_id, played_at):
-                await self.listens.add(uid, track.track_id, played_at, "listenbrainz")
-                created += 1
+            track = track_cache.get(track_key)
+            if track is None:
+                track = await self.tracks.get_or_create(
+                    mbid=recording_mbid,
+                    title=track_title,
+                    artist_id=artist.artist_id,
+                    release_id=rel.release_id if rel else None,
+                )
+                track_cache[track_key] = track
+
+            listen_rows.append(
+                {
+                    "user_id": uid,
+                    "track_id": track.track_id,
+                    "played_at": played_at,
+                    "source": "listenbrainz",
+                }
+            )
+
+        created = await self.listens.bulk_add(listen_rows)
         await self.listens.commit()
         return created
 
