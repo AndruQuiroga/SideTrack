@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+
 from fastapi import APIRouter
 from rq import Queue
 from rq.job import Job
@@ -66,12 +67,13 @@ def queue_metrics() -> dict[str, dict[str, float | int]]:
 
 @router.get("/schedules")
 def list_schedules() -> dict[str, list[dict[str, str | None]]]:
-    """Return scheduler job information.
+    """Return job runner schedule information.
 
-    Reports the next run time and last execution status for all scheduled jobs.
+    Reports the next run time and last enqueue status for all scheduled jobs.
     """
     import schedule
-    from sidetrack.scheduler import run as scheduler_run
+
+    from sidetrack.jobrunner import run as jobrunner_run
 
     out: list[dict[str, str | None]] = []
     for job in schedule.jobs:
@@ -84,7 +86,7 @@ def list_schedules() -> dict[str, list[dict[str, str | None]]]:
         job_type = tag_map.get("job")
         if not user_id or not job_type:
             continue
-        state = scheduler_run.JOB_STATE.get((user_id, job_type), {})
+        state = jobrunner_run.JOB_STATE.get((user_id, job_type), {})
         last_run = state.get("last_run")
         out.append(
             {

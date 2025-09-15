@@ -3,11 +3,12 @@ from __future__ import annotations
 from functools import lru_cache
 
 from pydantic import Field
-from pydantic_settings import BaseSettings
+
+from sidetrack.common.config import Settings as AppSettings
 
 
-class SchedulerSettings(BaseSettings):
-    """Settings for the scheduler service (standalone, no API dependency)."""
+class JobRunnerSettings(AppSettings):
+    """Settings for the job runner service."""
 
     api_url: str = Field("http://api:8000", env="API_URL")
     ingest_listens_interval_minutes: float = Field(1.0, env="INGEST_LISTENS_INTERVAL_MINUTES")
@@ -17,5 +18,5 @@ class SchedulerSettings(BaseSettings):
 
 
 @lru_cache
-def get_settings() -> SchedulerSettings:
-    return SchedulerSettings()
+def get_settings() -> JobRunnerSettings:
+    return JobRunnerSettings()

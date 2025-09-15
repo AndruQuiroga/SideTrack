@@ -1,11 +1,11 @@
-from __future__ import annotations
-
 """Configuration for the API service.
 
 This module wraps :mod:`sidetrack.common.config` so callers can simply import
 ``sidetrack.api.config``.  Defining a dedicated module also mirrors the
-structure used by other services such as the worker and scheduler.
+structure used by other services such as the worker and job runner.
 """
+
+from __future__ import annotations
 
 from functools import lru_cache
 
@@ -29,4 +29,3 @@ def get_settings() -> ApiSettings:
 # Re-export for backward compatibility with modules still importing these
 # names from ``sidetrack.common.config``.
 Settings = ApiSettings
-

@@ -7,15 +7,17 @@ pytestmark = pytest.mark.unit
 def test_all_jobs_run(monkeypatch):
     calls: list[tuple[str, str]] = []
 
-    def fake_run_job(user_id: str, job_type: str, func):
-        calls.append((job_type, user_id))
-
     monkeypatch.setenv("INGEST_LISTENS_INTERVAL_MINUTES", "1")
     monkeypatch.setenv("AGGREGATE_WEEKS_INTERVAL_MINUTES", "1")
     import importlib
 
-    run = importlib.import_module("sidetrack.scheduler.run")
-    monkeypatch.setattr(run, "_run_job", fake_run_job)
+    run = importlib.import_module("sidetrack.jobrunner.run")
+
+    class _Queue:
+        def enqueue(self, func, user_id, cursor=None):
+            calls.append((func.__name__, user_id))
+
+    monkeypatch.setattr(run, "queue", _Queue())
     monkeypatch.setattr(run, "fetch_user_ids", lambda: ["u1", "u2"])
 
     schedule.clear()
@@ -23,10 +25,10 @@ def test_all_jobs_run(monkeypatch):
     schedule.run_all(delay_seconds=0)
 
     expected = [
-        ("sync:user", "u1"),
-        ("sync:user", "u2"),
-        ("aggregate:weeks", "u1"),
-        ("aggregate:weeks", "u2"),
+        ("sync_user", "u1"),
+        ("sync_user", "u2"),
+        ("aggregate_weeks", "u1"),
+        ("aggregate_weeks", "u2"),
     ]
     for item in expected:
         assert item in calls
@@ -37,7 +39,7 @@ def test_schedule_jobs_idempotent(monkeypatch):
     monkeypatch.setenv("AGGREGATE_WEEKS_INTERVAL_MINUTES", "1")
     import importlib
 
-    run = importlib.import_module("sidetrack.scheduler.run")
+    run = importlib.import_module("sidetrack.jobrunner.run")
     monkeypatch.setattr(run, "fetch_user_ids", lambda: ["u1", "u2"])
     schedule.clear()
     run.schedule_jobs()
