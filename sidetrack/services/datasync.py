@@ -7,7 +7,7 @@ This module orchestrates the full data synchronisation pipeline for a user:
 3. Enrich tracks with tags and external identifiers.
 
 The main entry point is :func:`sync_user` which is designed for use by the
-scheduler or worker processes.
+job runner or worker processes.
 """
 
 from __future__ import annotations
@@ -18,8 +18,8 @@ from datetime import date, datetime
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from sidetrack.api.config import Settings
 from sidetrack.api.clients.lastfm import LastfmClient
+from sidetrack.api.config import Settings
 from sidetrack.api.services.listen_service import ListenService
 from sidetrack.common.models import Artist, Listen, Track, UserSettings
 from sidetrack.services.listenbrainz import ListenBrainzClient
@@ -76,16 +76,10 @@ async def _fetch_listens(
             pass
 
     # Last.fm next
-    if (
-        settings_row
-        and settings_row.lastfm_user
-        and settings_row.lastfm_session_key
-    ):
+    if settings_row and settings_row.lastfm_user and settings_row.lastfm_session_key:
         try:
             since_dt = datetime.combine(since, datetime.min.time()) if since else None
-            tracks = await lf_client.fetch_recent_tracks(
-                settings_row.lastfm_user, since_dt
-            )
+            tracks = await lf_client.fetch_recent_tracks(settings_row.lastfm_user, since_dt)
             return await listen_service.ingest_lastfm_rows(tracks, user_id)
         except Exception:  # pragma: no cover - network errors
             pass
@@ -115,13 +109,14 @@ async def _enrich_tags(
     if not lf_client.api_key:
         return 0
 
-    q = select(Track.track_id, Track.title, Artist.name).join(
-        Artist, Track.artist_id == Artist.artist_id
-    ).join(Listen, Listen.track_id == Track.track_id).where(Listen.user_id == user_id)
+    q = (
+        select(Track.track_id, Track.title, Artist.name)
+        .join(Artist, Track.artist_id == Artist.artist_id)
+        .join(Listen, Listen.track_id == Track.track_id)
+        .where(Listen.user_id == user_id)
+    )
     if since:
-        q = q.where(
-            Listen.played_at >= datetime.combine(since, datetime.min.time())
-        )
+        q = q.where(Listen.played_at >= datetime.combine(since, datetime.min.time()))
     rows = (await db.execute(q)).all()
 
     updated = 0
@@ -146,13 +141,14 @@ async def _enrich_ids(
     if mb_service is None:
         return 0
 
-    q = select(Track.track_id, Track.title, Artist.name).join(
-        Artist, Track.artist_id == Artist.artist_id
-    ).join(Listen, Listen.track_id == Track.track_id).where(Listen.user_id == user_id)
+    q = (
+        select(Track.track_id, Track.title, Artist.name)
+        .join(Artist, Track.artist_id == Artist.artist_id)
+        .join(Listen, Listen.track_id == Track.track_id)
+        .where(Listen.user_id == user_id)
+    )
     if since:
-        q = q.where(
-            Listen.played_at >= datetime.combine(since, datetime.min.time())
-        )
+        q = q.where(Listen.played_at >= datetime.combine(since, datetime.min.time()))
     rows = (await db.execute(q)).all()
 
     enriched = 0
@@ -190,12 +186,8 @@ async def sync_user(
         settings=settings,
         since=since,
     )
-    result.tags_updated = await _enrich_tags(
-        user_id, db=db, lf_client=lf_client, since=since
-    )
-    result.ids_enriched = await _enrich_ids(
-        user_id, db=db, mb_service=mb_service, since=since
-    )
+    result.tags_updated = await _enrich_tags(user_id, db=db, lf_client=lf_client, since=since)
+    result.ids_enriched = await _enrich_ids(user_id, db=db, mb_service=mb_service, since=since)
     return result.to_dict()
 
 

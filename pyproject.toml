@@ -44,7 +44,7 @@ extractor = [
     "croniter==1.4.1",
 ]
 
-scheduler = [
+jobrunner = [
     "schedule==1.2.2",
 ]
 

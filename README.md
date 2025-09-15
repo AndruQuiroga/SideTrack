@@ -2,7 +2,7 @@
 
 Hosted mood/taste analytics for your music listening history.
 
-Pull listens from Spotify or Last.fm (with ListenBrainz as a fallback) → resolve MusicBrainz metadata → compute audio features/embeddings locally → score tracks on interpretable axes → aggregate to weekly trends → visualize in a dashboard. Fully containerized; GPU optional.  The application now assumes a logged‑in user and links their Spotify or Last.fm accounts to build a unified picture of listening habits.
+Pull listens from Spotify or Last.fm (with ListenBrainz as a fallback) → resolve MusicBrainz metadata → compute audio features/embeddings locally → score tracks on interpretable axes → aggregate to weekly trends → visualize in a dashboard. Fully containerized; GPU optional. The application now assumes a logged‑in user and links their Spotify or Last.fm accounts to build a unified picture of listening habits.
 
 ---
 
@@ -12,7 +12,7 @@ Pull listens from Spotify or Last.fm (with ListenBrainz as a fallback) → resol
 - cache: Redis 7 (queues, rate limiting)
 - api: FastAPI
 - extractor: audio features/embeddings (Librosa + optional models)
-- scheduler: periodic calls (ingest, tags sync, aggregates)
+- jobrunner: periodic scheduling via queue (ingest, tags sync, aggregates)
 - worker: background jobs (RQ)
 - ui: Next.js dashboard
 - proxy: Caddy reverse proxy
@@ -25,6 +25,7 @@ Single Docker Compose with all services enabled.
 
 - File: `compose.yml`
 - Build the shared base image:
+
 ```
 docker build -f services/base/Dockerfile -t sidetrack-base .
 ```
@@ -77,7 +78,7 @@ Developer tooling (optional):
 
 ```bash
 python3.11 -m venv .venv && source .venv/bin/activate
-pip install -e ".[api,scheduler,worker,dev]"
+pip install -e ".[api,jobrunner,worker,dev]"
 # Install heavy extractor extras only when needed
 # pip install -e ".[extractor]"
 pre-commit install && pre-commit run --all-files
@@ -246,7 +247,7 @@ http://localhost:3000
 
 ## Options & Swaps
 
-- **Scheduler**: simple Python scheduler (current) ↔ cron
+- **Job runner**: queue-backed scheduler ↔ cron
 - **Queue**: none ↔ RQ ↔ Celery
 - **DB**: TimescaleDB only ↔ +pgvector
 - **Embeddings**: OpenL3 ↔ musicnn ↔ CLAP ↔ PANNs (you can enable multiple)
@@ -268,7 +269,7 @@ Set up a virtual environment and install the test dependencies:
 
 ```bash
 python3.11 -m venv .venv && source .venv/bin/activate
-pip install -e ".[api,scheduler,worker,dev]"
+pip install -e ".[api,jobrunner,worker,dev]"
 # Install extractor extras only for extractor-related tests
 # pip install -e ".[extractor]"
 pytest -m "unit and not slow and not gpu" -q

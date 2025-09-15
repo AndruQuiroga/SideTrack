@@ -23,7 +23,7 @@ COPY sidetrack ./sidetrack
 # downloaded packages persist across builds.
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip wheel --wheel-dir /wheels \
-    '.[api]' '.[worker]' '.[scheduler]' '.[extractor]' \
+    '.[api]' '.[worker]' '.[jobrunner]' '.[extractor]' \
     && ls -l /wheels
 
 # Verify critical dependency wheels exist to support offline installs later

@@ -3,8 +3,8 @@ import schedule
 from httpx import ASGITransport, AsyncClient
 
 import sidetrack.api.main as api_main
+import sidetrack.jobrunner.run as jobrunner_run
 from sidetrack.api.config import ApiSettings
-import sidetrack.scheduler.run as scheduler_run
 
 
 @pytest.mark.asyncio
@@ -24,23 +24,25 @@ async def test_ops_schedules(monkeypatch):
 
         yield _DummyDB()
 
-    def fake_post(url, timeout=10, headers=None, params=None):
-        class Resp:
-            status_code = 200
+    calls: list[tuple[str, str]] = []
 
-        return Resp()
+    class _Queue:
+        def enqueue(self, func, user_id, cursor=None):
+            calls.append((func.__name__, user_id))
 
     schedule.clear()
-    monkeypatch.setattr(scheduler_run, "fetch_user_ids", lambda: ["u1"])
-    monkeypatch.setattr(scheduler_run.requests, "post", fake_post)
-    scheduler_run.schedule_jobs()
+    monkeypatch.setattr(jobrunner_run, "fetch_user_ids", lambda: ["u1"])
+    monkeypatch.setattr(jobrunner_run, "queue", _Queue())
+    jobrunner_run.schedule_jobs()
     schedule.run_all(delay_seconds=0)
 
     app = api_main.app
     app.dependency_overrides[api_main.get_app_settings] = _settings
     app.dependency_overrides[api_main.get_db] = _get_db
 
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://testserver") as client:
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://testserver"
+    ) as client:
         resp = await client.get("/ops/schedules")
 
     app.dependency_overrides.clear()
@@ -52,4 +54,4 @@ async def test_ops_schedules(monkeypatch):
     assert types == {"sync:user", "aggregate:weeks"}
     for job in jobs:
         assert job["next_run"] is not None
-        assert job["last_status"] == "ok"
+        assert job["last_status"] == "queued"

@@ -2,7 +2,7 @@
 
 1. Install dependencies (skip heavy extractor extras):
    ```bash
-   pip install -e ".[api,scheduler,worker,dev]"
+   pip install -e ".[api,jobrunner,worker,dev]"
    ```
    Install the extractor extras **only** when running extractor-specific
    code or tests:

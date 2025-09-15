@@ -25,12 +25,13 @@ from sidetrack.common.models import (
     UserSettings,
 )
 from sidetrack.common.telemetry import setup_tracing
+from sidetrack.services.datasync import sync_user as datasync_sync_user
+from sidetrack.services.listenbrainz import ListenBrainzClient, get_listenbrainz_client
+from sidetrack.services.musicbrainz import MusicBrainzService
 
+from ..services.spotify import SpotifyClient, get_spotify_client
 from . import scoring as mood_scoring
 from .clients.lastfm import LastfmClient, get_lastfm_client
-from sidetrack.services.listenbrainz import ListenBrainzClient, get_listenbrainz_client
-from ..services.spotify import SpotifyClient, get_spotify_client
-from .services.listen_service import ListenService, get_listen_service
 from .config import Settings
 from .config import get_settings as get_app_settings
 from .constants import AXES, DEFAULT_METHOD
@@ -46,8 +47,7 @@ from .schemas.tracks import (
     TrackPathResponse,
 )
 from .security import get_current_user, hash_password, require_role
-from sidetrack.services.datasync import sync_user as datasync_sync_user
-from sidetrack.services.musicbrainz import MusicBrainzService
+from .services.listen_service import ListenService, get_listen_service
 
 setup_logging()
 setup_tracing("sidetrack-api")
@@ -713,6 +713,7 @@ async def sync_user_endpoint(
         )
     return result
 
+
 @app.post("/enrich/ids")
 async def enrich_ids_endpoint(
     db: AsyncSession = Depends(get_db),
@@ -720,7 +721,7 @@ async def enrich_ids_endpoint(
 ):
     """Resolve external identifiers for tracks.
 
-    The implementation is a stub used by the scheduler service.  The endpoint
+    The implementation is a stub used by the job runner service.  The endpoint
     simply returns a success response.
     """
     return {"detail": "ok"}

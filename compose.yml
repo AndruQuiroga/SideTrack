@@ -59,10 +59,10 @@ services:
         condition: service_healthy
     command: python -m sidetrack.extraction --schedule "@daily"
 
-  scheduler:
+  jobrunner:
     build:
       context: .
-      dockerfile: services/scheduler/Dockerfile
+      dockerfile: services/jobrunner/Dockerfile
     env_file: .env
     depends_on:
       base:
