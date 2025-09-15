@@ -10,8 +10,8 @@ Environment
 - LASTFM_API_KEY must be set (public reads only; no secret required)
 
 Examples
-- python -m sidetrack.ingest.lastfm --user mylastfm --since 2024-01-01
-- python -m sidetrack.ingest.lastfm --user mylastfm --as-user some_user
+- python -m sidetrack.services.providers.lastfm --user mylastfm --since 2024-01-01
+- python -m sidetrack.services.providers.lastfm --user mylastfm --as-user some_user
 """
 
 from __future__ import annotations
@@ -94,8 +94,10 @@ async def _amain(args: argparse.Namespace) -> int:
         except ValueError:
             raise SystemExit("--since must be in YYYY-MM-DD or ISO format")
 
+    from sidetrack.services.ingestion import get_ingester
+
     settings = get_settings()
-    ingester = LastfmIngester(settings.lastfm_api_key)
+    ingester = get_ingester("lastfm", api_key=settings.lastfm_api_key)
     created = await ingester.ingest(lastfm_user=args.user, as_user=args.as_user, since=since_dt)
     print(f"Ingested {created} listens from Last.fm for {args.user} → user={args.as_user or args.user}")
     return 0
