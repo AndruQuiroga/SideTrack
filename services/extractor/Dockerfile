@@ -11,6 +11,6 @@ FROM sidetrack/base:dev AS runtime
 RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /usr/local /usr/local
-RUN python -c "import sidetrack; print('extractor runtime deps OK')"
+RUN python -c "import sidetrack; print('extraction runtime deps OK')"
 
-CMD ["python", "-m", "sidetrack.extractor.run", "--schedule", "@daily"]
+CMD ["python", "-m", "sidetrack.extraction", "--schedule", "@daily"]

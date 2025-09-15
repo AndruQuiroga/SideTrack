@@ -1,14 +1,14 @@
-"""Extractor CLI for computing audio features and embeddings.
+"""Extraction CLI for computing audio features and embeddings.
 
 Examples
 --------
 Run every 10 seconds (default interval)::
 
-    python -m sidetrack.extractor.run --schedule 10
+    python -m sidetrack.extraction --schedule 10
 
 Run on a cron schedule (every 5 minutes)::
 
-    python -m sidetrack.extractor.run --schedule "*/5 * * * *"
+    python -m sidetrack.extraction --schedule "*/5 * * * *"
 
 The ``--schedule`` option accepts either a floating-point interval in seconds or a
 standard cron expression. Cron expressions are validated before the extractor starts.
@@ -21,7 +21,7 @@ import contextlib
 import signal
 import time
 from datetime import UTC, datetime
-from typing import Any, Optional
+from typing import Any
 
 import typer
 from croniter import croniter
@@ -43,6 +43,8 @@ def get_db_url() -> str:
 
 
 def find_pending_tracks(db: Session, batch_size: int = 4) -> list[Track]:
+    """Return tracks that have not yet been processed."""
+
     # Tracks with a local path and no features yet
     rows = db.execute(
         text(
@@ -75,7 +77,7 @@ def main(
         help="Seconds between extraction passes",
         envvar="EXTRACTOR_INTERVAL",
     ),
-    schedule: Optional[str] = typer.Option(
+    schedule: str | None = typer.Option(
         None,
         "--schedule",
         help="Cron expression or seconds between passes",
@@ -95,7 +97,7 @@ def main(
                 raise typer.BadParameter("Schedule must be seconds or a cron expression")
     url = get_db_url()
     engine = create_engine(url, pool_pre_ping=True)
-    typer.echo(f"[extractor] connected to DB: {url}")
+    typer.echo(f"[extraction] connected to DB: {url}")
     settings = get_settings()
     deadline = time.time() + float(settings.extractor_db_wait_secs)
     wait_interval = float(settings.extractor_db_wait_interval)
@@ -106,9 +108,9 @@ def main(
                 break
             except Exception as e:
                 if time.time() >= deadline:
-                    typer.echo(f"[extractor] DB not ready after wait: {e}")
+                    typer.echo(f"[extraction] DB not ready after wait: {e}")
                     return
-                typer.echo(f"[extractor] DB not ready: {e}")
+                typer.echo(f"[extraction] DB not ready: {e}")
         time.sleep(wait_interval)
     cfg = ExtractionConfig()
     cfg.set_seed(0)
@@ -120,7 +122,7 @@ async def _run_loop(
     batch_size: int,
     interval: float,
     once: bool,
-    schedule: Optional[str],
+    schedule: str | None,
     cfg: ExtractionConfig,
 ) -> None:
     stop_event = asyncio.Event()
@@ -132,7 +134,7 @@ async def _run_loop(
     for sig in (signal.SIGINT, signal.SIGTERM):
         try:
             loop.add_signal_handler(sig, _stop)
-        except NotImplementedError:
+        except NotImplementedError:  # pragma: no cover - windows
             signal.signal(sig, lambda *_: stop_event.set())
 
     try:
@@ -141,18 +143,18 @@ async def _run_loop(
                 try:
                     pending = find_pending_tracks(db, batch_size=batch_size)
                 except ProgrammingError as e:
-                    typer.echo(f"[extractor] DB not ready during loop: {e}")
+                    typer.echo(f"[extraction] DB not ready during loop: {e}")
                     await asyncio.sleep(3)
                     continue
                 if not pending:
-                    typer.echo("[extractor] no pending tracks; sleeping")
+                    typer.echo("[extraction] no pending tracks; sleeping")
                 for tr in pending:
                     try:
                         analyze_track(tr.track_id, cfg)
                         ok = True
-                    except Exception:
+                    except Exception:  # pragma: no cover - refine in future
                         ok = False
-                    typer.echo(f"[extractor] track {tr.track_id} analyzed: {ok}")
+                    typer.echo(f"[extraction] track {tr.track_id} analyzed: {ok}")
             if once:
                 break
             if schedule:
@@ -171,8 +173,8 @@ async def _run_loop(
                 with contextlib.suppress(asyncio.CancelledError):
                     await task
     finally:
-        typer.echo("[extractor] stopping")
+        typer.echo("[extraction] stopping")
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover - CLI entrypoint
     app()
