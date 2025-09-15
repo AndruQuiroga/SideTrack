@@ -77,7 +77,9 @@ Developer tooling (optional):
 
 ```bash
 python3.11 -m venv .venv && source .venv/bin/activate
-pip install -e ".[api,extractor,scheduler,worker,dev]"
+pip install -e ".[api,scheduler,worker,dev]"
+# Install heavy extractor extras only when needed
+# pip install -e ".[extractor]"
 pre-commit install && pre-commit run --all-files
 ```
 
@@ -266,8 +268,10 @@ Set up a virtual environment and install the test dependencies:
 
 ```bash
 python3.11 -m venv .venv && source .venv/bin/activate
-pip install -e ".[api,extractor,scheduler,worker,dev]"
-pytest -q
+pip install -e ".[api,scheduler,worker,dev]"
+# Install extractor extras only for extractor-related tests
+# pip install -e ".[extractor]"
+pytest -m "unit and not slow and not gpu" -q
 ```
 
 See [`tests/README.md`](tests/README.md) for the full pyramid, speed budget and

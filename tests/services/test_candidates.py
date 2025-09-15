@@ -11,10 +11,16 @@ async def test_generate_candidates_combines_sources(monkeypatch):
         return [Candidate(spotify_id="sp1", source="spotify")]
 
     async def fake_lfm(_, __):
-        return [Candidate(recording_mbid="mb1", source="lastfm")]
+        return [
+            Candidate(
+                recording_mbid="mb1", artist="a1", title="t1", source="lastfm"
+            )
+        ]
 
     async def fake_lb(_, __):
-        return [Candidate(isrc="isrc1", source="listenbrainz")]
+        return [
+            Candidate(isrc="isrc1", artist="a2", title="t2", source="listenbrainz")
+        ]
 
     monkeypatch.setattr(cand_mod, "_spotify_candidates", fake_sp)
     monkeypatch.setattr(cand_mod, "_lastfm_candidates", fake_lfm)
