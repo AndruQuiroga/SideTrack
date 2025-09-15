@@ -71,24 +71,22 @@ async def _sync_user_service(user_id: str, since: date | None, db) -> None:
         httpx.AsyncClient() as sp_http,
         httpx.AsyncClient() as mb_http,
     ):
-        lb_client = ListenBrainzClient(lb_http)
-        lf_client = LastfmClient(
-            lf_http,
-            settings.lastfm_api_key,
-            settings.lastfm_api_secret,
-            min_interval=min_interval,
-        )
-        sp_client = SpotifyClient(
-            sp_http, settings.spotify_client_id, settings.spotify_client_secret
-        )
+        clients = [
+            SpotifyClient(sp_http, settings.spotify_client_id, settings.spotify_client_secret),
+            LastfmClient(
+                lf_http,
+                settings.lastfm_api_key,
+                settings.lastfm_api_secret,
+                min_interval=min_interval,
+            ),
+            ListenBrainzClient(lb_http),
+        ]
         mb_service = MusicBrainzService(mb_http)
         await datasync_sync_user(
             user_id,
             db=db,
             listen_service=listen_service,
-            lb_client=lb_client,
-            lf_client=lf_client,
-            sp_client=sp_client,
+            clients=clients,
             mb_service=mb_service,
             settings=settings,
             since=since,

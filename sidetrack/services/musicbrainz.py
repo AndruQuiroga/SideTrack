@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sidetrack.api.db import SessionLocal
 from sidetrack.config import get_settings
 from sidetrack.common.models import MusicBrainzRecording
+from .base_client import MusicServiceClient
 
 _MB_LOCK = asyncio.Lock()
 _CACHE_TTL = 24 * 3600  # one day
@@ -24,8 +25,16 @@ async def _rate_limit() -> None:
     await asyncio.sleep(max(0.0, 1.0 / rate))
 
 
-class MusicBrainzService:
+class MusicBrainzService(MusicServiceClient):
     """Lightweight wrapper for MusicBrainz lookups with caching and persistence."""
+
+    source = "musicbrainz"
+
+    def auth_url(self, callback: str) -> str:  # pragma: no cover - not used
+        raise NotImplementedError("MusicBrainz does not support OAuth")
+
+    async def fetch_recently_played(self, since=None, limit=50):  # pragma: no cover
+        return []
 
     api_root = "https://musicbrainz.org/ws/2"
 

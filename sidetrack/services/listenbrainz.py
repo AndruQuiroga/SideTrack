@@ -8,6 +8,8 @@ import httpx
 import logging
 from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
+from .base_client import MusicServiceClient
+
 
 def _retryable(exc: Exception) -> bool:
     if isinstance(exc, httpx.HTTPStatusError):
@@ -27,13 +29,17 @@ _retry = retry(
 logger = logging.getLogger(__name__)
 
 
-class ListenBrainzClient:
+class ListenBrainzClient(MusicServiceClient):
     """Client for the ListenBrainz API."""
+
+    source = "listenbrainz"
 
     base_url = "https://api.listenbrainz.org/1"
 
-    def __init__(self, client: httpx.AsyncClient) -> None:
+    def __init__(self, client: httpx.AsyncClient, *, user: str | None = None, token: str | None = None) -> None:
         self._client = client
+        self.user = user
+        self.token = token
 
     @_retry
     async def _get(self, url: str, **kwargs: Any) -> httpx.Response:
@@ -60,6 +66,13 @@ class ListenBrainzClient:
         r = await self._get(url, params=params, headers=headers)
         data = r.json()
         return data.get("listens", [])
+
+    async def fetch_recently_played(
+        self, since: date | None = None, limit: int = 500
+    ) -> list[dict[str, Any]]:
+        if not self.user:
+            raise RuntimeError("ListenBrainz user not configured")
+        return await self.fetch_listens(self.user, since, self.token, limit)
 
     async def get_cf_recommendations(self, user: str, limit: int = 50) -> list[dict[str, Any]]:
         """Fetch collaborative-filtering recommendations for ``user``."""

@@ -58,9 +58,7 @@ async def test_sync_user_triggers_enrichment(async_session, monkeypatch):
         "u1",
         db=async_session,
         listen_service=listen_service,
-        lb_client=lb_client,
-        lf_client=lf_client,
-        sp_client=sp_client,
+        clients=[sp_client, lf_client, lb_client],
         mb_service=mb_service,
         settings=settings,
     )
