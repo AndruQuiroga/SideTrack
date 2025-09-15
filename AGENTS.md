@@ -1,12 +1,17 @@
 ## Testing
 
-1. Install dependencies:
+1. Install dependencies (skip heavy extractor extras):
    ```bash
-   pip install -e ".[api,extractor,scheduler,worker,dev]"
+   pip install -e ".[api,scheduler,worker,dev]"
    ```
-2. Run tests:
+   Install the extractor extras **only** when running extractor-specific
+   code or tests:
    ```bash
-   pytest -q
+   pip install -e ".[extractor]"
+   ```
+2. Run unit tests:
+   ```bash
+   pytest -m "unit and not slow and not gpu" -q
    ```
 
 See [`tests/README.md`](tests/README.md) for the test pyramid, markers, and

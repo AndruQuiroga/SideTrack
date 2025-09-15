@@ -20,8 +20,6 @@ def test_all_jobs_run(monkeypatch):
 
     monkeypatch.setenv("API_URL", "http://api")
     monkeypatch.setenv("INGEST_LISTENS_INTERVAL_MINUTES", "1")
-    monkeypatch.setenv("LASTFM_SYNC_INTERVAL_MINUTES", "1")
-    monkeypatch.setenv("ENRICH_IDS_INTERVAL_MINUTES", "1")
     monkeypatch.setenv("AGGREGATE_WEEKS_INTERVAL_MINUTES", "1")
     import importlib
 
@@ -34,12 +32,8 @@ def test_all_jobs_run(monkeypatch):
     schedule.run_all(delay_seconds=0)
 
     expected = [
-        ("http://api/ingest/listens", "u1"),
-        ("http://api/ingest/listens", "u2"),
-        ("http://api/tags/lastfm/sync", "u1"),
-        ("http://api/tags/lastfm/sync", "u2"),
-        ("http://api/enrich/ids", "u1"),
-        ("http://api/enrich/ids", "u2"),
+        ("http://api/sync/user", "u1"),
+        ("http://api/sync/user", "u2"),
         ("http://api/aggregate/weeks", "u1"),
         ("http://api/aggregate/weeks", "u2"),
     ]
@@ -50,8 +44,6 @@ def test_all_jobs_run(monkeypatch):
 def test_schedule_jobs_idempotent(monkeypatch):
     monkeypatch.setenv("API_URL", "http://api")
     monkeypatch.setenv("INGEST_LISTENS_INTERVAL_MINUTES", "1")
-    monkeypatch.setenv("LASTFM_SYNC_INTERVAL_MINUTES", "1")
-    monkeypatch.setenv("ENRICH_IDS_INTERVAL_MINUTES", "1")
     monkeypatch.setenv("AGGREGATE_WEEKS_INTERVAL_MINUTES", "1")
     import importlib
 
@@ -62,4 +54,4 @@ def test_schedule_jobs_idempotent(monkeypatch):
     first = len(schedule.jobs)
     run.schedule_jobs()
     second = len(schedule.jobs)
-    assert first == second == 8
+    assert first == second == 4

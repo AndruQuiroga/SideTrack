@@ -9,6 +9,7 @@ from sidetrack.extraction.pipeline import analyze_tracks
 from tests.factories import TrackFactory
 
 pytestmark = pytest.mark.unit
+pytest.importorskip("librosa")
 
 
 def test_pipeline_extracts_and_upserts(session, redis_conn, tmp_path):
