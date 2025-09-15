@@ -4,7 +4,7 @@ import soundfile as sf
 
 from sidetrack.api.db import SessionLocal
 from sidetrack.common.models import Feature
-from sidetrack.config.extraction import ExtractionConfig
+from sidetrack.config import ExtractionConfig
 from sidetrack.extraction.pipeline import analyze_track
 from tests.factories import TrackFactory
 

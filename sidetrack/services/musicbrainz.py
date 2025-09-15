@@ -11,7 +11,7 @@ from redis import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sidetrack.api.db import SessionLocal
-from sidetrack.common.config import get_settings
+from sidetrack.config import get_settings
 from sidetrack.common.models import MusicBrainzRecording
 
 _MB_LOCK = asyncio.Lock()

@@ -11,7 +11,7 @@ BASE_DIR = pathlib.Path(__file__).resolve().parents[1]
 sys.path.append(str(BASE_DIR))
 
 from sqlalchemy.engine import make_url
-from sidetrack.common.config import get_settings  # type: ignore
+from sidetrack.config import get_settings  # type: ignore
 from sidetrack.common.models import Base  # type: ignore
 
 config = context.config

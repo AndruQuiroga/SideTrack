@@ -9,7 +9,7 @@ from importlib import import_module
 
 import numpy as np
 
-from sidetrack.config.extraction import ExtractionConfig
+from sidetrack.config import ExtractionConfig
 
 from .io import _resources
 

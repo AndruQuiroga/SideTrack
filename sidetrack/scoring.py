@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from .config.scoring import SCORING_CONFIG, Calibration, ScoringConfig
+from .config import SCORING_CONFIG, Calibration, ScoringConfig
 
 
 def _dot(a: Sequence[float], b: Sequence[float]) -> float:

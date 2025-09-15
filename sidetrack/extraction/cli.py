@@ -29,9 +29,8 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.orm import Session
 
-from sidetrack.common.config import get_settings
+from sidetrack.config import ExtractionConfig, get_settings
 from sidetrack.common.models import Track
-from sidetrack.config.extraction import ExtractionConfig
 from sidetrack.extraction.pipeline import analyze_track
 
 app = typer.Typer(add_completion=False)

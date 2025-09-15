@@ -1,16 +1,6 @@
-from __future__ import annotations
+"""Worker service configuration wrapper."""
 
-from functools import lru_cache
+from sidetrack.config import WorkerSettings as Settings, get_worker_settings as get_settings
 
-from sidetrack.common.config import Settings as AppSettings
+__all__ = ["Settings", "get_settings"]
 
-
-class WorkerSettings(AppSettings):
-    """Settings for the worker service."""
-
-    pass
-
-
-@lru_cache
-def get_settings() -> WorkerSettings:
-    return WorkerSettings()

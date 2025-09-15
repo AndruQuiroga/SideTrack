@@ -5,7 +5,7 @@ from rq import Queue, SimpleWorker
 
 from sidetrack.api.db import SessionLocal
 from sidetrack.common.models import Feature
-from sidetrack.config.extraction import ExtractionConfig
+from sidetrack.config import ExtractionConfig
 from sidetrack.extraction.pipeline import analyze_track
 from sidetrack.worker.jobs import compute_embeddings
 from tests.factories import TrackFactory

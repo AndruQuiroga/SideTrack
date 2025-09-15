@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from sidetrack.api.db import SessionLocal
 from sidetrack.common.models import Embedding, Feature, Track
-from sidetrack.config.extraction import ExtractionConfig
+from sidetrack.config import ExtractionConfig
 
 from . import io, dsp, features as feat_mod, stems, scoring
 from sidetrack.extraction import compute_embeddings
