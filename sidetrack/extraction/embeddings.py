@@ -29,6 +29,22 @@ def _embed_one(name: str, y: np.ndarray, sr: int, device: str) -> np.ndarray:
 logger = logging.getLogger(__name__)
 
 
+def _normalize(vec: np.ndarray) -> list[float]:
+    """Return a list normalised by the maximum absolute value.
+
+    Values are scaled to ``[-1, 1]`` while preserving sign.  The output is
+    rounded to four decimal places to keep payloads small and stable for
+    caching.
+    """
+
+    if vec.size == 0:
+        return []
+    max_val = float(np.max(np.abs(vec)))
+    if max_val == 0.0:
+        return [0.0 for _ in vec]
+    return [float(np.round(x / max_val, 4)) for x in vec]
+
+
 def compute_embeddings(
     track_id: int, y: np.ndarray, sr: int, cfg: ExtractionConfig, redis_conn=None
 ) -> dict[str, list[float]]:
@@ -50,7 +66,7 @@ def compute_embeddings(
                 cache_hit = True
         if vec is None:
             emb = _embed_one(name, y, sr, cfg.torch_device)
-            vec = emb.astype(float).tolist()
+            vec = _normalize(emb)
             if redis_conn is not None:
                 redis_conn.set(key, json.dumps(vec))
         duration = time.perf_counter() - start
