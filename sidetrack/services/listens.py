@@ -3,12 +3,12 @@ from datetime import datetime
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..db import get_db
-from ..repositories.artist_repository import ArtistRepository
-from ..repositories.listen_repository import ListenRepository
-from ..repositories.release_repository import ReleaseRepository
-from ..repositories.track_repository import TrackRepository
-from ..utils import mb_sanitize
+from sidetrack.api.db import get_db
+from sidetrack.api.repositories.artist_repository import ArtistRepository
+from sidetrack.api.repositories.listen_repository import ListenRepository
+from sidetrack.api.repositories.release_repository import ReleaseRepository
+from sidetrack.api.repositories.track_repository import TrackRepository
+from sidetrack.api.utils import mb_sanitize
 
 
 def convert_spotify_item(item: dict, user_id: str) -> dict | None:

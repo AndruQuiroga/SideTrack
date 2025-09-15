@@ -27,7 +27,7 @@ import httpx
 from sidetrack.api.clients.lastfm import LastfmClient
 from sidetrack.api.config import get_settings
 from sidetrack.api.db import SessionLocal
-from sidetrack.api.services.listen_service import ListenService, get_listen_service
+from sidetrack.services.listens import ListenService, get_listen_service
 
 
 class LastfmIngester:
