@@ -2,17 +2,25 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import threading
 import time
 from datetime import date, datetime
 
-import requests
+import httpx
 import schedule
 from sqlalchemy import select
 
+from sidetrack.api.clients.lastfm import LastfmClient
 from sidetrack.api.db import SessionLocal
+from sidetrack.api.main import aggregate_weeks as aggregate_weeks_service
+from sidetrack.api.services.listen_service import get_listen_service
 from sidetrack.common.models import UserAccount
+from sidetrack.services.datasync import sync_user as datasync_sync_user
+from sidetrack.services.listenbrainz import ListenBrainzClient
+from sidetrack.services.musicbrainz import MusicBrainzService
+from sidetrack.services.spotify import SpotifyClient
 
 from .config import get_settings
 
@@ -36,23 +44,61 @@ def fetch_user_ids() -> list[str]:
         return []
 
 
-def _run_job(user_id: str, job_type: str, url: str) -> None:
+async def _sync_user_service(user_id: str, since: date | None, db) -> None:
+    settings = get_settings()
+    listen_service = get_listen_service(db)
+    rate = settings.lastfm_rate_limit or 5.0
+    min_interval = 1.0 / rate if rate > 0 else 0.0
+    async with (
+        httpx.AsyncClient() as lb_http,
+        httpx.AsyncClient() as lf_http,
+        httpx.AsyncClient() as sp_http,
+        httpx.AsyncClient() as mb_http,
+    ):
+        lb_client = ListenBrainzClient(lb_http)
+        lf_client = LastfmClient(
+            lf_http,
+            settings.lastfm_api_key,
+            settings.lastfm_api_secret,
+            min_interval=min_interval,
+        )
+        sp_client = SpotifyClient(
+            sp_http, settings.spotify_client_id, settings.spotify_client_secret
+        )
+        mb_service = MusicBrainzService(mb_http)
+        await datasync_sync_user(
+            user_id,
+            db=db,
+            listen_service=listen_service,
+            lb_client=lb_client,
+            lf_client=lf_client,
+            sp_client=sp_client,
+            mb_service=mb_service,
+            settings=settings,
+            since=since,
+        )
+
+
+async def _aggregate_weeks_service(user_id: str, _since: date | None, db) -> None:
+    await aggregate_weeks_service(db=db, user_id=user_id)
+
+
+def _run_job(user_id: str, job_type: str, func) -> None:
     key = (user_id, job_type)
     lock = LOCKS.setdefault(key, threading.Lock())
     if not lock.acquire(blocking=False):
         return
 
-    params: dict[str, str] | None = None
     cursor = CURSORS.get(key)
-    if cursor:
-        params = {"since": cursor}
+    since = date.fromisoformat(cursor) if cursor else None
+
+    async def runner():
+        async with SessionLocal() as db:
+            await func(user_id, since, db)
 
     try:
-        kwargs = {"timeout": 10, "headers": {"X-User-Id": user_id}}
-        if params:
-            kwargs["params"] = params
-        r = requests.post(url, **kwargs)
-        status = "ok" if r.status_code < 400 else f"http {r.status_code}"
+        asyncio.run(runner())
+        status = "ok"
         CURSORS[key] = date.today().isoformat()
     except Exception:
         logger.exception("%s error for %s", job_type, user_id)
@@ -64,13 +110,11 @@ def _run_job(user_id: str, job_type: str, url: str) -> None:
 
 
 def sync_user(user_id: str) -> None:
-    settings = get_settings()
-    _run_job(user_id, "sync:user", f"{settings.api_url}/sync/user")
+    _run_job(user_id, "sync:user", _sync_user_service)
 
 
 def aggregate_weeks(user_id: str) -> None:
-    settings = get_settings()
-    _run_job(user_id, "aggregate:weeks", f"{settings.api_url}/aggregate/weeks")
+    _run_job(user_id, "aggregate:weeks", _aggregate_weeks_service)
 
 
 def schedule_jobs() -> None:
