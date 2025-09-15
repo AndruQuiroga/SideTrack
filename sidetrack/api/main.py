@@ -28,7 +28,9 @@ from sidetrack.common.telemetry import setup_tracing
 
 from . import scoring as mood_scoring
 from .clients.lastfm import LastfmClient, get_lastfm_client
+from sidetrack.services.listenbrainz import ListenBrainzClient, get_listenbrainz_client
 from ..services.spotify import SpotifyClient, get_spotify_client
+from .services.listen_service import ListenService, get_listen_service
 from .config import Settings
 from .config import get_settings as get_app_settings
 from .constants import AXES, DEFAULT_METHOD
@@ -44,6 +46,8 @@ from .schemas.tracks import (
     TrackPathResponse,
 )
 from .security import get_current_user, hash_password, require_role
+from sidetrack.services.datasync import sync_user as datasync_sync_user
+from sidetrack.services.musicbrainz import MusicBrainzService
 
 setup_logging()
 setup_tracing("sidetrack-api")
@@ -682,6 +686,32 @@ async def aggregate_weeks(
     total = (await db.execute(select(func.count(MoodAggWeek.id)))).scalar() or 0
     return {"detail": "ok", "rows": int(total)}
 
+
+@app.post("/sync/user")
+async def sync_user_endpoint(
+    since: date | None = Query(None),
+    db: AsyncSession = Depends(get_db),
+    listen_service: ListenService = Depends(get_listen_service),
+    lb_client: ListenBrainzClient = Depends(get_listenbrainz_client),
+    lf_client: LastfmClient = Depends(get_lastfm_client),
+    sp_client: SpotifyClient = Depends(get_spotify_client),
+    user_id: str = Depends(get_current_user),
+    settings: Settings = Depends(get_app_settings),
+):
+    async with httpx.AsyncClient() as http_client:
+        mb_service = MusicBrainzService(http_client)
+        result = await datasync_sync_user(
+            user_id,
+            db=db,
+            listen_service=listen_service,
+            lb_client=lb_client,
+            lf_client=lf_client,
+            sp_client=sp_client,
+            mb_service=mb_service,
+            settings=settings,
+            since=since,
+        )
+    return result
 
 @app.post("/enrich/ids")
 async def enrich_ids_endpoint(

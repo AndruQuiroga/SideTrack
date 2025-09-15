@@ -63,19 +63,9 @@ def _run_job(user_id: str, job_type: str, url: str) -> None:
     JOB_STATE[key] = {"last_status": status, "last_run": datetime.utcnow()}
 
 
-def ingest_listens(user_id: str) -> None:
+def sync_user(user_id: str) -> None:
     settings = get_settings()
-    _run_job(user_id, "ingest:listens", f"{settings.api_url}/ingest/listens")
-
-
-def sync_lastfm_tags(user_id: str) -> None:
-    settings = get_settings()
-    _run_job(user_id, "sync:tags", f"{settings.api_url}/tags/lastfm/sync")
-
-
-def enrich_ids(user_id: str) -> None:
-    settings = get_settings()
-    _run_job(user_id, "enrich:ids", f"{settings.api_url}/enrich/ids")
+    _run_job(user_id, "sync:user", f"{settings.api_url}/sync/user")
 
 
 def aggregate_weeks(user_id: str) -> None:
@@ -87,20 +77,12 @@ def schedule_jobs() -> None:
     """Schedule periodic tasks for each registered user."""
     schedule.clear()
     settings = get_settings()
-    ingest_minutes = settings.ingest_listens_interval_minutes
-    tags_minutes = settings.lastfm_sync_interval_minutes
-    enrich_minutes = settings.enrich_ids_interval_minutes
+    sync_minutes = settings.ingest_listens_interval_minutes
     agg_minutes = settings.aggregate_weeks_interval_minutes
 
     for user_id in fetch_user_ids():
-        schedule.every(ingest_minutes).minutes.do(ingest_listens, user_id).tag(
-            f"id:{user_id}:ingest:listens", f"user:{user_id}", "job:ingest:listens"
-        )
-        schedule.every(tags_minutes).minutes.do(sync_lastfm_tags, user_id).tag(
-            f"id:{user_id}:sync:tags", f"user:{user_id}", "job:sync:tags"
-        )
-        schedule.every(enrich_minutes).minutes.do(enrich_ids, user_id).tag(
-            f"id:{user_id}:enrich:ids", f"user:{user_id}", "job:enrich:ids"
+        schedule.every(sync_minutes).minutes.do(sync_user, user_id).tag(
+            f"id:{user_id}:sync:user", f"user:{user_id}", "job:sync:user"
         )
         schedule.every(agg_minutes).minutes.do(aggregate_weeks, user_id).tag(
             f"id:{user_id}:aggregate:weeks", f"user:{user_id}", "job:aggregate:weeks"
