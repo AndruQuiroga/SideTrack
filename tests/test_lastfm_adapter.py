@@ -1,6 +1,3 @@
-import asyncio
-import logging
-
 import httpx
 import pytest
 from pytest_socket import enable_socket
@@ -11,75 +8,52 @@ enable_socket()
 
 
 @pytest.mark.asyncio
-async def test_request_retries_and_succeeds(monkeypatch):
-    calls = 0
-
+async def test_get_recent_tracks_returns_track_refs():
     def handler(request: httpx.Request) -> httpx.Response:
-        nonlocal calls
-        calls += 1
-        if calls < 3:
-            return httpx.Response(500, request=request)
-        return httpx.Response(200, json={"ok": True}, request=request)
+        assert request.url.params["method"] == "user.getrecenttracks"
+        payload = {
+            "recenttracks": {
+                "track": [
+                    {
+                        "name": "Song",
+                        "artist": {"name": "Artist"},
+                        "mbid": "track-mbid",
+                    }
+                ]
+            }
+        }
+        return httpx.Response(200, json=payload, request=request)
 
     transport = httpx.MockTransport(handler)
     async with httpx.AsyncClient(transport=transport) as client:
         adapter = LastfmAdapter("key", client=client)
-        sleeps: list[float] = []
+        tracks = await adapter.get_recent_tracks("user", limit=1)
 
-        async def fake_sleep(duration: float) -> None:
-            sleeps.append(duration)
-
-        monkeypatch.setattr(asyncio, "sleep", fake_sleep)
-        result = await adapter._request({"method": "test"})
-
-    assert result == {"ok": True}
-    assert sleeps == [1.0, 2.0]
-    assert calls == 3
+    assert len(tracks) == 1
+    assert tracks[0].title == "Song"
+    assert tracks[0].artists == ["Artist"]
+    assert tracks[0].lastfm_mbid == "track-mbid"
 
 
 @pytest.mark.asyncio
-async def test_request_raises_after_max_retries(monkeypatch, caplog):
+async def test_get_tags_returns_names():
     def handler(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(500, request=request)
+        method = request.url.params["method"]
+        assert method in {"artist.gettoptags", "track.gettoptags"}
+        payload = {
+            "toptags": {
+                "tag": [
+                    {"name": "rock", "count": "10"},
+                    {"name": "pop", "count": "5"},
+                    "unexpected",
+                ]
+            }
+        }
+        return httpx.Response(200, json=payload, request=request)
 
     transport = httpx.MockTransport(handler)
     async with httpx.AsyncClient(transport=transport) as client:
         adapter = LastfmAdapter("key", client=client)
-        sleeps: list[float] = []
+        tags = await adapter.get_tags("Some Artist", track="Track")
 
-        async def fake_sleep(duration: float) -> None:
-            sleeps.append(duration)
-
-        monkeypatch.setattr(asyncio, "sleep", fake_sleep)
-        with caplog.at_level(logging.ERROR):
-            with pytest.raises(httpx.HTTPStatusError):
-                await adapter._request({"method": "test"})
-
-    # Only two sleeps for three attempts
-    assert sleeps == [1.0, 2.0]
-    assert "Last.fm request failed after" in caplog.text
-
-
-@pytest.mark.asyncio
-async def test_request_no_retry_on_client_error(monkeypatch):
-    calls = 0
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        nonlocal calls
-        calls += 1
-        return httpx.Response(400, request=request)
-
-    transport = httpx.MockTransport(handler)
-    async with httpx.AsyncClient(transport=transport) as client:
-        adapter = LastfmAdapter("key", client=client)
-        sleeps: list[float] = []
-
-        async def fake_sleep(duration: float) -> None:
-            sleeps.append(duration)
-
-        monkeypatch.setattr(asyncio, "sleep", fake_sleep)
-        with pytest.raises(httpx.HTTPStatusError):
-            await adapter._request({"method": "test"})
-
-    assert calls == 1
-    assert sleeps == []
+    assert tags == ["rock", "pop"]

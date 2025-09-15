@@ -9,6 +9,7 @@ import logging
 from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
 from .base_client import MusicServiceClient
+from .models import TrackRef
 
 
 def _retryable(exc: Exception) -> bool:
@@ -91,7 +92,7 @@ class ListenBrainzClient(MusicServiceClient):
             if key in data:
                 items = data[key] or []
                 if isinstance(items, list):
-                    return items
+                    return [i for i in items if isinstance(i, dict)]
                 logger.warning(
                     "unexpected ListenBrainz recommendations payload: %s", data
                 )
@@ -99,6 +100,38 @@ class ListenBrainzClient(MusicServiceClient):
 
         logger.warning("unexpected ListenBrainz recommendations payload: %s", data)
         raise RuntimeError("unexpected ListenBrainz response format")
+
+    @staticmethod
+    def to_track_ref(rec: dict[str, Any]) -> TrackRef:
+        """Convert a ListenBrainz recommendation payload to :class:`TrackRef`."""
+
+        title = rec.get("track_name") or rec.get("title") or ""
+        artist = rec.get("artist_name") or rec.get("artist") or ""
+        if isinstance(artist, str):
+            artists = [artist]
+        elif isinstance(artist, list):
+            artists = [str(a) for a in artist if a]
+        else:
+            artists = [str(artist)] if artist else []
+        mbid = rec.get("recording_mbid") or rec.get("mbid") or None
+        return TrackRef(title=title, artists=artists, lastfm_mbid=mbid)
+
+    async def get_similar_artists(
+        self, artist_mbid: str, limit: int = 10
+    ) -> list[dict[str, Any]]:
+        """Return artists frequently co-listened with ``artist_mbid``."""
+
+        url = f"{self.base_url}/artist/{artist_mbid}/similar"
+        params = {"count": limit}
+        try:
+            resp = await self._get(url, params=params)
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == 404:
+                return []
+            raise
+        data = resp.json()
+        artists = data.get("similar_artists") or data.get("artists") or []
+        return [a for a in artists if isinstance(a, dict)]
 
 
 async def get_listenbrainz_client() -> AsyncGenerator[ListenBrainzClient, None]:

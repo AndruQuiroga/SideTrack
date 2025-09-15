@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from sidetrack.common.models import Artist, Listen, Track, UserSettings
 
-from ...clients.lastfm import LastfmClient, get_lastfm_client
+from sidetrack.services.lastfm import LastfmClient, get_lastfm_client
 from ....services.spotify import SpotifyClient, get_spotify_client
 from sidetrack.services.listenbrainz import ListenBrainzClient, get_listenbrainz_client
 from ...config import Settings, get_settings

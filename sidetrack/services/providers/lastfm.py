@@ -24,9 +24,9 @@ from typing import Any, Iterable, List
 
 import httpx
 
-from sidetrack.api.clients.lastfm import LastfmClient
 from sidetrack.api.config import get_settings
 from sidetrack.api.db import SessionLocal
+from sidetrack.services.lastfm import LastfmClient
 from sidetrack.services.listens import ListenService, get_listen_service
 
 
