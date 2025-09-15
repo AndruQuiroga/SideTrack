@@ -6,7 +6,7 @@ import asyncio
 from dataclasses import dataclass, field, asdict
 from typing import Any, Iterable
 
-from sidetrack.api.clients.lastfm import LastfmClient
+from sidetrack.services.lastfm import LastfmClient
 from .listenbrainz import ListenBrainzClient
 
 from .spotify import SpotifyUserClient

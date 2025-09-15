@@ -22,7 +22,7 @@ from sidetrack.api.config import Settings
 from sidetrack.services.listens import ListenService
 from sidetrack.common.models import Artist, Listen, Track, UserSettings
 from sidetrack.services.base_client import MusicServiceClient
-from sidetrack.api.clients.lastfm import LastfmClient
+from sidetrack.services.lastfm import LastfmClient
 from sidetrack.services.listenbrainz import ListenBrainzClient
 from sidetrack.services.musicbrainz import MusicBrainzService
 from sidetrack.services.spotify import SpotifyClient

@@ -14,10 +14,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
+from sidetrack.api.config import Settings, get_settings
 from sidetrack.common.models import LastfmTags
 from sidetrack.services.base_client import MusicServiceClient
-
-from ..config import Settings, get_settings
+from sidetrack.services.models import TrackRef
 
 logger = logging.getLogger(__name__)
 
@@ -209,6 +209,42 @@ class LastfmClient(MusicServiceClient):
         }
         data = await self._request(params)
         return data.get("toptracks", {}).get("track", [])
+
+    async def get_top_tags(
+        self, *, artist: str, track: str | None = None, limit: int = 50
+    ) -> list[dict[str, Any]]:
+        """Return top tags for an artist or track."""
+
+        if track:
+            params = {
+                "method": "track.gettoptags",
+                "artist": artist,
+                "track": track,
+                "limit": limit,
+            }
+        else:
+            params = {
+                "method": "artist.gettoptags",
+                "artist": artist,
+                "limit": limit,
+            }
+        data = await self._request(params)
+        tags = data.get("toptags", {}).get("tag", [])
+        return [t for t in tags if isinstance(t, dict)]
+
+    @staticmethod
+    def to_track_ref(track: dict[str, Any]) -> TrackRef:
+        """Convert a Last.fm track payload into a :class:`TrackRef`."""
+
+        title = track.get("name") or track.get("track") or ""
+        artist = track.get("artist") or {}
+        if isinstance(artist, dict):
+            artist_name = artist.get("name") or artist.get("#text")
+        else:
+            artist_name = str(artist)
+        artists = [artist_name] if artist_name else []
+        mbid = track.get("mbid") or track.get("track_mbid") or None
+        return TrackRef(title=title, artists=artists, lastfm_mbid=mbid)
 
     async def get_similar_artist(
         self, *, name: str | None = None, mbid: str | None = None, limit: int = 50

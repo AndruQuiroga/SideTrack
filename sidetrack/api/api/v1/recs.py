@@ -15,7 +15,7 @@ from sidetrack.services.listenbrainz import ListenBrainzClient
 from sidetrack.services.musicbrainz import MusicBrainzService
 from sidetrack.services.ranker import profile_from_spotify, rank
 from sidetrack.services.spotify import SpotifyUserClient
-from ...clients.lastfm import LastfmClient
+from sidetrack.services.lastfm import LastfmClient
 
 from ...config import Settings
 from ...config import get_settings as get_app_settings

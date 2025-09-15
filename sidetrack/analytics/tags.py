@@ -25,7 +25,7 @@ def merge_tags(
     """Merge tag counts from Last.fm and MusicBrainz.
 
     ``lastfm`` is expected to be a mapping of tag → play-count as returned by
-    :class:`~sidetrack.api.clients.lastfm.LastfmClient`. ``mb`` may be either a
+    :class:`~sidetrack.services.lastfm.LastfmClient`. ``mb`` may be either a
     mapping or an iterable of tag names. Tags from both sources are canonicalised
     before being combined.
     """

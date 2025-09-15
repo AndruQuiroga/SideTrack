@@ -1,15 +1,5 @@
-from __future__ import annotations
+"""Helpers and shared data structures for enrichment pipelines."""
 
-from dataclasses import dataclass
-from typing import List, Optional
+from sidetrack.services.models import TrackRef
 
-
-@dataclass
-class TrackRef:
-    """Normalized reference to a track across services."""
-
-    title: str
-    artists: List[str]
-    isrc: Optional[str] = None
-    spotify_id: Optional[str] = None
-    lastfm_mbid: Optional[str] = None
+__all__ = ["TrackRef"]

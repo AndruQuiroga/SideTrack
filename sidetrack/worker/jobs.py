@@ -6,7 +6,7 @@ from datetime import date
 
 import httpx
 
-from sidetrack.api.clients.lastfm import LastfmClient
+from sidetrack.services.lastfm import LastfmClient
 from sidetrack.api.db import SessionLocal
 from sidetrack.api.main import aggregate_weeks as aggregate_weeks_service
 from sidetrack.services.listens import get_listen_service

@@ -31,7 +31,7 @@ from sidetrack.services.musicbrainz import MusicBrainzService
 
 from ..services.spotify import SpotifyClient, get_spotify_client
 from . import scoring as mood_scoring
-from .clients.lastfm import LastfmClient, get_lastfm_client
+from sidetrack.services.lastfm import LastfmClient, get_lastfm_client
 from .config import Settings
 from .config import get_settings as get_app_settings
 from .constants import AXES, DEFAULT_METHOD

@@ -2,7 +2,7 @@ import asyncio
 import httpx
 import pytest
 
-from sidetrack.api.clients.lastfm import LastfmClient
+from sidetrack.services.lastfm import LastfmClient
 
 
 @pytest.mark.asyncio

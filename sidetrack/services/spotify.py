@@ -5,13 +5,16 @@ from __future__ import annotations
 import asyncio
 from collections.abc import AsyncGenerator
 from datetime import datetime
-from typing import Any
+from typing import Any, Awaitable, Callable, TypeVar
 
 import httpx
 from fastapi import Depends
 
 from sidetrack.api.config import Settings, get_settings
 from .base_client import MusicServiceClient
+from .models import TrackRef
+
+T = TypeVar("T")
 
 
 class SpotifyClient(MusicServiceClient):
@@ -93,6 +96,22 @@ class SpotifyClient(MusicServiceClient):
                 return {}
             resp.raise_for_status()
             return resp.json()
+
+    @staticmethod
+    def to_track_ref(data: dict[str, Any]) -> TrackRef:
+        track = data.get("track") or data
+        artists = [
+            artist.get("name")
+            for artist in track.get("artists", [])
+            if isinstance(artist, dict) and artist.get("name")
+        ]
+        external_ids = track.get("external_ids") or {}
+        return TrackRef(
+            title=track.get("name", ""),
+            artists=artists,
+            isrc=external_ids.get("isrc"),
+            spotify_id=track.get("id"),
+        )
 
     # ------------------------------------------------------------------
     # User-facing helpers requiring an ``access_token``
@@ -207,41 +226,57 @@ class SpotifyUserClient(SpotifyClient):
         access_token: str,
         client_id: str | None = None,
         client_secret: str | None = None,
+        refresh_token: str | None = None,
     ) -> None:
         super().__init__(client, client_id, client_secret)
         self.access_token = access_token
+        self.refresh_token = refresh_token
+
+    async def _call_with_refresh(
+        self, func: Callable[..., Awaitable[T]], *args: Any, **kwargs: Any
+    ) -> T:
+        while True:
+            try:
+                return await func(self.access_token, *args, **kwargs)
+            except httpx.HTTPStatusError as exc:
+                if exc.response.status_code == 401 and self.refresh_token:
+                    payload = await super().refresh_token(self.refresh_token)
+                    self.access_token = payload.get("access_token", self.access_token)
+                    self.refresh_token = payload.get("refresh_token", self.refresh_token)
+                    continue
+                raise
 
     async def fetch_recently_played(
         self, after: datetime | None = None, limit: int = 50
     ) -> list[dict[str, Any]]:
-        return await super().fetch_recently_played(
-            self.access_token, after=after, limit=limit
+        return await self._call_with_refresh(
+            super().fetch_recently_played, after=after, limit=limit
         )
 
     async def get_audio_features(self, spotify_id: str) -> dict[str, Any]:
-        return await super().get_audio_features(self.access_token, spotify_id)
+        return await self._call_with_refresh(super().get_audio_features, spotify_id)
 
     async def get_audio_features_batch(self, ids: list[str]) -> list[dict[str, Any]]:
-        return await super().get_audio_features_batch(self.access_token, ids)
+        return await self._call_with_refresh(super().get_audio_features_batch, ids)
 
     async def get_current_user(self) -> dict[str, Any]:
-        return await super().get_current_user(self.access_token)
+        return await self._call_with_refresh(super().get_current_user)
 
     async def get_currently_playing(self) -> dict[str, Any] | None:
-        return await super().get_currently_playing(self.access_token)
+        return await self._call_with_refresh(super().get_currently_playing)
 
     async def get_top_items(
         self, type_: str = "tracks", time_range: str = "short_term", limit: int = 20
     ) -> list[dict[str, Any]]:
-        return await super().get_top_items(
-            self.access_token, type_=type_, time_range=time_range, limit=limit
+        return await self._call_with_refresh(
+            super().get_top_items, type_=type_, time_range=time_range, limit=limit
         )
 
     async def get_recently_played(self, limit: int = 50) -> list[dict[str, Any]]:
-        return await super().fetch_recently_played(self.access_token, limit=limit)
+        return await self._call_with_refresh(super().fetch_recently_played, limit=limit)
 
     async def get_saved_tracks(self, limit: int = 50) -> list[dict[str, Any]]:
-        return await super().get_saved_tracks(self.access_token, limit=limit)
+        return await self._call_with_refresh(super().get_saved_tracks, limit=limit)
 
     async def get_recommendations(
         self,
@@ -249,8 +284,8 @@ class SpotifyUserClient(SpotifyClient):
         target_features: dict[str, Any] | None = None,
         limit: int = 20,
     ) -> list[dict[str, Any]]:
-        return await super().get_recommendations(
-            self.access_token,
+        return await self._call_with_refresh(
+            super().get_recommendations,
             seeds=seeds,
             target_features=target_features,
             limit=limit,
