@@ -9,7 +9,7 @@ from httpx import ASGITransport, AsyncClient
 from pytest_socket import disable_socket, enable_socket, socket_allow_hosts
 
 from sidetrack.api import main as api_main
-from sidetrack.api.config import ApiSettings
+from sidetrack.config import ApiSettings
 
 from services.tests.conftest import *  # noqa: F401,F403
 

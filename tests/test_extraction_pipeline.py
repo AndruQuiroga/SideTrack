@@ -4,7 +4,7 @@ import pytest
 from sqlalchemy import select
 
 from sidetrack.common.models import Feature, Embedding
-from sidetrack.config.extraction import ExtractionConfig
+from sidetrack.config import ExtractionConfig
 from sidetrack.extraction.pipeline import analyze_tracks
 from tests.factories import TrackFactory
 
