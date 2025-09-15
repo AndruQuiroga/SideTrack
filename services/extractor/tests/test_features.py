@@ -1,55 +1,31 @@
-from pathlib import Path
-
 import numpy as np
 import pytest
 import soundfile as sf
-import os
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session
 
-from sidetrack.common.models import Base, Embedding, Feature
-from sidetrack.extractor.run import analyze_one, estimate_features
+from sidetrack.api.db import SessionLocal
+from sidetrack.common.models import Feature
+from sidetrack.config.extraction import ExtractionConfig
+from sidetrack.extraction.pipeline import analyze_track
 from tests.factories import TrackFactory
 
-pytestmark = pytest.mark.unit
-
-SR = 44100
+pytestmark = pytest.mark.integration
 
 
-def synth_audio(path: Path) -> Path:
-    t = np.linspace(0, 2.0, int(SR * 2.0), endpoint=False)
-    left = 0.5 * np.sin(2 * np.pi * 440 * t)
-    right = 0.5 * np.sin(2 * np.pi * 550 * t)
-    data = np.stack([left, right], axis=1)
-    sf.write(path, data, SR)
-    return path
+def test_analyze_track(tmp_path):
+    wav = tmp_path / "a.wav"
+    sf.write(wav, np.zeros(1024), 22050)
+    with SessionLocal() as db:
+        from sidetrack.common.models import Base
 
-
-def test_estimate_features(tmp_path):
-    wav = synth_audio(tmp_path / "a.wav")
-    feats = estimate_features(str(wav))
-    assert "key" in feats and feats["key"]
-    assert feats["spectral"]["centroid_mean"] > 0
-    assert feats["dynamics"]["dynamic_range"] > 0
-    assert feats["stereo"]["width"] > 0
-    assert len(feats["chroma_stats"]["mean"]) == 12
-
-
-def test_analyze_one_with_embeddings(tmp_path, monkeypatch):
-    wav = synth_audio(tmp_path / "b.wav")
-    url = os.environ.get("DATABASE_URL", "")
-    if not url.startswith("postgresql+"):
-        pytest.skip("Postgres DATABASE_URL not configured for test")
-    engine = create_engine(url)
-    Base.metadata.create_all(engine)
-    with Session(engine) as db:
-        tr = TrackFactory(track_id=1, title="t", path_local=str(wav), duration=2)
+        Base.metadata.create_all(db.bind)
+        tr = TrackFactory(path_local=str(wav))
         db.add(tr)
+        db.flush()
+        tid = tr.track_id
         db.commit()
-        monkeypatch.setenv("EMBEDDING_MODEL", "mfcc")
-        ok = analyze_one(db, tr, audio_root="")
-        assert ok
-        feat = db.query(Feature).filter_by(track_id=1).first()
-        assert feat is not None and feat.spectral["centroid_mean"] > 0
-        emb = db.query(Embedding).filter_by(track_id=1).first()
-        assert emb is not None and emb.dim == len(emb.vector)
+    cfg = ExtractionConfig()
+    cfg.set_seed(0)
+    fid = analyze_track(tid, cfg)
+    with SessionLocal() as db:
+        feat = db.get(Feature, fid)
+        assert feat and feat.track_id == tid

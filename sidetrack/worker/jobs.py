@@ -10,25 +10,9 @@ from sidetrack.services.spotify import SpotifyClient
 from sidetrack.api.db import SessionLocal
 from sidetrack.common.models import Feature, Track
 from sidetrack.services.insights import compute_weekly_insights
-from sidetrack.config.extraction import ExtractionConfig
-from sidetrack.extraction.pipeline import analyze_tracks
-from sqlalchemy import select
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s:%(message)s")
 logger = logging.getLogger("worker")
-
-
-def analyze_track(track_id: int) -> int:
-    """Run the modular extraction pipeline for ``track_id``."""
-
-    cfg = ExtractionConfig()
-    cfg.set_seed(0)
-    with SessionLocal() as db:
-        processed = analyze_tracks(db, [track_id], cfg)
-        if not processed:
-            raise ValueError("track missing")
-        feature = db.execute(select(Feature).where(Feature.track_id == track_id)).scalar_one()
-        return feature.id
 
 
 def compute_embeddings(data: list[float]) -> list[float]:

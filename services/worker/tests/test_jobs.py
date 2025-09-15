@@ -1,11 +1,13 @@
 import numpy as np
+import numpy as np
 import pytest
 import soundfile as sf
 from rq import Queue, SimpleWorker
 
 from sidetrack.api.db import SessionLocal
 from sidetrack.common.models import Feature
-from sidetrack.worker.jobs import analyze_track, compute_embeddings
+from sidetrack.extraction.pipeline import analyze_track
+from sidetrack.worker.jobs import compute_embeddings
 from tests.factories import TrackFactory
 
 pytestmark = pytest.mark.integration

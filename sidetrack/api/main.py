@@ -163,7 +163,7 @@ def _enqueue_analysis(track_id: int, settings: Settings) -> None:
     """Enqueue an analysis job for the given track id."""
 
     q = Queue("analysis", connection=_get_redis_connection(settings))
-    q.enqueue("worker.jobs.analyze_track", track_id)
+    q.enqueue("extraction.pipeline.analyze_track", track_id)
 
 
 def _week_start(dt: datetime) -> date:
