@@ -9,7 +9,7 @@ from typing import Any, Iterable
 from sidetrack.api.clients.lastfm import LastfmClient
 from .listenbrainz import ListenBrainzClient
 
-from .spotify import SpotifyService
+from .spotify import SpotifyUserClient
 
 
 @dataclass
@@ -96,7 +96,7 @@ def _dedupe(cands: Iterable[Candidate]) -> list[Candidate]:
     return out
 
 
-async def _spotify_candidates(sp: SpotifyService) -> list[Candidate]:
+async def _spotify_candidates(sp: SpotifyUserClient) -> list[Candidate]:
     """Generate candidate tracks for a Spotify user."""
 
     top_tracks = await sp.get_top_items("tracks")
@@ -209,7 +209,7 @@ async def _listenbrainz_candidates(lb: ListenBrainzClient, user: str) -> list[Ca
 
 async def generate_candidates(
     *,
-    spotify: SpotifyService | None = None,
+    spotify: SpotifyUserClient | None = None,
     lastfm: LastfmClient | None = None,
     lastfm_user: str | None = None,
     listenbrainz: ListenBrainzClient | None = None,

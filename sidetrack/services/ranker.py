@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from .spotify import SpotifyService
+from .spotify import SpotifyUserClient
 
 
 def artist_or_label(item: dict[str, Any]) -> str | None:
@@ -23,7 +23,7 @@ def artist_or_label(item: dict[str, Any]) -> str | None:
     )
 
 
-async def profile_from_spotify(sp: SpotifyService) -> dict[str, float]:
+async def profile_from_spotify(sp: SpotifyUserClient) -> dict[str, float]:
     """Return a simple audio feature profile for a Spotify user.
 
     The profile contains the mean tempo, valence and energy of the user's

@@ -1,7 +1,7 @@
 import pytest
 from sqlalchemy import select
 
-from sidetrack.api.clients.spotify import SpotifyClient
+from sidetrack.services.spotify import SpotifyClient
 from sidetrack.common.models import Listen, UserSettings
 
 pytestmark = pytest.mark.asyncio
