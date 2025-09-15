@@ -6,7 +6,7 @@ import logging
 
 # Heavy numerical deps are imported lazily inside functions to keep
 # API-only environments lightweight when importing this module.
-from sidetrack.api.clients.spotify import SpotifyClient
+from sidetrack.services.spotify import SpotifyClient
 from sidetrack.api.db import SessionLocal
 from sidetrack.common.models import Feature, Track
 from sidetrack.services.insights import compute_weekly_insights

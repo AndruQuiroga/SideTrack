@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sidetrack.common.models import Feature, Track, UserSettings
 
 from ....worker.jobs import fetch_spotify_features
-from ...clients.spotify import SpotifyClient, get_spotify_client
+from ....services.spotify import SpotifyClient, get_spotify_client
 from ...db import get_db
 from ...repositories.artist_repository import ArtistRepository
 from ...repositories.listen_repository import ListenRepository

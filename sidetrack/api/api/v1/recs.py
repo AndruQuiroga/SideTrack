@@ -14,7 +14,7 @@ from sidetrack.services.candidates import generate_candidates
 from sidetrack.services.listenbrainz import ListenBrainzClient
 from sidetrack.services.musicbrainz import MusicBrainzService
 from sidetrack.services.ranker import profile_from_spotify, rank
-from sidetrack.services.spotify import SpotifyService
+from sidetrack.services.spotify import SpotifyUserClient
 from ...clients.lastfm import LastfmClient
 
 from ...config import Settings
@@ -41,13 +41,13 @@ async def list_recs(
     if row is None:
         raise HTTPException(status_code=404, detail="user settings not found")
 
-    spotify_service: SpotifyService | None = None
+    spotify_service: SpotifyUserClient | None = None
     lastfm_client: LastfmClient | None = None
     lastfm_user: str | None = None
     lb_client: ListenBrainzClient | None = None
     lb_user: str | None = None
     if settings.spotify_recs_enabled and row.spotify_access_token:
-        spotify_service = SpotifyService(client, access_token=row.spotify_access_token)
+        spotify_service = SpotifyUserClient(client, access_token=row.spotify_access_token)
     elif settings.lastfm_similar_enabled and row.lastfm_user:
         lastfm_client = LastfmClient(client, settings.lastfm_api_key, None)
         lastfm_user = row.lastfm_user
@@ -114,13 +114,13 @@ async def ranked_recs(
     if row is None:
         raise HTTPException(status_code=404, detail="user settings not found")
 
-    spotify_service: SpotifyService | None = None
+    spotify_service: SpotifyUserClient | None = None
     lastfm_client: LastfmClient | None = None
     lastfm_user: str | None = None
     lb_client: ListenBrainzClient | None = None
     lb_user: str | None = None
     if settings.spotify_recs_enabled and row.spotify_access_token:
-        spotify_service = SpotifyService(client, access_token=row.spotify_access_token)
+        spotify_service = SpotifyUserClient(client, access_token=row.spotify_access_token)
     elif settings.lastfm_similar_enabled and row.lastfm_user:
         lastfm_client = LastfmClient(client, settings.lastfm_api_key, None)
         lastfm_user = row.lastfm_user
