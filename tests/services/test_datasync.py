@@ -6,7 +6,7 @@ from sidetrack.api.repositories.artist_repository import ArtistRepository
 from sidetrack.api.repositories.listen_repository import ListenRepository
 from sidetrack.api.repositories.release_repository import ReleaseRepository
 from sidetrack.api.repositories.track_repository import TrackRepository
-from sidetrack.api.services.listen_service import ListenService
+from sidetrack.services.listens import ListenService
 from sidetrack.api.clients.lastfm import LastfmClient
 from sidetrack.common.models import UserSettings
 from sidetrack.services.datasync import sync_user

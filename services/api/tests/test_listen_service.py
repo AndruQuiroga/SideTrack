@@ -7,7 +7,7 @@ from sidetrack.api.repositories.artist_repository import ArtistRepository
 from sidetrack.api.repositories.listen_repository import ListenRepository
 from sidetrack.api.repositories.release_repository import ReleaseRepository
 from sidetrack.api.repositories.track_repository import TrackRepository
-from sidetrack.api.services.listen_service import ListenService
+from sidetrack.services.listens import ListenService
 from sidetrack.common.models import Listen
 
 pytestmark = pytest.mark.integration

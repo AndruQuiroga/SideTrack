@@ -3,7 +3,7 @@
 This module orchestrates the full data synchronisation pipeline for a user:
 
 1. Fetch listens from external providers (Spotify, Last.fm, ListenBrainz).
-2. Normalise and store listens via :class:`~sidetrack.api.services.listen_service.ListenService`.
+2. Normalise and store listens via :class:`~sidetrack.services.listens.ListenService`.
 3. Enrich tracks with tags and external identifiers.
 
 The main entry point is :func:`sync_user` which is designed for use by the
@@ -19,7 +19,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sidetrack.api.config import Settings
-from sidetrack.api.services.listen_service import ListenService
+from sidetrack.services.listens import ListenService
 from sidetrack.common.models import Artist, Listen, Track, UserSettings
 from sidetrack.services.base_client import MusicServiceClient
 from sidetrack.api.clients.lastfm import LastfmClient

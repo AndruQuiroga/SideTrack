@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from sidetrack.api.services.listen_service import ListenService
+from sidetrack.services.listens import ListenService
 
 
 @pytest.mark.asyncio

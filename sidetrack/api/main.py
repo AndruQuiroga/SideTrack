@@ -47,7 +47,7 @@ from .schemas.tracks import (
     TrackPathResponse,
 )
 from .security import get_current_user, hash_password, require_role
-from .services.listen_service import ListenService, get_listen_service
+from sidetrack.services.listens import ListenService, get_listen_service
 
 setup_logging()
 setup_tracing("sidetrack-api")

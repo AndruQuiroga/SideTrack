@@ -9,7 +9,7 @@ import httpx
 from sidetrack.api.clients.lastfm import LastfmClient
 from sidetrack.api.db import SessionLocal
 from sidetrack.api.main import aggregate_weeks as aggregate_weeks_service
-from sidetrack.api.services.listen_service import get_listen_service
+from sidetrack.services.listens import get_listen_service
 from sidetrack.common.models import Feature, Track
 from sidetrack.services.datasync import sync_user as datasync_sync_user
 from sidetrack.services.insights import compute_weekly_insights

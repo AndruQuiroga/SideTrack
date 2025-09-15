@@ -19,7 +19,7 @@ from ...config import Settings, get_settings
 from ...db import get_db
 from ...schemas.listens import IngestResponse, ListenIn, RecentListensResponse
 from ...security import get_current_user
-from ...services.listen_service import ListenService, get_listen_service
+from sidetrack.services.listens import ListenService, get_listen_service
 
 router = APIRouter()
 
