@@ -18,10 +18,11 @@ from datetime import date, datetime
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from sidetrack.api.clients.lastfm import LastfmClient
 from sidetrack.api.config import Settings
 from sidetrack.api.services.listen_service import ListenService
 from sidetrack.common.models import Artist, Listen, Track, UserSettings
+from sidetrack.services.base_client import MusicServiceClient
+from sidetrack.api.clients.lastfm import LastfmClient
 from sidetrack.services.listenbrainz import ListenBrainzClient
 from sidetrack.services.musicbrainz import MusicBrainzService
 from sidetrack.services.spotify import SpotifyClient
@@ -48,9 +49,7 @@ async def _fetch_listens(
     *,
     db: AsyncSession,
     listen_service: ListenService,
-    lb_client: ListenBrainzClient,
-    lf_client: LastfmClient,
-    sp_client: SpotifyClient,
+    clients: list[MusicServiceClient],
     settings: Settings,
     since: date | None = None,
 ) -> int:
@@ -64,34 +63,32 @@ async def _fetch_listens(
         await db.execute(select(UserSettings).where(UserSettings.user_id == user_id))
     ).scalar_one_or_none()
 
-    # Spotify first
-    if settings_row and settings_row.spotify_access_token:
+    for client in clients:
         try:
-            since_dt = datetime.combine(since, datetime.min.time()) if since else None
-            items = await sp_client.fetch_recently_played(
-                settings_row.spotify_access_token, after=since_dt
-            )
-            return await listen_service.ingest_spotify_rows(items, user_id)
+            if isinstance(client, SpotifyClient) and settings_row and settings_row.spotify_access_token:
+                since_dt = datetime.combine(since, datetime.min.time()) if since else None
+                items = await client.fetch_recently_played(
+                    settings_row.spotify_access_token, after=since_dt
+                )
+                return await listen_service.ingest_spotify_rows(items, user_id)
+            if isinstance(client, LastfmClient) and settings_row and settings_row.lastfm_user and settings_row.lastfm_session_key:
+                since_dt = datetime.combine(since, datetime.min.time()) if since else None
+                client.user = settings_row.lastfm_user
+                tracks = await client.fetch_recently_played(since_dt)
+                return await listen_service.ingest_lastfm_rows(tracks, user_id)
+            if isinstance(client, ListenBrainzClient):
+                token = settings.listenbrainz_token
+                lb_user = user_id
+                if settings_row:
+                    token = settings_row.listenbrainz_token or token
+                    lb_user = settings_row.listenbrainz_user or lb_user
+                client.user = lb_user
+                client.token = token
+                rows = await client.fetch_recently_played(since, limit=500)
+                return await listen_service.ingest_lb_rows(rows, user_id)
         except Exception:  # pragma: no cover - network errors
-            pass
-
-    # Last.fm next
-    if settings_row and settings_row.lastfm_user and settings_row.lastfm_session_key:
-        try:
-            since_dt = datetime.combine(since, datetime.min.time()) if since else None
-            tracks = await lf_client.fetch_recent_tracks(settings_row.lastfm_user, since_dt)
-            return await listen_service.ingest_lastfm_rows(tracks, user_id)
-        except Exception:  # pragma: no cover - network errors
-            pass
-
-    # Fallback to ListenBrainz
-    token = settings.listenbrainz_token
-    lb_user = user_id
-    if settings_row:
-        token = settings_row.listenbrainz_token or token
-        lb_user = settings_row.listenbrainz_user or lb_user
-    rows = await lb_client.fetch_listens(lb_user, since, token)
-    return await listen_service.ingest_lb_rows(rows, user_id)
+            continue
+    return 0
 
 
 async def _enrich_tags(
@@ -166,9 +163,7 @@ async def sync_user(
     *,
     db: AsyncSession,
     listen_service: ListenService,
-    lb_client: ListenBrainzClient,
-    lf_client: LastfmClient,
-    sp_client: SpotifyClient,
+    clients: list[MusicServiceClient],
     mb_service: MusicBrainzService | None,
     settings: Settings,
     since: date | None = None,
@@ -180,14 +175,19 @@ async def sync_user(
         user_id,
         db=db,
         listen_service=listen_service,
-        lb_client=lb_client,
-        lf_client=lf_client,
-        sp_client=sp_client,
+        clients=clients,
         settings=settings,
         since=since,
     )
-    result.tags_updated = await _enrich_tags(user_id, db=db, lf_client=lf_client, since=since)
-    result.ids_enriched = await _enrich_ids(user_id, db=db, mb_service=mb_service, since=since)
+    lf_client = next((c for c in clients if isinstance(c, LastfmClient)), None)
+    result.tags_updated = (
+        await _enrich_tags(user_id, db=db, lf_client=lf_client, since=since)
+        if lf_client
+        else 0
+    )
+    result.ids_enriched = await _enrich_ids(
+        user_id, db=db, mb_service=mb_service, since=since
+    )
     return result.to_dict()
 
 

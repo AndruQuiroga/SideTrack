@@ -11,10 +11,13 @@ import httpx
 from fastapi import Depends
 
 from sidetrack.api.config import Settings, get_settings
+from .base_client import MusicServiceClient
 
 
-class SpotifyClient:
+class SpotifyClient(MusicServiceClient):
     """Minimal Spotify API client with OAuth and user helpers."""
+
+    source = "spotify"
 
     auth_root = "https://accounts.spotify.com"
     api_root = "https://api.spotify.com/v1"

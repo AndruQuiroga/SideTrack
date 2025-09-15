@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
 from sidetrack.common.models import LastfmTags
+from sidetrack.services.base_client import MusicServiceClient
 
 from ..config import Settings, get_settings
 
@@ -36,8 +37,10 @@ _retry = retry(
 )
 
 
-class LastfmClient:
+class LastfmClient(MusicServiceClient):
     """Client for interacting with the Last.fm API."""
+
+    source = "lastfm"
 
     api_root = "https://ws.audioscrobbler.com/2.0/"
 
@@ -47,11 +50,13 @@ class LastfmClient:
         api_key: str | None,
         api_secret: str | None,
         *,
+        user: str | None = None,
         min_interval: float = 0.2,
     ) -> None:
         self._client = client
         self.api_key = api_key
         self.api_secret = api_secret
+        self.user = user
         self._min_interval = min_interval
         self._last_request = 0.0
         self._rate_lock = asyncio.Lock()
@@ -118,6 +123,13 @@ class LastfmClient:
             params["from"] = int(since.timestamp())
         data = await self._request(params)
         return data.get("recenttracks", {}).get("track", [])
+
+    async def fetch_recently_played(
+        self, since: datetime | None = None, limit: int = 200
+    ) -> list[dict[str, Any]]:
+        if not self.user:
+            raise RuntimeError("Last.fm user not configured")
+        return await self.fetch_recent_tracks(self.user, since, limit)
 
     async def get_track_tags(
         self,
