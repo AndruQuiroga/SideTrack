@@ -9,6 +9,7 @@ from sqlalchemy import JSON, DateTime, Integer, String, Text, distinct, func, se
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column
 
+from sidetrack.analytics.tags import canonicalize_tag
 from sidetrack.common.models import Base, Listen
 
 
@@ -22,6 +23,19 @@ class InsightEvent(Base):
     summary: Mapped[str] = mapped_column(Text)
     details: Mapped[dict | None] = mapped_column(JSON)
     severity: Mapped[int] = mapped_column(Integer, default=0)
+
+
+def _canonicalise_details(details: dict | None) -> dict | None:
+    """Normalise tag names within ``details`` if present."""
+
+    if not details:
+        return details
+    tags = details.get("tags")
+    if isinstance(tags, dict):
+        details["tags"] = {
+            canonicalize_tag(tag): score for tag, score in tags.items() if canonicalize_tag(tag)
+        }
+    return details
 
 
 async def compute_weekly_insights(db: AsyncSession, user_id: str) -> Sequence[InsightEvent]:
@@ -55,24 +69,26 @@ async def compute_weekly_insights(db: AsyncSession, user_id: str) -> Sequence[In
     events: list[InsightEvent] = []
 
     if total:
+        details = {"count": int(total)}
         events.append(
             InsightEvent(
                 user_id=user_id,
                 ts=now,
                 type="weekly_listens",
                 summary=f"{int(total)} listens this week",
-                details={"count": int(total)},
+                details=_canonicalise_details(details),
                 severity=0,
             )
         )
     if unique_tracks:
+        details = {"count": int(unique_tracks)}
         events.append(
             InsightEvent(
                 user_id=user_id,
                 ts=now,
                 type="weekly_unique_tracks",
                 summary=f"{int(unique_tracks)} unique tracks this week",
-                details={"count": int(unique_tracks)},
+                details=_canonicalise_details(details),
                 severity=0,
             )
         )

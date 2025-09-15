@@ -5,6 +5,8 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
+from sidetrack.analytics.tags import canonicalize_tag
+
 from .spotify import SpotifyUserClient
 
 
@@ -16,11 +18,7 @@ def artist_or_label(item: dict[str, Any]) -> str | None:
     stable.
     """
 
-    return (
-        item.get("artist_mbid")
-        or item.get("artist")
-        or item.get("label")
-    )
+    return item.get("artist_mbid") or item.get("artist") or item.get("label")
 
 
 async def profile_from_spotify(sp: SpotifyUserClient) -> dict[str, float]:
@@ -39,12 +37,8 @@ async def profile_from_spotify(sp: SpotifyUserClient) -> dict[str, float]:
     features = await sp.get_audio_features(ids) if ids else []
 
     tempos = [f.get("tempo") for f in features if isinstance(f.get("tempo"), int | float)]
-    valences = [
-        f.get("valence") for f in features if isinstance(f.get("valence"), int | float)
-    ]
-    energies = [
-        f.get("energy") for f in features if isinstance(f.get("energy"), int | float)
-    ]
+    valences = [f.get("valence") for f in features if isinstance(f.get("valence"), int | float)]
+    energies = [f.get("energy") for f in features if isinstance(f.get("energy"), int | float)]
 
     def _mean(vals: list[float]) -> float:
         return float(sum(vals) / len(vals)) if vals else 0.0
@@ -103,6 +97,12 @@ def rank(candidates: list[dict[str, Any]], user_profile: dict[str, float]) -> li
         return 0.0 if x < 0.0 else 1.0 if x > 1.0 else x
 
     for cand in candidates:
+        tags = cand.get("tags")
+        if isinstance(tags, dict):
+            cand["tags"] = {
+                canonicalize_tag(tag): val for tag, val in tags.items() if canonicalize_tag(tag)
+            }
+
         score = float(cand.get("score_cf") or 0.0)
         reasons: list[str] = []
         feats = cand.get("audio_features") or {}
@@ -127,4 +127,3 @@ def rank(candidates: list[dict[str, Any]], user_profile: dict[str, float]) -> li
     ranked = mmr_diversity(candidates)
     ranked.sort(key=lambda x: x["final_score"], reverse=True)
     return ranked
-
