@@ -19,34 +19,12 @@ from sidetrack.services.musicbrainz import MusicBrainzService
 # Heavy numerical deps are imported lazily inside functions to keep
 # API-only environments lightweight when importing this module.
 from sidetrack.services.spotify import SpotifyClient
+from sidetrack.extraction import compute_embeddings
 
 from .config import get_settings
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s:%(message)s")
 logger = logging.getLogger("worker")
-
-
-def compute_embeddings(data: list[float]) -> list[float]:
-    """Compute a simple normalised embedding vector.
-
-    Normalisation is performed by dividing each value by the largest absolute
-    value in ``data`` so that the output preserves the sign of the original
-    values while remaining within ``[-1, 1]``.
-
-    Args:
-        data: List of floats representing raw features.
-
-    Returns:
-        A list of floats normalised by the maximum absolute value.
-    """
-    if not data:
-        return []
-    max_val = max(abs(x) for x in data)
-    if max_val == 0:
-        return [0 for _ in data]
-    embeddings = [round(x / max_val, 4) for x in data]
-    logger.info("computed embeddings")
-    return embeddings
 
 
 KEYS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]

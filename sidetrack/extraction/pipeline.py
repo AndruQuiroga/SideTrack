@@ -14,7 +14,8 @@ from sidetrack.api.db import SessionLocal
 from sidetrack.common.models import Embedding, Feature, Track
 from sidetrack.config.extraction import ExtractionConfig
 
-from . import io, dsp, features as feat_mod, embeddings as emb_mod, stems, scoring
+from . import io, dsp, features as feat_mod, stems, scoring
+from sidetrack.extraction import compute_embeddings
 
 
 def _upsert_feature(db: Session, track_id: int, data: dict, dataset_version: str) -> None:
@@ -61,7 +62,7 @@ def analyze_tracks(db: Session, track_ids: Iterable[int], cfg: ExtractionConfig,
         if stem_model:
             source = "stems"
         feats.update({"source": source, "seconds": seconds, "model": stem_model})
-        embeds = emb_mod.compute_embeddings(tid, y, sr, cfg, redis_conn=redis_conn)
+        embeds = compute_embeddings(tid, y, sr, cfg, redis_conn=redis_conn)
         _upsert_feature(db, tid, feats, cfg.dataset_version)
         for name, vec in embeds.items():
             _upsert_embedding(db, tid, name, vec, cfg.dataset_version)
