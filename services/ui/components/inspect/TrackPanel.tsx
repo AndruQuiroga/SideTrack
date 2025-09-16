@@ -28,11 +28,7 @@ export default function TrackPanel({ trackId }: { trackId: number }) {
     (async () => {
       try {
         const res = await apiFetch(`/inspect/track/${trackId}`);
-        if (res.ok) {
-          setData((await res.json()) as TrackData);
-        } else {
-          setData({});
-        }
+        setData((await res.json()) as TrackData);
       } catch {
         setData({});
       }
@@ -42,10 +38,8 @@ export default function TrackPanel({ trackId }: { trackId: number }) {
   const handleAddFive = async () => {
     try {
       const res = await apiFetch(`/similar/track/${trackId}?limit=5`);
-      if (res.ok) {
-        const items = (await res.json()) as AlsoListened[];
-        items.slice(0, 5).forEach((t) => addToMixtape({ track_id: t.track_id, title: t.title }));
-      }
+      const items = (await res.json()) as AlsoListened[];
+      items.slice(0, 5).forEach((t) => addToMixtape({ track_id: t.track_id, title: t.title }));
     } catch {
       /* noop */
     }

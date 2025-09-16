@@ -14,12 +14,12 @@ export default function RankerControls() {
 
   async function handleSave() {
     try {
-      const res = await apiFetch('/api/ranker/settings', {
+      await apiFetch('/api/ranker/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ discovery, energy, tempo, avoid }),
+        suppressErrorToast: true,
       });
-      if (!res.ok) throw new Error('bad');
       show({ title: 'Ranker settings saved', kind: 'success' });
     } catch {
       show({ title: 'Failed to save ranker settings', kind: 'error' });

@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';
-import { apiFetch } from '../../lib/api';
+import { ApiError, apiFetch } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { handleGoogle } from '../../lib/handleGoogle';
 import { useToast } from '../../components/ToastProvider';
@@ -40,45 +40,49 @@ export default function LoginPage() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(values),
+      suppressErrorToast: true,
     });
   }
 
   const onSubmit = handleSubmit(async (values) => {
     show({ title: 'Logging in…', kind: 'info' });
-    const res = await loginRequest(values);
-    if (res.ok) {
+    try {
+      const res = await loginRequest(values);
       const data: AuthResponse = await res.json().catch(() => ({}) as AuthResponse);
       setUserId(data.user_id || '');
       router.push(next || '/');
-    } else {
-      const data: AuthResponse = await res.json().catch(() => ({}) as AuthResponse);
-      show({ title: data.detail || `${res.status} ${res.statusText}`, kind: 'error' });
+    } catch (error) {
+      const detail =
+        error instanceof ApiError
+          ? error.message
+          : error instanceof Error
+            ? error.message
+            : 'Unable to sign in';
+      show({ title: detail || 'Unable to sign in', kind: 'error' });
     }
   });
 
   const onRegister = handleSubmit(async (values) => {
     show({ title: 'Registering…', kind: 'info' });
-    const res = await apiFetch('/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(values),
-    });
-    if (res.ok) {
+    try {
+      await apiFetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(values),
+        suppressErrorToast: true,
+      });
       const loginRes = await loginRequest(values);
-      if (loginRes.ok) {
-        const data: AuthResponse = await loginRes.json().catch(() => ({}) as AuthResponse);
-        setUserId(data.user_id || '');
-        router.push(next || '/');
-      } else {
-        const data: AuthResponse = await loginRes.json().catch(() => ({}) as AuthResponse);
-        show({
-          title: data.detail || `${loginRes.status} ${loginRes.statusText}`,
-          kind: 'error',
-        });
-      }
-    } else {
-      const data: AuthResponse = await res.json().catch(() => ({}) as AuthResponse);
-      show({ title: data.detail || `${res.status} ${res.statusText}`, kind: 'error' });
+      const data: AuthResponse = await loginRes.json().catch(() => ({}) as AuthResponse);
+      setUserId(data.user_id || '');
+      router.push(next || '/');
+    } catch (error) {
+      const detail =
+        error instanceof ApiError
+          ? error.message
+          : error instanceof Error
+            ? error.message
+            : 'Unable to register';
+      show({ title: detail || 'Unable to register', kind: 'error' });
     }
   });
 
@@ -88,16 +92,24 @@ export default function LoginPage() {
 
   async function handleSpotifyClick() {
     const callback = encodeURIComponent(`${window.location.origin}/spotify/callback`);
-    const res = await apiFetch(`/api/auth/spotify/login?callback=${callback}`);
-    const data = await res.json().catch(() => ({}));
-    if (data.url) window.location.href = data.url;
+    try {
+      const res = await apiFetch(`/api/auth/spotify/login?callback=${callback}`);
+      const data = await res.json().catch(() => ({}));
+      if (data.url) window.location.href = data.url;
+    } catch {
+      // toast displayed via interceptor
+    }
   }
 
   async function handleLastfmClick() {
     const callback = encodeURIComponent(`${window.location.origin}/lastfm/callback`);
-    const res = await apiFetch(`/api/auth/lastfm/login?callback=${callback}`);
-    const data = await res.json().catch(() => ({}));
-    if (data.url) window.location.href = data.url;
+    try {
+      const res = await apiFetch(`/api/auth/lastfm/login?callback=${callback}`);
+      const data = await res.json().catch(() => ({}));
+      if (data.url) window.location.href = data.url;
+    } catch {
+      // toast displayed via interceptor
+    }
   }
 
   return (

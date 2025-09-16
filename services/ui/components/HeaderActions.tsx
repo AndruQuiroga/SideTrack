@@ -16,7 +16,7 @@ export default function HeaderActions() {
     setSyncing(true);
     toast.show({ title: 'Sync started', description: 'Fetching listens…', kind: 'info' });
     try {
-      await apiFetch('/api/lastfm/sync', { method: 'POST' });
+      await apiFetch('/api/lastfm/sync', { method: 'POST', suppressErrorToast: true });
       toast.show({ title: 'Sync complete', description: 'Listens updated', kind: 'success' });
     } catch {
       toast.show({ title: 'Sync failed', description: 'Please try again later', kind: 'error' });

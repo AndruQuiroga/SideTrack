@@ -26,11 +26,7 @@ export default function ArtistPanel({ artistId }: { artistId: number }) {
     (async () => {
       try {
         const res = await apiFetch(`/inspect/artist/${artistId}`);
-        if (res.ok) {
-          setData((await res.json()) as ArtistData);
-        } else {
-          setData({});
-        }
+        setData((await res.json()) as ArtistData);
       } catch {
         setData({});
       }
@@ -40,10 +36,8 @@ export default function ArtistPanel({ artistId }: { artistId: number }) {
   const handleAddFive = async () => {
     try {
       const res = await apiFetch(`/similar/artist/${artistId}?limit=5`);
-      if (res.ok) {
-        const items = (await res.json()) as SimilarArtist[];
-        items.slice(0, 5).forEach((a) => addToMixtape({ track_id: a.artist_id, title: a.name }));
-      }
+      const items = (await res.json()) as SimilarArtist[];
+      items.slice(0, 5).forEach((a) => addToMixtape({ track_id: a.artist_id, title: a.name }));
     } catch {
       /* noop */
     }

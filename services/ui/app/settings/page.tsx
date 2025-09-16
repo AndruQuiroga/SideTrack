@@ -18,6 +18,10 @@ export default function SettingsPage() {
   // Keep hook to ensure auth provider mounts; value unused
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { userId } = useAuth();
+  const [connectedUsers, setConnectedUsers] = useState<{ spotify: string; lastfm: string }>({
+    spotify: '',
+    lastfm: '',
+  });
   const [sources, setSources] = useState<SourceState>({
     spotify: 'disconnected',
     lastfm: 'disconnected',
@@ -26,9 +30,12 @@ export default function SettingsPage() {
   });
 
   useEffect(() => {
-    apiFetch('/api/settings')
-      .then((r) => r.json())
-      .then((data) => {
+    let active = true;
+    (async () => {
+      try {
+        const res = await apiFetch('/api/settings');
+        const data = await res.json().catch(() => ({}));
+        if (!active) return;
         setSources({
           spotify: data.spotifyConnected ? 'connected' : 'disconnected',
           lastfm: data.lastfmConnected ? 'connected' : 'disconnected',
@@ -39,16 +46,14 @@ export default function SettingsPage() {
           spotify: data.spotifyUser || '',
           lastfm: data.lastfmUser || '',
         });
-      })
-      .catch(() => {
-        /* ignore */
-      });
+      } catch {
+        // errors are surfaced through ToastProvider
+      }
+    })();
+    return () => {
+      active = false;
+    };
   }, []);
-
-  const [connectedUsers, setConnectedUsers] = useState<{ spotify: string; lastfm: string }>({
-    spotify: '',
-    lastfm: '',
-  });
 
   return (
     <div className="space-y-10">

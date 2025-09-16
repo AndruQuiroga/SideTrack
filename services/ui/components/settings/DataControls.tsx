@@ -11,8 +11,7 @@ export default function DataControls() {
 
   async function resetFeedback() {
     try {
-      const res = await apiFetch('/api/feedback/reset', { method: 'POST' });
-      if (!res.ok) throw new Error('bad');
+      await apiFetch('/api/feedback/reset', { method: 'POST', suppressErrorToast: true });
       show({ title: 'Feedback reset', kind: 'success' });
     } catch {
       show({ title: 'Failed to reset feedback', kind: 'error' });
@@ -21,10 +20,10 @@ export default function DataControls() {
 
   async function forgetArtist() {
     try {
-      const res = await apiFetch(`/api/feedback/forget?artist=${encodeURIComponent(artist)}`, {
+      await apiFetch(`/api/feedback/forget?artist=${encodeURIComponent(artist)}`, {
         method: 'POST',
+        suppressErrorToast: true,
       });
-      if (!res.ok) throw new Error('bad');
       show({ title: `Forgot ${artist}`, kind: 'success' });
       setArtist('');
     } catch {
@@ -34,8 +33,7 @@ export default function DataControls() {
 
   async function exportDefaults() {
     try {
-      const res = await apiFetch('/api/settings/export');
-      if (!res.ok) throw new Error('bad');
+      await apiFetch('/api/settings/export', { suppressErrorToast: true });
       show({ title: 'Exported defaults', kind: 'success' });
     } catch {
       show({ title: 'Failed to export defaults', kind: 'error' });
