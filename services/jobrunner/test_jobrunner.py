@@ -55,7 +55,11 @@ def test_all_jobs_run(monkeypatch):
         def fetch_job(self, job_id: str):  # pragma: no cover - stub
             return self._jobs.get(job_id)
 
+    async def _fake_fetch_user_ids() -> list[str]:
+        return ["u1", "u2"]
+
     monkeypatch.setattr(run, "queue", _Queue())
+    monkeypatch.setattr(run, "fetch_user_ids_async", _fake_fetch_user_ids)
     monkeypatch.setattr(run, "fetch_user_ids", lambda: ["u1", "u2"])
 
     schedule.clear()
@@ -78,6 +82,11 @@ def test_schedule_jobs_idempotent(monkeypatch):
     import importlib
 
     run = importlib.import_module("sidetrack.jobrunner.run")
+
+    async def _fake_fetch_user_ids() -> list[str]:
+        return ["u1", "u2"]
+
+    monkeypatch.setattr(run, "fetch_user_ids_async", _fake_fetch_user_ids)
     monkeypatch.setattr(run, "fetch_user_ids", lambda: ["u1", "u2"])
     schedule.clear()
     run.schedule_jobs()
