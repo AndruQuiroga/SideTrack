@@ -1,37 +1,66 @@
 'use client';
 
-import { useSources } from '../../lib/sources';
-import HeaderActions from '../HeaderActions';
-import { useEffect, useState } from 'react';
+import { useRef } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Disc3 } from 'lucide-react';
+
 import { apiFetch } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
-import { Disc3 } from 'lucide-react';
+import { useSources } from '../../lib/sources';
+import { showToast } from '../../lib/toast';
+import Skeleton from '../Skeleton';
+import HeaderActions from '../HeaderActions';
 import Breadcrumbs from '../common/Breadcrumbs';
 import SourceBadge from '../common/SourceBadge';
+
+type NowPlaying = { playing: boolean; title?: string; artist?: string };
+
+const FALLBACK_NOW_PLAYING: NowPlaying = { playing: false };
+
+function parseNowPlaying(value: unknown): NowPlaying {
+  if (!value || typeof value !== 'object') {
+    return FALLBACK_NOW_PLAYING;
+  }
+
+  const record = value as Record<string, unknown>;
+  const playing = record.playing === true;
+  const title = typeof record.title === 'string' ? record.title : undefined;
+  const artist = typeof record.artist === 'string' ? record.artist : undefined;
+
+  return { playing, title, artist };
+}
 
 export default function Header() {
   const { data: sources } = useSources();
   const { userId } = useAuth();
-  const [now, setNow] = useState<{ playing: boolean; title?: string; artist?: string }>({
-    playing: false,
-  });
-  useEffect(() => {
-    let timer: ReturnType<typeof setInterval> | null = null;
-    async function load() {
+  const lastError = useRef<string | null>(null);
+
+  const { data: nowPlaying, isPending } = useQuery<NowPlaying>({
+    queryKey: ['nowPlaying'],
+    queryFn: async () => {
       try {
-        const r = await apiFetch('/api/spotify/now');
-        const j = await r.json();
-        setNow(j || { playing: false });
-      } catch {
-        setNow({ playing: false });
+        const response = await apiFetch('/api/spotify/now');
+        const json = await response.json();
+        const result = parseNowPlaying(json);
+        lastError.current = null;
+        return result;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        if (lastError.current !== message) {
+          showToast({
+            title: 'Unable to load now playing',
+            description: message,
+            kind: 'error',
+          });
+          lastError.current = message;
+        }
+        return FALLBACK_NOW_PLAYING;
       }
-    }
-    load();
-    timer = setInterval(load, 20000);
-    return () => {
-      if (timer) clearInterval(timer);
-    };
-  }, []);
+    },
+    refetchInterval: 20000,
+    refetchIntervalInBackground: true,
+  });
+  const now = nowPlaying ?? FALLBACK_NOW_PLAYING;
   const initials = (userId || 'U').slice(0, 2).toUpperCase();
 
   return (
@@ -43,15 +72,18 @@ export default function Header() {
 
       <div className="hidden md:flex items-center gap-2 text-xs text-muted-foreground">
         <span className="rounded-full bg-white/5 px-2 py-1">Now playing</span>
-        <span className="truncate max-w-[260px]">
-          {now.playing ? (
+        <div className="truncate max-w-[260px]">
+          {isPending ? (
+            <Skeleton className="h-4 w-40" />
+          ) : now.playing && now.title ? (
             <>
-              {now.title} <span className="text-foreground/70">— {now.artist}</span>
+              {now.title}
+              {now.artist && <span className="text-foreground/70"> — {now.artist}</span>}
             </>
           ) : (
             '— nothing yet'
           )}
-        </span>
+        </div>
       </div>
 
       <div className="ml-auto flex items-center gap-3">
