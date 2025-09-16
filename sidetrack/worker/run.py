@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import threading
 import time
+import warnings
 
 import redis
 from rq import Connection, Queue, Worker
@@ -35,4 +36,10 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    warnings.warn(
+        "`python -m sidetrack.worker.run` is deprecated; use "
+        "`python -m sidetrack worker run` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     main()

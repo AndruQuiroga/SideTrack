@@ -11,4 +11,4 @@ FROM sidetrack/base:dev AS runtime
 COPY --from=builder /usr/local /usr/local
 RUN python -c "import sidetrack; print('jobrunner runtime deps OK')"
 
-CMD ["python", "-m", "sidetrack.jobrunner.run"]
+CMD ["python", "-m", "sidetrack", "schedule"]

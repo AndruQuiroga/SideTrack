@@ -10,8 +10,8 @@ Environment
 - LASTFM_API_KEY must be set (public reads only; no secret required)
 
 Examples
-- python -m sidetrack.services.providers.lastfm --user mylastfm --since 2024-01-01
-- python -m sidetrack.services.providers.lastfm --user mylastfm --as-user some_user
+- python -m sidetrack ingest lastfm --user mylastfm --since 2024-01-01
+- python -m sidetrack ingest lastfm --user mylastfm --as-user some_user
 """
 
 from __future__ import annotations
@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import os
+import warnings
 from datetime import datetime
 from typing import Any, Iterable, List
 
@@ -109,4 +110,10 @@ def main(argv: Iterable[str] | None = None) -> None:
 
 
 if __name__ == "__main__":  # pragma: no cover - manual/CLI usage
+    warnings.warn(
+        "`python -m sidetrack.services.providers.lastfm` is deprecated; use "
+        "`python -m sidetrack ingest lastfm` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     main()
