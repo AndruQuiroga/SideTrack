@@ -1,5 +1,5 @@
 'use client';
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ToastProvider as RadixToastProvider,
   ToastViewport,
@@ -7,6 +7,7 @@ import {
   ToastTitle,
   ToastDescription,
 } from './ui/Toast';
+import { ApiError, setApiErrorInterceptor } from '../lib/api';
 import { setToastListener, type Toast as ToastType } from '../lib/toast';
 import { cn } from '../lib/utils';
 
@@ -41,6 +42,7 @@ export function useToast() {
 
 export default function ToastProvider({ children }: { children: React.ReactNode }) {
   const [list, setList] = useState<Toast[]>([]);
+  const lastErrorRef = useRef<{ key: string; ts: number } | null>(null);
   const show = useCallback((t: Omit<Toast, 'id'>) => {
     const id = Date.now() + Math.random();
     setList((prev) => [...prev, { id, ...t }]);
@@ -53,6 +55,32 @@ export default function ToastProvider({ children }: { children: React.ReactNode 
 
   useEffect(() => {
     setToastListener(show);
+  }, [show]);
+
+  useEffect(() => {
+    const clear = setApiErrorInterceptor((error: ApiError) => {
+      const key = `${error.status}:${error.message}`;
+      const now = Date.now();
+      const last = lastErrorRef.current;
+      if (last && last.key === key && now - last.ts < 5000) {
+        return;
+      }
+      lastErrorRef.current = { key, ts: now };
+      const title =
+        error.status === 401
+          ? 'Session expired'
+          : error.title || (error.status ? `Request failed (${error.status})` : 'Request failed');
+      const description = error.status === 401 ? 'Please sign in again.' : error.message;
+      show({
+        title,
+        description,
+        kind: 'error',
+      });
+    });
+    return () => {
+      lastErrorRef.current = null;
+      clear();
+    };
   }, [show]);
 
   return (

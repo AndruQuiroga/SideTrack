@@ -42,9 +42,11 @@ export default function SourceCard({
   async function handleConnect() {
     try {
       const callback = `${window.location.origin}/${id}/callback`;
-      const res = await apiFetch(`${connectUrl}?callback=${encodeURIComponent(callback)}`);
+      const res = await apiFetch(`${connectUrl}?callback=${encodeURIComponent(callback)}`, {
+        suppressErrorToast: true,
+      });
       const data = await res.json().catch(() => ({}));
-      if (res.ok && data.url) {
+      if (data.url) {
         window.location.href = data.url as string;
       } else {
         show({ title: `Failed to connect ${name}`, kind: 'error' });
@@ -56,8 +58,7 @@ export default function SourceCard({
 
   async function handleDisconnect() {
     try {
-      const res = await apiFetch(disconnectUrl, { method: 'DELETE' });
-      if (!res.ok) throw new Error('bad');
+      await apiFetch(disconnectUrl, { method: 'DELETE', suppressErrorToast: true });
       setAndNotify('disconnected');
       show({ title: `Disconnected ${name}`, kind: 'success' });
     } catch {
@@ -67,8 +68,7 @@ export default function SourceCard({
 
   async function handleTest() {
     try {
-      const res = await apiFetch(testUrl);
-      if (!res.ok) throw new Error('bad');
+      const res = await apiFetch(testUrl, { suppressErrorToast: true });
       // Try to reflect connection status when testUrl provides it (e.g. /api/settings)
       try {
         const data = (await res.json()) as {

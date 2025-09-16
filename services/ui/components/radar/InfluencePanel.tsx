@@ -30,11 +30,7 @@ export default function InfluencePanel({
         const res = await apiFetch(
           `/cohorts/influence?metric=${encodeURIComponent(metric)}&window=${encodeURIComponent(window)}`
         );
-        if (res.ok) {
-          setItems((await res.json()) as Influence[]);
-        } else {
-          setItems([]);
-        }
+        setItems((await res.json()) as Influence[]);
       } catch {
         setItems([]);
       }

@@ -20,42 +20,53 @@ export default function AccountPage() {
 
   useEffect(() => {
     if (!userId) return;
+    let active = true;
     setLoading(true);
-    apiFetch('/api/auth/me')
-      .then((r) => r.json())
-      .then((data) => {
+    (async () => {
+      try {
+        const res = await apiFetch('/api/auth/me');
+        const data = await res.json().catch(() => ({}));
+        if (!active) return;
         setUser(data.user_id || '');
         setLfmUser(data.lastfmUser || '');
         setLfmConnected(!!data.lastfmConnected);
-      })
-      .catch(() => {
-        /* ignore */
-      })
-      .finally(() => setLoading(false));
+      } catch {
+        // error toasts handled globally
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
   }, [userId]);
 
   async function handleConnect() {
     const callback = `${window.location.origin}/lastfm/callback`;
-    const res = await apiFetch(`/api/auth/lastfm/login?callback=${encodeURIComponent(callback)}`);
-    const data = await res.json().catch(() => ({}));
-    if (data.url) {
-      window.location.href = data.url;
-    } else {
-      show({ title: 'Failed to connect to Last.fm', kind: 'error' });
+    try {
+      const res = await apiFetch(`/api/auth/lastfm/login?callback=${encodeURIComponent(callback)}`);
+      const data = await res.json().catch(() => ({}));
+      if (data.url) {
+        window.location.href = data.url as string;
+      } else {
+        show({ title: 'Failed to connect to Last.fm', kind: 'error' });
+      }
+    } catch {
+      // error toast already shown
     }
   }
 
   async function handleDisconnect() {
-    const res = await apiFetch('/api/auth/lastfm/session', {
-      method: 'DELETE',
-    });
-    if (!res.ok) {
-      show({ title: 'Failed to disconnect Last.fm', kind: 'error' });
-      return;
+    try {
+      await apiFetch('/api/auth/lastfm/session', {
+        method: 'DELETE',
+      });
+      setLfmConnected(false);
+      setLfmUser('');
+      show({ title: 'Disconnected from Last.fm', kind: 'success' });
+    } catch {
+      // toast displayed by interceptor
     }
-    setLfmConnected(false);
-    setLfmUser('');
-    show({ title: 'Disconnected from Last.fm', kind: 'success' });
   }
 
   return (

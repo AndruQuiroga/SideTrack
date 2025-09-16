@@ -1,13 +1,11 @@
 'use client';
 
-import { useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Disc3 } from 'lucide-react';
 
 import { apiFetch } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { useSources } from '../../lib/sources';
-import { showToast } from '../../lib/toast';
 import Skeleton from '../Skeleton';
 import HeaderActions from '../HeaderActions';
 import Breadcrumbs from '../common/Breadcrumbs';
@@ -33,7 +31,6 @@ function parseNowPlaying(value: unknown): NowPlaying {
 export default function Header() {
   const { data: sources } = useSources();
   const { userId } = useAuth();
-  const lastError = useRef<string | null>(null);
 
   const { data: nowPlaying, isPending } = useQuery<NowPlaying>({
     queryKey: ['nowPlaying'],
@@ -41,19 +38,8 @@ export default function Header() {
       try {
         const response = await apiFetch('/api/spotify/now');
         const json = await response.json();
-        const result = parseNowPlaying(json);
-        lastError.current = null;
-        return result;
-      } catch (error) {
-        const message = error instanceof Error ? error.message : 'Unknown error';
-        if (lastError.current !== message) {
-          showToast({
-            title: 'Unable to load now playing',
-            description: message,
-            kind: 'error',
-          });
-          lastError.current = message;
-        }
+        return parseNowPlaying(json);
+      } catch {
         return FALLBACK_NOW_PLAYING;
       }
     },

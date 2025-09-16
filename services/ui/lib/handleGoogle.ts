@@ -1,4 +1,4 @@
-import { apiFetch } from './api';
+import { ApiError, apiFetch } from './api';
 
 type Toast = {
   title: string;
@@ -44,18 +44,29 @@ export async function handleGoogle({ next, setUserId, router, show }: HandleGoog
   g.accounts.id.initialize({
     client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '',
     callback: async (response: GoogleCallbackResponse) => {
-      const r = await apiFetch('/api/auth/continue/google', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: response.credential }),
-      });
-      if (r.ok) {
+      try {
+        const r = await apiFetch('/api/auth/continue/google', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: response.credential }),
+          suppressErrorToast: true,
+        });
         const data: AuthResponse = await r.json().catch(() => ({}) as AuthResponse);
         setUserId(data.user_id || '');
         router.push(next || '/');
-      } else {
-        const data: AuthResponse = await r.json().catch(() => ({}) as AuthResponse);
-        show({ title: data.detail || `${r.status} ${r.statusText}`, kind: 'error' });
+      } catch (error) {
+        const detail =
+          error instanceof ApiError
+            ? typeof error.payload === 'object' && error.payload && 'detail' in error.payload
+              ? (() => {
+                  const value = (error.payload as { detail?: unknown }).detail;
+                  return typeof value === 'string' && value.trim() ? value : error.message;
+                })()
+              : error.message
+            : error instanceof Error
+              ? error.message
+              : 'Unable to continue with Google';
+        show({ title: detail || 'Unable to continue with Google', kind: 'error' });
       }
     },
   });

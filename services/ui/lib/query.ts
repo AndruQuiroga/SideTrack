@@ -1,6 +1,5 @@
 import { QueryClient, useQuery } from '@tanstack/react-query';
-import { apiFetch } from './api';
-import { showToast } from './toast';
+import { ApiError, apiFetch } from './api';
 
 let sessionRedirected = false;
 
@@ -9,23 +8,13 @@ export const queryClient = new QueryClient({
     queries: {
       retry: (failureCount) => failureCount < 2,
       onError: (err: unknown) => {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        // Friendly handling for unauthorized
-        if (typeof message === 'string' && message.trim().startsWith('401')) {
+        if (err instanceof ApiError && err.status === 401) {
           if (!sessionRedirected && typeof window !== 'undefined') {
             sessionRedirected = true;
             const next = encodeURIComponent(window.location.pathname + window.location.search);
-            showToast({
-              title: 'Session expired',
-              description: 'Please sign in again.',
-              kind: 'error',
-            });
             window.location.assign(`/login?next=${next}`);
-            return;
           }
         }
-        // Generic fallback toast
-        showToast({ title: 'Request failed', description: message, kind: 'error' });
       },
     },
   },
@@ -61,7 +50,6 @@ export function useDashboard() {
     queryKey: ['dashboard-summary'],
     queryFn: async () => {
       const res = await apiFetch('/api/dashboard/summary');
-      if (!res.ok) throw new Error('Failed to fetch dashboard summary');
       const json = await res.json();
       return {
         lastArtist: json.last_artist ?? '',

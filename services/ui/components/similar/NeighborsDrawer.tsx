@@ -20,11 +20,7 @@ export default function NeighborsDrawer({ trackId, open, onClose }: Props) {
     (async () => {
       try {
         const res = await apiFetch(`/api/similar/track/${trackId}`);
-        if (res.ok) {
-          setNeighbors((await res.json()) as Neighbor[]);
-        } else {
-          setNeighbors([]);
-        }
+        setNeighbors((await res.json()) as Neighbor[]);
       } catch {
         setNeighbors([]);
       }
