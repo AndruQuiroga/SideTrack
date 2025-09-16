@@ -41,6 +41,7 @@ async def test_ingest_spotify_rows_converts_and_filters_items():
     assert len(rows) == 3
     assert rows[1]["track_metadata"]["artist_name"] is None
     assert rows[2]["track_metadata"]["track_name"] is None
+    assert service.ingest_lb_rows.await_args.kwargs["source"] == "spotify"
 
 
 @pytest.mark.asyncio
@@ -77,3 +78,4 @@ async def test_ingest_lastfm_rows_converts_and_filters_tracks():
     assert len(rows) == 3
     assert rows[1]["track_metadata"]["artist_name"] is None
     assert rows[2]["track_metadata"]["track_name"] is None
+    assert service.ingest_lb_rows.await_args.kwargs["source"] == "lastfm"
