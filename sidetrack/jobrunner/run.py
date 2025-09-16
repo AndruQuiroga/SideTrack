@@ -13,13 +13,13 @@ from rq import Queue
 from sqlalchemy import select
 
 from sidetrack.api.db import SessionLocal
+from sidetrack.common.logging import setup_logging
 from sidetrack.common.models import UserAccount
 from sidetrack.worker import jobs as worker_jobs
 
 from .config import get_settings
 
-logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s:%(message)s")
-logger = logging.getLogger("jobrunner")
+logger = logging.getLogger("sidetrack.jobrunner")
 
 settings = get_settings()
 connection = redis.from_url(settings.redis_url)
@@ -79,6 +79,7 @@ def schedule_jobs() -> None:
 
 
 def main() -> None:
+    setup_logging()
     schedule_jobs()
     logger.info("started")
     while True:

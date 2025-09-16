@@ -10,6 +10,8 @@ import warnings
 import redis
 from rq import Connection, Queue, Worker
 
+from sidetrack.common.logging import setup_logging
+
 # Import job functions so the worker process knows about them.
 from . import jobs  # noqa: F401
 from .config import get_settings
@@ -17,6 +19,7 @@ from .config import get_settings
 
 def main() -> None:
     """Start an RQ worker listening to analysis queues."""
+    setup_logging()
     settings = get_settings()
     connection = redis.from_url(settings.redis_url)
     logger = logging.getLogger("sidetrack.worker")
