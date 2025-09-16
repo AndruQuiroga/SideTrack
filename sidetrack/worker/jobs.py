@@ -78,7 +78,11 @@ async def _sync_user_service(user_id: str, since: date | None, db) -> None:
                 settings.lastfm_api_secret,
                 min_interval=min_interval,
             ),
-            ListenBrainzClient(lb_http),
+            ListenBrainzClient(
+                lb_http,
+                user=settings.listenbrainz_user,
+                token=settings.listenbrainz_token,
+            ),
         ]
         mb_service = MusicBrainzService(mb_http)
         await datasync_sync_user(

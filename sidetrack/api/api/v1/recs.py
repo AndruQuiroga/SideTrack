@@ -44,12 +44,23 @@ async def list_recs(
     lb_client: ListenBrainzClient | None = None
     lb_user: str | None = None
     if settings.spotify_recs_enabled and row.spotify_access_token:
-        spotify_service = SpotifyUserClient(client, access_token=row.spotify_access_token)
+        spotify_service = SpotifyUserClient(
+            client,
+            access_token=row.spotify_access_token,
+            client_id=settings.spotify_client_id,
+            client_secret=settings.spotify_client_secret,
+            refresh_token=row.spotify_refresh_token,
+        )
     elif settings.lastfm_similar_enabled and row.lastfm_user:
         lastfm_client = LastfmClient(client, settings.lastfm_api_key, None)
         lastfm_user = row.lastfm_user
     elif settings.lb_cf_enabled and row.listenbrainz_user:
-        lb_client = ListenBrainzClient(client)
+        token = row.listenbrainz_token or settings.listenbrainz_token
+        lb_client = ListenBrainzClient(
+            client,
+            user=row.listenbrainz_user,
+            token=token,
+        )
         lb_user = row.listenbrainz_user
 
     redis_conn = _get_redis_connection(settings)
@@ -90,12 +101,23 @@ async def ranked_recs(
     lb_client: ListenBrainzClient | None = None
     lb_user: str | None = None
     if settings.spotify_recs_enabled and row.spotify_access_token:
-        spotify_service = SpotifyUserClient(client, access_token=row.spotify_access_token)
+        spotify_service = SpotifyUserClient(
+            client,
+            access_token=row.spotify_access_token,
+            client_id=settings.spotify_client_id,
+            client_secret=settings.spotify_client_secret,
+            refresh_token=row.spotify_refresh_token,
+        )
     elif settings.lastfm_similar_enabled and row.lastfm_user:
         lastfm_client = LastfmClient(client, settings.lastfm_api_key, None)
         lastfm_user = row.lastfm_user
     elif settings.lb_cf_enabled and row.listenbrainz_user:
-        lb_client = ListenBrainzClient(client)
+        token = row.listenbrainz_token or settings.listenbrainz_token
+        lb_client = ListenBrainzClient(
+            client,
+            user=row.listenbrainz_user,
+            token=token,
+        )
         lb_user = row.listenbrainz_user
 
     redis_conn = _get_redis_connection(settings)

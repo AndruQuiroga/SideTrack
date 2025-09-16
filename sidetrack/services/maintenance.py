@@ -133,7 +133,7 @@ async def ingest_listens(
 
     if lb_client and source in {"auto", "listenbrainz"}:
         token = settings.listenbrainz_token
-        lb_user = user_id
+        lb_user = settings.listenbrainz_user or user_id
         if settings_row:
             if settings_row.listenbrainz_token:
                 token = settings_row.listenbrainz_token
