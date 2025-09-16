@@ -25,7 +25,10 @@ from sidetrack.common.models import (
     UserSettings,
 )
 from sidetrack.common.telemetry import setup_tracing
-from sidetrack.services.datasync import sync_user as datasync_sync_user
+from sidetrack.services.datasync import (
+    enrich_ids as datasync_enrich_ids,
+    sync_user as datasync_sync_user,
+)
 from sidetrack.services.listenbrainz import ListenBrainzClient, get_listenbrainz_client
 from sidetrack.services.musicbrainz import MusicBrainzService
 from sidetrack.services.maintenance import (
@@ -598,12 +601,14 @@ async def enrich_ids_endpoint(
     db: AsyncSession = Depends(get_db),
     user_id: str = Depends(get_current_user),
 ):
-    """Resolve external identifiers for tracks.
+    """Resolve external identifiers and label metadata for listened tracks."""
 
-    The implementation is a stub used by the job runner service.  The endpoint
-    simply returns a success response.
-    """
-    return {"detail": "ok"}
+    async with httpx.AsyncClient() as http_client:
+        mb_service = MusicBrainzService(http_client)
+        result = await datasync_enrich_ids(user_id, db=db, mb_service=mb_service)
+    payload = result.to_dict()
+    payload["detail"] = "ok"
+    return payload
 
 
 @app.post("/labels", response_model=LabelResponse)

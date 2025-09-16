@@ -12,15 +12,17 @@ job runner or worker processes.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime
 
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sidetrack.api.config import Settings
 from sidetrack.services.listens import ListenService
-from sidetrack.common.models import Artist, Listen, Track
+from sidetrack.analytics.tags import label_rollups
+from sidetrack.common.models import Artist, Listen, Track, MBLabel, Release
+from sidetrack.enrichment.fusion import persist_mb_label
 from sidetrack.services.base_client import MusicServiceClient
 from sidetrack.services.lastfm import LastfmClient
 from sidetrack.services.listenbrainz import ListenBrainzClient
@@ -42,6 +44,22 @@ class SyncResult:
             "ingested": self.ingested,
             "tags_updated": self.tags_updated,
             "ids_enriched": self.ids_enriched,
+        }
+
+
+@dataclass
+class IdEnrichmentResult:
+    """Summary of MusicBrainz identifier enrichment."""
+
+    processed: int = 0
+    enriched: int = 0
+    errors: list[dict[str, str]] = field(default_factory=list)
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "processed": self.processed,
+            "enriched": self.enriched,
+            "errors": self.errors,
         }
 
 
@@ -123,30 +141,119 @@ async def _enrich_ids(
     db: AsyncSession,
     mb_service: MusicBrainzService | None,
     since: date | None = None,
-) -> int:
-    """Attempt to resolve external identifiers for recently played tracks."""
+) -> IdEnrichmentResult:
+    """Resolve external identifiers and label metadata for the user's tracks."""
 
+    result = IdEnrichmentResult()
     if mb_service is None:
-        return 0
+        return result
 
     q = (
-        select(Track.track_id, Track.title, Artist.name)
+        select(
+            Track.track_id.label("track_id"),
+            Track.title.label("title"),
+            Artist.artist_id.label("artist_id"),
+            Artist.name.label("artist_name"),
+            Track.mbid.label("track_mbid"),
+            Artist.mbid.label("artist_mbid"),
+            Track.release_id.label("release_id"),
+            Release.mbid.label("release_mbid"),
+            MBLabel.id.label("label_id"),
+        )
         .join(Artist, Track.artist_id == Artist.artist_id)
         .join(Listen, Listen.track_id == Track.track_id)
+        .outerjoin(Release, Track.release_id == Release.release_id)
+        .outerjoin(MBLabel, MBLabel.track_id == Track.track_id)
         .where(Listen.user_id == user_id)
     )
     if since:
         q = q.where(Listen.played_at >= datetime.combine(since, datetime.min.time()))
-    rows = (await db.execute(q)).all()
+    q = q.where(
+        or_(
+            Track.mbid.is_(None),
+            Artist.mbid.is_(None),
+            and_(Track.release_id.is_not(None), Release.mbid.is_(None)),
+            MBLabel.id.is_(None),
+        )
+    ).distinct()
 
-    enriched = 0
-    for tid, title, artist_name in rows:
+    rows = (await db.execute(q)).mappings().all()
+    result.processed = len(rows)
+
+    for row in rows:
+        track_id = row["track_id"]
+        title = row["title"]
+        artist_name = row["artist_name"]
+
         try:
-            await mb_service.recording_by_isrc(str(tid), title=title, artist=artist_name)
-            enriched += 1
-        except Exception:  # pragma: no cover - network errors
+            data = await mb_service.recording_by_isrc(
+                str(track_id), title=title, artist=artist_name
+            )
+        except Exception as exc:  # pragma: no cover - best effort
+            result.errors.append({"track_id": str(track_id), "error": str(exc)})
             continue
-    return enriched
+
+        updated = False
+        track_mbid = data.get("recording_mbid")
+        if track_mbid and track_mbid != row["track_mbid"]:
+            track = await db.get(Track, track_id)
+            if track:
+                track.mbid = track_mbid
+                updated = True
+
+        artist_mbid = data.get("artist_mbid")
+        if artist_mbid and artist_mbid != row["artist_mbid"] and row["artist_id"] is not None:
+            artist = await db.get(Artist, row["artist_id"])
+            if artist:
+                artist.mbid = artist_mbid
+                updated = True
+
+        release_group = data.get("release_group_mbid")
+        if (
+            release_group
+            and row["release_id"] is not None
+            and release_group != row["release_mbid"]
+        ):
+            release = await db.get(Release, row["release_id"])
+            if release:
+                release.mbid = release_group
+                updated = True
+
+        label_updated = False
+        if row["label_id"] is None:
+            label_name = data.get("label")
+            year = data.get("year")
+            if label_name or year is not None:
+                labels_payload = (
+                    [{"name": label_name, "country": None}] if label_name else []
+                )
+                rollup = label_rollups(labels_payload, year)
+                await persist_mb_label(db, track_id, rollup)
+                label_updated = True
+                updated = True
+
+        if updated and not label_updated:
+            await db.commit()
+        elif updated:
+            # ``persist_mb_label`` commits label updates along with pending changes.
+            pass
+
+        if updated:
+            result.enriched += 1
+
+    return result
+
+
+async def enrich_ids(
+    user_id: str,
+    *,
+    db: AsyncSession,
+    mb_service: MusicBrainzService | None,
+    since: date | None = None,
+) -> IdEnrichmentResult:
+    """Public helper that returns MusicBrainz enrichment summary."""
+
+    return await _enrich_ids(user_id, db=db, mb_service=mb_service, since=since)
 
 
 async def sync_user(
@@ -176,10 +283,9 @@ async def sync_user(
         if lf_client
         else 0
     )
-    result.ids_enriched = await _enrich_ids(
-        user_id, db=db, mb_service=mb_service, since=since
-    )
+    ids_result = await _enrich_ids(user_id, db=db, mb_service=mb_service, since=since)
+    result.ids_enriched = ids_result.enriched
     return result.to_dict()
 
 
-__all__ = ["sync_user", "SyncResult"]
+__all__ = ["sync_user", "SyncResult", "enrich_ids", "IdEnrichmentResult"]
