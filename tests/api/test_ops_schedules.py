@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import pytest
 import schedule
 from httpx import ASGITransport, AsyncClient
@@ -24,11 +26,47 @@ async def test_ops_schedules(monkeypatch):
 
         yield _DummyDB()
 
-    calls: list[tuple[str, str]] = []
+    calls: list[tuple[str, str, str | None]] = []
+
+    class _Job:
+        def __init__(self, job_id: str):
+            self.id = job_id
+            self.enqueued_at = datetime.utcnow()
+            self.started_at = None
+            self.ended_at = None
+            self._status = "queued"
+
+        def get_status(self, refresh: bool = False) -> str:  # pragma: no cover - stub
+            return self._status
+
+    class _FakeRedis:
+        def __init__(self) -> None:
+            self.hashes: dict[str, dict[str, str]] = {}
+
+        def hget(self, name: str, key: str) -> str | None:
+            return self.hashes.get(name, {}).get(key)
+
+        def hset(self, name: str, key: str, value: str) -> None:
+            self.hashes.setdefault(name, {})[key] = value
+
+        def hdel(self, name: str, key: str) -> None:  # pragma: no cover - stub
+            self.hashes.get(name, {}).pop(key, None)
 
     class _Queue:
+        def __init__(self) -> None:
+            self.connection = _FakeRedis()
+            self._jobs: dict[str, _Job] = {}
+            self._counter = 0
+
         def enqueue(self, func, user_id, cursor=None):
-            calls.append((func.__name__, user_id))
+            self._counter += 1
+            job = _Job(f"job-{self._counter}")
+            self._jobs[job.id] = job
+            calls.append((func.__name__, user_id, cursor))
+            return job
+
+        def fetch_job(self, job_id: str):  # pragma: no cover - stub
+            return self._jobs.get(job_id)
 
     schedule.clear()
     monkeypatch.setattr(jobrunner_run, "fetch_user_ids", lambda: ["u1"])

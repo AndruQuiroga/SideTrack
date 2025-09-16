@@ -2,14 +2,19 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import time
 import warnings
 from datetime import date, datetime
+from typing import Any
 
 import redis
 import schedule
+from redis.exceptions import RedisError
 from rq import Queue
+from rq.job import Job
+from rq.registry import DeferredJobRegistry
 from sqlalchemy import select
 
 from sidetrack.api.db import SessionLocal
@@ -25,9 +30,117 @@ settings = get_settings()
 connection = redis.from_url(settings.redis_url)
 queue = Queue("analysis", connection=connection)
 
-# In-memory state tracking
-JOB_STATE: dict[tuple[str, str], dict] = {}
-CURSORS: dict[tuple[str, str], str] = {}
+STATE_HASH = "sidetrack:jobrunner:state"
+CURSOR_HASH = "sidetrack:jobrunner:cursors"
+LAST_JOB_HASH = "sidetrack:jobrunner:last-job"
+
+
+def _hash_key(user_id: str, job_type: str) -> str:
+    return f"{user_id}:{job_type}"
+
+
+def _decode(value: Any) -> Any:
+    if isinstance(value, bytes):
+        return value.decode("utf-8")
+    return value
+
+
+def _load_state(raw: Any) -> dict[str, Any]:
+    if not raw:
+        return {}
+    try:
+        data = json.loads(_decode(raw))
+    except (TypeError, json.JSONDecodeError):  # pragma: no cover - defensive
+        return {}
+    last_run = data.get("last_run")
+    if last_run:
+        try:
+            data["last_run"] = datetime.fromisoformat(last_run)
+        except ValueError:  # pragma: no cover - defensive
+            data["last_run"] = None
+    else:
+        data["last_run"] = None
+    return data
+
+
+def get_job_state(user_id: str, job_type: str) -> dict[str, Any]:
+    """Return persisted metadata for the scheduled job."""
+
+    key = _hash_key(user_id, job_type)
+    try:
+        raw = queue.connection.hget(STATE_HASH, key)
+    except RedisError:  # pragma: no cover - redis failure
+        logger.exception("job state fetch error for %s", key)
+        return {}
+    return _load_state(raw)
+
+
+def _store_state(user_id: str, job_type: str, status: str, when: datetime | None) -> None:
+    payload = {
+        "last_status": status,
+        "last_run": when.isoformat() if when else None,
+    }
+    key = _hash_key(user_id, job_type)
+    try:
+        queue.connection.hset(STATE_HASH, key, json.dumps(payload))
+    except RedisError:  # pragma: no cover - redis failure
+        logger.exception("job state store error for %s", key)
+
+
+def _get_cursor(user_id: str, job_type: str) -> str | None:
+    key = _hash_key(user_id, job_type)
+    try:
+        value = queue.connection.hget(CURSOR_HASH, key)
+    except RedisError:  # pragma: no cover - redis failure
+        logger.exception("cursor fetch error for %s", key)
+        return None
+    return _decode(value) if value else None
+
+
+def _store_cursor(user_id: str, job_type: str, cursor: str) -> None:
+    key = _hash_key(user_id, job_type)
+    try:
+        queue.connection.hset(CURSOR_HASH, key, cursor)
+    except RedisError:  # pragma: no cover - redis failure
+        logger.exception("cursor store error for %s", key)
+
+
+def _get_last_job(user_id: str, job_type: str) -> Job | None:
+    key = _hash_key(user_id, job_type)
+    try:
+        job_id = queue.connection.hget(LAST_JOB_HASH, key)
+    except RedisError:  # pragma: no cover - redis failure
+        logger.exception("last job fetch error for %s", key)
+        return None
+    if not job_id:
+        return None
+    job = queue.fetch_job(_decode(job_id))
+    if job is None:
+        try:
+            queue.connection.hdel(LAST_JOB_HASH, key)
+        except RedisError:  # pragma: no cover - redis failure
+            logger.exception("last job cleanup error for %s", key)
+    return job
+
+
+def _store_last_job(user_id: str, job_type: str, job: Job) -> None:
+    key = _hash_key(user_id, job_type)
+    try:
+        queue.connection.hset(LAST_JOB_HASH, key, job.id)
+    except RedisError:  # pragma: no cover - redis failure
+        logger.exception("last job store error for %s", key)
+
+
+def _job_timestamp(job: Job, status: str) -> datetime | None:
+    if status == "started":
+        return job.started_at or job.enqueued_at
+    if status in {"finished", "failed"}:
+        return job.ended_at or job.enqueued_at
+    if status == "deferred":
+        registry = DeferredJobRegistry(queue.name, connection=queue.connection)
+        if job.id in registry:
+            return job.enqueued_at
+    return job.enqueued_at
 
 
 def fetch_user_ids() -> list[str]:
@@ -42,16 +155,25 @@ def fetch_user_ids() -> list[str]:
 
 
 def _enqueue_job(user_id: str, job_type: str, func) -> None:
-    key = (user_id, job_type)
-    cursor = CURSORS.get(key)
+    job = _get_last_job(user_id, job_type)
+    if job is not None:
+        status = job.get_status(refresh=True)
+        timestamp = _job_timestamp(job, status)
+        _store_state(user_id, job_type, status, timestamp)
+        if status in {"queued", "started", "deferred"}:
+            return
+
+    cursor = _get_cursor(user_id, job_type)
     try:
-        queue.enqueue(func, user_id, cursor)
-        status = "queued"
-        CURSORS[key] = date.today().isoformat()
+        job = queue.enqueue(func, user_id, cursor)
     except Exception:
         logger.exception("%s enqueue error for %s", job_type, user_id)
-        status = "error"
-    JOB_STATE[key] = {"last_status": status, "last_run": datetime.utcnow()}
+        _store_state(user_id, job_type, "error", datetime.utcnow())
+        return
+
+    _store_last_job(user_id, job_type, job)
+    _store_cursor(user_id, job_type, date.today().isoformat())
+    _store_state(user_id, job_type, "queued", job.enqueued_at or datetime.utcnow())
 
 
 def sync_user(user_id: str) -> None:
