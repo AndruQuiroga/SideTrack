@@ -1,15 +1,36 @@
 import React from 'react';
 import { act } from 'react';
+import type { MotionValue } from 'framer-motion';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent, { PointerEventsCheckLevel } from '@testing-library/user-event';
 import RecCard, { type Rec } from './RecCard';
 import ToastProvider from '../ToastProvider';
 
 jest.mock('framer-motion', () => {
-  const motion = (Component: React.ComponentType<any>) =>
-    React.forwardRef<HTMLDivElement, any>((props, ref) => <Component ref={ref} {...props} />);
+  type DragInfo = {
+    offset: { x: number; y: number };
+    delta: { x: number; y: number };
+    point: { x: number; y: number };
+    velocity: { x: number; y: number };
+  };
 
-  motion.div = React.forwardRef<HTMLDivElement, any>((props, ref) => {
+  type MotionStyle = (React.CSSProperties & { x?: number }) | undefined;
+
+  interface MotionDivProps extends React.HTMLAttributes<HTMLDivElement> {
+    onDragEnd?: (event: React.PointerEvent<HTMLDivElement>, info: DragInfo) => void;
+    style?: MotionStyle;
+    dragConstraints?: unknown;
+    dragElastic?: unknown;
+    dragMomentum?: boolean;
+    dragSnapToOrigin?: boolean;
+  }
+
+  const motion = <P extends Record<string, unknown>>(
+    Component: React.ComponentType<P>,
+  ) =>
+    React.forwardRef<HTMLDivElement, P>((props, ref) => <Component ref={ref} {...props} />);
+
+  motion.div = React.forwardRef<HTMLDivElement, MotionDivProps>((props, ref) => {
     const {
       children,
       onDragEnd,
@@ -41,7 +62,13 @@ jest.mock('framer-motion', () => {
       }
     };
 
-    const resolvedStyle = style && 'x' in style ? { ...style, transform: undefined } : style;
+    const { x, ...styleWithoutMotion } = style ?? {};
+    const resolvedStyle: React.CSSProperties | undefined = style
+      ? {
+          ...styleWithoutMotion,
+          transform: x !== undefined ? undefined : styleWithoutMotion.transform,
+        }
+      : undefined;
 
     return (
       <div
@@ -60,19 +87,21 @@ jest.mock('framer-motion', () => {
     );
   });
 
+  const createMotionValue = (initial: number): MotionValue<number> => {
+    let value = initial;
+    return {
+      set: (next: number) => {
+        value = next;
+      },
+      get: () => value,
+    } as unknown as MotionValue<number>;
+  };
+
   return {
     __esModule: true,
     motion,
-    useMotionValue: (initial: number) => {
-      let value = initial;
-      return {
-        set: (v: number) => {
-          value = v;
-        },
-        get: () => value,
-      };
-    },
-    useTransform: () => 0,
+    useMotionValue: (initial: number) => createMotionValue(initial),
+    useTransform: () => createMotionValue(0),
   };
 });
 

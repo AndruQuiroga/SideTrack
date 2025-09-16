@@ -1,16 +1,17 @@
 import * as React from 'react';
 import { useForm, FormProvider, type SubmitHandler } from 'react-hook-form';
-import { z, type ZodType } from 'zod';
+import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { cn } from '../../lib/utils';
 
-interface ZFormProps<TSchema extends ZodType<any, any>> extends React.HTMLAttributes<HTMLFormElement> {
+interface ZFormProps<TSchema extends z.ZodTypeAny>
+  extends React.HTMLAttributes<HTMLFormElement> {
   schema: TSchema;
   defaultValues?: z.infer<TSchema>;
   onSubmit: SubmitHandler<z.infer<TSchema>>;
 }
 
-function ZForm<TSchema extends ZodType<any, any>>({
+function ZForm<TSchema extends z.ZodTypeAny>({
   schema,
   defaultValues,
   onSubmit,
@@ -27,7 +28,7 @@ function ZForm<TSchema extends ZodType<any, any>>({
     if (defaultValues) {
       form.reset(defaultValues);
     }
-  }, [defaultValues]);
+  }, [defaultValues, form]);
 
   return (
     <FormProvider {...form}>
