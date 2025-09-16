@@ -8,9 +8,28 @@ import {
   ToastDescription,
 } from './ui/Toast';
 import { setToastListener, type Toast as ToastType } from '../lib/toast';
+import { cn } from '../lib/utils';
 
 type Toast = ToastType & { id: number };
 type Ctx = { show: (t: Omit<Toast, 'id'>) => void; dismiss: (id: number) => void };
+
+const VARIANT_STYLES: Record<NonNullable<ToastType['kind']>, { root: string; title: string; description: string }> = {
+  success: {
+    root: 'border-emerald-500/50 bg-emerald-500/10 text-emerald-100',
+    title: 'text-emerald-100',
+    description: 'text-emerald-100/80',
+  },
+  error: {
+    root: 'border-red-500/60 bg-red-500/10 text-red-100',
+    title: 'text-red-100',
+    description: 'text-red-100/80',
+  },
+  info: {
+    root: 'border-sky-500/60 bg-sky-500/10 text-sky-100',
+    title: 'text-sky-100',
+    description: 'text-sky-100/80',
+  },
+};
 
 const ToastCtx = createContext<Ctx | null>(null);
 
@@ -40,17 +59,25 @@ export default function ToastProvider({ children }: { children: React.ReactNode 
     <ToastCtx.Provider value={value}>
       <RadixToastProvider duration={3500}>
         {children}
-        {list.map((t) => (
-          <Toast
-            key={t.id}
-            onOpenChange={(open) => {
-              if (!open) dismiss(t.id);
-            }}
-          >
-            <ToastTitle>{t.title}</ToastTitle>
-            {t.description && <ToastDescription>{t.description}</ToastDescription>}
-          </Toast>
-        ))}
+        {list.map((t) => {
+          const variant = t.kind ? VARIANT_STYLES[t.kind] : undefined;
+          return (
+            <Toast
+              key={t.id}
+              className={cn(variant?.root)}
+              onOpenChange={(open) => {
+                if (!open) dismiss(t.id);
+              }}
+            >
+              <ToastTitle className={cn(variant?.title)}>{t.title}</ToastTitle>
+              {t.description && (
+                <ToastDescription className={cn(variant?.description)}>
+                  {t.description}
+                </ToastDescription>
+              )}
+            </Toast>
+          );
+        })}
         <ToastViewport />
       </RadixToastProvider>
     </ToastCtx.Provider>
