@@ -270,7 +270,10 @@ async def profile_from_spotify(sp: SpotifyUserClient) -> dict[str, float]:
         for item in recent
         if (item.get("track") or {}).get("id")
     ]
-    features = await sp.get_audio_features(ids) if ids else []
+    if not ids:
+        return {"tempo": 0.0, "valence": 0.0, "energy": 0.0}
+
+    features = await sp.get_audio_features_batch(ids)
 
     tempos = [f.get("tempo") for f in features if isinstance(f.get("tempo"), int | float)]
     valences = [f.get("valence") for f in features if isinstance(f.get("valence"), int | float)]
@@ -279,11 +282,22 @@ async def profile_from_spotify(sp: SpotifyUserClient) -> dict[str, float]:
     def _mean(vals: list[float]) -> float:
         return float(sum(vals) / len(vals)) if vals else 0.0
 
-    return {
-        "tempo": _mean(tempos),
-        "valence": _mean(valences),
-        "energy": _mean(energies),
-    }
+    def _normalise(payload: dict[str, float]) -> dict[str, float]:
+        tempo = float(payload.get("tempo", 0.0) or 0.0)
+        valence = float(payload.get("valence", 0.0) or 0.0)
+        energy = float(payload.get("energy", 0.0) or 0.0)
+        tempo = tempo if tempo > 0.0 else 0.0
+        valence = 0.0 if valence < 0.0 else 1.0 if valence > 1.0 else valence
+        energy = 0.0 if energy < 0.0 else 1.0 if energy > 1.0 else energy
+        return {"tempo": tempo, "valence": valence, "energy": energy}
+
+    return _normalise(
+        {
+            "tempo": _mean(tempos),
+            "valence": _mean(valences),
+            "energy": _mean(energies),
+        }
+    )
 
 
 def mmr_diversity(
