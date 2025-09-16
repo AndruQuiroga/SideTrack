@@ -265,6 +265,8 @@ http://localhost:3000
 
 ## Testing
 
+### Backend (FastAPI, job runner, worker)
+
 Set up a virtual environment and install the test dependencies:
 
 ```bash
@@ -274,6 +276,20 @@ pip install -e ".[api,jobrunner,worker,dev]"
 # pip install -e ".[extraction]"
 pytest -m "unit and not slow and not gpu" -q
 ```
+
+### Frontend (Next.js dashboard)
+
+Install Node modules (`npm install`) once, then run the lint and unit test suites
+inside `services/ui` before opening a PR:
+
+```bash
+cd services/ui
+npm run lint
+npm test
+```
+
+`make test-ui` is a convenience wrapper that runs the lint and Jest suites from
+the repository root.
 
 See [`tests/README.md`](tests/README.md) for the full pyramid, speed budget and
 fixture layout.

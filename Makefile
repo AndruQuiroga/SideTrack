@@ -1,4 +1,4 @@
-.PHONY: test.unit test.int test.contract test.all test.slow test.e2e
+.PHONY: test.unit test.int test.contract test.all test.slow test.e2e test-ui
 
 test.unit:
 	pytest -m "unit and not slow and not gpu"
@@ -17,3 +17,6 @@ test.slow:
 
 test.e2e:
 	pytest -m "e2e"
+
+test-ui:
+	cd services/ui && npm run lint && CI=1 npm test
