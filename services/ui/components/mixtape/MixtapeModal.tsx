@@ -53,7 +53,7 @@ export default function MixtapeModal({ open, onOpenChange, tracks }: Props) {
             <span>{length}</span>
           </label>
           <div className="flex flex-col gap-2 sm:flex-row">
-            <Button onClick={exportM3U} className="flex-1">
+            <Button onClick={exportM3U} className="flex-1" autoFocus>
               Export M3U
             </Button>
             <Button
