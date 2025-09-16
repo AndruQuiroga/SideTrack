@@ -23,7 +23,7 @@ def resample_audio(y: np.ndarray, orig_sr: int, target_sr: int) -> np.ndarray:
     if orig_sr == target_sr:
         return y
     if librosa is None:
-        raise ImportError("librosa is required for resampling; install sidetrack[extractor]")
+        raise ImportError("librosa is required for resampling; install sidetrack[extraction]")
     return librosa.resample(y, orig_sr=orig_sr, target_sr=target_sr)
 
 
@@ -42,7 +42,7 @@ def excerpt_audio(y: np.ndarray, sr: int, seconds: float | None) -> np.ndarray:
         return y
 
     if librosa is None:
-        raise ImportError("librosa is required for excerpting; install sidetrack[extractor]")
+        raise ImportError("librosa is required for excerpting; install sidetrack[extraction]")
 
     # Compute frame-wise RMS energy and locate the frame with the maximum
     # value.  Use this frame's centre as the centre of the excerpt.
@@ -60,7 +60,7 @@ def excerpt_audio(y: np.ndarray, sr: int, seconds: float | None) -> np.ndarray:
 
 def melspectrogram(track_id: int, y: np.ndarray, sr: int, cache_dir: Path) -> np.ndarray:
     if librosa is None:
-        raise ImportError("librosa is required for spectrograms; install sidetrack[extractor]")
+        raise ImportError("librosa is required for spectrograms; install sidetrack[extraction]")
 
     start = time.perf_counter()
     mel = load_melspec(track_id, cache_dir)

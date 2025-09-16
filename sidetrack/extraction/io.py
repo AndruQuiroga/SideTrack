@@ -38,7 +38,7 @@ def decode(track_id: int, path: str, cache_dir: Path) -> tuple[np.ndarray, int]:
     """Decode ``path`` into a waveform, optionally caching the result."""
 
     if sf is None:
-        raise ImportError("soundfile is required for audio decoding; install sidetrack[extractor]")
+        raise ImportError("soundfile is required for audio decoding; install sidetrack[extraction]")
 
     start = time.perf_counter()
     cp = cache_path(cache_dir, track_id, "raw", "npz")

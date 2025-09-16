@@ -11,7 +11,7 @@ Pull listens from Spotify or Last.fm (with ListenBrainz as a fallback) → resol
 - db: Postgres 16 + TimescaleDB (primary store)
 - cache: Redis 7 (queues, rate limiting)
 - api: FastAPI
-- extractor: audio features/embeddings (Librosa + optional models)
+- extraction: audio features/embeddings (Librosa + optional models)
 - jobrunner: periodic scheduling via queue (ingest, tags sync, aggregates)
 - worker: background jobs (RQ)
 - ui: Next.js dashboard
@@ -36,7 +36,7 @@ docker build -f services/base/Dockerfile -t sidetrack-base .
 docker compose up -d --build
 ```
 
-The extractor uses GPU automatically when available (NVIDIA runtime), and falls back to CPU.
+The extraction service uses GPU automatically when available (NVIDIA runtime) and falls back to CPU.
 
 ---
 
@@ -79,8 +79,8 @@ Developer tooling (optional):
 ```bash
 python3.11 -m venv .venv && source .venv/bin/activate
 pip install -e ".[api,jobrunner,worker,dev]"
-# Install heavy extractor extras only when needed
-# pip install -e ".[extractor]"
+# Install heavy extraction extras only when needed
+# pip install -e ".[extraction]"
 pre-commit install && pre-commit run --all-files
 ```
 
@@ -270,8 +270,8 @@ Set up a virtual environment and install the test dependencies:
 ```bash
 python3.11 -m venv .venv && source .venv/bin/activate
 pip install -e ".[api,jobrunner,worker,dev]"
-# Install extractor extras only for extractor-related tests
-# pip install -e ".[extractor]"
+# Install extraction extras only for extraction-related tests
+# pip install -e ".[extraction]"
 pytest -m "unit and not slow and not gpu" -q
 ```
 

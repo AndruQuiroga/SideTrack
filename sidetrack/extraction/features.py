@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 def extract_features(track_id: int, y: np.ndarray, sr: int, cache_dir) -> dict:
     if librosa is None:
         raise ImportError(
-            "librosa is required for feature extraction; install sidetrack[extractor]"
+            "librosa is required for feature extraction; install sidetrack[extraction]"
         )
 
     start = time.perf_counter()

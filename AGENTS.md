@@ -1,13 +1,13 @@
 ## Testing
 
-1. Install dependencies (skip heavy extractor extras):
+1. Install dependencies (skip heavy extraction extras):
    ```bash
    pip install -e ".[api,jobrunner,worker,dev]"
    ```
-   Install the extractor extras **only** when running extractor-specific
+   Install the extraction extras **only** when running extraction-specific
    code or tests:
    ```bash
-   pip install -e ".[extractor]"
+   pip install -e ".[extraction]"
    ```
 2. Run unit tests:
    ```bash

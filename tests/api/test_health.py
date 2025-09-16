@@ -7,6 +7,6 @@ async def test_health_ok(app_client):
     assert resp.status_code == 200
     data = resp.json()
     assert data["status"] in {"ok", "degraded"}
-    assert "extractor" in data
+    assert "extraction" in data
     assert "enrichment" in data
 

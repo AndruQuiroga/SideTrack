@@ -11,7 +11,7 @@ Run on a cron schedule (every 5 minutes)::
     python -m sidetrack extract --schedule "*/5 * * * *"
 
 The ``--schedule`` option accepts either a floating-point interval in seconds or a
-standard cron expression. Cron expressions are validated before the extractor starts.
+standard cron expression. Cron expressions are validated before extraction starts.
 """
 
 from __future__ import annotations
