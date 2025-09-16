@@ -74,7 +74,7 @@ def run_benchmark(n_tracks: int, models: Iterable[str]) -> dict[str, float]:
 # CLI
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Benchmark extractor performance")
+    parser = argparse.ArgumentParser(description="Benchmark extraction performance")
     parser.add_argument("--tracks", type=int, default=1, help="number of tracks")
     parser.add_argument(
         "--models", nargs="*", default=["dummy"], help="model names to benchmark"

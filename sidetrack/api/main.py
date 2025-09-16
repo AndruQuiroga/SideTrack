@@ -163,7 +163,7 @@ def _enqueue_analysis(track_id: int, settings: Settings) -> None:
     """Enqueue an analysis job for the given track id."""
 
     q = Queue("analysis", connection=_get_redis_connection(settings))
-    q.enqueue("extraction.pipeline.analyze_track", track_id)
+    q.enqueue("sidetrack.extraction.pipeline.analyze_track", track_id)
 
 
 def _week_start(dt: datetime) -> date:
@@ -192,13 +192,13 @@ async def health(db: AsyncSession = Depends(get_db)):
     except Exception as exc:  # pragma: no cover
         details["redis"] = f"error: {exc.__class__.__name__}"
         status = "degraded"
-    # Extractor check
+    # Extraction check
     try:
         from sidetrack.extraction import pipeline  # noqa: F401
 
-        details["extractor"] = "ok"
+        details["extraction"] = "ok"
     except Exception as exc:  # pragma: no cover
-        details["extractor"] = f"error: {exc.__class__.__name__}"
+        details["extraction"] = f"error: {exc.__class__.__name__}"
         status = "degraded"
     # Enrichment check
     try:

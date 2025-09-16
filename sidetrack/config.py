@@ -16,7 +16,7 @@ import numpy as np
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-try:  # optional torch for extractor configuration
+try:  # optional torch for extraction configuration
     import torch
 except Exception:  # pragma: no cover
     torch = None  # type: ignore
@@ -36,7 +36,7 @@ def _get_bool(name: str, default: bool = False) -> bool:
 
 @dataclass
 class ExtractionConfig:
-    """Configuration for the audio feature extractor."""
+    """Configuration for the audio feature extraction pipeline."""
 
     embedding_model: str | None = os.getenv("EMBEDDING_MODEL", "openl3")
     use_clap: bool = _get_bool("USE_CLAP", False)
