@@ -10,9 +10,9 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from sidetrack.api.db import SessionLocal
 from sidetrack.common.models import Embedding, Feature, Track
 from sidetrack.config import ExtractionConfig
+from sidetrack.db import session_scope
 
 from . import io, dsp, features as feat_mod, stems, scoring
 from sidetrack.extraction import compute_embeddings
@@ -74,7 +74,7 @@ def analyze_tracks(db: Session, track_ids: Iterable[int], cfg: ExtractionConfig,
 def analyze_track(track_id: int, cfg: ExtractionConfig, redis_conn=None) -> int:
     """Run the modular extraction pipeline for ``track_id`` and return feature id."""
 
-    with SessionLocal() as db:
+    with session_scope() as db:
         processed = analyze_tracks(db, [track_id], cfg, redis_conn=redis_conn)
         if not processed:
             raise ValueError("track missing")

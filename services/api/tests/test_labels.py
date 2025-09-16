@@ -1,16 +1,16 @@
 import pytest
 from sqlalchemy import select
 
-from sidetrack.api.db import SessionLocal
 from sidetrack.api.schemas.labels import LabelResponse
 from sidetrack.common.models import UserLabel
+from sidetrack.db import async_session_scope
 from tests.factories import TrackFactory
 
 pytestmark = pytest.mark.integration
 
 
 async def _create_track() -> int:
-    async with SessionLocal() as db:
+    async with async_session_scope() as db:
         tr = TrackFactory(title="test")
         db.add(tr)
         await db.flush()
@@ -32,7 +32,7 @@ async def test_submit_label_stores_label(async_client):
     assert data.detail == "accepted"
     assert data.axis == "energy"
 
-    async with SessionLocal() as db:
+    async with async_session_scope() as db:
         lbl = (await db.execute(select(UserLabel))).scalar_one()
         assert lbl.user_id == "u1"
         assert lbl.axis == "energy"
@@ -48,5 +48,5 @@ async def test_submit_label_rejects_unknown_axis(async_client):
         headers={"X-User-Id": "u1"},
     )
     assert resp.status_code == 400
-    async with SessionLocal() as db:
+    async with async_session_scope() as db:
         assert (await db.execute(select(UserLabel))).first() is None

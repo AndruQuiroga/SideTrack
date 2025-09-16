@@ -24,7 +24,8 @@ ROOT = Path(__file__).resolve().parents[2]
 
 # Import application modules after fixtures set DATABASE_URL
 from sidetrack.api import main as app_main
-from sidetrack.api.db import SessionLocal, get_db, maybe_create_all
+from sidetrack.api.db import get_db, maybe_create_all
+from sidetrack.db import async_session_scope, session_scope
 
 
 def _docker_available() -> bool:
@@ -64,13 +65,13 @@ def db(tmp_path, request):
 
 @pytest.fixture
 def session(db):
-    with SessionLocal(async_session=False) as sess:
+    with session_scope() as sess:
         yield sess
 
 
 @pytest_asyncio.fixture
 async def async_session(db):
-    async with SessionLocal(async_session=True) as sess:
+    async with async_session_scope() as sess:
         yield sess
 
 
@@ -108,7 +109,7 @@ def client(db, redis_conn):
     asyncio.run(FastAPILimiter.init(fakeredis.aioredis.FakeRedis()))
 
     def override_get_db():
-        with SessionLocal(async_session=False) as db_session:
+        with session_scope() as db_session:
             yield db_session
 
     app_main.app.dependency_overrides[get_db] = override_get_db
@@ -126,7 +127,7 @@ async def async_client(db, redis_conn):
     await FastAPILimiter.init(fakeredis.aioredis.FakeRedis())
 
     async def override_get_db():
-        async with SessionLocal(async_session=True) as db_session:
+        async with async_session_scope() as db_session:
             yield db_session
 
     app_main.app.dependency_overrides[get_db] = override_get_db

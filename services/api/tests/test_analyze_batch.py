@@ -4,7 +4,7 @@ import pytest
 
 from sidetrack.api import main
 from sidetrack.api.schemas.tracks import AnalyzeBatchResponse
-from sidetrack.api.db import SessionLocal
+from sidetrack.db import async_session_scope
 from sidetrack.common.models import Feature
 from tests.factories import TrackFactory
 
@@ -13,7 +13,7 @@ pytestmark = pytest.mark.unit
 
 @pytest.mark.asyncio
 async def test_analyze_batch_schedules(async_client, monkeypatch):
-    async with SessionLocal() as db:
+    async with async_session_scope() as db:
         t1 = TrackFactory(path_local="a.wav")
         t2 = TrackFactory(path_local="b.wav")
         db.add_all([t1, t2])
@@ -39,7 +39,7 @@ async def test_analyze_batch_schedules(async_client, monkeypatch):
 
 @pytest.mark.asyncio
 async def test_analyze_batch_skips_existing(async_client, monkeypatch):
-    async with SessionLocal() as db:
+    async with async_session_scope() as db:
         t1 = TrackFactory(path_local="a.wav")
         t2 = TrackFactory(path_local="b.wav")
         db.add_all([t1, t2])

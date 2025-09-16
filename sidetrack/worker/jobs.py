@@ -7,7 +7,6 @@ from datetime import date
 import httpx
 
 from sidetrack.services.lastfm import LastfmClient
-from sidetrack.api.db import SessionLocal
 from sidetrack.api.main import aggregate_weeks as aggregate_weeks_service
 from sidetrack.services.listens import get_listen_service
 from sidetrack.common.models import Feature, Track
@@ -15,6 +14,7 @@ from sidetrack.services.datasync import sync_user as datasync_sync_user
 from sidetrack.services.insights import compute_weekly_insights
 from sidetrack.services.listenbrainz import ListenBrainzClient
 from sidetrack.services.musicbrainz import MusicBrainzService
+from sidetrack.db import async_session_scope
 
 # Heavy numerical deps are imported lazily inside functions to keep
 # API-only environments lightweight when importing this module.
@@ -32,7 +32,7 @@ KEYS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
 async def fetch_spotify_features(track_id: int, access_token: str, client: SpotifyClient) -> int:
     """Fetch Spotify audio features and store them as :class:`Feature`."""
 
-    async with SessionLocal() as db:
+    async with async_session_scope() as db:
         track = await db.get(Track, track_id)
         if not track or not track.spotify_id:
             raise ValueError("track missing")
@@ -100,7 +100,7 @@ def sync_user(user_id: str, cursor: str | None = None) -> None:
     since = date.fromisoformat(cursor) if cursor else None
 
     async def runner() -> None:
-        async with SessionLocal() as db:
+        async with async_session_scope() as db:
             await _sync_user_service(user_id, since, db)
 
     asyncio.run(runner())
@@ -108,7 +108,7 @@ def sync_user(user_id: str, cursor: str | None = None) -> None:
 
 def aggregate_weeks(user_id: str, cursor: str | None = None) -> None:
     async def runner() -> None:
-        async with SessionLocal() as db:
+        async with async_session_scope() as db:
             await _aggregate_weeks_service(user_id, None, db)
 
     asyncio.run(runner())
@@ -118,7 +118,7 @@ def generate_weekly_insights(user_id: str) -> int:
     """Compute weekly insights for ``user_id`` and return number of events."""
 
     async def _run() -> int:
-        async with SessionLocal(async_session=True) as db:
+        async with async_session_scope() as db:
             events = await compute_weekly_insights(db, user_id)
             return len(events)
 

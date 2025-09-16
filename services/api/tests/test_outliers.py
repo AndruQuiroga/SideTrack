@@ -3,8 +3,8 @@ from datetime import UTC, datetime
 import pytest
 
 from sidetrack.api.constants import AXES, DEFAULT_METHOD
-from sidetrack.api.db import SessionLocal
 from sidetrack.common.models import Artist, Listen, MoodScore
+from sidetrack.db import async_session_scope
 from tests.factories import TrackFactory
 
 pytestmark = pytest.mark.integration
@@ -12,7 +12,7 @@ pytestmark = pytest.mark.integration
 
 async def _add_track(title: str, artist: str, value: float) -> int:
     """Create track with uniform mood scores and a listen."""
-    async with SessionLocal() as db:
+    async with async_session_scope() as db:
         art = Artist(name=artist)
         db.add(art)
         await db.commit()

@@ -5,9 +5,9 @@ import pytest_asyncio
 from sqlalchemy import func, select
 
 from sidetrack.api import main as main_mod
-from sidetrack.api.db import SessionLocal
 from sidetrack.api.schemas.musicbrainz import MusicbrainzIngestResponse
 from sidetrack.common.models import Artist, Release, Track
+from sidetrack.db import async_session_scope
 
 pytestmark = pytest.mark.integration
 
@@ -53,7 +53,7 @@ async def test_ingest_musicbrainz_dedup(mb_client):
     data = MusicbrainzIngestResponse.model_validate(resp.json())
     assert data.tracks >= 2
 
-    async with SessionLocal() as session:
+    async with async_session_scope() as session:
         assert (await session.scalar(select(func.count()).select_from(Artist))) == 1
         assert (await session.scalar(select(func.count()).select_from(Release))) == 1
         assert (await session.scalar(select(func.count()).select_from(Track))) >= 2

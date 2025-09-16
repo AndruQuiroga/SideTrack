@@ -3,11 +3,11 @@ import pytest
 import soundfile as sf
 from rq import Queue, SimpleWorker
 
-from sidetrack.api.db import SessionLocal
 from sidetrack.common.models import Feature
 from sidetrack.config import ExtractionConfig
 from sidetrack.extraction.pipeline import analyze_track
 from sidetrack.worker.jobs import compute_embeddings
+from sidetrack.db import session_scope
 from tests.factories import TrackFactory
 
 pytestmark = pytest.mark.integration
@@ -21,7 +21,7 @@ def test_jobs_are_executed(redis_conn, tmp_path):
     sf.write(audio_path, data, sr)
     y, sr = sf.read(audio_path)
 
-    with SessionLocal() as db:
+    with session_scope() as db:
         from sidetrack.common.models import Base
 
         Base.metadata.create_all(db.bind)
@@ -41,7 +41,7 @@ def test_jobs_are_executed(redis_conn, tmp_path):
     worker = SimpleWorker([analysis_q, scoring_q], connection=redis_conn)
     worker.work(burst=True)
 
-    with SessionLocal() as db:
+    with session_scope() as db:
         feat = db.get(Feature, job1.result)
         assert feat and feat.track_id == track_id
 

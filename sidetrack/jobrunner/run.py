@@ -12,9 +12,9 @@ import schedule
 from rq import Queue
 from sqlalchemy import select
 
-from sidetrack.api.db import SessionLocal
 from sidetrack.common.logging import setup_logging
 from sidetrack.common.models import UserAccount
+from sidetrack.db import session_scope
 from sidetrack.worker import jobs as worker_jobs
 
 from .config import get_settings
@@ -33,7 +33,7 @@ CURSORS: dict[tuple[str, str], str] = {}
 def fetch_user_ids() -> list[str]:
     """Return all registered user ids from the database."""
     try:
-        with SessionLocal(async_session=False) as db:
+        with session_scope() as db:
             stmt = select(UserAccount.user_id)
             return list(db.execute(stmt).scalars().all())
     except Exception:  # pragma: no cover - db errors

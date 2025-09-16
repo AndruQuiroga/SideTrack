@@ -5,15 +5,15 @@ from sqlalchemy import select
 
 from sidetrack.api import main
 from sidetrack.api.constants import DEFAULT_METHOD
-from sidetrack.api.db import SessionLocal
 from sidetrack.common.models import Listen, MoodAggWeek, MoodScore
+from sidetrack.db import async_session_scope
 from tests.factories import TrackFactory
 
 pytestmark = pytest.mark.integration
 
 
 async def _add_listen(user: str, value: float) -> int:
-    async with SessionLocal() as db:
+    async with async_session_scope() as db:
         tr = TrackFactory(title=f"t-{user}")
         db.add(tr)
         await db.flush()
@@ -42,7 +42,7 @@ async def test_aggregate_weeks_is_scoped_to_user(monkeypatch, async_client):
     r2 = await async_client.post("/aggregate/weeks", headers={"X-User-Id": "u2"})
     assert r2.status_code == 200
 
-    async with SessionLocal() as db:
+    async with async_session_scope() as db:
         rows = (await db.execute(select(MoodAggWeek))).all()
         assert len(rows) == 2
         m1 = (await db.execute(select(MoodAggWeek).where(MoodAggWeek.user_id == "u1"))).scalar_one()
