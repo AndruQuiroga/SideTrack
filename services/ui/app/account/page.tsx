@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Button } from '../../components/ui/button';
 import ChartContainer from '../../components/ChartContainer';
 import FilterBar from '../../components/FilterBar';
-import Skeleton from '../../components/Skeleton';
+import PageSkeleton from '../../components/layout/PageSkeleton';
 import { useToast } from '../../components/ToastProvider';
 import { useAuth } from '../../lib/auth';
 import { apiFetch } from '../../lib/api';
@@ -69,6 +69,17 @@ export default function AccountPage() {
     }
   }
 
+  if (loading) {
+    return (
+      <PageSkeleton
+        aria-label="Loading account"
+        className="@container space-y-6"
+        sections={1}
+        sectionClassName="h-24"
+      />
+    );
+  }
+
   return (
     <section className="@container space-y-6">
       <div className="flex items-center justify-between">
@@ -87,13 +98,11 @@ export default function AccountPage() {
       </div>
       {tab === 'profile' ? (
         <ChartContainer title="Profile">
-          {loading ? <Skeleton className="h-5 w-40" /> : <p>Logged in as {user}</p>}
+          <p>Logged in as {user}</p>
         </ChartContainer>
       ) : (
         <ChartContainer title="Last.fm">
-          {loading ? (
-            <Skeleton className="h-5 w-40" />
-          ) : lfmConnected ? (
+          {lfmConnected ? (
             <div className="flex items-center gap-2">
               <span>Connected as {lfmUser}</span>
               <Button type="button" onClick={handleDisconnect}>
