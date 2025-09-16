@@ -86,7 +86,7 @@ def list_schedules() -> dict[str, list[dict[str, str | None]]]:
         job_type = tag_map.get("job")
         if not user_id or not job_type:
             continue
-        state = jobrunner_run.JOB_STATE.get((user_id, job_type), {})
+        state = jobrunner_run.get_job_state(user_id, job_type)
         last_run = state.get("last_run")
         out.append(
             {
