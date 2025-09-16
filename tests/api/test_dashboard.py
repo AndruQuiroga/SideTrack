@@ -4,6 +4,7 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from sidetrack.common.models import Artist, Listen, MoodAggWeek, Track
+from sidetrack.services.recommendation import InsightEvent
 
 
 @pytest.fixture
@@ -58,3 +59,38 @@ def test_dashboard_overview_invalid_days(client, user_id):
 def test_dashboard_overview_unauthenticated(client):
     resp = client.get("/api/v1/dashboard/overview")
     assert resp.status_code == 401
+
+
+def test_dashboard_summary_includes_insights(client, session, user_id):
+    now = datetime.now(UTC)
+    artist = Artist(name="Insight Artist")
+    session.add(artist)
+    session.flush()
+
+    track = Track(title="Insight Track", artist_id=artist.artist_id)
+    session.add(track)
+    session.flush()
+
+    session.add(
+        Listen(user_id=user_id, track_id=track.track_id, played_at=now - timedelta(days=1))
+    )
+    session.add(
+        InsightEvent(
+            user_id=user_id,
+            ts=now - timedelta(hours=2),
+            type="weekly_listens",
+            summary="You listened a lot this week",
+            severity=2,
+        )
+    )
+    session.commit()
+
+    resp = client.get("/api/v1/dashboard/summary", headers={"X-User-Id": user_id})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["last_artist"] == "Insight Artist"
+    assert data["insights"]
+    card = data["insights"][0]
+    assert card["title"] == "Weekly listens"
+    assert card["summary"] == "You listened a lot this week"
+    assert card["severity"] == 2
