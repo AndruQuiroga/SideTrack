@@ -27,14 +27,20 @@ export function chipFromReason(reason: Reason): { source: Source['type']; text: 
     case 'spotify':
       return { source: 'spotify', text: 'vibe match: energy + tempo' };
     case 'lastfm':
-      return { source: 'lastfm', text: `tag overlap: ${(reason as any).tags?.join(', ')}` };
+      return {
+        source: 'lastfm',
+        text: `tag overlap: ${reason.tags.length > 0 ? reason.tags.join(', ') : 'none'}`,
+      };
     case 'lb':
-      return { source: 'lb', text: `co-listened with ${(reason as any).artist}` };
+      return { source: 'lb', text: `co-listened with ${reason.artist}` };
     case 'mb':
-      const r = reason as any;
-      return { source: 'mb', text: `same label: ${r.label}, era: ${r.yearRange}` };
-    default:
-      return { source: 'spotify', text: '' };
+      return { source: 'mb', text: `same label: ${reason.label}, era: ${reason.yearRange}` };
   }
+
+  return assertNever(reason);
+}
+
+function assertNever(value: never): never {
+  throw new Error(`Unhandled recommendation reason: ${JSON.stringify(value)}`);
 }
 

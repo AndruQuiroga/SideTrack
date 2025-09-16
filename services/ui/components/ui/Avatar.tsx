@@ -1,6 +1,5 @@
 import Image from 'next/image';
 import type { HTMLAttributes } from 'react';
-import dynamic from 'next/dynamic';
 import { cn } from '../../lib/utils';
 import { User as UserIcon } from 'lucide-react';
 

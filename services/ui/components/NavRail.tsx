@@ -8,7 +8,6 @@ import * as Tooltip from '@radix-ui/react-tooltip';
 import type { LucideIcon } from 'lucide-react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import * as Icons from 'lucide-react';
-import nav from '../nav.json';
 import { useNavItems } from '../lib/nav';
 
 import { useNav } from './NavContext';

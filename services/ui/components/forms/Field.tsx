@@ -1,36 +1,65 @@
 import * as React from 'react';
-import { Controller, useFormContext, type FieldValues } from 'react-hook-form';
+import {
+  Controller,
+  useFormContext,
+  type ControllerRenderProps,
+  type FieldPath,
+  type FieldValues,
+} from 'react-hook-form';
 import { Loader2 } from 'lucide-react';
 import { Input } from '../ui/input';
 
-interface FieldProps<T extends FieldValues = FieldValues> {
-  name: string;
+type FieldChildProps<
+  TFieldValues extends FieldValues,
+  TName extends FieldPath<TFieldValues>,
+> = ControllerRenderProps<TFieldValues, TName> & { id: string };
+
+type FieldChild<
+  TFieldValues extends FieldValues,
+  TName extends FieldPath<TFieldValues>,
+> =
+  | ((field: FieldChildProps<TFieldValues, TName>) => React.ReactNode)
+  | React.ReactElement<Partial<FieldChildProps<TFieldValues, TName>>>;
+
+interface FieldProps<
+  TFieldValues extends FieldValues = FieldValues,
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
+> {
+  name: TName;
   label: string;
   help?: string;
   required?: boolean;
-  children?: ((field: any) => React.ReactNode) | React.ReactElement;
+  children?: FieldChild<TFieldValues, TName>;
 }
 
-function Field<T extends FieldValues = FieldValues>({
+function Field<
+  TFieldValues extends FieldValues = FieldValues,
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
+>({
   name,
   label,
   help,
   required,
   children,
-}: FieldProps<T>) {
-  const { control, formState } = useFormContext<T>();
+}: FieldProps<TFieldValues, TName>) {
+  const { control, formState } = useFormContext<TFieldValues>();
 
   return (
-    <Controller
-      name={name as any}
+    <Controller<TFieldValues, TName>
+      name={name}
       control={control}
       render={({ field, fieldState }) => {
         const fieldId = field.name;
-        const rendered = children
-          ? typeof children === 'function'
-            ? (children as any)({ ...field, id: fieldId })
-            : React.cloneElement(children as React.ReactElement, { ...field, id: fieldId })
-          : <Input id={fieldId} {...field} />;
+        const fieldWithId: FieldChildProps<TFieldValues, TName> = { ...field, id: fieldId };
+        let rendered: React.ReactNode;
+
+        if (typeof children === 'function') {
+          rendered = children(fieldWithId);
+        } else if (React.isValidElement(children)) {
+          rendered = React.cloneElement(children, fieldWithId);
+        } else {
+          rendered = <Input id={fieldId} {...field} />;
+        }
         return (
           <div className="space-y-1">
             <label htmlFor={fieldId} className="text-sm font-medium flex items-center gap-1">

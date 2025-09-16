@@ -9,6 +9,10 @@ import {
   Filler,
   Tooltip,
   Legend,
+  type ActiveElement,
+  type ChartData,
+  type ChartEvent,
+  type ChartOptions,
 } from 'chart.js';
 import { motion } from 'framer-motion';
 import { useInspector } from '../../hooks/useInspector';
@@ -23,7 +27,7 @@ type RadarChartProps = {
 export default function RadarChart({ axes, baseline }: RadarChartProps) {
   const labels = Object.keys(axes);
   const { inspect } = useInspector();
-  const data = {
+  const data: ChartData<'radar'> = {
     labels,
     datasets: [
       {
@@ -43,11 +47,11 @@ export default function RadarChart({ axes, baseline }: RadarChartProps) {
     ],
   };
 
-  const options = {
+  const options: ChartOptions<'radar'> = {
     responsive: true,
     animation: { duration: 500 },
-    onClick: (_: any, elements: any) => {
-      if (elements && elements.length) {
+    onClick: (_event: ChartEvent, elements: ActiveElement[]) => {
+      if (elements.length > 0) {
         const idx = elements[0].index;
         const label = labels[idx];
         inspect({ type: 'radar', axis: label, value: axes[label] });
@@ -74,7 +78,6 @@ export default function RadarChart({ axes, baseline }: RadarChartProps) {
       transition={{ duration: 0.4 }}
       className="w-full aspect-[4/3]"
     >
-      {/* @ts-ignore */}
       <Radar data={data} options={options} />
     </motion.div>
   );
