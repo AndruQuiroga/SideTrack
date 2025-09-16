@@ -4,8 +4,12 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu } from 'lucide-react';
 import clsx from 'clsx';
+import { motion } from 'framer-motion';
+
 import ThemeToggle from '../common/ThemeToggle';
 import { useNavItems } from '../../lib/nav';
+
+const motionSpring = { type: 'spring', stiffness: 280, damping: 22 } as const;
 
 export default function Sidebar({
   collapsed,
@@ -32,7 +36,7 @@ export default function Sidebar({
         <button
           onClick={() => setCollapsed(!collapsed)}
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          className="hidden h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-white/10 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 md:inline-flex"
+          className="hidden h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-white/10 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2 focus-visible:ring-offset-background md:inline-flex"
         >
           <Menu size={16} />
         </button>
@@ -40,24 +44,53 @@ export default function Sidebar({
       <nav className="flex-1 space-y-1 px-2">
         {navItems.map((item) => {
           const active = pathname === item.path || pathname.startsWith(item.path + '/');
+          const Icon = item.icon;
           return (
             <div key={item.path} className="relative group">
               <Link
                 href={item.path}
                 className={clsx(
-                  'relative flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500',
-                  active && 'bg-white/10 text-foreground',
+                  'relative flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors',
+                  'hover:bg-white/10 hover:text-foreground',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                  'aria-[current=page]:bg-white/10 aria-[current=page]:text-foreground',
                 )}
                 aria-label={item.label}
+                aria-current={active ? 'page' : undefined}
               >
                 {active && (
-                  <span
+                  <motion.span
+                    layoutId="sidebar-active"
                     className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-sm bg-emerald-400"
                     aria-hidden
+                    transition={motionSpring}
                   />
                 )}
-                <item.icon size={18} />
-                {!collapsed && <span className="hidden md:inline">{item.label}</span>}
+                <motion.div
+                  className="flex items-center gap-3"
+                  initial={false}
+                  animate={{ x: active ? 2 : 0 }}
+                  transition={motionSpring}
+                >
+                  <motion.div
+                    className="flex items-center justify-center"
+                    initial={false}
+                    animate={{ scale: active ? 1.05 : 1 }}
+                    transition={motionSpring}
+                  >
+                    <Icon size={18} />
+                  </motion.div>
+                  {!collapsed && (
+                    <motion.div
+                      className="hidden text-sm md:inline-flex"
+                      initial={false}
+                      animate={{ opacity: active ? 1 : 0.85 }}
+                      transition={motionSpring}
+                    >
+                      {item.label}
+                    </motion.div>
+                  )}
+                </motion.div>
               </Link>
               {collapsed && (
                 <span

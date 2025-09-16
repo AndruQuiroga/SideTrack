@@ -2,7 +2,11 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import clsx from 'clsx';
+import { motion } from 'framer-motion';
+
 import { useNavItems } from '../lib/nav';
+
+const motionSpring = { type: 'spring', stiffness: 320, damping: 24 } as const;
 
 export default function MobileNav() {
   const pathname = usePathname();
@@ -22,12 +26,35 @@ export default function MobileNav() {
             aria-current={active ? 'page' : undefined}
             accessKey={(idx + 1).toString()}
             className={clsx(
-              'flex flex-1 min-h-[48px] flex-col items-center justify-center gap-1 rounded-md p-3 text-sm',
-              active ? 'text-emerald-300' : 'text-muted-foreground hover:text-foreground',
+              'relative flex min-h-[48px] flex-1 flex-col items-center justify-center gap-1 rounded-md p-3 text-sm text-muted-foreground transition-colors',
+              'hover:text-foreground',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2 focus-visible:ring-offset-black/60',
+              'aria-[current=page]:text-emerald-300 aria-[current=page]:font-medium',
             )}
           >
-            <item.icon size={18} />
-            <span className="text-xs">{item.label}</span>
+            <motion.div
+              className="flex flex-col items-center gap-1"
+              initial={false}
+              animate={{ y: active ? -2 : 0 }}
+              transition={motionSpring}
+            >
+              <motion.div
+                className="flex items-center justify-center"
+                initial={false}
+                animate={{ scale: active ? 1.05 : 1 }}
+                transition={motionSpring}
+              >
+                <item.icon size={18} />
+              </motion.div>
+              <motion.div
+                className="text-xs"
+                initial={false}
+                animate={{ opacity: active ? 1 : 0.8 }}
+                transition={motionSpring}
+              >
+                {item.label}
+              </motion.div>
+            </motion.div>
           </Link>
         );
       })}
