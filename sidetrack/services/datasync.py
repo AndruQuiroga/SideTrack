@@ -12,6 +12,9 @@ job runner or worker processes.
 
 from __future__ import annotations
 
+import re
+import uuid
+from collections import Counter
 from dataclasses import dataclass, field
 from datetime import date, datetime
 
@@ -20,9 +23,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from sidetrack.api.config import Settings
 from sidetrack.services.listens import ListenService
-from sidetrack.analytics.tags import label_rollups
+from sidetrack.analytics.tags import canonicalize_tag, label_rollups
 from sidetrack.common.models import Artist, Listen, Track, MBLabel, Release
-from sidetrack.enrichment.fusion import persist_mb_label
+from sidetrack.enrichment.fusion import persist_mb_label, persist_mb_tags
 from sidetrack.services.base_client import MusicServiceClient
 from sidetrack.services.lastfm import LastfmClient
 from sidetrack.services.listenbrainz import ListenBrainzClient
@@ -61,6 +64,27 @@ class IdEnrichmentResult:
             "enriched": self.enriched,
             "errors": self.errors,
         }
+
+
+_ISRC_RE = re.compile(r"^[A-Z]{2}[A-Z0-9]{3}\d{2}\d{5}$")
+
+
+def _normalise_isrc(value: str | None) -> str | None:
+    if not value:
+        return None
+    candidate = str(value).strip().upper()
+    if _ISRC_RE.match(candidate):
+        return candidate
+    return None
+
+
+def _normalise_uuid(value: str | None) -> str | None:
+    if not value:
+        return None
+    try:
+        return str(uuid.UUID(str(value)))
+    except (ValueError, TypeError, AttributeError):
+        return None
 
 
 async def _fetch_listens(
@@ -154,6 +178,7 @@ async def _enrich_ids(
             Track.title.label("title"),
             Artist.artist_id.label("artist_id"),
             Artist.name.label("artist_name"),
+            Track.isrc.label("track_isrc"),
             Track.mbid.label("track_mbid"),
             Artist.mbid.label("artist_mbid"),
             Track.release_id.label("release_id"),
@@ -185,34 +210,54 @@ async def _enrich_ids(
         title = row["title"]
         artist_name = row["artist_name"]
 
+        track = await db.get(Track, track_id)
+        if track is None:  # pragma: no cover - defensive
+            continue
+
+        existing_track_mbid = _normalise_uuid(row["track_mbid"])
+        existing_artist_mbid = _normalise_uuid(row["artist_mbid"])
+        existing_release_mbid = _normalise_uuid(row["release_mbid"])
+        isrc = _normalise_isrc(row["track_isrc"])
+
+        if not (isrc or existing_track_mbid or (title and artist_name)):
+            result.errors.append({"track_id": str(track_id), "error": "insufficient metadata"})
+            continue
+
         try:
             data = await mb_service.recording_by_isrc(
-                str(track_id), title=title, artist=artist_name
+                isrc,
+                title=title,
+                artist=artist_name,
+                recording_mbid=existing_track_mbid,
             )
         except Exception as exc:  # pragma: no cover - best effort
             result.errors.append({"track_id": str(track_id), "error": str(exc)})
             continue
 
         updated = False
-        track_mbid = data.get("recording_mbid")
-        if track_mbid and track_mbid != row["track_mbid"]:
-            track = await db.get(Track, track_id)
-            if track:
-                track.mbid = track_mbid
-                updated = True
 
-        artist_mbid = data.get("artist_mbid")
-        if artist_mbid and artist_mbid != row["artist_mbid"] and row["artist_id"] is not None:
+        track_mbid = _normalise_uuid(data.get("recording_mbid"))
+        if track_mbid and track_mbid != existing_track_mbid:
+            track.mbid = track_mbid
+            updated = True
+
+        data_isrc = _normalise_isrc(data.get("isrc"))
+        if data_isrc and data_isrc != _normalise_isrc(track.isrc):
+            track.isrc = data_isrc
+            updated = True
+
+        artist_mbid = _normalise_uuid(data.get("artist_mbid"))
+        if artist_mbid and row["artist_id"] is not None and artist_mbid != existing_artist_mbid:
             artist = await db.get(Artist, row["artist_id"])
             if artist:
                 artist.mbid = artist_mbid
                 updated = True
 
-        release_group = data.get("release_group_mbid")
+        release_group = _normalise_uuid(data.get("release_group_mbid"))
         if (
             release_group
             and row["release_id"] is not None
-            and release_group != row["release_mbid"]
+            and release_group != existing_release_mbid
         ):
             release = await db.get(Release, row["release_id"])
             if release:
@@ -220,6 +265,7 @@ async def _enrich_ids(
                 updated = True
 
         label_updated = False
+        tags_updated = False
         if row["label_id"] is None:
             label_name = data.get("label")
             year = data.get("year")
@@ -232,11 +278,24 @@ async def _enrich_ids(
                 label_updated = True
                 updated = True
 
-        if updated and not label_updated:
+        tags = data.get("tags") or []
+        if tags:
+            counter: Counter[str] = Counter()
+            for tag in tags:
+                key = canonicalize_tag(str(tag))
+                if key:
+                    counter[key] += 1
+            if counter:
+                await persist_mb_tags(
+                    db,
+                    track_id,
+                    {tag: float(score) for tag, score in counter.items()},
+                )
+                tags_updated = True
+                updated = True
+
+        if updated and not (label_updated or tags_updated):
             await db.commit()
-        elif updated:
-            # ``persist_mb_label`` commits label updates along with pending changes.
-            pass
 
         if updated:
             result.enriched += 1

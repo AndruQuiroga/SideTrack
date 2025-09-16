@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 from typing import Any
 
 import httpx
@@ -17,6 +18,17 @@ from .base_client import MusicServiceClient
 
 _MB_LOCK = asyncio.Lock()
 _CACHE_TTL = 24 * 3600  # one day
+
+_ISRC_RE = re.compile(r"^[A-Z]{2}[A-Z0-9]{3}\d{2}\d{5}$")
+
+
+def _normalise_isrc(value: str | None) -> str | None:
+    if not value:
+        return None
+    candidate = str(value).strip().upper()
+    if _ISRC_RE.match(candidate):
+        return candidate
+    return None
 
 
 async def _rate_limit() -> None:
@@ -51,10 +63,11 @@ class MusicBrainzService(MusicServiceClient):
 
     async def recording_by_isrc(
         self,
-        isrc: str,
+        isrc: str | None,
         *,
         title: str | None = None,
         artist: str | None = None,
+        recording_mbid: str | None = None,
     ) -> dict[str | None, Any]:
         """Return MusicBrainz metadata for a recording given its ISRC.
 
@@ -62,30 +75,50 @@ class MusicBrainzService(MusicServiceClient):
         MusicBrainz.  Results are cached in Redis and persisted to the database.
         """
 
-        cache_key = f"mb:isrc:{isrc}"
-        if self._redis is not None:
+        normalised_isrc = _normalise_isrc(isrc)
+        cache_key = f"mb:isrc:{normalised_isrc}" if normalised_isrc else None
+        if cache_key and self._redis is not None:
             cached = await asyncio.to_thread(self._redis.get, cache_key)
             if cached:
                 return json.loads(cached)
 
         headers = {"User-Agent": "SideTrack/0.1 (+https://example.com)"}
         params = {
-            "inc": "recordings+releases+release-groups+artist-credits+tags",
+            "inc": "recordings+releases+release-groups+artist-credits+tags+isrcs",
             "fmt": "json",
         }
 
         data: dict[str, Any] | None = None
-        async with _MB_LOCK:
-            resp = await self._client.get(
-                f"{self.api_root}/isrc/{isrc}",
-                params=params,
-                headers=headers,
-                timeout=30,
-            )
-            if resp.status_code != 404:
-                resp.raise_for_status()
-                data = resp.json()
-            await _rate_limit()
+        if normalised_isrc:
+            async with _MB_LOCK:
+                resp = await self._client.get(
+                    f"{self.api_root}/isrc/{normalised_isrc}",
+                    params=params,
+                    headers=headers,
+                    timeout=30,
+                )
+                if resp.status_code != 404:
+                    resp.raise_for_status()
+                    data = resp.json()
+                await _rate_limit()
+
+        if (data is None or not data.get("recordings")) and recording_mbid:
+            lookup_params = {
+                "inc": "releases+release-groups+artist-credits+tags+isrcs",
+                "fmt": "json",
+            }
+            async with _MB_LOCK:
+                resp = await self._client.get(
+                    f"{self.api_root}/recording/{recording_mbid}",
+                    params=lookup_params,
+                    headers=headers,
+                    timeout=30,
+                )
+                if resp.status_code != 404:
+                    resp.raise_for_status()
+                    payload = resp.json()
+                    data = {"recordings": [payload]}
+                await _rate_limit()
 
         if (data is None or not data.get("recordings")) and title and artist:
             async with _MB_LOCK:
@@ -94,7 +127,7 @@ class MusicBrainzService(MusicServiceClient):
                     "query": q,
                     "fmt": "json",
                     "limit": 1,
-                    "inc": "releases+release-groups+artist-credits+tags",
+                    "inc": "releases+release-groups+artist-credits+tags+isrcs",
                 }
                 resp = await self._client.get(
                     f"{self.api_root}/recording",
@@ -145,6 +178,23 @@ class MusicBrainzService(MusicServiceClient):
 
         tags = [t.get("name") for t in recording.get("tags", []) if t.get("name")]
 
+        canonical_isrc = normalised_isrc
+        for key in ("isrcs", "isrc-list", "isrc"):
+            values = recording.get(key)
+            if isinstance(values, list):
+                for item in values:
+                    candidate = _normalise_isrc(item)
+                    if candidate:
+                        canonical_isrc = candidate
+                        break
+                if canonical_isrc:
+                    break
+            else:
+                candidate = _normalise_isrc(values)
+                if candidate:
+                    canonical_isrc = candidate
+                    break
+
         result = {
             "recording_mbid": recording_mbid,
             "artist_mbid": artist_mbid,
@@ -154,9 +204,11 @@ class MusicBrainzService(MusicServiceClient):
             "tags": tags,
             "title": title_out,
             "artists": artists_out,
+            "isrc": canonical_isrc,
         }
 
-        if self._redis is not None:
+        cache_key = f"mb:isrc:{canonical_isrc}" if canonical_isrc else None
+        if cache_key and self._redis is not None:
             await asyncio.to_thread(
                 self._redis.setex, cache_key, _CACHE_TTL, json.dumps(result)
             )
@@ -167,27 +219,28 @@ class MusicBrainzService(MusicServiceClient):
             db = SessionLocal()
             close_db = True
         try:
-            inst = await db.get(MusicBrainzRecording, isrc)
-            if inst:
-                inst.recording_mbid = recording_mbid
-                inst.artist_mbid = artist_mbid
-                inst.release_group_mbid = release_group_mbid
-                inst.year = release_year
-                inst.label = label
-                inst.tags = tags
-            else:
-                db.add(
-                    MusicBrainzRecording(
-                        isrc=isrc,
-                        recording_mbid=recording_mbid,
-                        artist_mbid=artist_mbid,
-                        release_group_mbid=release_group_mbid,
-                        year=release_year,
-                        label=label,
-                        tags=tags,
+            if canonical_isrc:
+                inst = await db.get(MusicBrainzRecording, canonical_isrc)
+                if inst:
+                    inst.recording_mbid = recording_mbid
+                    inst.artist_mbid = artist_mbid
+                    inst.release_group_mbid = release_group_mbid
+                    inst.year = release_year
+                    inst.label = label
+                    inst.tags = tags
+                else:
+                    db.add(
+                        MusicBrainzRecording(
+                            isrc=canonical_isrc,
+                            recording_mbid=recording_mbid,
+                            artist_mbid=artist_mbid,
+                            release_group_mbid=release_group_mbid,
+                            year=release_year,
+                            label=label,
+                            tags=tags,
+                        )
                     )
-                )
-            await db.commit()
+                await db.commit()
         finally:
             if close_db:
                 await db.close()
