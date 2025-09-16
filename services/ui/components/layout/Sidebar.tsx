@@ -2,17 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Sparkles, Compass, BarChart3, Settings, Menu } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import clsx from 'clsx';
 import ThemeToggle from '../common/ThemeToggle';
-
-const navItems = [
-  { href: '/', label: 'Home', icon: Home },
-  { href: '/recommendations', label: 'Recommendations', icon: Sparkles },
-  { href: '/explore', label: 'Explore', icon: Compass },
-  { href: '/insights', label: 'Insights', icon: BarChart3 },
-  { href: '/settings', label: 'Settings', icon: Settings },
-];
+import { useNavItems } from '../../lib/nav';
 
 export default function Sidebar({
   collapsed,
@@ -22,6 +15,7 @@ export default function Sidebar({
   setCollapsed: (v: boolean) => void;
 }) {
   const pathname = usePathname();
+  const navItems = useNavItems();
 
   return (
     <aside
@@ -45,11 +39,11 @@ export default function Sidebar({
       </div>
       <nav className="flex-1 space-y-1 px-2">
         {navItems.map((item) => {
-          const active = pathname === item.href || pathname.startsWith(item.href + '/');
+          const active = pathname === item.path || pathname.startsWith(item.path + '/');
           return (
-            <div key={item.href} className="relative group">
+            <div key={item.path} className="relative group">
               <Link
-                href={item.href}
+                href={item.path}
                 className={clsx(
                   'relative flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500',
                   active && 'bg-white/10 text-foreground',
