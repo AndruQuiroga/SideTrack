@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 from sidetrack.common.models import Artist, LastfmTags, Listen, MoodAggWeek, MoodScore, Track
+from sidetrack.services.recommendation import InsightEvent, compute_weekly_insights
 
 from ...constants import AXES, DEFAULT_METHOD
 from ...db import get_db
@@ -82,9 +83,22 @@ async def dashboard_overview(
     }
 
 
+_INSIGHT_TITLES = {
+    "weekly_listens": "Weekly listens",
+    "weekly_unique_tracks": "Unique tracks this week",
+}
+
+
+def _insight_title(event_type: str) -> str:
+    title = _INSIGHT_TITLES.get(event_type)
+    if title:
+        return title
+    return event_type.replace("_", " ").title() if event_type else "Insight"
+
+
 @router.get("/dashboard/summary")
 async def dashboard_summary(
-    db: AsyncSession = Depends(get_db),
+    db: Session | AsyncSession = Depends(get_db),
     user_id: str = Depends(get_current_user),
 ):
     """Return a summary payload expected by the UI dashboard.
@@ -127,7 +141,40 @@ async def dashboard_summary(
         },
     ]
 
-    return {"last_artist": last_artist, "kpis": kpis, "insights": []}
+    now = datetime.now(UTC)
+    week_ago = now - timedelta(days=7)
+
+    latest_ts = await _maybe(
+        db.scalar(
+            select(func.max(InsightEvent.ts)).where(InsightEvent.user_id == user_id)
+        )
+    )
+    needs_refresh = latest_ts is None or latest_ts < week_ago
+
+    if needs_refresh and isinstance(db, AsyncSession):
+        try:
+            await compute_weekly_insights(db, user_id)
+        except Exception:
+            logger.exception("Failed to compute weekly insights", extra={"user_id": user_id})
+
+    insight_rows = await _maybe(
+        db.execute(
+            select(InsightEvent)
+                .where(InsightEvent.user_id == user_id, InsightEvent.ts >= week_ago)
+                .order_by(InsightEvent.ts.desc())
+        )
+    )
+    events = insight_rows.scalars().all() if insight_rows is not None else []
+    insights = [
+        {
+            "title": _insight_title(evt.type),
+            "summary": evt.summary or "",
+            "severity": int(evt.severity or 0),
+        }
+        for evt in events
+    ]
+
+    return {"last_artist": last_artist, "kpis": kpis, "insights": insights}
 
 
 @router.get("/dashboard/tags")
