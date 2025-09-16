@@ -8,13 +8,13 @@ import httpx
 
 from sidetrack.services.lastfm import LastfmClient
 from sidetrack.api.db import SessionLocal
-from sidetrack.api.main import aggregate_weeks as aggregate_weeks_service
 from sidetrack.services.listens import get_listen_service
 from sidetrack.common.models import Feature, Track
 from sidetrack.services.datasync import sync_user as datasync_sync_user
 from sidetrack.services.recommendation import compute_weekly_insights
 from sidetrack.services.listenbrainz import ListenBrainzClient
 from sidetrack.services.musicbrainz import MusicBrainzService
+from sidetrack.services.maintenance import aggregate_weeks as aggregate_weeks_service
 
 # Heavy numerical deps are imported lazily inside functions to keep
 # API-only environments lightweight when importing this module.

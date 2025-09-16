@@ -28,6 +28,12 @@ from sidetrack.common.telemetry import setup_tracing
 from sidetrack.services.datasync import sync_user as datasync_sync_user
 from sidetrack.services.listenbrainz import ListenBrainzClient, get_listenbrainz_client
 from sidetrack.services.musicbrainz import MusicBrainzService
+from sidetrack.services.maintenance import (
+    OperationError,
+    aggregate_weeks as aggregate_weeks_task,
+    score_track as score_track_task,
+    sync_lastfm_tags as sync_lastfm_tags_task,
+)
 
 from ..services.spotify import SpotifyClient, get_spotify_client
 from . import scoring as mood_scoring
@@ -164,12 +170,6 @@ def _enqueue_analysis(track_id: int, settings: Settings) -> None:
 
     q = Queue("analysis", connection=_get_redis_connection(settings))
     q.enqueue("sidetrack.extraction.pipeline.analyze_track", track_id)
-
-
-def _week_start(dt: datetime) -> date:
-    # Monday as the start of the week
-    d = dt.date()
-    return d - timedelta(days=d.weekday())
 
 
 @app.get("/health")
@@ -389,26 +389,10 @@ async def sync_lastfm_tags(
     db: AsyncSession = Depends(get_db),
     lf_client: LastfmClient = Depends(get_lastfm_client),
 ):
-    if not lf_client.api_key:
-        raise HTTPException(status_code=400, detail="LASTFM_API_KEY not configured")
-
-    # find tracks with listens since date (or all if none)
-    q = select(Track.track_id, Track.title, Artist.name).join(
-        Artist, Track.artist_id == Artist.artist_id
-    )
-    if since:
-        q = q.join(Listen, Listen.track_id == Track.track_id).where(
-            Listen.played_at >= datetime.combine(since, datetime.min.time())
-        )
-    rows = (await db.execute(q)).all()
-    updated = 0
-    for tid, title, artist_name in rows:
-        try:
-            await lf_client.get_track_tags(db, tid, artist_name, title)
-            updated += 1
-        except (RuntimeError, httpx.HTTPError) as exc:
-            logger.warning("Tag sync failed track_id=%s error=%s", tid, str(exc))
-            continue
+    try:
+        updated = await sync_lastfm_tags_task(db=db, lf_client=lf_client, since=since)
+    except OperationError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=str(exc)) from exc
     return {"detail": "ok", "updated": updated}
 
 
@@ -478,50 +462,12 @@ async def score_track(
     version: str | None = None,
     db: AsyncSession = Depends(get_db),
 ):
-    tr = await db.get(Track, track_id)
-    if not tr:
-        raise HTTPException(status_code=404, detail="track not found")
     try:
-        scores = await mood_scoring.score_axes(db, tr.track_id, method=method, version=version)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    method_name = mood_scoring.method_version(method, version)
-    upserts = 0
-    for ax, data in scores.items():
-        val = data["value"]
-        existing = (
-            await db.execute(
-                select(MoodScore).where(
-                    and_(
-                        MoodScore.track_id == tr.track_id,
-                        MoodScore.axis == ax,
-                        MoodScore.method == method_name,
-                    )
-                )
-            )
-        ).scalar_one_or_none()
-        if existing:
-            existing.value = val
-            existing.updated_at = datetime.utcnow()
-        else:
-            db.add(
-                MoodScore(
-                    track_id=tr.track_id,
-                    axis=ax,
-                    method=method_name,
-                    value=val,
-                    updated_at=datetime.utcnow(),
-                )
-            )
-            upserts += 1
-    await db.commit()
-    return {
-        "detail": "scored",
-        "track_id": track_id,
-        "scores": scores,
-        "upserts": upserts,
-        "method": method_name,
-    }
+        return await score_track_task(
+            db=db, track_id=track_id, method=method, version=version
+        )
+    except OperationError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=str(exc)) from exc
 
 
 @app.post("/score/batch")
@@ -613,78 +559,13 @@ async def get_track_features(track_id: int, db: AsyncSession = Depends(get_db)):
 async def aggregate_weeks(
     db: AsyncSession = Depends(get_db), user_id: str = Depends(get_current_user)
 ):
-    # build weekly aggregates per axis from listens + mood scores for a user
-    listened_tracks = (
-        (await db.execute(select(Listen.track_id).where(Listen.user_id == user_id).distinct()))
-        .scalars()
-        .all()
-    )
-    for tid in listened_tracks:
-        await score_track(tid, method=DEFAULT_METHOD, db=db)
-
-    # pull joined rows: (played_at_week, axis, value)
-    rows = (
-        await db.execute(
-            select(Listen.played_at, MoodScore.axis, MoodScore.value)
-            .join(MoodScore, MoodScore.track_id == Listen.track_id)
-            .where(and_(MoodScore.method == DEFAULT_METHOD, Listen.user_id == user_id))
+    try:
+        rows = await aggregate_weeks_task(
+            db=db, user_id=user_id, method=DEFAULT_METHOD
         )
-    ).all()
-
-    # group in Python for simplicity
-    counts: dict[tuple[date, str], int] = {}
-    sums: dict[tuple[date, str], float] = {}
-    sums2: dict[tuple[date, str], float] = {}
-
-    for played_at, axis, value in rows:
-        wk = _week_start(played_at)
-        k = (wk, axis)
-        counts[k] = counts.get(k, 0) + 1
-        sums[k] = sums.get(k, 0.0) + float(value)
-        sums2[k] = sums2.get(k, 0.0) + float(value) * float(value)
-
-    # compute stats and write table
-    # first, build per-axis chronological index for momentum calc
-    per_axis_weeks: dict[str, list[date]] = {ax: [] for ax in AXES}
-    for wk, axis in counts.keys():
-        per_axis_weeks.setdefault(axis, []).append(wk)
-    for ax in per_axis_weeks.keys():
-        per_axis_weeks[ax] = sorted(set(per_axis_weeks[ax]))
-
-    # clear existing aggregates for this user before recompute
-    await db.execute(delete(MoodAggWeek).where(MoodAggWeek.user_id == user_id))
-
-    for (wk, axis), n in counts.items():
-        s = sums[(wk, axis)]
-        s2 = sums2[(wk, axis)]
-        mean = s / n
-        var = max(0.0, s2 / n - mean * mean)
-
-        # momentum = mean - prev_mean
-        weeks_sorted = per_axis_weeks[axis]
-        idx = weeks_sorted.index(wk)
-        prev_mean = 0.0
-        if idx > 0:
-            prev_wk = weeks_sorted[idx - 1]
-            prev_key = (prev_wk, axis)
-            if prev_key in counts:
-                prev_mean = sums[prev_key] / counts[prev_key]
-        momentum = mean - prev_mean
-
-        db.add(
-            MoodAggWeek(
-                user_id=user_id,
-                week=wk,
-                axis=axis,
-                mean=mean,
-                var=var,
-                momentum=momentum,
-                sample_size=n,
-            )
-        )
-    await db.commit()
-    total = (await db.execute(select(func.count(MoodAggWeek.id)))).scalar() or 0
-    return {"detail": "ok", "rows": int(total)}
+    except OperationError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=str(exc)) from exc
+    return {"detail": "ok", "rows": rows}
 
 
 @app.post("/sync/user")

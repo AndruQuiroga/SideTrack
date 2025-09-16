@@ -20,12 +20,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from sidetrack.api.config import Settings
 from sidetrack.services.listens import ListenService
-from sidetrack.common.models import Artist, Listen, Track, UserSettings
+from sidetrack.common.models import Artist, Listen, Track
 from sidetrack.services.base_client import MusicServiceClient
 from sidetrack.services.lastfm import LastfmClient
 from sidetrack.services.listenbrainz import ListenBrainzClient
 from sidetrack.services.musicbrainz import MusicBrainzService
 from sidetrack.services.spotify import SpotifyClient
+from sidetrack.services.maintenance import ingest_listens, OperationError
 
 
 @dataclass
@@ -59,36 +60,26 @@ async def _fetch_listens(
     but is usable outside of the HTTP layer.
     """
 
-    settings_row = (
-        await db.execute(select(UserSettings).where(UserSettings.user_id == user_id))
-    ).scalar_one_or_none()
+    sp_client = next((c for c in clients if isinstance(c, SpotifyClient)), None)
+    lf_client = next((c for c in clients if isinstance(c, LastfmClient)), None)
+    lb_client = next((c for c in clients if isinstance(c, ListenBrainzClient)), None)
 
-    for client in clients:
-        try:
-            if isinstance(client, SpotifyClient) and settings_row and settings_row.spotify_access_token:
-                since_dt = datetime.combine(since, datetime.min.time()) if since else None
-                items = await client.fetch_recently_played(
-                    settings_row.spotify_access_token, after=since_dt
-                )
-                return await listen_service.ingest_spotify_rows(items, user_id)
-            if isinstance(client, LastfmClient) and settings_row and settings_row.lastfm_user and settings_row.lastfm_session_key:
-                since_dt = datetime.combine(since, datetime.min.time()) if since else None
-                client.user = settings_row.lastfm_user
-                tracks = await client.fetch_recently_played(since_dt)
-                return await listen_service.ingest_lastfm_rows(tracks, user_id)
-            if isinstance(client, ListenBrainzClient):
-                token = settings.listenbrainz_token
-                lb_user = user_id
-                if settings_row:
-                    token = settings_row.listenbrainz_token or token
-                    lb_user = settings_row.listenbrainz_user or lb_user
-                client.user = lb_user
-                client.token = token
-                rows = await client.fetch_recently_played(since, limit=500)
-                return await listen_service.ingest_lb_rows(rows, user_id)
-        except Exception:  # pragma: no cover - network errors
-            continue
-    return 0
+    try:
+        result = await ingest_listens(
+            db=db,
+            listen_service=listen_service,
+            user_id=user_id,
+            settings=settings,
+            since=since,
+            source="auto",
+            lb_client=lb_client,
+            lf_client=lf_client,
+            sp_client=sp_client,
+            fallback_to_sample=False,
+        )
+    except OperationError:  # pragma: no cover - defensive
+        return 0
+    return result.ingested
 
 
 async def _enrich_tags(
