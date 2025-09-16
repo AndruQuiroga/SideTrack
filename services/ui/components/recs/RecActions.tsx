@@ -44,9 +44,10 @@ export default function RecActions({
     `0 0 0 ${12 * value}px rgba(248, 113, 113, ${0.4 * value})`,
   );
 
-  const ActionButtons = () => (
+  const ActionButtons = ({ focusFirst = false }: { focusFirst?: boolean }) => (
     <>
       <MotionButton
+        autoFocus={focusFirst}
         style={{ scale: likeScale, y: likeY, boxShadow: likeShadow }}
         onClick={async () => {
           await onLike();
@@ -89,7 +90,7 @@ export default function RecActions({
         </DialogTrigger>
         <DialogContent className="md:hidden bottom-0 left-0 right-0 top-auto translate-x-0 translate-y-0 max-w-full rounded-t-lg p-4">
           <div className="grid gap-2">
-            <ActionButtons />
+            <ActionButtons focusFirst />
           </div>
         </DialogContent>
       </Dialog>
