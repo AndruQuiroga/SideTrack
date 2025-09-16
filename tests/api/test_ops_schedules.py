@@ -91,9 +91,15 @@ async def test_ops_schedules(monkeypatch):
     assert resp.status_code == 200
     data = resp.json()
     jobs = data.get("schedules")
-    assert isinstance(jobs, list) and len(jobs) == 2
+    assert isinstance(jobs, list) and len(jobs) == 3
     types = {j["job_type"] for j in jobs}
-    assert types == {"sync:user", "aggregate:weeks"}
+    assert types == {"sync:user", "aggregate:weeks", "insights:weekly"}
+    func_names = {name for name, *_ in calls}
+    assert func_names == {
+        "sync_user",
+        "aggregate_weeks",
+        "generate_weekly_insights",
+    }
     for job in jobs:
         assert job["next_run"] is not None
         assert job["last_status"] == "queued"

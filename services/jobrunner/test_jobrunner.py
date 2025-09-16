@@ -11,6 +11,7 @@ def test_all_jobs_run(monkeypatch):
 
     monkeypatch.setenv("INGEST_LISTENS_INTERVAL_MINUTES", "1")
     monkeypatch.setenv("AGGREGATE_WEEKS_INTERVAL_MINUTES", "1")
+    monkeypatch.setenv("WEEKLY_INSIGHTS_INTERVAL_MINUTES", "1")
     import importlib
 
     run = importlib.import_module("sidetrack.jobrunner.run")
@@ -71,6 +72,8 @@ def test_all_jobs_run(monkeypatch):
         ("sync_user", "u2"),
         ("aggregate_weeks", "u1"),
         ("aggregate_weeks", "u2"),
+        ("generate_weekly_insights", "u1"),
+        ("generate_weekly_insights", "u2"),
     }
     seen = {(name, user) for name, user, _ in calls}
     assert expected == seen
@@ -79,6 +82,7 @@ def test_all_jobs_run(monkeypatch):
 def test_schedule_jobs_idempotent(monkeypatch):
     monkeypatch.setenv("INGEST_LISTENS_INTERVAL_MINUTES", "1")
     monkeypatch.setenv("AGGREGATE_WEEKS_INTERVAL_MINUTES", "1")
+    monkeypatch.setenv("WEEKLY_INSIGHTS_INTERVAL_MINUTES", "1")
     import importlib
 
     run = importlib.import_module("sidetrack.jobrunner.run")
@@ -93,4 +97,4 @@ def test_schedule_jobs_idempotent(monkeypatch):
     first = len(schedule.jobs)
     run.schedule_jobs()
     second = len(schedule.jobs)
-    assert first == second == 4
+    assert first == second == 6

@@ -12,7 +12,7 @@ Pull listens from Spotify or Last.fm (with ListenBrainz as a fallback) → resol
 - cache: Redis 7 (queues, rate limiting)
 - api: FastAPI
 - extraction: audio features/embeddings (Librosa + optional models)
-- jobrunner: periodic scheduling via queue (ingest, tags sync, aggregates)
+- jobrunner: periodic scheduling via queue (ingest, tags sync, aggregates, insights)
 - worker: background jobs (RQ)
 - ui: Next.js dashboard
 - proxy: Caddy reverse proxy
@@ -127,8 +127,13 @@ TORCH_DEVICE=auto  # cuda|cpu|auto
 INGEST_LISTENS_INTERVAL_MINUTES=1
 LASTFM_SYNC_INTERVAL_MINUTES=30
 AGGREGATE_WEEKS_INTERVAL_MINUTES=1440
+WEEKLY_INSIGHTS_INTERVAL_MINUTES=1440
 TZ=America/New_York
 ```
+
+The job runner enqueues `worker.jobs.generate_weekly_insights` for each user on
+the `analysis` queue using the configured `WEEKLY_INSIGHTS_INTERVAL_MINUTES`
+interval (defaults to once per day).
 
 ---
 

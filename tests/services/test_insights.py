@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from sidetrack.common.models import Listen, Track
 from sidetrack.services.recommendation import InsightEvent, compute_weekly_insights
+from sidetrack.worker import jobs as worker_jobs
 
 
 @pytest.mark.unit
@@ -73,3 +74,23 @@ async def test_compute_weekly_insights_rolls_back(async_session, monkeypatch):
         .all()
     )
     assert rows == []
+
+
+def test_generate_weekly_insights_job_creates_events(session):
+    now = datetime.now(UTC)
+    track = Track(title="job-track")
+    session.add(track)
+    session.flush()
+    session.add(Listen(user_id="u1", track_id=track.track_id, played_at=now - timedelta(days=1)))
+    session.commit()
+
+    created = worker_jobs.generate_weekly_insights("u1")
+    assert created >= 1
+
+    session.expire_all()
+    rows = (
+        session.execute(select(InsightEvent).where(InsightEvent.user_id == "u1"))
+        .scalars()
+        .all()
+    )
+    assert len(rows) == created
