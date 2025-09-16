@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import time
 import warnings
 from datetime import date, datetime
-from typing import Any
+from typing import Iterable, Any
 
 import redis
 import schedule
@@ -16,13 +17,14 @@ from rq import Queue
 from rq.job import Job
 from rq.registry import DeferredJobRegistry
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from sidetrack.api.db import SessionLocal
 from sidetrack.common.logging import setup_logging
 from sidetrack.common.models import UserAccount
 from sidetrack.worker import jobs as worker_jobs
 
-from .config import get_settings
+from .config import Settings, get_settings
 
 logger = logging.getLogger("sidetrack.jobrunner")
 
@@ -143,15 +145,28 @@ def _job_timestamp(job: Job, status: str) -> datetime | None:
     return job.enqueued_at
 
 
+async def fetch_user_ids_async(db: AsyncSession | None = None) -> list[str]:
+    """Return all registered user ids using an async SQLAlchemy session."""
+
+    async def _run(session: AsyncSession) -> list[str]:
+        try:
+            result = await session.execute(select(UserAccount.user_id))
+            return list(result.scalars().all())
+        except Exception:  # pragma: no cover - db errors
+            logger.exception("fetch user ids error")
+            return []
+
+    if db is not None:
+        return await _run(db)
+
+    async with SessionLocal(async_session=True) as session:  # type: ignore[arg-type]
+        return await _run(session)
+
+
 def fetch_user_ids() -> list[str]:
-    """Return all registered user ids from the database."""
-    try:
-        with SessionLocal(async_session=False) as db:
-            stmt = select(UserAccount.user_id)
-            return list(db.execute(stmt).scalars().all())
-    except Exception:  # pragma: no cover - db errors
-        logger.exception("fetch user ids error")
-        return []
+    """Synchronous wrapper for :func:`fetch_user_ids_async`."""
+
+    return asyncio.run(fetch_user_ids_async())
 
 
 def _enqueue_job(user_id: str, job_type: str, func) -> None:
@@ -184,20 +199,36 @@ def aggregate_weeks(user_id: str) -> None:
     _enqueue_job(user_id, "aggregate:weeks", worker_jobs.aggregate_weeks)
 
 
-def schedule_jobs() -> None:
-    """Schedule periodic tasks for each registered user."""
+def _schedule_for_users(user_ids: Iterable[str], settings: Settings) -> None:
+    """Register scheduler jobs for ``user_ids`` using provided settings."""
+
     schedule.clear()
-    settings = get_settings()
     sync_minutes = settings.ingest_listens_interval_minutes
     agg_minutes = settings.aggregate_weeks_interval_minutes
 
-    for user_id in fetch_user_ids():
+    for user_id in user_ids:
         schedule.every(sync_minutes).minutes.do(sync_user, user_id).tag(
             f"id:{user_id}:sync:user", f"user:{user_id}", "job:sync:user"
         )
         schedule.every(agg_minutes).minutes.do(aggregate_weeks, user_id).tag(
             f"id:{user_id}:aggregate:weeks", f"user:{user_id}", "job:aggregate:weeks"
         )
+
+
+async def schedule_jobs_async() -> None:
+    """Async variant that initialises scheduled jobs."""
+
+    settings = get_settings()
+    user_ids = await fetch_user_ids_async()
+    _schedule_for_users(user_ids, settings)
+
+
+def schedule_jobs() -> None:
+    """Schedule periodic tasks for each registered user."""
+
+    settings = get_settings()
+    user_ids = fetch_user_ids()
+    _schedule_for_users(user_ids, settings)
 
 
 def main() -> None:

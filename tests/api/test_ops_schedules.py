@@ -69,9 +69,13 @@ async def test_ops_schedules(monkeypatch):
             return self._jobs.get(job_id)
 
     schedule.clear()
-    monkeypatch.setattr(jobrunner_run, "fetch_user_ids", lambda: ["u1"])
+
+    async def _fake_fetch_user_ids() -> list[str]:
+        return ["u1"]
+
+    monkeypatch.setattr(jobrunner_run, "fetch_user_ids_async", _fake_fetch_user_ids)
     monkeypatch.setattr(jobrunner_run, "queue", _Queue())
-    jobrunner_run.schedule_jobs()
+    await jobrunner_run.schedule_jobs_async()
     schedule.run_all(delay_seconds=0)
 
     app = api_main.app
