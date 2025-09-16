@@ -6,7 +6,10 @@ from typing import Any
 
 import httpx
 import logging
+from fastapi import Depends
 from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
+
+from sidetrack.api.config import Settings, get_settings
 
 from .base_client import MusicServiceClient
 from .models import TrackRef
@@ -134,6 +137,12 @@ class ListenBrainzClient(MusicServiceClient):
         return [a for a in artists if isinstance(a, dict)]
 
 
-async def get_listenbrainz_client() -> AsyncGenerator[ListenBrainzClient, None]:
+async def get_listenbrainz_client(
+    settings: Settings = Depends(get_settings),
+) -> AsyncGenerator[ListenBrainzClient, None]:
     async with httpx.AsyncClient() as client:
-        yield ListenBrainzClient(client)
+        yield ListenBrainzClient(
+            client,
+            user=settings.listenbrainz_user,
+            token=settings.listenbrainz_token,
+        )
