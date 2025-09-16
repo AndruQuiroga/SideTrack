@@ -53,6 +53,7 @@ class Track(Base):
 
     track_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     mbid: Mapped[str | None] = mapped_column(String(36), index=True)
+    isrc: Mapped[str | None] = mapped_column(String(16), index=True)
     spotify_id: Mapped[str | None] = mapped_column(String(64), index=True)
     title: Mapped[str] = mapped_column(String(512), index=True)
     artist_id: Mapped[int | None] = mapped_column(ForeignKey("artist.artist_id"))

@@ -21,7 +21,12 @@ async def test_enrich_ids_endpoint_enriches_tracks(async_session, monkeypatch):
     async_session.add(release)
     await async_session.flush()
 
-    track = Track(title="Song", artist_id=artist.artist_id, release_id=release.release_id)
+    track = Track(
+        title="Song",
+        artist_id=artist.artist_id,
+        release_id=release.release_id,
+        isrc="US1234567890",
+    )
     async_session.add(track)
     await async_session.flush()
 
@@ -35,13 +40,13 @@ async def test_enrich_ids_endpoint_enriches_tracks(async_session, monkeypatch):
     await async_session.commit()
 
     class DummyMB:
-        calls: list[tuple[str, str | None, str | None]] = []
+        calls: list[tuple[str | None, str | None, str | None, str | None]] = []
 
         def __init__(self, client):
             self.client = client
 
-        async def recording_by_isrc(self, isrc, title=None, artist=None):
-            DummyMB.calls.append((isrc, title, artist))
+        async def recording_by_isrc(self, isrc, title=None, artist=None, recording_mbid=None):
+            DummyMB.calls.append((isrc, title, artist, recording_mbid))
             return {
                 "recording_mbid": "rec-1",
                 "artist_mbid": "art-1",
@@ -49,6 +54,7 @@ async def test_enrich_ids_endpoint_enriches_tracks(async_session, monkeypatch):
                 "label": "LabelCo",
                 "year": 2005,
                 "tags": [],
+                "isrc": isrc,
             }
 
     DummyMB.calls = []
@@ -84,7 +90,7 @@ async def test_enrich_ids_endpoint_enriches_tracks(async_session, monkeypatch):
     data = resp.json()
     assert data == {"detail": "ok", "processed": 1, "enriched": 1, "errors": []}
 
-    assert DummyMB.calls == [(str(track.track_id), "Song", "Artist")]
+    assert DummyMB.calls == [("US1234567890", "Song", "Artist", None)]
 
     refreshed_track = await async_session.get(Track, track.track_id)
     assert refreshed_track.mbid == "rec-1"
