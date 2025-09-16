@@ -21,23 +21,31 @@ export default function Sidebar({
     <aside
       className={clsx(
         'relative shrink-0 flex flex-col border-r border-white/10 bg-white/5 backdrop-blur-md supports-[backdrop-filter]:bg-white/5',
-        collapsed ? 'w-16' : 'w-16 md:w-60',
-        'transition-[width,background-color] duration-300',
+        collapsed ? 'w-16' : 'w-64 md:w-60',
+        'transition-[width,background-color] duration-300 ease-in-out',
       )}
     >
       <div className="flex items-center justify-between px-3 py-3">
-        {!collapsed && (
-          <span className="text-sm font-semibold tracking-wide text-foreground/90">SideTrack</span>
-        )}
+        <span
+          className={clsx(
+            'overflow-hidden text-sm font-semibold tracking-wide text-foreground/90 transition-[max-width,opacity] duration-300 ease-in-out',
+            collapsed ? 'max-w-0 opacity-0' : 'max-w-[160px] opacity-100',
+          )}
+          aria-hidden={collapsed ? 'true' : 'false'}
+        >
+          SideTrack
+        </span>
         <button
+          type="button"
           onClick={() => setCollapsed(!collapsed)}
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          className="hidden h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-white/10 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 md:inline-flex"
+          aria-expanded={!collapsed}
+          className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors duration-200 hover:bg-white/10 hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
         >
           <Menu size={16} />
         </button>
       </div>
-      <nav className="flex-1 space-y-1 px-2">
+      <nav className="flex-1 space-y-1 px-2" aria-label="Primary">
         {navItems.map((item) => {
           const active = pathname === item.path || pathname.startsWith(item.path + '/');
           return (
@@ -45,7 +53,8 @@ export default function Sidebar({
               <Link
                 href={item.path}
                 className={clsx(
-                  'relative flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500',
+                  'relative flex items-center rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500',
+                  collapsed ? 'justify-center gap-0' : 'gap-3',
                   active && 'bg-white/10 text-foreground',
                 )}
                 aria-label={item.label}
@@ -56,8 +65,22 @@ export default function Sidebar({
                     aria-hidden
                   />
                 )}
-                <item.icon size={18} />
-                {!collapsed && <span className="hidden md:inline">{item.label}</span>}
+                <item.icon
+                  size={18}
+                  className={clsx(
+                    'shrink-0 transition-opacity duration-300 ease-in-out',
+                    collapsed ? 'opacity-90' : 'opacity-100',
+                  )}
+                />
+                <span
+                  className={clsx(
+                    'whitespace-nowrap overflow-hidden transition-[max-width,opacity] duration-300 ease-in-out',
+                    collapsed ? 'max-w-0 opacity-0' : 'max-w-[160px] opacity-100',
+                  )}
+                  aria-hidden={collapsed ? 'true' : 'false'}
+                >
+                  {item.label}
+                </span>
               </Link>
               {collapsed && (
                 <span
