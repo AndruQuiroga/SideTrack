@@ -6,7 +6,7 @@ import { Theme, ThemeContext } from './ThemeContext';
 function ThemeContextBridge({ children }: { children: ReactNode }) {
   const { resolvedTheme, theme: storedTheme, setTheme } = useNextTheme();
 
-  const activeTheme = useMemo(() => {
+  const activeTheme = useMemo<Theme>(() => {
     if (resolvedTheme === 'dark' || resolvedTheme === 'light') return resolvedTheme;
     if (storedTheme === 'dark' || storedTheme === 'light') return storedTheme;
     return 'dark';

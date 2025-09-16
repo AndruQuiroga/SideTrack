@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import clsx from 'clsx';
 import { motion } from 'framer-motion';
 import * as Tooltip from '@radix-ui/react-tooltip';
+import type { LucideIcon } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import nav from '../nav.json';
 import { useNav } from './NavContext';
@@ -34,7 +35,7 @@ export default function NavRail() {
       <Tooltip.Provider>
         <nav className="flex flex-col gap-2" aria-label="Primary">
           {visibleItems.map((item, idx) => {
-            const Icon = Icons[item.icon];
+            const Icon = Icons[item.icon] as LucideIcon;
             const active = pathname === item.path || pathname.startsWith(`${item.path}/`);
             return (
               <Tooltip.Root key={item.path}>
