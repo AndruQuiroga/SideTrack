@@ -5,7 +5,7 @@ from datetime import UTC, datetime, timedelta
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from sidetrack.services.insights import get_insights
+from sidetrack.services.recommendation import get_insights
 
 from ..db import get_db
 from ..security import get_current_user

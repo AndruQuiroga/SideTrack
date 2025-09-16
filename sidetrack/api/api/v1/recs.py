@@ -2,18 +2,15 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sidetrack.common.models import UserSettings
-from sidetrack.services.candidates import generate_candidates
 from sidetrack.services.listenbrainz import ListenBrainzClient
 from sidetrack.services.musicbrainz import MusicBrainzService
-from sidetrack.services.ranker import profile_from_spotify, rank
+from sidetrack.services.recommendation import RecommendationService
 from sidetrack.services.spotify import SpotifyUserClient
 from sidetrack.services.lastfm import LastfmClient
 
@@ -55,47 +52,20 @@ async def list_recs(
         lb_client = ListenBrainzClient(client)
         lb_user = row.listenbrainz_user
 
-    candidates = await generate_candidates(
+    redis_conn = _get_redis_connection(settings)
+    mb_service = MusicBrainzService(client, redis_conn=redis_conn, db=db)
+
+    rec_service = RecommendationService(
         spotify=spotify_service,
         lastfm=lastfm_client,
         lastfm_user=lastfm_user,
         listenbrainz=lb_client,
         listenbrainz_user=lb_user,
+        musicbrainz=mb_service,
     )
 
-    redis_conn = _get_redis_connection(settings)
-    mb_service = MusicBrainzService(client, redis_conn=redis_conn, db=db)
-
-    enriched: list[dict] = []
-    for cand in candidates:
-        item = {
-            "artist": cand.get("artist"),
-            "title": cand.get("title"),
-            "source": cand.get("source"),
-            "score_cf": cand.get("score_cf"),
-        }
-        isrc = cand.get("isrc")
-        rec_mbid = cand.get("recording_mbid")
-        if isrc:
-            mb = await mb_service.recording_by_isrc(
-                isrc, title=item.get("title"), artist=item.get("artist")
-            )
-            item.update(
-                {
-                    "recording_mbid": mb.get("recording_mbid"),
-                    "artist_mbid": mb.get("artist_mbid"),
-                    "release_year": mb.get("year"),
-                    "label": mb.get("label"),
-                    "tags": mb.get("tags"),
-                }
-            )
-        elif rec_mbid:
-            item["recording_mbid"] = rec_mbid
-        else:
-            item["spotify_id"] = cand.get("spotify_id")
-        enriched.append(item)
-
-    return {"candidates": enriched}
+    result = await rec_service.generate_recommendations(include_ranked=False)
+    return {"candidates": result.enriched}
 
 
 @router.get("/recs/ranked")
@@ -128,73 +98,30 @@ async def ranked_recs(
         lb_client = ListenBrainzClient(client)
         lb_user = row.listenbrainz_user
 
-    candidates = await generate_candidates(
+    redis_conn = _get_redis_connection(settings)
+    mb_service = MusicBrainzService(client, redis_conn=redis_conn, db=db)
+    rec_service = RecommendationService(
         spotify=spotify_service,
         lastfm=lastfm_client,
         lastfm_user=lastfm_user,
         listenbrainz=lb_client,
         listenbrainz_user=lb_user,
+        musicbrainz=mb_service,
     )
 
-    redis_conn = _get_redis_connection(settings)
-    mb_service = MusicBrainzService(client, redis_conn=redis_conn, db=db)
-
-    enriched: list[dict] = []
-    spotify_ids: list[str] = []
-    for cand in candidates:
-        item: dict[str, Any] = {
-            "artist": cand.get("artist"),
-            "title": cand.get("title"),
-            "score_cf": cand.get("score_cf"),
+    result = await rec_service.generate_recommendations(limit=limit)
+    return [
+        {
+            k: item.get(k)
+            for k in (
+                "title",
+                "artist",
+                "spotify_id",
+                "recording_mbid",
+                "reasons",
+                "final_score",
+            )
+            if item.get(k) is not None
         }
-        isrc = cand.get("isrc")
-        rec_mbid = cand.get("recording_mbid")
-        if isrc:
-            mb = await mb_service.recording_by_isrc(
-                isrc, title=item.get("title"), artist=item.get("artist")
-            )
-            item.update(
-                {
-                    "recording_mbid": mb.get("recording_mbid"),
-                    "artist_mbid": mb.get("artist_mbid"),
-                    "label": mb.get("label"),
-                }
-            )
-        elif rec_mbid:
-            item["recording_mbid"] = rec_mbid
-        else:
-            sid = cand.get("spotify_id")
-            if sid:
-                item["spotify_id"] = sid
-                spotify_ids.append(sid)
-        enriched.append(item)
-
-    user_profile: dict[str, float] = {}
-    if spotify_service:
-        user_profile = await profile_from_spotify(spotify_service)
-        if spotify_ids:
-            feats = await spotify_service.get_audio_features(spotify_ids)
-            feat_map = {f.get("id"): f for f in feats}
-            for item in enriched:
-                sid = item.get("spotify_id")
-                if sid and sid in feat_map:
-                    item["audio_features"] = feat_map[sid]
-
-    ranked = rank(enriched, user_profile)
-    out: list[dict] = []
-    for item in ranked[:limit]:
-        out.append(
-            {
-                k: item.get(k)
-                for k in (
-                    "title",
-                    "artist",
-                    "spotify_id",
-                    "recording_mbid",
-                    "reasons",
-                    "final_score",
-                )
-                if item.get(k) is not None
-            }
-        )
-    return out
+        for item in result.ranked
+    ]

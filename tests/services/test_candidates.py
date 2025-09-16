@@ -1,7 +1,7 @@
 import pytest
 
-from sidetrack.services import candidates as cand_mod
-from sidetrack.services.candidates import Candidate, generate_candidates
+from sidetrack.services import recommendation as rec_mod
+from sidetrack.services.recommendation import Candidate, generate_candidates
 
 
 @pytest.mark.unit
@@ -22,9 +22,9 @@ async def test_generate_candidates_combines_sources(monkeypatch):
             Candidate(isrc="isrc1", artist="a2", title="t2", source="listenbrainz")
         ]
 
-    monkeypatch.setattr(cand_mod, "_spotify_candidates", fake_sp)
-    monkeypatch.setattr(cand_mod, "_lastfm_candidates", fake_lfm)
-    monkeypatch.setattr(cand_mod, "_listenbrainz_candidates", fake_lb)
+    monkeypatch.setattr(rec_mod, "_spotify_candidates", fake_sp)
+    monkeypatch.setattr(rec_mod, "_lastfm_candidates", fake_lfm)
+    monkeypatch.setattr(rec_mod, "_listenbrainz_candidates", fake_lb)
 
     results = await generate_candidates(
         spotify=object(),
@@ -47,9 +47,9 @@ async def test_generate_candidates_dedupes_by_id(monkeypatch, field):
     async def fake_lfm(_, __):
         return [Candidate(**{field: "id1"}, seeds={"lf": {"y"}}, source="lastfm")]
 
-    monkeypatch.setattr(cand_mod, "_spotify_candidates", fake_sp)
-    monkeypatch.setattr(cand_mod, "_lastfm_candidates", fake_lfm)
-    monkeypatch.setattr(cand_mod, "_listenbrainz_candidates", lambda *_: [])
+    monkeypatch.setattr(rec_mod, "_spotify_candidates", fake_sp)
+    monkeypatch.setattr(rec_mod, "_lastfm_candidates", fake_lfm)
+    monkeypatch.setattr(rec_mod, "_listenbrainz_candidates", lambda *_: [])
 
     results = await generate_candidates(
         spotify=object(), lastfm=object(), lastfm_user="u"
