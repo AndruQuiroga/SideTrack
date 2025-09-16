@@ -199,12 +199,17 @@ def aggregate_weeks(user_id: str) -> None:
     _enqueue_job(user_id, "aggregate:weeks", worker_jobs.aggregate_weeks)
 
 
+def generate_weekly_insights(user_id: str) -> None:
+    _enqueue_job(user_id, "insights:weekly", worker_jobs.generate_weekly_insights)
+
+
 def _schedule_for_users(user_ids: Iterable[str], settings: Settings) -> None:
     """Register scheduler jobs for ``user_ids`` using provided settings."""
 
     schedule.clear()
     sync_minutes = settings.ingest_listens_interval_minutes
     agg_minutes = settings.aggregate_weeks_interval_minutes
+    insights_minutes = settings.weekly_insights_interval_minutes
 
     for user_id in user_ids:
         schedule.every(sync_minutes).minutes.do(sync_user, user_id).tag(
@@ -212,6 +217,9 @@ def _schedule_for_users(user_ids: Iterable[str], settings: Settings) -> None:
         )
         schedule.every(agg_minutes).minutes.do(aggregate_weeks, user_id).tag(
             f"id:{user_id}:aggregate:weeks", f"user:{user_id}", "job:aggregate:weeks"
+        )
+        schedule.every(insights_minutes).minutes.do(generate_weekly_insights, user_id).tag(
+            f"id:{user_id}:insights:weekly", f"user:{user_id}", "job:insights:weekly"
         )
 
 

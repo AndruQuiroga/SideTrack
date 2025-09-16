@@ -159,6 +159,9 @@ class JobRunnerSettings(Settings):
     aggregate_weeks_interval_minutes: float = Field(
         60 * 24, env="AGGREGATE_WEEKS_INTERVAL_MINUTES"
     )
+    weekly_insights_interval_minutes: float = Field(
+        60 * 24, env="WEEKLY_INSIGHTS_INTERVAL_MINUTES"
+    )
 
 
 @lru_cache
