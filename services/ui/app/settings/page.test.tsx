@@ -8,6 +8,8 @@ describe('Settings page', () => {
   beforeEach(() => {
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
+      status: 200,
+      statusText: 'OK',
       json: () => Promise.resolve({}),
     });
     document.cookie = 'uid=test';
@@ -15,6 +17,39 @@ describe('Settings page', () => {
 
   afterEach(() => {
     jest.resetAllMocks();
+  });
+
+  it('shows skeleton while settings data is loading', async () => {
+    let resolveFetch: ((value: Response) => void) | undefined;
+    (global.fetch as jest.Mock).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveFetch = resolve;
+        }),
+    );
+
+    render(
+      <ToastProvider>
+        <AuthProvider>
+          <SettingsPage />
+        </AuthProvider>
+      </ToastProvider>,
+    );
+
+    expect(screen.getByRole('status', { name: /loading settings/i })).toBeInTheDocument();
+
+    await waitFor(() => expect(fetch).toHaveBeenCalled());
+
+    resolveFetch?.({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      json: () => Promise.resolve({}),
+    } as unknown as Response);
+
+    await waitFor(() =>
+      expect(screen.queryByRole('status', { name: /loading settings/i })).not.toBeInTheDocument(),
+    );
   });
 
   it('pings backend with test button', async () => {

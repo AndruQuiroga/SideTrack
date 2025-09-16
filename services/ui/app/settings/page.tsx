@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import PageSkeleton from '../../components/layout/PageSkeleton';
 import SourceCard, { SourceStatus } from '../../components/settings/SourceCard';
 import RankerControls from '../../components/settings/RankerControls';
 import DataControls from '../../components/settings/DataControls';
@@ -18,6 +19,7 @@ export default function SettingsPage() {
   // Keep hook to ensure auth provider mounts; value unused
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { userId } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
   const [connectedUsers, setConnectedUsers] = useState<{ spotify: string; lastfm: string }>({
     spotify: '',
     lastfm: '',
@@ -31,6 +33,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     let active = true;
+    setIsLoading(true);
     (async () => {
       try {
         const res = await apiFetch('/api/settings');
@@ -48,12 +51,25 @@ export default function SettingsPage() {
         });
       } catch {
         // errors are surfaced through ToastProvider
+      } finally {
+        if (active) setIsLoading(false);
       }
     })();
     return () => {
       active = false;
     };
   }, []);
+
+  if (isLoading) {
+    return (
+      <PageSkeleton
+        aria-label="Loading settings"
+        className="space-y-10"
+        sections={4}
+        sectionClassName="h-40"
+      />
+    );
+  }
 
   return (
     <div className="space-y-10">
