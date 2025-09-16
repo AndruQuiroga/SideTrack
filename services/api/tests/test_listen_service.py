@@ -31,25 +31,52 @@ async def test_listen_service_ingest(async_session):
     )
 
     ts = int(datetime.utcnow().timestamp())
-    rows = [
-        {
-            "track_metadata": {
-                "artist_name": "Artist",
-                "track_name": "Song",
-                "release_name": "Album",
-                "mbid_mapping": {"recording_mbid": "mbid1"},
-            },
-            "listened_at": ts,
-            "user_name": "tester",
-        }
-    ]
+    base_row = {
+        "track_metadata": {
+            "artist_name": "Artist",
+            "track_name": "Song",
+            "release_name": "Album",
+            "mbid_mapping": {"recording_mbid": "mbid1"},
+        },
+        "user_name": "tester",
+    }
 
-    created = await service.ingest_lb_rows(rows, "tester")
+    created = await service.ingest_lb_rows(
+        [{**base_row, "listened_at": ts}], "tester"
+    )
     assert created == 1
 
     # ingest same rows again should not create duplicates
-    created = await service.ingest_lb_rows(rows, "tester")
+    created = await service.ingest_lb_rows(
+        [{**base_row, "listened_at": ts}], "tester"
+    )
     assert created == 0
 
-    res = await async_session.execute(select(Listen))
-    assert len(res.scalars().all()) == 1
+    # row-supplied source takes precedence
+    created = await service.ingest_lb_rows(
+        [
+            {
+                **base_row,
+                "listened_at": ts + 1,
+                "source": "Manual",
+            }
+        ],
+        "tester",
+    )
+    assert created == 1
+
+    # explicit source argument applies when no row hint is present
+    created = await service.ingest_lb_rows(
+        [{**base_row, "listened_at": ts + 2}],
+        "tester",
+        source="Spotify",
+    )
+    assert created == 1
+
+    res = await async_session.execute(select(Listen).order_by(Listen.played_at))
+    listens = res.scalars().all()
+    assert [listen.source for listen in listens] == [
+        "listenbrainz",
+        "manual",
+        "spotify",
+    ]

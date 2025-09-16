@@ -81,7 +81,9 @@ class ListenService:
         self.tracks = track_repo
         self.listens = listen_repo
 
-    async def ingest_lb_rows(self, listens: list[dict], user_id: str | None = None) -> int:
+    async def ingest_lb_rows(
+        self, listens: list[dict], user_id: str | None = None, *, source: str | None = None
+    ) -> int:
         """Ingest ListenBrainz-style listen rows into the database.
 
         Rows are collected and inserted in bulk while caching intermediate
@@ -92,6 +94,16 @@ class ListenService:
         release_cache: dict[tuple[str, int], object] = {}
         track_cache: dict[tuple[str | None, str, int, int | None], object] = {}
         listen_rows: list[dict] = []
+
+        def _normalize_source(value: object | None) -> str | None:
+            if value is None:
+                return None
+            if isinstance(value, str):
+                value = value.strip().lower()
+                return value or None
+            return str(value).lower()
+
+        default_source = _normalize_source(source) or "listenbrainz"
 
         for item in listens:
             tm = item.get("track_metadata", {})
@@ -106,6 +118,18 @@ class ListenService:
                 continue
             played_at = datetime.utcfromtimestamp(played_at_ts)
             uid = (user_id or item.get("user_name") or "lb").lower()
+
+            item_additional = item.get("additional_info") or {}
+            tm_additional = (tm.get("additional_info") or {})
+
+            row_source = (
+                _normalize_source(item.get("source"))
+                or _normalize_source(item_additional.get("source"))
+                or _normalize_source(item_additional.get("submission_client"))
+                or _normalize_source(tm_additional.get("source"))
+                or _normalize_source(tm_additional.get("submission_client"))
+                or default_source
+            )
 
             artist = artist_cache.get(artist_name)
             if artist is None:
@@ -143,7 +167,7 @@ class ListenService:
                     "user_id": uid,
                     "track_id": track.track_id,
                     "played_at": played_at,
-                    "source": "listenbrainz",
+                    "source": row_source,
                 }
             )
 
@@ -165,7 +189,7 @@ class ListenService:
             row = convert_spotify_item(item, user_id)
             if row:
                 rows.append(row)
-        return await self.ingest_lb_rows(rows, user_id)
+        return await self.ingest_lb_rows(rows, user_id, source="spotify")
 
     async def ingest_lastfm_rows(self, tracks: list[dict], user_id: str) -> int:
         """Ingest Last.fm ``recenttracks`` data."""
@@ -175,7 +199,7 @@ class ListenService:
             row = convert_lastfm_track(item, user_id)
             if row:
                 rows.append(row)
-        return await self.ingest_lb_rows(rows, user_id)
+        return await self.ingest_lb_rows(rows, user_id, source="lastfm")
 
 
 def get_listen_service(db: AsyncSession = Depends(get_db)) -> ListenService:
