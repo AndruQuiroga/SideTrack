@@ -23,8 +23,7 @@ from sidetrack.extraction import compute_embeddings
 
 from .config import get_settings
 
-logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s:%(message)s")
-logger = logging.getLogger("worker")
+logger = logging.getLogger("sidetrack.worker.jobs")
 
 
 KEYS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
