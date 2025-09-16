@@ -1,45 +1,45 @@
 'use client';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useMemo, type ReactNode } from 'react';
+import { ThemeProvider as NextThemeProvider, useTheme as useNextTheme } from 'next-themes';
 import { Theme, ThemeContext } from './ThemeContext';
 
-const STORAGE_KEY = 'theme';
+function ThemeContextBridge({ children }: { children: ReactNode }) {
+  const { resolvedTheme, theme: storedTheme, setTheme } = useNextTheme();
 
-function getStoredTheme(): Theme | null {
-  if (typeof window === 'undefined') return null;
-  const local = localStorage.getItem(STORAGE_KEY);
-  if (local === 'light' || local === 'dark') return local as Theme;
-  const match = document.cookie.match(/(?:^|; )theme=(light|dark)/);
-  return match ? (match[1] as Theme) : null;
-}
+  const activeTheme = useMemo(() => {
+    if (resolvedTheme === 'dark' || resolvedTheme === 'light') return resolvedTheme;
+    if (storedTheme === 'dark' || storedTheme === 'light') return storedTheme;
+    return 'dark';
+  }, [resolvedTheme, storedTheme]);
 
-function getPreferredTheme(): Theme {
-  if (typeof window === 'undefined') return 'dark';
-  const stored = getStoredTheme();
-  if (stored) return stored;
-  const prefersDark =
-    typeof window.matchMedia === 'function' &&
-    window.matchMedia('(prefers-color-scheme: dark)').matches;
-  return prefersDark ? 'dark' : 'light';
-}
-
-export default function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(getPreferredTheme);
-
-  useEffect(() => {
-    const root = document.documentElement;
-    root.classList.toggle('dark', theme === 'dark');
-    localStorage.setItem(STORAGE_KEY, theme);
-    document.cookie = `${STORAGE_KEY}=${theme}; path=/; max-age=31536000`;
-  }, [theme]);
+  const setThemePreference = useCallback(
+    (next: Theme) => {
+      setTheme(next);
+    },
+    [setTheme],
+  );
 
   const toggleTheme = useCallback(() => {
-    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
-  }, []);
+    setThemePreference(activeTheme === 'dark' ? 'light' : 'dark');
+  }, [activeTheme, setThemePreference]);
 
+  const value = useMemo(
+    () => ({
+      theme: activeTheme,
+      setTheme: setThemePreference,
+      toggleTheme,
+    }),
+    [activeTheme, setThemePreference, toggleTheme],
+  );
+
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+}
+
+export default function ThemeProvider({ children }: { children: ReactNode }) {
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
-      {children}
-    </ThemeContext.Provider>
+    <NextThemeProvider attribute="class" defaultTheme="dark">
+      <ThemeContextBridge>{children}</ThemeContextBridge>
+    </NextThemeProvider>
   );
 }
 
