@@ -1,54 +1,92 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '../ui/button';
 import { Switch } from '../ui/switch';
 import { Slider } from '../ui/slider';
-
-interface Filters {
-  newOnly: boolean;
-  freshness: number;
-  diversity: number;
-  energy: number;
-}
+import {
+  DEFAULT_FILTERS,
+  filtersSchema,
+  type FiltersFormValues,
+} from './filters.schema';
 
 interface Props {
-  filters: Filters;
-  onChange: (f: Filters) => void;
+  filters: FiltersFormValues;
+  onChange: (f: FiltersFormValues) => void;
 }
 
-const DEFAULTS: Filters = {
-  newOnly: false,
-  freshness: 0,
-  diversity: 0,
-  energy: 0,
-};
-
 export default function FiltersBar({ filters, onChange }: Props) {
-  const [draft, setDraft] = useState<Filters>(filters);
-  const first = useRef(true);
-  const timeout = useRef<NodeJS.Timeout>();
+  const initialValuesResult = filtersSchema.safeParse(filters);
+  const form = useForm<FiltersFormValues>({
+    resolver: zodResolver(filtersSchema),
+    defaultValues: initialValuesResult.success
+      ? initialValuesResult.data
+      : DEFAULT_FILTERS,
+  });
+
+  const watchedValues = form.watch();
+  const values: FiltersFormValues = {
+    newOnly: watchedValues?.newOnly ?? DEFAULT_FILTERS.newOnly,
+    freshness: watchedValues?.freshness ?? DEFAULT_FILTERS.freshness,
+    diversity: watchedValues?.diversity ?? DEFAULT_FILTERS.diversity,
+    energy: watchedValues?.energy ?? DEFAULT_FILTERS.energy,
+  };
+
+  const skipNextChange = useRef(true);
+  const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    setDraft(filters);
-  }, [filters]);
+    const parsed = filtersSchema.safeParse(filters);
+    skipNextChange.current = true;
+    form.reset(parsed.success ? parsed.data : DEFAULT_FILTERS);
+  }, [filters, form]);
 
   useEffect(() => {
-    if (first.current) {
-      first.current = false;
+    if (skipNextChange.current) {
+      skipNextChange.current = false;
       return;
     }
-    if (timeout.current) clearTimeout(timeout.current);
-    timeout.current = setTimeout(() => onChange(draft), 300);
-    return () => {
-      if (timeout.current) clearTimeout(timeout.current);
-    };
-  }, [draft, onChange]);
 
-  const apply = () => {
-    if (timeout.current) clearTimeout(timeout.current);
-    onChange(draft);
-  };
+    if (debounceTimeout.current) {
+      clearTimeout(debounceTimeout.current);
+      debounceTimeout.current = null;
+    }
+
+    const parsed = filtersSchema.safeParse(values);
+    if (!parsed.success) {
+      return;
+    }
+
+    debounceTimeout.current = setTimeout(() => {
+      onChange(parsed.data);
+    }, 300);
+
+    return () => {
+      if (debounceTimeout.current) {
+        clearTimeout(debounceTimeout.current);
+        debounceTimeout.current = null;
+      }
+    };
+  }, [values, onChange]);
+
+  useEffect(() => {
+    return () => {
+      if (debounceTimeout.current) {
+        clearTimeout(debounceTimeout.current);
+        debounceTimeout.current = null;
+      }
+    };
+  }, []);
+
+  const apply = form.handleSubmit((data) => {
+    if (debounceTimeout.current) {
+      clearTimeout(debounceTimeout.current);
+      debounceTimeout.current = null;
+    }
+    onChange(data);
+  });
 
   return (
     <div className="space-y-4 text-sm">
@@ -57,15 +95,23 @@ export default function FiltersBar({ filters, onChange }: Props) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span>New artists only</span>
-            {draft.newOnly && (
+            {values.newOnly && (
               <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs text-emerald-300">
                 On
               </span>
             )}
           </div>
-          <Switch
-            checked={draft.newOnly}
-            onCheckedChange={(checked) => setDraft({ ...draft, newOnly: checked })}
+          <Controller
+            control={form.control}
+            name="newOnly"
+            render={({ field }) => (
+              <Switch
+                checked={field.value}
+                onCheckedChange={field.onChange}
+                onBlur={field.onBlur}
+                ref={field.ref}
+              />
+            )}
           />
         </div>
       </div>
@@ -75,57 +121,78 @@ export default function FiltersBar({ filters, onChange }: Props) {
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <span>Min freshness</span>
-              {draft.freshness > DEFAULTS.freshness && (
+              {values.freshness > DEFAULT_FILTERS.freshness && (
                 <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs text-emerald-300">
-                  {draft.freshness.toFixed(1)}
+                  {values.freshness.toFixed(1)}
                 </span>
               )}
             </div>
-            <Slider
-              value={[draft.freshness]}
-              min={0}
-              max={1}
-              step={0.1}
-              onValueChange={(v) => setDraft({ ...draft, freshness: v[0] })}
+            <Controller
+              control={form.control}
+              name="freshness"
+              render={({ field }) => (
+                <Slider
+                  value={[field.value]}
+                  min={0}
+                  max={1}
+                  step={0.1}
+                  onValueChange={(v) => field.onChange(v[0])}
+                  onBlur={field.onBlur}
+                />
+              )}
             />
           </div>
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <span>Diversity</span>
-              {draft.diversity > DEFAULTS.diversity && (
+              {values.diversity > DEFAULT_FILTERS.diversity && (
                 <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs text-emerald-300">
-                  {draft.diversity.toFixed(1)}
+                  {values.diversity.toFixed(1)}
                 </span>
               )}
             </div>
-            <Slider
-              value={[draft.diversity]}
-              min={0}
-              max={1}
-              step={0.1}
-              onValueChange={(v) => setDraft({ ...draft, diversity: v[0] })}
+            <Controller
+              control={form.control}
+              name="diversity"
+              render={({ field }) => (
+                <Slider
+                  value={[field.value]}
+                  min={0}
+                  max={1}
+                  step={0.1}
+                  onValueChange={(v) => field.onChange(v[0])}
+                  onBlur={field.onBlur}
+                />
+              )}
             />
           </div>
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <span>Energy</span>
-              {draft.energy > DEFAULTS.energy && (
+              {values.energy > DEFAULT_FILTERS.energy && (
                 <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs text-emerald-300">
-                  {draft.energy.toFixed(1)}
+                  {values.energy.toFixed(1)}
                 </span>
               )}
             </div>
-            <Slider
-              value={[draft.energy]}
-              min={0}
-              max={1}
-              step={0.1}
-              onValueChange={(v) => setDraft({ ...draft, energy: v[0] })}
+            <Controller
+              control={form.control}
+              name="energy"
+              render={({ field }) => (
+                <Slider
+                  value={[field.value]}
+                  min={0}
+                  max={1}
+                  step={0.1}
+                  onValueChange={(v) => field.onChange(v[0])}
+                  onBlur={field.onBlur}
+                />
+              )}
             />
           </div>
         </div>
       </div>
-      <Button type="button" onClick={apply} className="mt-2">
+      <Button type="button" onClick={() => void apply()} className="mt-2">
         Apply
       </Button>
     </div>
