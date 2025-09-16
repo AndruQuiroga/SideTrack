@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sidetrack.common.models import Listen, Track
-from sidetrack.services.insights import InsightEvent, compute_weekly_insights
+from sidetrack.services.recommendation import InsightEvent, compute_weekly_insights
 
 
 @pytest.mark.unit

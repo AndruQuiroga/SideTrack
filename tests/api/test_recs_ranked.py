@@ -19,7 +19,7 @@ def test_ranked_recs(client, session, monkeypatch, user_id):
         ]
 
     monkeypatch.setattr(
-        "sidetrack.services.candidates.generate_candidates", fake_generate_candidates
+        "sidetrack.services.recommendation.generate_candidates", fake_generate_candidates
     )
 
     resp = client.get("/api/v1/recs/ranked", headers={"X-User-Id": user_id})

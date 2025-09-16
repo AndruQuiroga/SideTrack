@@ -3,7 +3,7 @@ import pytest
 import logging
 
 from sidetrack.services.listenbrainz import ListenBrainzClient
-from sidetrack.services.candidates import _listenbrainz_candidates
+from sidetrack.services.recommendation import _listenbrainz_candidates
 
 
 @pytest.mark.unit
