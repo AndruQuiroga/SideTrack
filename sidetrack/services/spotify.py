@@ -124,7 +124,9 @@ class SpotifyClient(MusicServiceClient):
         access_token: str,
         after: datetime | None = None,
         limit: int = 50,
-    ) -> list[dict[str, Any]]:
+        *,
+        raw: bool = False,
+    ) -> list[dict[str, Any]] | dict[str, Any]:
         params: dict[str, Any] = {"limit": min(limit, 50)}
         if after:
             params["after"] = int(after.timestamp() * 1000)
@@ -134,6 +136,8 @@ class SpotifyClient(MusicServiceClient):
             access_token,
             params=params,
         )
+        if raw:
+            return data
         return data.get("items", [])
 
     async def get_audio_features(
