@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import time
+import warnings
 from datetime import date, datetime
 
 import redis
@@ -86,4 +87,10 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    warnings.warn(
+        "`python -m sidetrack.jobrunner.run` is deprecated; use "
+        "`python -m sidetrack schedule` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     main()

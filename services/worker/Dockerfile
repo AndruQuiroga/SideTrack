@@ -13,4 +13,4 @@ RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg \
 COPY --from=builder /usr/local /usr/local
 RUN python -c "import sidetrack; print('worker runtime deps OK')"
 
-CMD ["python", "-m", "sidetrack.worker.run"]
+CMD ["python", "-m", "sidetrack", "worker", "run"]

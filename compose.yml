@@ -57,7 +57,7 @@ services:
         condition: service_started
       db:
         condition: service_healthy
-    command: python -m sidetrack.extraction --schedule "@daily"
+    command: python -m sidetrack extract --schedule "@daily"
 
   jobrunner:
     build:
@@ -85,7 +85,7 @@ services:
         condition: service_healthy
       db:
         condition: service_healthy
-    command: python -m sidetrack.worker.run
+    command: python -m sidetrack worker run
 
   ui:
     build: ./services/ui
