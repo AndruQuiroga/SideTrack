@@ -5,7 +5,7 @@ import * as Tooltip from '@radix-ui/react-tooltip';
 import { useToast } from './ToastProvider';
 import { useTheme } from './ThemeContext';
 import { RefreshCw, Sun, Moon } from 'lucide-react';
-import { apiFetch } from '../lib/api';
+import { syncLastfmScrobbles } from '../lib/lastfmSync';
 
 export default function HeaderActions() {
   const toast = useToast();
@@ -14,22 +14,13 @@ export default function HeaderActions() {
 
   const handleSync = async () => {
     setSyncing(true);
-    toast.show({ title: 'Sync started', description: 'Syncing Last.fm tags…', kind: 'info' });
+    toast.show({ title: 'Sync started', description: 'Ingesting Last.fm scrobbles…', kind: 'info' });
     try {
-      const res = await apiFetch('/api/lastfm/sync', { method: 'GET', suppressErrorToast: true });
-      let updatedCount: number | null = null;
-      try {
-        const data = (await res.json()) as { updated?: number };
-        if (typeof data?.updated === 'number') {
-          updatedCount = data.updated;
-        }
-      } catch {
-        // Ignore JSON parsing errors for toast rendering
-      }
+      const { ingested } = await syncLastfmScrobbles();
       const description =
-        updatedCount != null
-          ? `Updated ${updatedCount} ${updatedCount === 1 ? 'tag' : 'tags'}`
-          : 'Last.fm tags updated';
+        typeof ingested === 'number'
+          ? `Ingested ${ingested} ${ingested === 1 ? 'listen' : 'listens'}`
+          : 'Scrobbles synced';
       toast.show({ title: 'Sync complete', description, kind: 'success' });
     } catch {
       toast.show({ title: 'Sync failed', description: 'Please try again later', kind: 'error' });
