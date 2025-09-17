@@ -14,10 +14,23 @@ export default function HeaderActions() {
 
   const handleSync = async () => {
     setSyncing(true);
-    toast.show({ title: 'Sync started', description: 'Fetching listens…', kind: 'info' });
+    toast.show({ title: 'Sync started', description: 'Syncing Last.fm tags…', kind: 'info' });
     try {
-      await apiFetch('/api/lastfm/sync', { method: 'POST', suppressErrorToast: true });
-      toast.show({ title: 'Sync complete', description: 'Listens updated', kind: 'success' });
+      const res = await apiFetch('/api/lastfm/sync', { method: 'GET', suppressErrorToast: true });
+      let updatedCount: number | null = null;
+      try {
+        const data = (await res.json()) as { updated?: number };
+        if (typeof data?.updated === 'number') {
+          updatedCount = data.updated;
+        }
+      } catch {
+        // Ignore JSON parsing errors for toast rendering
+      }
+      const description =
+        updatedCount != null
+          ? `Updated ${updatedCount} ${updatedCount === 1 ? 'tag' : 'tags'}`
+          : 'Last.fm tags updated';
+      toast.show({ title: 'Sync complete', description, kind: 'success' });
     } catch {
       toast.show({ title: 'Sync failed', description: 'Please try again later', kind: 'error' });
     } finally {
