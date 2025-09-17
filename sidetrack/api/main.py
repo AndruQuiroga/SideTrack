@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 from fastapi_limiter import FastAPILimiter
 from sqlalchemy import and_, delete, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 import sidetrack.scoring as track_scoring
 from sidetrack.common.logging import setup_logging
@@ -45,7 +46,7 @@ from .config import Settings
 from .config import get_settings as get_app_settings
 from .constants import AXES, DEFAULT_METHOD
 from .db import SessionLocal, get_db, maybe_create_all
-from .schemas.labels import LabelResponse
+from .schemas.labels import LabelDeleteResponse, LabelListResponse, LabelResponse
 from .schemas.scoring import ScoreBatchIn
 from .schemas.settings import SettingsIn, SettingsOut, SettingsUpdateResponse
 from .schemas.tracks import (
@@ -611,6 +612,24 @@ async def enrich_ids_endpoint(
     return payload
 
 
+@app.get("/labels", response_model=LabelListResponse)
+async def list_labels(
+    db: Session | AsyncSession = Depends(get_db),
+    user_id: str = Depends(get_current_user),
+):
+    stmt = (
+        select(UserLabel)
+        .where(UserLabel.user_id == user_id)
+        .order_by(UserLabel.created_at.desc(), UserLabel.id.desc())
+    )
+    if isinstance(db, AsyncSession):
+        result = await db.execute(stmt)
+    else:
+        result = db.execute(stmt)
+    labels = result.scalars().all()
+    return LabelListResponse(labels=labels)
+
+
 @app.post("/labels", response_model=LabelResponse)
 async def submit_label(
     track_id: int,
@@ -633,6 +652,27 @@ async def submit_label(
         axis=lbl.axis,
         value=lbl.value,
     )
+
+
+@app.delete("/labels/{label_id}", response_model=LabelDeleteResponse)
+async def delete_label(
+    label_id: int,
+    db: Session | AsyncSession = Depends(get_db),
+    user_id: str = Depends(get_current_user),
+):
+    if isinstance(db, AsyncSession):
+        label = await db.get(UserLabel, label_id)
+    else:
+        label = db.get(UserLabel, label_id)
+    if not label or label.user_id != user_id:
+        raise HTTPException(status_code=404, detail="Label not found")
+    if isinstance(db, AsyncSession):
+        await db.delete(label)
+        await db.commit()
+    else:
+        db.delete(label)
+        db.commit()
+    return LabelDeleteResponse(detail="deleted", id=label_id)
 
 
 from .api import router as api_router
