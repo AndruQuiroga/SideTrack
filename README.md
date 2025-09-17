@@ -176,7 +176,7 @@ Built with **Next.js 14**, **Tailwind**, **shadcn/ui**, **framer‑motion**, **P
 - `/trajectory` – 2D taste map with weekly arrows; color by energy; tooltip drill‑downs
 - `/moods` – streamgraph of mood shares; filters by artist/label/source
 - `/radar` – weekly radar vs 6‑month baseline; compare weeks
-- `/outliers` – tracks farthest from 90‑day centroid; quick add to playlist
+- `/outliers` – tracks farthest from your recent centroid; supports `?range=` (e.g. `90d`, `12w`) and `?limit=`
 - `/settings` – connect **ListenBrainz** and **Last.fm**; toggle GPU/stems/excerpts
 
 **UI niceties**
