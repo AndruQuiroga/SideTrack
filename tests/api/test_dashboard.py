@@ -1,9 +1,10 @@
 import math
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 import pytest
 
-from sidetrack.common.models import Artist, Listen, MoodAggWeek, Track
+from sidetrack.api.constants import DEFAULT_METHOD
+from sidetrack.common.models import Artist, Listen, MBLabel, MoodAggWeek, MoodScore, Release, Track
 from sidetrack.services.recommendation import InsightEvent
 
 
@@ -94,3 +95,86 @@ def test_dashboard_summary_includes_insights(client, session, user_id):
     assert card["title"] == "Weekly listens"
     assert card["summary"] == "You listened a lot this week"
     assert card["severity"] == 2
+
+
+def test_dashboard_radar_filters_by_cohort(client, session, user_id):
+    now = datetime.now(UTC)
+    week_start = (now - timedelta(days=now.weekday())).date()
+    prev_week = week_start - timedelta(weeks=1)
+
+    artist1 = Artist(name="Filter Artist")
+    artist2 = Artist(name="Other Artist")
+    session.add_all([artist1, artist2])
+    session.flush()
+
+    release1 = Release(title="Release A", label="Label Alpha", artist_id=artist1.artist_id)
+    release2 = Release(title="Release B", label="Label Beta", artist_id=artist2.artist_id)
+    session.add_all([release1, release2])
+    session.flush()
+
+    track1 = Track(title="Track One", artist_id=artist1.artist_id, release_id=release1.release_id)
+    track2 = Track(title="Track Two", artist_id=artist2.artist_id, release_id=release2.release_id)
+    session.add_all([track1, track2])
+    session.flush()
+
+    session.add_all(
+        [
+            MBLabel(track_id=track1.track_id, primary_label="Primary Alpha"),
+            MBLabel(track_id=track2.track_id, primary_label="Primary Beta"),
+        ]
+    )
+
+    session.add_all(
+        [
+            MoodScore(
+                track_id=track1.track_id,
+                axis="energy",
+                method=DEFAULT_METHOD,
+                value=0.8,
+            ),
+            MoodScore(
+                track_id=track2.track_id,
+                axis="energy",
+                method=DEFAULT_METHOD,
+                value=0.2,
+            ),
+        ]
+    )
+
+    def _played_at(day: date) -> datetime:
+        return datetime.combine(day, datetime.min.time()).replace(tzinfo=UTC) + timedelta(hours=10)
+
+    session.add_all(
+        [
+            Listen(user_id=user_id, track_id=track1.track_id, played_at=_played_at(week_start)),
+            Listen(user_id=user_id, track_id=track2.track_id, played_at=_played_at(week_start)),
+            Listen(user_id=user_id, track_id=track1.track_id, played_at=_played_at(prev_week)),
+        ]
+    )
+    session.commit()
+
+    params = {"week": week_start.isoformat(), "cohort": "label:Label Alpha"}
+    resp = client.get("/api/v1/dashboard/radar", params=params, headers={"X-User-Id": user_id})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["week"] == week_start.isoformat()
+    assert math.isclose(data["axes"]["energy"], 0.8, rel_tol=1e-6)
+    assert math.isclose(data["baseline"]["energy"], 0.8, rel_tol=1e-6)
+
+    params["cohort"] = "artist:Filter Artist"
+    resp = client.get("/api/v1/dashboard/radar", params=params, headers={"X-User-Id": user_id})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert math.isclose(data["axes"]["energy"], 0.8, rel_tol=1e-6)
+
+    params["cohort"] = "primary_label:Primary Beta"
+    resp = client.get("/api/v1/dashboard/radar", params=params, headers={"X-User-Id": user_id})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert math.isclose(data["axes"]["energy"], 0.2, rel_tol=1e-6)
+
+    params["cohort"] = "label:Unknown Label"
+    resp = client.get("/api/v1/dashboard/radar", params=params, headers={"X-User-Id": user_id})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert all(value == 0 for value in data["axes"].values())

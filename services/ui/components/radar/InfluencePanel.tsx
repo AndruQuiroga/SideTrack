@@ -45,7 +45,7 @@ export default function InfluencePanel({
           <li
             key={item.name}
             className="cursor-pointer p-2 text-sm hover:bg-muted/20"
-            onClick={() => onSelect?.(item.name)}
+            onClick={() => onSelect?.(`${item.type}:${item.name}`)}
           >
             <div className="flex items-center justify-between">
               <span>{item.name}</span>

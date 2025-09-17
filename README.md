@@ -147,7 +147,9 @@ interval (defaults to once per day).
 - `POST /score/track/{track_id}` – compute mood scores
 - `POST /aggregate/weeks` – refresh weekly materializations
 - `GET /api/v1/dashboard/trajectory?window=12w` – UMAP positions + arrows
-- `GET /api/v1/dashboard/radar?week=YYYY-WW` – radar data vs baseline
+- `GET /api/v1/dashboard/radar?week=YYYY-WW&cohort=type:value` – radar data vs baseline; `cohort`
+  may target `artist`, `label`, or `primary_label` (e.g. `label:Warp Records`), falling
+  back to the user's aggregate when omitted or unrecognized.
 - `POST /labels` – (optional) submit personal labels (axis,value)
 
 ### API versioning

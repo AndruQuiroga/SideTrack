@@ -4,14 +4,26 @@ import inspect
 import logging
 import math
 import re
+from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
+from sqlalchemy.sql import Select
 
-from sidetrack.common.models import Artist, LastfmTags, Listen, MoodAggWeek, MoodScore, Track
+from sidetrack.common.models import (
+    Artist,
+    LastfmTags,
+    Listen,
+    MBLabel,
+    MoodAggWeek,
+    MoodScore,
+    Release,
+    Track,
+)
 from sidetrack.services.recommendation import InsightEvent, compute_weekly_insights
 
 from ...constants import AXES, DEFAULT_METHOD
@@ -48,6 +60,135 @@ def _resolve_since(range_raw: str, now: datetime) -> datetime:
         raise HTTPException(status_code=400, detail="Invalid range format")
 
     return now - delta
+
+
+@dataclass
+class CohortSpec:
+    kind: Literal["artist", "label", "primary_label"]
+    name: str
+
+
+def _parse_cohort(raw: str | None) -> CohortSpec | None:
+    if not raw:
+        return None
+    value = raw.strip()
+    if not value:
+        return None
+    if ":" not in value:
+        return None
+    prefix, name = value.split(":", 1)
+    prefix = prefix.strip().lower()
+    name = name.strip()
+    if not name:
+        return None
+    if prefix not in {"artist", "label", "primary_label"}:
+        return None
+    return CohortSpec(kind=prefix, name=name)
+
+
+def _normalized(value: str) -> str:
+    return value.strip().casefold()
+
+
+def _apply_cohort_filter(stmt: Select, cohort: CohortSpec) -> Select:
+    name_lower = _normalized(cohort.name)
+
+    if cohort.kind == "artist":
+        stmt = stmt.join(Artist, Artist.artist_id == Track.artist_id, isouter=True)
+        if name_lower == "unknown artist":
+            condition = or_(
+                Artist.name.is_(None),
+                func.trim(func.coalesce(Artist.name, "")) == "",
+            )
+        else:
+            condition = func.lower(func.coalesce(Artist.name, "")) == name_lower
+        return stmt.where(condition)
+
+    if cohort.kind == "label":
+        stmt = stmt.join(Release, Release.release_id == Track.release_id, isouter=True)
+        if name_lower == "unknown label":
+            condition = or_(
+                Release.label.is_(None),
+                func.trim(func.coalesce(Release.label, "")) == "",
+            )
+        else:
+            condition = func.lower(func.coalesce(Release.label, "")) == name_lower
+        return stmt.where(condition)
+
+    if cohort.kind == "primary_label":
+        stmt = stmt.join(MBLabel, MBLabel.track_id == Track.track_id, isouter=True)
+        if name_lower in {"unknown label", "unknown primary label"}:
+            condition = or_(
+                MBLabel.primary_label.is_(None),
+                func.trim(func.coalesce(MBLabel.primary_label, "")) == "",
+            )
+        else:
+            condition = func.lower(func.coalesce(MBLabel.primary_label, "")) == name_lower
+        return stmt.where(condition)
+
+    return stmt
+
+
+async def _cohort_radar_values(
+    db: AsyncSession,
+    user_id: str,
+    week_start: date,
+    cohort: CohortSpec,
+) -> tuple[dict[str, float], dict[str, float]]:
+    start_dt = datetime.combine(week_start, datetime.min.time()).replace(tzinfo=UTC)
+    end_dt = start_dt + timedelta(days=7)
+
+    mood_join = and_(
+        MoodScore.track_id == Listen.track_id,
+        MoodScore.method == DEFAULT_METHOD,
+    )
+
+    axis_stmt = (
+        select(MoodScore.axis, func.avg(MoodScore.value))
+        .select_from(Listen)
+        .join(Track, Track.track_id == Listen.track_id)
+        .join(MoodScore, mood_join)
+        .where(
+            Listen.user_id == user_id,
+            Listen.played_at >= start_dt,
+            Listen.played_at < end_dt,
+        )
+    )
+    axis_stmt = _apply_cohort_filter(axis_stmt, cohort).group_by(MoodScore.axis)
+    axis_rows = (await db.execute(axis_stmt)).all()
+    axes = {axis: float(avg or 0.0) for axis, avg in axis_rows}
+
+    baseline_start = week_start - timedelta(weeks=24)
+    baseline_start_dt = datetime.combine(baseline_start, datetime.min.time()).replace(tzinfo=UTC)
+
+    week_expr = func.date_trunc("week", Listen.played_at)
+    baseline_week_stmt = (
+        select(
+            week_expr.label("week"),
+            MoodScore.axis.label("axis"),
+            func.avg(MoodScore.value).label("mean"),
+        )
+        .select_from(Listen)
+        .join(Track, Track.track_id == Listen.track_id)
+        .join(MoodScore, mood_join)
+        .where(
+            Listen.user_id == user_id,
+            Listen.played_at >= baseline_start_dt,
+            Listen.played_at < start_dt,
+        )
+    )
+    baseline_week_stmt = _apply_cohort_filter(baseline_week_stmt, cohort).group_by(
+        week_expr, MoodScore.axis
+    )
+    baseline_subq = baseline_week_stmt.subquery()
+    baseline_stmt = (
+        select(baseline_subq.c.axis, func.avg(baseline_subq.c.mean))
+        .group_by(baseline_subq.c.axis)
+    )
+    baseline_rows = (await db.execute(baseline_stmt)).all()
+    baseline = {axis: float(avg or 0.0) for axis, avg in baseline_rows}
+
+    return axes, baseline
 
 
 @router.get("/dashboard/overview")
@@ -312,6 +453,7 @@ async def dashboard_trajectory(
 @router.get("/dashboard/radar")
 async def dashboard_radar(
     week: str = Query(...),
+    cohort: str | None = Query(None),
     db: AsyncSession = Depends(get_db),
     user_id: str = Depends(get_current_user),
 ):
@@ -329,30 +471,35 @@ async def dashboard_radar(
     if wk_date is None:
         raise HTTPException(status_code=400, detail="Invalid week format")
 
-    rows = (
-        await db.execute(
-            select(MoodAggWeek.axis, MoodAggWeek.mean).where(
-                and_(MoodAggWeek.week == wk_date, MoodAggWeek.user_id == user_id)
-            )
-        )
-    ).all()
-    axes = {ax: val for ax, val in rows}
+    cohort_spec = _parse_cohort(cohort)
 
-    # baseline = mean of previous 24 weeks
-    baseline_rows = (
-        await db.execute(
-            select(MoodAggWeek.axis, func.avg(MoodAggWeek.mean))
-            .where(
-                and_(
-                    MoodAggWeek.week < wk_date,
-                    MoodAggWeek.week >= wk_date - timedelta(weeks=24),
-                    MoodAggWeek.user_id == user_id,
+    if cohort_spec is None:
+        rows = (
+            await db.execute(
+                select(MoodAggWeek.axis, MoodAggWeek.mean).where(
+                    and_(MoodAggWeek.week == wk_date, MoodAggWeek.user_id == user_id)
                 )
             )
-            .group_by(MoodAggWeek.axis)
-        )
-    ).all()
-    baseline = {ax: float(avg or 0.0) for ax, avg in baseline_rows}
+        ).all()
+        axes = {ax: float(val or 0.0) for ax, val in rows}
+
+        # baseline = mean of previous 24 weeks
+        baseline_rows = (
+            await db.execute(
+                select(MoodAggWeek.axis, func.avg(MoodAggWeek.mean))
+                .where(
+                    and_(
+                        MoodAggWeek.week < wk_date,
+                        MoodAggWeek.week >= wk_date - timedelta(weeks=24),
+                        MoodAggWeek.user_id == user_id,
+                    )
+                )
+                .group_by(MoodAggWeek.axis)
+            )
+        ).all()
+        baseline = {ax: float(avg or 0.0) for ax, avg in baseline_rows}
+    else:
+        axes, baseline = await _cohort_radar_values(db, user_id, wk_date, cohort_spec)
 
     # ensure all keys present
     for ax in AXES:
