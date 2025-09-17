@@ -29,11 +29,17 @@ def convert_spotify_item(item: dict, user_id: str) -> dict | None:
     artist_name = (track_data.get("artists") or [{}])[0].get("name")
     title = track_data.get("name")
 
+    album_data = track_data.get("album") or {}
+    release_name = album_data.get("name")
+    recording_mbid = track_data.get("mbid")
+
     metadata: dict[str, object] = {
         "artist_name": artist_name,
         "track_name": title,
-        "mbid_mapping": {"recording_mbid": track_data.get("mbid")},
+        "mbid_mapping": {"recording_mbid": recording_mbid},
     }
+    if release_name is not None:
+        metadata["release_name"] = release_name
 
     additional_info: dict[str, object] = {}
     existing_additional = track_data.get("additional_info")
@@ -47,6 +53,7 @@ def convert_spotify_item(item: dict, user_id: str) -> dict | None:
     external_ids = track_data.get("external_ids") or {}
     isrc = external_ids.get("isrc")
     if isrc:
+        metadata["isrc"] = isrc
         additional_info.setdefault("isrc", isrc)
 
     if additional_info:
@@ -181,11 +188,17 @@ class ListenService:
                 )
                 track_cache[track_key] = track
 
+            if recording_mbid and not getattr(track, "mbid", None):
+                track.mbid = recording_mbid
+
+            if rel and getattr(track, "release_id", None) is None:
+                track.release_id = rel.release_id
+
             spotify_id = tm_additional.get("spotify_id") or item_additional.get("spotify_id")
             if spotify_id:
                 track.spotify_id = spotify_id
 
-            isrc_val = tm_additional.get("isrc") or item_additional.get("isrc")
+            isrc_val = tm.get("isrc") or tm_additional.get("isrc") or item_additional.get("isrc")
             if isrc_val:
                 track.isrc = str(isrc_val).strip().upper() or track.isrc
 
