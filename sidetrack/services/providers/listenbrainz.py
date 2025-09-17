@@ -49,24 +49,20 @@ class ListenBrainzIngester:
 
         async with httpx.AsyncClient() as client:
             lb_client = _ProviderListenBrainzClient(client)
-            url = f"{lb_client.base_url}/user/{user}/listens"
-            offset = 0
+            base_url = f"{lb_client.base_url}/user/{user}/listens"
+            url: str | None = base_url
+            params: dict[str, Any] | None = {"count": self.page_size}
+            sticky_params: dict[str, Any] | None = {"min_ts": min_ts} if min_ts else None
 
-            while True:
-                params: dict[str, Any] = {"count": self.page_size, "offset": offset}
-                if min_ts is not None:
+            while url:
+                if params and min_ts is not None:
                     params["min_ts"] = min_ts
 
                 resp = await lb_client._get(url, params=params, headers=headers)
                 data = resp.json()
-                payload = data.get("payload")
-                raw_listens: list[Any]
-                if isinstance(payload, dict):
-                    raw_listens = payload.get("listens") or []
-                else:
-                    raw_listens = data.get("listens") or []
+                raw_listens, cursor = ListenBrainzClient._extract_listens_payload(data)
 
-                if not isinstance(raw_listens, list) or not raw_listens:
+                if not raw_listens:
                     break
 
                 oldest_ts: int | None = None
@@ -85,11 +81,16 @@ class ListenBrainzIngester:
                         continue
                     listens.append(normalised)
 
-                if len(raw_listens) < self.page_size:
-                    break
                 if since is not None and oldest_ts is not None and oldest_ts <= since:
                     break
-                offset += len(raw_listens)
+
+                url = ListenBrainzClient._prepare_next_url(
+                    base_url,
+                    cursor,
+                    sticky_params=sticky_params,
+                    default_count=self.page_size,
+                )
+                params = None
 
         return listens
 

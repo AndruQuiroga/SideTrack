@@ -37,7 +37,15 @@ async def test_fetch_recent_paginates_and_normalises(respx_mock):
 
     route = respx_mock.get("https://api.listenbrainz.org/1/user/tester/listens")
     route.side_effect = [
-        httpx.Response(200, json={"payload": {"listens": page_one}}),
+        httpx.Response(
+            200,
+            json={
+                "payload": {
+                    "listens": page_one,
+                    "next": {"next": "cursor-1", "payload": "token-1"},
+                }
+            },
+        ),
         httpx.Response(200, json={"payload": {"listens": page_two}}),
     ]
 
@@ -54,9 +62,10 @@ async def test_fetch_recent_paginates_and_normalises(respx_mock):
     first_query = dict(route.calls[0].request.url.params)
     second_query = dict(route.calls[1].request.url.params)
     assert first_query["count"] == "2"
-    assert first_query["offset"] == "0"
+    assert "next" not in first_query
     assert first_query["min_ts"] == "100"
-    assert second_query["offset"] == "2"
+    assert second_query["next"] == "cursor-1"
+    assert second_query["payload"] == "token-1"
     assert second_query["count"] == "2"
     assert second_query["min_ts"] == "100"
 
