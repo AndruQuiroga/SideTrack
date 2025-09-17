@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Mapping
 from datetime import UTC, date, datetime
 from typing import Any
 
@@ -8,6 +8,8 @@ import httpx
 import logging
 from fastapi import Depends
 from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
+
+from urllib.parse import parse_qsl, urlencode, urljoin, urlparse, urlunparse
 
 from sidetrack.api.config import Settings, get_settings
 
@@ -60,16 +62,163 @@ class ListenBrainzClient(MusicServiceClient):
     ) -> list[dict[str, Any]]:
         """Fetch listens for ``user`` from ListenBrainz."""
 
-        params: dict[str, Any] = {"count": min(limit, 1000)}
+        if limit <= 0:
+            return []
+
+        base_url = f"{self.base_url}/user/{user}/listens"
+        remaining = limit
+        params: dict[str, Any] | None = {"count": min(remaining, 1000)}
+        sticky_params: dict[str, Any] = {}
         if since:
-            params["min_ts"] = int(
+            min_ts = int(
                 datetime.combine(since, datetime.min.time(), tzinfo=UTC).timestamp()
             )
+            params["min_ts"] = min_ts
+            sticky_params["min_ts"] = min_ts
         headers = {"Authorization": f"Token {token}"} if token else None
-        url = f"{self.base_url}/user/{user}/listens"
-        r = await self._get(url, params=params, headers=headers)
-        data = r.json()
-        return data.get("listens", [])
+
+        listens: list[dict[str, Any]] = []
+        url = base_url
+
+        while url and remaining > 0:
+            resp = await self._get(url, params=params, headers=headers)
+            data = resp.json()
+            batch, cursor = self._extract_listens_payload(data)
+
+            for raw in batch:
+                listens.append(raw)
+                remaining -= 1
+                if remaining <= 0:
+                    break
+
+            if remaining <= 0 or not cursor:
+                break
+
+            url = self._prepare_next_url(
+                base_url,
+                cursor,
+                remaining=remaining,
+                sticky_params=sticky_params,
+            )
+            params = None
+
+        return listens
+
+    @staticmethod
+    def _extract_listens_payload(data: Any) -> tuple[list[dict[str, Any]], Any]:
+        """Return listens from ``data`` along with the next cursor."""
+
+        container: Mapping[str, Any] | None = None
+        if isinstance(data, Mapping):
+            payload = data.get("payload")
+            if isinstance(payload, Mapping):
+                container = payload
+            else:
+                container = data
+
+        listens_data: Any = []
+        if container:
+            listens_data = container.get("listens")
+        if not isinstance(listens_data, list):
+            listens_data = []
+
+        listens = [row for row in listens_data if isinstance(row, dict)]
+
+        next_cursor: Any = None
+        search_chain: list[Mapping[str, Any]] = []
+        if isinstance(container, Mapping):
+            search_chain.append(container)
+        if isinstance(data, Mapping):
+            search_chain.append(data)
+
+        for candidate in search_chain:
+            for key in ("next", "next_page", "listens_next"):
+                value = candidate.get(key)
+                if value:
+                    next_cursor = value
+                    break
+            if next_cursor:
+                break
+            links = candidate.get("links")
+            if isinstance(links, Mapping):
+                value = links.get("next")
+                if value:
+                    next_cursor = value
+                    break
+            pagination = candidate.get("pagination")
+            if isinstance(pagination, Mapping):
+                value = pagination.get("next")
+                if value:
+                    next_cursor = value
+                    break
+
+        return listens, next_cursor
+
+    @staticmethod
+    def _prepare_next_url(
+        base_url: str,
+        cursor: Any,
+        *,
+        remaining: int | None = None,
+        sticky_params: Mapping[str, Any] | None = None,
+        default_count: int | None = None,
+    ) -> str | None:
+        """Convert a ListenBrainz cursor into a request URL."""
+
+        if not cursor:
+            return None
+
+        url: str | None = None
+        if isinstance(cursor, str):
+            url = cursor
+        elif isinstance(cursor, Mapping):
+            for key in ("href", "url", "uri", "path"):
+                value = cursor.get(key)
+                if isinstance(value, str) and value:
+                    url = value
+                    break
+            if url is None:
+                params_source: Mapping[str, Any] = cursor
+                nested_params = cursor.get("params")
+                if isinstance(nested_params, Mapping):
+                    params_source = nested_params
+                query_items: list[tuple[str, str]] = []
+                for key, value in params_source.items():
+                    if key in {"href", "url", "uri", "path", "params"}:
+                        continue
+                    if value is None:
+                        continue
+                    if isinstance(value, (str, int, float)):
+                        query_items.append((key, str(value)))
+                if query_items:
+                    url = f"{base_url}?{urlencode(query_items, doseq=True)}"
+
+        if not url:
+            return None
+
+        if not url.startswith("http"):
+            url = urljoin(base_url, url)
+
+        parsed = urlparse(url)
+        query = dict(parse_qsl(parsed.query, keep_blank_values=True))
+
+        if remaining is not None:
+            if remaining <= 0:
+                return None
+            query["count"] = str(min(remaining, 1000))
+        elif "count" not in query and default_count:
+            query["count"] = str(min(default_count, 1000))
+
+        if sticky_params:
+            for key, value in sticky_params.items():
+                if key == "count" or value is None or key in query:
+                    continue
+                if isinstance(value, (str, int, float)):
+                    query[key] = str(value)
+
+        new_query = urlencode(query, doseq=True)
+        parsed = parsed._replace(query=new_query)
+        return urlunparse(parsed)
 
     async def fetch_recently_played(
         self, since: date | None = None, limit: int = 500
