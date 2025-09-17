@@ -64,16 +64,47 @@ def test_dashboard_overview_unauthenticated(client):
 
 def test_dashboard_summary_includes_insights(client, session, user_id):
     now = datetime.now(UTC)
-    artist = Artist(name="Insight Artist")
-    session.add(artist)
+    familiar_artist = Artist(name="Known Artist")
+    new_artist = Artist(name="Insight Artist")
+    session.add_all([familiar_artist, new_artist])
     session.flush()
 
-    track = Track(title="Insight Track", artist_id=artist.artist_id)
-    session.add(track)
+    familiar_release = Release(
+        title="Known Release", label="Known Label", artist_id=familiar_artist.artist_id
+    )
+    new_release = Release(
+        title="Insight Release", label="Fresh Label", artist_id=new_artist.artist_id
+    )
+    session.add_all([familiar_release, new_release])
     session.flush()
 
-    session.add(
-        Listen(user_id=user_id, track_id=track.track_id, played_at=now - timedelta(days=1))
+    familiar_track = Track(
+        title="Known Track", artist_id=familiar_artist.artist_id, release_id=familiar_release.release_id
+    )
+    insight_track = Track(
+        title="Insight Track", artist_id=new_artist.artist_id, release_id=new_release.release_id
+    )
+    session.add_all([familiar_track, insight_track])
+    session.flush()
+
+    session.add_all(
+        [
+            Listen(
+                user_id=user_id,
+                track_id=familiar_track.track_id,
+                played_at=now - timedelta(days=40),
+            ),
+            Listen(
+                user_id=user_id,
+                track_id=familiar_track.track_id,
+                played_at=now - timedelta(days=3),
+            ),
+            Listen(
+                user_id=user_id,
+                track_id=insight_track.track_id,
+                played_at=now - timedelta(days=1),
+            ),
+        ]
     )
     session.add(
         InsightEvent(
@@ -95,6 +126,11 @@ def test_dashboard_summary_includes_insights(client, session, user_id):
     assert card["title"] == "Weekly listens"
     assert card["summary"] == "You listened a lot this week"
     assert card["severity"] == 2
+    kpis = {item["id"]: item for item in data["kpis"]}
+    assert kpis["new_artists"]["value"] == "50.0%"
+    assert kpis["new_labels"]["value"] == "50.0%"
+    assert data["discovery"]["new_artist_pct"] == pytest.approx(50.0)
+    assert data["discovery"]["new_label_pct"] == pytest.approx(50.0)
 
 
 def test_dashboard_radar_filters_by_cohort(client, session, user_id):

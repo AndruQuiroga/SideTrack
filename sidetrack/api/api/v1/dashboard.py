@@ -24,6 +24,7 @@ from sidetrack.common.models import (
     Release,
     Track,
 )
+from sidetrack.profile import compute_discovery
 from sidetrack.services.recommendation import InsightEvent, compute_weekly_insights
 
 from ...constants import AXES, DEFAULT_METHOD
@@ -307,6 +308,7 @@ async def dashboard_summary(
 
     now = datetime.now(UTC)
     week_ago = now - timedelta(days=7)
+    discovery_cutoff = now - timedelta(weeks=4)
 
     latest_ts = await _maybe(
         db.scalar(
@@ -338,7 +340,81 @@ async def dashboard_summary(
         for evt in events
     ]
 
-    return {"last_artist": last_artist, "kpis": kpis, "insights": insights}
+    label_expr = func.coalesce(Release.label, MBLabel.primary_label).label("label")
+    recent_stmt = (
+        select(Listen.played_at, Artist.name.label("artist"), label_expr)
+        .select_from(Listen)
+        .join(Track, Track.track_id == Listen.track_id)
+        .join(Artist, Track.artist_id == Artist.artist_id, isouter=True)
+        .join(Release, Track.release_id == Release.release_id, isouter=True)
+        .join(MBLabel, MBLabel.track_id == Track.track_id, isouter=True)
+        .where(Listen.user_id == user_id, Listen.played_at >= discovery_cutoff)
+        .order_by(Listen.played_at.desc())
+    )
+    recent_result = await _maybe(db.execute(recent_stmt))
+    recent_rows = recent_result.all() if recent_result is not None else []
+
+    history: list[dict[str, object]] = []
+    for played_at, artist_name, label_name in recent_rows:
+        item: dict[str, object] = {"played_at": played_at}
+        if artist_name:
+            item["artist"] = artist_name
+        if label_name:
+            item["label"] = label_name
+        history.append(item)
+
+    old_marker = discovery_cutoff - timedelta(seconds=1)
+
+    old_artist_stmt = (
+        select(Artist.name)
+        .select_from(Listen)
+        .join(Track, Track.track_id == Listen.track_id)
+        .join(Artist, Track.artist_id == Artist.artist_id)
+        .where(Listen.user_id == user_id, Listen.played_at < discovery_cutoff)
+        .distinct()
+    )
+    old_artist_result = await _maybe(db.execute(old_artist_stmt))
+    if old_artist_result is not None:
+        old_artists = {name for name in old_artist_result.scalars().all() if name}
+        history.extend({"played_at": old_marker, "artist": name} for name in old_artists)
+
+    old_label_stmt = (
+        select(label_expr)
+        .select_from(Listen)
+        .join(Track, Track.track_id == Listen.track_id)
+        .join(Release, Track.release_id == Release.release_id, isouter=True)
+        .join(MBLabel, MBLabel.track_id == Track.track_id, isouter=True)
+        .where(Listen.user_id == user_id, Listen.played_at < discovery_cutoff)
+        .distinct()
+    )
+    old_label_result = await _maybe(db.execute(old_label_stmt))
+    if old_label_result is not None:
+        old_labels = {label for label in old_label_result.scalars().all() if label}
+        history.extend({"played_at": old_marker, "label": label} for label in old_labels)
+
+    discovery = compute_discovery(history, now=now)
+
+    kpis.extend(
+        [
+            {
+                "id": "new_artists",
+                "title": "New artists (4w)",
+                "value": f"{discovery['new_artist_pct']:.1f}%",
+            },
+            {
+                "id": "new_labels",
+                "title": "New labels (4w)",
+                "value": f"{discovery['new_label_pct']:.1f}%",
+            },
+        ]
+    )
+
+    return {
+        "last_artist": last_artist,
+        "kpis": kpis,
+        "insights": insights,
+        "discovery": discovery,
+    }
 
 
 @router.get("/dashboard/tags")
