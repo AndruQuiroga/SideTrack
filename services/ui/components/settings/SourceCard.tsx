@@ -5,6 +5,7 @@ import { useToast } from '../ToastProvider';
 import { apiFetch } from '../../lib/api';
 import { Radio, Brain, Globe } from 'lucide-react';
 import SpotifyIcon from '../common/SpotifyIcon';
+import { syncLastfmScrobbles } from '../../lib/lastfmSync';
 
 export type SourceStatus = 'connected' | 'disconnected';
 
@@ -16,7 +17,7 @@ interface SourceCardProps {
   connectedAs?: string;
   connectUrl: string;
   disconnectUrl: string;
-  testUrl: string;
+  testUrl?: string;
   onStatusChange?: (s: SourceStatus) => void;
 }
 
@@ -32,6 +33,7 @@ export default function SourceCard({
   onStatusChange,
 }: SourceCardProps) {
   const [status, setStatus] = useState<SourceStatus>(initialStatus);
+  const [isActionPending, setIsActionPending] = useState(false);
   const { show } = useToast();
 
   const setAndNotify = (s: SourceStatus) => {
@@ -66,7 +68,28 @@ export default function SourceCard({
     }
   }
 
-  async function handleTest() {
+  async function handleSecondaryAction() {
+    if (id === 'lastfm') {
+      setIsActionPending(true);
+      show({ title: 'Sync started', description: 'Ingesting Last.fm scrobbles…', kind: 'info' });
+      try {
+        const { ingested } = await syncLastfmScrobbles();
+        const description =
+          typeof ingested === 'number'
+            ? `Ingested ${ingested} ${ingested === 1 ? 'listen' : 'listens'}`
+            : 'Scrobbles synced';
+        show({ title: 'Sync complete', description, kind: 'success' });
+      } catch {
+        show({ title: 'Sync failed', description: 'Please try again later', kind: 'error' });
+      } finally {
+        setIsActionPending(false);
+      }
+      return;
+    }
+
+    if (!testUrl) return;
+
+    setIsActionPending(true);
     try {
       const res = await apiFetch(testUrl, { suppressErrorToast: true });
       // Try to reflect connection status when testUrl provides it (e.g. /api/settings)
@@ -87,6 +110,8 @@ export default function SourceCard({
       show({ title: `${name} OK`, kind: 'success' });
     } catch {
       show({ title: `${name} test failed`, kind: 'error' });
+    } finally {
+      setIsActionPending(false);
     }
   }
 
@@ -139,8 +164,14 @@ export default function SourceCard({
             Connect
           </Button>
         )}
-        <Button type="button" variant="outline" onClick={handleTest} aria-label={`${name} test`}>
-          Test
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleSecondaryAction}
+          aria-label={`${name} ${id === 'lastfm' ? 'sync' : 'test'}`}
+          disabled={isActionPending}
+        >
+          {id === 'lastfm' ? 'Sync' : 'Test'}
         </Button>
       </div>
     </Card>

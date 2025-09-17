@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import SettingsPage from './page';
 import ToastProvider from '../../components/ToastProvider';
 import { AuthProvider } from '../../lib/auth';
+import { getLastWeekSince } from '../../lib/lastfmSync';
 
 describe('Settings page', () => {
   beforeEach(() => {
@@ -63,6 +64,28 @@ describe('Settings page', () => {
     const btn = await screen.findByRole('button', { name: /spotify test/i });
     await userEvent.click(btn);
     await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
+  });
+
+  it('sync button ingests last week of scrobbles', async () => {
+    render(
+      <ToastProvider>
+        <AuthProvider>
+          <SettingsPage />
+        </AuthProvider>
+      </ToastProvider>,
+    );
+    const btn = await screen.findByRole('button', { name: /last\.fm sync/i });
+    await userEvent.click(btn);
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
+    const [requestUrl, requestInit] = (fetch as jest.Mock).mock.calls[1] as [
+      string,
+      RequestInit | undefined,
+    ];
+    expect(requestInit).toMatchObject({ method: 'POST' });
+    const url = new URL(requestUrl, 'https://sidetrack.local');
+    expect(url.pathname).toBe('/api/v1/ingest/listens');
+    expect(url.searchParams.get('source')).toBe('lastfm');
+    expect(url.searchParams.get('since')).toBe(getLastWeekSince());
   });
 
   it('reset feedback sends request', async () => {
