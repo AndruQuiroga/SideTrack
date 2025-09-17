@@ -3,6 +3,7 @@
 import inspect
 import logging
 import math
+import re
 from datetime import UTC, date, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -25,6 +26,28 @@ async def _maybe(val):
     if inspect.isawaitable(val):
         return await val
     return val
+
+
+_RANGE_PATTERN = re.compile(r"^(?P<value>\d+)(?P<unit>[dw])$", re.IGNORECASE)
+
+
+def _resolve_since(range_raw: str, now: datetime) -> datetime:
+    match = _RANGE_PATTERN.fullmatch(range_raw.strip())
+    if not match:
+        logger.warning("Invalid range format: %s", range_raw)
+        raise HTTPException(status_code=400, detail="Invalid range format")
+
+    value = int(match.group("value"))
+    unit = match.group("unit").lower()
+    if unit == "d":
+        delta = timedelta(days=value)
+    elif unit == "w":
+        delta = timedelta(weeks=value)
+    else:  # pragma: no cover - regex limits units, defensive fallback
+        logger.warning("Unsupported range unit: %s", range_raw)
+        raise HTTPException(status_code=400, detail="Invalid range format")
+
+    return now - delta
 
 
 @router.get("/dashboard/overview")
@@ -342,12 +365,14 @@ async def dashboard_radar(
 @router.get("/dashboard/outliers")
 async def dashboard_outliers(
     limit: int = Query(10, ge=1, le=100),
+    range_: str = Query("90d", alias="range"),
     db: AsyncSession = Depends(get_db),
     user_id: str = Depends(get_current_user),
 ):
     """Return tracks farthest from the recent mood centroid."""
 
-    since = datetime.now(UTC) - timedelta(days=90)
+    now = datetime.now(UTC)
+    since = _resolve_since(range_, now)
 
     # Compute centroid across recent listens
     cent_rows = (
