@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import InsightCard, { Insight } from '../../components/insights/InsightCard';
 import InsightModal from '../../components/insights/InsightModal';
 import Skeleton from '../../components/Skeleton';
+import { apiFetch } from '../../lib/api';
 
 export default function InsightsPage() {
   const [insights, setInsights] = useState<Insight[]>([]);
@@ -10,7 +11,7 @@ export default function InsightsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/v1/insights?window=12w')
+    apiFetch('/api/dashboard/insights?window=12w')
       .then((r) => r.json())
       .then((d) => setInsights(d))
       .catch(() => setInsights([]))

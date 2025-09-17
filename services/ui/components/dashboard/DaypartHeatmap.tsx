@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { apiFetch } from '../../lib/api';
 import ChartCard from './ChartCard';
 
 interface Cell {
@@ -30,7 +31,7 @@ export default function DaypartHeatmap() {
   const [data, setData] = useState<HeatmapResponse | null>(null);
 
   useEffect(() => {
-    fetch('/api/v1/daypart/heatmap')
+    apiFetch('/api/dashboard/daypart/heatmap')
       .then((r) => r.json())
       .then((d) => setData(d))
       .catch(() => setData(null));
