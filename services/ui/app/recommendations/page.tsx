@@ -25,7 +25,7 @@ export default function RecommendationsPage() {
     if (filters.freshness) params.set('min_freshness', String(filters.freshness));
     if (filters.diversity) params.set('diversity', String(filters.diversity));
     if (filters.energy) params.set('energy', String(filters.energy));
-    apiFetch(`/api/v1/recs/ranked?${params.toString()}`)
+    apiFetch(`/api/recs/ranked?${params.toString()}`)
       .then((r) => r.json())
       .then((j) => {
         setRecs(j ?? []);
