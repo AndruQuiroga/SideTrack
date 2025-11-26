@@ -197,28 +197,32 @@ Expected (target) services:
 * `db` – Postgres
 * `redis` – Redis
 * `api` – FastAPI backend at `http://localhost:8000`
-* `web` – Next.js frontend at `http://localhost:3000`
+* `web` – TypeScript web bundle served at `http://localhost:3000`
 * `bot` – Discord bot (connects to your server)
 * `worker` – background jobs
+
+Compose sets `DATABASE_URL` for the API container to point at Postgres and wires
+`NEXT_PUBLIC_API_BASE_URL` / `SIDETRACK_API_BASE_URL` to the in-network API
+address (`http://api:8000`) for the web, bot, and worker containers.
 
 If you prefer manual runs in local environment:
 
 ```bash
 # In one terminal (API)
 cd apps/api
-uvicorn main:app --reload
+uvicorn apps.api.main:create_app --factory --reload
 
 # In another (web)
-cd apps/web
-pnpm dev
+pnpm --filter @sidetrack/web run build
+node apps/web/dist/index.js
 
 # In another (bot)
-cd apps/bot
-pnpm dev   # or python main.py
+pnpm --filter @sidetrack/bot run build
+SIDETRACK_API_BASE_URL=http://localhost:8000 node apps/bot/dist/index.js
 
 # In another (worker)
-cd apps/worker
-python worker_main.py
+pnpm --filter @sidetrack/worker run build
+SIDETRACK_API_BASE_URL=http://localhost:8000 node apps/worker/dist/index.js
 ```
 
 ---

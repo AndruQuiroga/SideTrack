@@ -40,7 +40,7 @@ repos:
         entry: npx eslint --max-warnings=0
         language: node
         types_or: [ts, tsx]
-        files: ^services/ui/.*\.(tsx?)$
+        files: ^apps/web/.*\.(tsx?)$
         additional_dependencies:
           - "eslint@8.57.0"
           - "@typescript-eslint/parser@^6"

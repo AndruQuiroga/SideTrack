@@ -42,7 +42,7 @@
 ## Fixtures & Factories
 
 - Shared factories live in [`tests/factories`](factories/README.md).
-- Service‑specific fixtures belong in `services/<service>/tests/conftest.py`.
+- Service‑specific fixtures belong in `apps/<service>/tests/conftest.py`.
 - Use the `redis_conn` fixture for Redis and `SessionLocal` for DB access.
 - Mark heavy fixtures with `slow` or `gpu` as appropriate.
 

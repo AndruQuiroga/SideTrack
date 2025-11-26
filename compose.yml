@@ -1,28 +1,21 @@
 services:
-  base:
-    build:
-      context: .
-      dockerfile: services/base/Dockerfile
-    image: sidetrack/base:dev
   db:
-    build:
-      context: .
-      dockerfile: services/db/Dockerfile
+    image: postgres:15
     environment:
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - PGDATA=/home/postgres/pgdata/data
+      POSTGRES_DB: ${POSTGRES_DB:-sidetrack}
+      POSTGRES_USER: ${POSTGRES_USER:-sidetrack}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sidetrack}
+      PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
-      - db_data:/home/postgres/pgdata
+      - db_data:/var/lib/postgresql/data
     ports: ["5432:5432"]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sidetrack}"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  cache:
+  redis:
     image: redis:7
     ports: ["6379:6379"]
     healthcheck:
@@ -34,94 +27,64 @@ services:
   api:
     build:
       context: .
-      dockerfile: services/api/Dockerfile
+      dockerfile: apps/api/Dockerfile
     env_file: .env
     environment:
-      # one source of truth; base driver only (your code derives async/sync)
-      DATABASE_URL: postgresql://sidetrack:${POSTGRES_PASSWORD}@db:5432/sidetrack
+      DATABASE_URL: postgresql://${POSTGRES_USER:-sidetrack}:${POSTGRES_PASSWORD:-sidetrack}@db:5432/${POSTGRES_DB:-sidetrack}
     depends_on:
-      base:
-        condition: service_started
       db:
         condition: service_healthy
     ports: ["8000:8000"]
-    command: [
-      "python",
-      "-m",
-      "uvicorn",
-      "apps.api.main:create_app",
-      "--factory",
-      "--host",
-      "0.0.0.0",
-      "--port",
-      "8000"
-    ]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  extractor:
+  web:
     build:
       context: .
-      dockerfile: services/extractor/Dockerfile
+      dockerfile: apps/web/Dockerfile
     env_file: .env
-    volumes:
-      - ./data/audio:/audio:ro
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: http://api:8000
+      SIDETRACK_API_BASE_URL: http://api:8000
     depends_on:
-      base:
-        condition: service_started
-      db:
-        condition: service_healthy
-    command: python -m sidetrack extract --schedule "@daily"
-
-  jobrunner:
-    build:
-      context: .
-      dockerfile: services/jobrunner/Dockerfile
-    env_file: .env
-    depends_on:
-      base:
-        condition: service_started
       api:
-        condition: service_started
-      extractor:
-        condition: service_started
-    # use image CMD
+        condition: service_healthy
+    ports: ["3000:3000"]
+    healthcheck:
+      test: [
+        "CMD-SHELL",
+        "node -e \"fetch('http://localhost:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""
+      ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  bot:
+    build:
+      context: .
+      dockerfile: apps/bot/Dockerfile
+    env_file: .env
+    environment:
+      SIDETRACK_API_BASE_URL: http://api:8000
+      SIDETRACK_API_TOKEN: ${SIDETRACK_API_TOKEN:-changeme}
+      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:-development-token}
+    depends_on:
+      api:
+        condition: service_healthy
 
   worker:
     build:
       context: .
-      dockerfile: services/worker/Dockerfile
-    env_file: .env
-    depends_on:
-      base:
-        condition: service_started
-      cache:
-        condition: service_healthy
-      db:
-        condition: service_healthy
-    command: python -m sidetrack worker run
-
-  ui:
-    build: ./services/ui
+      dockerfile: apps/worker/Dockerfile
     env_file: .env
     environment:
-      NEXT_PUBLIC_API_BASE: http://api:8000
-    depends_on: [api]
-    ports: ["3000:3000"]
-
-  proxy:
-    image: caddy:2
-    ports: ["80:80", "443:443"]
-    volumes:
-      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on: [ui]
+      SIDETRACK_API_BASE_URL: http://api:8000
+    depends_on:
+      api:
+        condition: service_healthy
 
 volumes:
   db_data:
-  caddy_data:
-  caddy_config:

@@ -19,4 +19,4 @@ test.e2e:
 	pytest -m "e2e"
 
 test-ui:
-	cd services/ui && npm run lint && CI=1 npm test
+	cd apps/web && pnpm run lint && CI=1 pnpm test
