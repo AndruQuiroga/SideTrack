@@ -5,7 +5,16 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import BigInteger, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import (
+    BigInteger,
+    DateTime,
+    ForeignKey,
+    Integer,
+    JSON,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -125,7 +134,9 @@ class Rating(Base):
         UUID(as_uuid=True), ForeignKey("albums.id", ondelete="CASCADE"), nullable=False
     )
     nomination_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("nominations.id", ondelete="SET NULL")
+        UUID(as_uuid=True),
+        ForeignKey("nominations.id", ondelete="SET NULL"),
+        nullable=True,
     )
     value: Mapped[float] = mapped_column(nullable=False)
     favorite_track: Mapped[str | None] = mapped_column(String(255))
@@ -133,6 +144,7 @@ class Rating(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
+    metadata: Mapped[dict | None] = mapped_column(JSON)
 
     user: Mapped["User"] = relationship(back_populates="ratings")
     week: Mapped[Week] = relationship(back_populates="ratings")
