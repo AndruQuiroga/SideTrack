@@ -178,13 +178,12 @@ cp .env.example .env
 
 Key variables (see `agents/core.md` and `config/ENVIRONMENT.md` if present):
 
-* `DISCORD_TOKEN`, `DISCORD_GUILD_ID`, `DISCORD_CLIENT_ID` (for Discord bot + thread IDs in the new schema)
-* `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`
-* `LASTFM_API_KEY`, `LASTFM_SHARED_SECRET`
-* `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` (default to the Sidetrack schema; legacy Phase 1 values are commented in `.env.example`)
-* `DATABASE_URL` (Postgres override) and `AUTO_MIGRATE` (toggle Phase 2 migrations)
-* `REDIS_URL`
-* `NEXT_PUBLIC_API_BASE_URL`
+* `DISCORD_BOT_TOKEN`, `DISCORD_GUILD_ID`, `DISCORD_CLIENT_ID` (for Discord bot connection)
+* `SIDETRACK_API_TOKEN` (shared secret for bot/worker → API requests)
+* `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` (default to the Sidetrack schema; see `.env.example`)
+* `DATABASE_URL` (Postgres override using `postgresql+psycopg://` syntax)
+* `NEXT_PUBLIC_API_BASE_URL` / `SIDETRACK_API_BASE_URL` (web + bot + worker API host)
+* `LASTFM_API_KEY`, `LASTFM_API_SECRET`
 
 ### 3. Run Services with Docker Compose (Recommended)
 
@@ -203,7 +202,8 @@ Expected (target) services:
 
 Compose sets `DATABASE_URL` for the API container to point at Postgres and wires
 `NEXT_PUBLIC_API_BASE_URL` / `SIDETRACK_API_BASE_URL` to the in-network API
-address (`http://api:8000`) for the web, bot, and worker containers.
+address (`http://api:8000`) for the web, bot, and worker containers. The `.env`
+file mirrors these defaults so local and Compose runs use the same values.
 
 If you prefer manual runs in local environment:
 
