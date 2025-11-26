@@ -1,0 +1,16 @@
+{
+  "name": "@sidetrack/bot",
+  "version": "0.0.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b tsconfig.json",
+    "lint": "eslint src --ext .ts",
+    "test": "echo \"No tests configured\"",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\""
+  },
+  "dependencies": {
+    "@sidetrack/shared": "workspace:*"
+  }
+}

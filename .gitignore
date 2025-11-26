@@ -17,3 +17,6 @@ dist/
 
 # Docker
 **/.dockerignore
+
+# TypeScript build info
+*.tsbuildinfo
