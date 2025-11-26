@@ -178,10 +178,11 @@ cp .env.example .env
 
 Key variables (see `agents/core.md` and `config/ENVIRONMENT.md` if present):
 
-* `DISCORD_TOKEN`, `DISCORD_GUILD_ID`
+* `DISCORD_TOKEN`, `DISCORD_GUILD_ID`, `DISCORD_CLIENT_ID` (for Discord bot + thread IDs in the new schema)
 * `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`
 * `LASTFM_API_KEY`, `LASTFM_SHARED_SECRET`
-* `DATABASE_URL` (Postgres)
+* `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` (default to the Sidetrack schema; legacy Phase 1 values are commented in `.env.example`)
+* `DATABASE_URL` (Postgres override) and `AUTO_MIGRATE` (toggle Phase 2 migrations)
 * `REDIS_URL`
 * `NEXT_PUBLIC_API_BASE_URL`
 
