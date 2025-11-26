@@ -6,6 +6,7 @@ from collections.abc import Generator
 from typing import Optional
 
 from sqlalchemy import create_engine
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
 _engine = None
@@ -37,3 +38,12 @@ def get_db() -> Generator[Session, None, None]:
         yield db
     finally:
         db.close()
+
+
+def get_engine() -> Engine:
+    """Return the initialized SQLAlchemy engine."""
+
+    if _engine is None:
+        raise RuntimeError("Database engine is not initialized. Call init_engine() first.")
+
+    return _engine

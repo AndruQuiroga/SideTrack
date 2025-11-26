@@ -36,10 +36,11 @@ class ListenEvent(Base):
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True
     )
     source: Mapped[ListenSource] = mapped_column(SAEnum(ListenSource), nullable=False)
-    metadata: Mapped[dict | None] = mapped_column(JSON)
+    metadata_: Mapped[dict | None] = mapped_column("metadata", JSON)
     ingested_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
 
     user: Mapped["User"] = relationship(back_populates="listen_events")
     track: Mapped["Track"] = relationship(back_populates="listen_events")
+
