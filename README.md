@@ -166,6 +166,8 @@ cd sidetrack
 pnpm install
 ```
 
+This repo uses a `pnpm` workspace (`pnpm-workspace.yaml`) that wires together `apps/web`, `apps/bot`, `packages/shared`, and future TypeScript packages.
+
 ### 2. Environment Variables
 
 Copy the example env and fill in values:
