@@ -1,7 +1,7 @@
 # Forms
 
 The UI uses a small collection of composable helpers in
-`services/ui/components/forms` built on top of zod and
+`apps/web/src/components/forms` built on top of zod and
 react-hook-form.
 
 ```tsx
