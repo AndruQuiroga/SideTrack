@@ -16,6 +16,11 @@ export interface UserRead {
   updated_at: IsoDateString;
 }
 
+export interface UserCreate {
+  display_name: string;
+  handle?: string | null;
+}
+
 export interface LinkedAccountBase {
   user_id: UUID;
   provider: ProviderType;
