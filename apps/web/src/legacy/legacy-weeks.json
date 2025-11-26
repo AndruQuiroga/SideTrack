@@ -1,0 +1,169 @@
+[
+  {
+    "id": "legacy-week-001",
+    "label": "Week 001 — Warm Start",
+    "week_number": 1,
+    "discussion_at": "2024-01-05T20:00:00Z",
+    "nominations_close_at": "2023-12-30T20:00:00Z",
+    "poll_close_at": "2024-01-02T20:00:00Z",
+    "winner_album_id": "alb-warm-start",
+    "legacy_week_id": "week-1",
+    "created_at": "2023-12-20T18:00:00Z",
+    "aggregates": {
+      "nomination_count": 3,
+      "vote_count": 18,
+      "rating_count": 11,
+      "rating_average": 4.15
+    },
+    "nominations": [
+      {
+        "id": "nom-1",
+        "week_id": "legacy-week-001",
+        "user_id": "user-a",
+        "album_id": "alb-warm-start",
+        "pitch": "An inviting art-pop record with lush synth textures.",
+        "pitch_track_url": "https://open.spotify.com/track/invite",
+        "genre_tag": "Art Pop",
+        "decade_tag": "2010s",
+        "country_tag": "UK",
+        "submitted_at": "2023-12-22T18:00:00Z",
+        "vote_summary": {
+          "points": 20,
+          "first_place": 8,
+          "second_place": 2,
+          "total_votes": 10
+        },
+        "rating_summary": {
+          "average": 4.35,
+          "count": 11
+        }
+      },
+      {
+        "id": "nom-2",
+        "week_id": "legacy-week-001",
+        "user_id": "user-b",
+        "album_id": "alb-jazz-night",
+        "pitch": "A smoky modern jazz set recorded live.",
+        "pitch_track_url": "https://open.spotify.com/track/jazz",
+        "genre_tag": "Jazz",
+        "decade_tag": "1960s",
+        "country_tag": "USA",
+        "submitted_at": "2023-12-22T20:00:00Z",
+        "vote_summary": {
+          "points": 12,
+          "first_place": 3,
+          "second_place": 6,
+          "total_votes": 9
+        },
+        "rating_summary": {
+          "average": 3.9,
+          "count": 7
+        }
+      },
+      {
+        "id": "nom-3",
+        "week_id": "legacy-week-001",
+        "user_id": "user-c",
+        "album_id": "alb-guitar-dreams",
+        "pitch": "Dreamy guitars and hushed vocals for late nights.",
+        "pitch_track_url": "https://open.spotify.com/track/dreams",
+        "genre_tag": "Indie",
+        "decade_tag": "2000s",
+        "country_tag": "Canada",
+        "submitted_at": "2023-12-23T15:00:00Z",
+        "vote_summary": {
+          "points": 6,
+          "first_place": 1,
+          "second_place": 4,
+          "total_votes": 5
+        },
+        "rating_summary": {
+          "average": 3.6,
+          "count": 5
+        }
+      }
+    ],
+    "rating_summary": {
+      "average": 4.35,
+      "count": 11,
+      "histogram": [
+        { "value": 5, "count": 4 },
+        { "value": 4.5, "count": 2 },
+        { "value": 4, "count": 3 },
+        { "value": 3.5, "count": 2 }
+      ]
+    }
+  },
+  {
+    "id": "legacy-week-002",
+    "label": "Week 002 — Distant Horizons",
+    "week_number": 2,
+    "discussion_at": "2024-01-12T20:00:00Z",
+    "nominations_close_at": "2024-01-06T20:00:00Z",
+    "poll_close_at": "2024-01-09T20:00:00Z",
+    "winner_album_id": "alb-distant",
+    "legacy_week_id": "week-2",
+    "created_at": "2023-12-30T18:00:00Z",
+    "aggregates": {
+      "nomination_count": 2,
+      "vote_count": 14,
+      "rating_count": 9,
+      "rating_average": 3.8
+    },
+    "nominations": [
+      {
+        "id": "nom-4",
+        "week_id": "legacy-week-002",
+        "user_id": "user-d",
+        "album_id": "alb-distant",
+        "pitch": "Cinematic post-rock journeys with soaring crescendos.",
+        "genre_tag": "Post-Rock",
+        "decade_tag": "2000s",
+        "country_tag": "Iceland",
+        "submitted_at": "2024-01-02T18:00:00Z",
+        "vote_summary": {
+          "points": 18,
+          "first_place": 7,
+          "second_place": 4,
+          "total_votes": 11
+        },
+        "rating_summary": {
+          "average": 3.95,
+          "count": 9
+        }
+      },
+      {
+        "id": "nom-5",
+        "week_id": "legacy-week-002",
+        "user_id": "user-e",
+        "album_id": "alb-rnb-spark",
+        "pitch": "Velvety R&B with glitchy electronic edges.",
+        "pitch_track_url": "https://open.spotify.com/track/rnb",
+        "genre_tag": "R&B",
+        "decade_tag": "2020s",
+        "country_tag": "USA",
+        "submitted_at": "2024-01-03T10:00:00Z",
+        "vote_summary": {
+          "points": 9,
+          "first_place": 2,
+          "second_place": 5,
+          "total_votes": 7
+        },
+        "rating_summary": {
+          "average": 3.5,
+          "count": 6
+        }
+      }
+    ],
+    "rating_summary": {
+      "average": 3.95,
+      "count": 9,
+      "histogram": [
+        { "value": 4.5, "count": 1 },
+        { "value": 4, "count": 4 },
+        { "value": 3.5, "count": 3 },
+        { "value": 3, "count": 1 }
+      ]
+    }
+  }
+]
