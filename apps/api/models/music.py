@@ -8,6 +8,8 @@ from typing import Optional
 from sqlalchemy import ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import JSON, Float, DateTime
+from datetime import datetime, timezone
 
 from .base import Base
 
@@ -57,3 +59,28 @@ class Track(Base):
         foreign_keys=album_id,
     )
     listen_events: Mapped[list["ListenEvent"]] = relationship(back_populates="track")
+    features: Mapped[TrackFeature | None] = relationship(
+        back_populates="track", cascade="all, delete-orphan", uselist=False
+    )
+
+
+class TrackFeature(Base):
+    __tablename__ = "track_features"
+
+    track_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("tracks.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    energy: Mapped[float | None] = mapped_column(Float)
+    valence: Mapped[float | None] = mapped_column(Float)
+    danceability: Mapped[float | None] = mapped_column(Float)
+    tempo: Mapped[float | None] = mapped_column(Float)
+    acousticness: Mapped[float | None] = mapped_column(Float)
+    instrumentalness: Mapped[float | None] = mapped_column(Float)
+    genres: Mapped[list[str] | None] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
+
+    track: Mapped[Track] = relationship(back_populates="features")
