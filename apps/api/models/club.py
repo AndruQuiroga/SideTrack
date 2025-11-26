@@ -51,7 +51,7 @@ class Week(Base):
     )
     votes: Mapped[list["Vote"]] = relationship(back_populates="week")
     ratings: Mapped[list["Rating"]] = relationship(back_populates="week")
-    winner_album: Mapped["Album" | None] = relationship(back_populates="winner_weeks")
+    winner_album: Mapped["Album | None"] = relationship(back_populates="winner_weeks")
 
 
 class Nomination(Base):
@@ -144,9 +144,10 @@ class Rating(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
-    metadata: Mapped[dict | None] = mapped_column(JSON)
+    metadata_: Mapped[dict | None] = mapped_column("metadata", JSON)
 
     user: Mapped["User"] = relationship(back_populates="ratings")
     week: Mapped[Week] = relationship(back_populates="ratings")
     album: Mapped["Album"] = relationship(back_populates="ratings")
     nomination: Mapped[Nomination | None] = relationship(back_populates="ratings")
+

@@ -6,10 +6,11 @@ bot can share consistent contracts while the persistence layer is wired up.
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
+import re
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from apps.api.models.listening import ListenSource
 from apps.api.models.user import ProviderType
@@ -18,7 +19,7 @@ from apps.api.models.user import ProviderType
 class OrmSchema(BaseModel):
     """Base schema configured for ORM compatibility."""
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 # Users and accounts
@@ -45,6 +46,28 @@ class LinkedAccountBase(OrmSchema):
     access_token: str | None = None
     refresh_token: str | None = None
     token_expires_at: datetime | None = None
+
+    @model_validator(mode="after")
+    def validate_provider_specific(self) -> "LinkedAccountBase":
+        """Apply provider-specific validation rules."""
+
+        if self.provider == ProviderType.DISCORD:
+            if not re.fullmatch(r"\d{17,20}", self.provider_user_id):
+                raise ValueError("Discord provider_user_id must be a numeric snowflake")
+
+        if self.provider == ProviderType.SPOTIFY:
+            if self.access_token and self.token_expires_at is None:
+                raise ValueError("Spotify accounts require a token_expires_at timestamp")
+            if self.token_expires_at is not None:
+                expires_at = (
+                    self.token_expires_at
+                    if self.token_expires_at.tzinfo
+                    else self.token_expires_at.replace(tzinfo=timezone.utc)
+                )
+                if expires_at <= datetime.now(timezone.utc):
+                    raise ValueError("Spotify token_expires_at must be in the future")
+
+        return self
 
 
 class LinkedAccountCreate(LinkedAccountBase):
@@ -115,23 +138,6 @@ class RatingSummary(RatingAggregate):
     histogram: list[RatingHistogramBin] | None = None
 
 
-class NominationWithStats(NominationRead):
-    vote_summary: VoteAggregate
-    rating_summary: RatingAggregate
-
-
-class WeekAggregates(OrmSchema):
-    nomination_count: int
-    vote_count: int
-    rating_count: int
-    rating_average: float | None
-
-
-class WeekDetail(WeekRead):
-    nominations: list[NominationWithStats]
-    aggregates: WeekAggregates
-
-
 class NominationBase(OrmSchema):
     week_id: UUID
     user_id: UUID
@@ -150,6 +156,23 @@ class NominationCreate(NominationBase):
 
 class NominationRead(NominationBase):
     id: UUID
+
+
+class NominationWithStats(NominationRead):
+    vote_summary: VoteAggregate
+    rating_summary: RatingAggregate
+
+
+class WeekAggregates(OrmSchema):
+    nomination_count: int
+    vote_count: int
+    rating_count: int
+    rating_average: float | None
+
+
+class WeekDetail(WeekRead):
+    nominations: list[NominationWithStats]
+    aggregates: WeekAggregates
 
 
 class VoteBase(OrmSchema):
@@ -177,7 +200,9 @@ class RatingBase(OrmSchema):
     favorite_track: str | None = None
     review: str | None = None
     created_at: datetime | None = None
-    metadata: dict | None = None
+    metadata_: dict | None = Field(
+        default=None, alias="metadata", serialization_alias="metadata"
+    )
 
 
 class RatingCreate(RatingBase):
@@ -229,7 +254,9 @@ class ListenEventBase(OrmSchema):
     track_id: UUID
     played_at: datetime
     source: ListenSource
-    metadata: dict | None = None
+    metadata_: dict | None = Field(
+        default=None, alias="metadata", serialization_alias="metadata"
+    )
     ingested_at: datetime | None = None
 
 
