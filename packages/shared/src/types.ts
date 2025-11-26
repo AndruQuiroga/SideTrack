@@ -8,6 +8,13 @@ export enum ProviderType {
   LISTENBRAINZ = 'listenbrainz',
 }
 
+export enum ListenSource {
+  SPOTIFY = 'spotify',
+  LASTFM = 'lastfm',
+  LISTENBRAINZ = 'listenbrainz',
+  MANUAL = 'manual',
+}
+
 export interface UserRead {
   id: UUID;
   display_name: string;
@@ -158,5 +165,20 @@ export interface RatingBase {
 export interface RatingCreate extends RatingBase {}
 
 export interface RatingRead extends RatingBase {
+  id: UUID;
+}
+
+export interface ListenEventBase {
+  user_id: UUID;
+  track_id: UUID;
+  played_at: IsoDateString;
+  source: ListenSource;
+  metadata?: Record<string, unknown> | null;
+  ingested_at?: IsoDateString | null;
+}
+
+export interface ListenEventCreate extends ListenEventBase {}
+
+export interface ListenEventRead extends ListenEventBase {
   id: UUID;
 }
