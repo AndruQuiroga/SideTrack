@@ -1,7 +1,7 @@
 import nox
 
 PYTHON_VERSIONS = ["3.10", "3.11"]
-LOCATIONS = ["services", "sidetrack", "tests", "noxfile.py"]
+LOCATIONS = ["apps", "sidetrack", "tests", "noxfile.py"]
 
 nox.options.sessions = ["lint", "unit", "integration"]
 nox.options.reuse_existing_virtualenvs = True

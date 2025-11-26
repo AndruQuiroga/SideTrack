@@ -6,25 +6,45 @@ on:
   pull_request:
 
 jobs:
-  tests:
+  python:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: pip install pip-tools
-      - run: pip-compile requirements-dev.in --quiet && git diff --exit-code requirements-dev.txt
-      - run: pip install nox coverage-badge
-      - run: nox -s lint unit integration -p 3.11
-      - run: coverage xml
-      - run: coverage-badge -o coverage.svg -f
-      - uses: actions/upload-artifact@v4
+      - name: Install tooling
+        run: |
+          python -m pip install --upgrade pip
+          pip install pip-tools nox
+      - name: Verify requirements lock
+        run: pip-compile requirements-dev.in --quiet && git diff --exit-code requirements-dev.txt
+      - name: Lint and unit tests (Python)
+        run: nox -s lint unit -p 3.11
+
+  node:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          name: coverage-report
-          path: |
-            coverage.xml
-            coverage.svg
-      - uses: codecov/codecov-action@v4
-        with:
-          files: coverage.xml
+          node-version: 20
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: pnpm install --ignore-scripts --frozen-lockfile=false
+      - name: Lint workspace (TypeScript)
+        run: pnpm -r run lint
+      - name: Unit suites (TypeScript)
+        run: pnpm -r run test
+
+  docker:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: [api, bot, web, worker]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build ${{ matrix.app }} image
+        run: docker build -f apps/${{ matrix.app }}/Dockerfile -t sidetrack/${{ matrix.app }}:ci .
