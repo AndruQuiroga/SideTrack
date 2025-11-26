@@ -1,47 +1,54 @@
 """Nomination endpoints with static responses."""
 
 from datetime import datetime, timezone
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from apps.api.db import get_db
-from apps.api.schemas.core import Nomination
+from apps.api.schemas import NominationRead
 
 router = APIRouter(prefix="/nominations", tags=["nominations"])
 
 
-@router.get("/", response_model=list[Nomination])
-async def list_nominations(db: Session = Depends(get_db)) -> list[Nomination]:
+@router.get("/", response_model=list[NominationRead])
+async def list_nominations(db: Session = Depends(get_db)) -> list[NominationRead]:
     """Return placeholder nominations."""
 
     _ = db
     return [
-        Nomination(
-            id=10,
-            week_id=1,
-            user_id="user-001",
-            album_title="Discovery",
-            artist_name="Daft Punk",
-            album_year=2001,
-            notes="A classic electronic record",
+        NominationRead(
+            id=uuid4(),
+            week_id=uuid4(),
+            user_id=uuid4(),
+            album_id=uuid4(),
+            pitch="A classic electronic record everyone should revisit",
+            pitch_track_url="https://open.spotify.com/track/example",
+            genre_tag="electronic",
+            decade_tag="2000s",
+            country_tag="France",
             submitted_at=datetime(2024, 6, 30, 12, 0, tzinfo=timezone.utc),
         )
     ]
 
 
-@router.get("/{nomination_id}", response_model=Nomination)
-async def get_nomination(nomination_id: int, db: Session = Depends(get_db)) -> Nomination:
+@router.get("/{nomination_id}", response_model=NominationRead)
+async def get_nomination(
+    nomination_id: UUID, db: Session = Depends(get_db)
+) -> NominationRead:
     """Return a single nomination placeholder."""
 
     _ = db
-    return Nomination(
+    return NominationRead(
         id=nomination_id,
-        week_id=1,
-        user_id="user-002",
-        album_title="Random Access Memories",
-        artist_name="Daft Punk",
-        album_year=2013,
-        notes="Placeholder nomination",
+        week_id=uuid4(),
+        user_id=uuid4(),
+        album_id=uuid4(),
+        pitch="A shimmering slice of nu-disco",
+        pitch_track_url="https://open.spotify.com/track/another-example",
+        genre_tag="disco",
+        decade_tag="2010s",
+        country_tag="UK",
         submitted_at=datetime(2024, 6, 30, 13, 0, tzinfo=timezone.utc),
     )
