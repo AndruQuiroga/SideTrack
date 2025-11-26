@@ -28,7 +28,13 @@ from .core import (
     VoteRead,
     WeekBase,
     WeekCreate,
+    WeekDetail,
+    WeekUpdate,
     WeekRead,
+    NominationWithStats,
+    VoteAggregate,
+    RatingAggregate,
+    WeekAggregates,
 )
 
 __all__ = [
@@ -59,5 +65,11 @@ __all__ = [
     "VoteRead",
     "WeekBase",
     "WeekCreate",
+    "WeekDetail",
+    "WeekUpdate",
     "WeekRead",
+    "NominationWithStats",
+    "VoteAggregate",
+    "RatingAggregate",
+    "WeekAggregates",
 ]

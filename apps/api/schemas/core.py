@@ -64,6 +64,7 @@ class WeekBase(OrmSchema):
     nominations_close_at: datetime | None = None
     poll_close_at: datetime | None = None
     winner_album_id: UUID | None = None
+    legacy_week_id: str | None = None
     nominations_thread_id: int | None = None
     poll_thread_id: int | None = None
     winner_thread_id: int | None = None
@@ -74,9 +75,52 @@ class WeekCreate(WeekBase):
     pass
 
 
+class WeekUpdate(OrmSchema):
+    label: str | None = None
+    week_number: int | None = None
+    discussion_at: datetime | None = None
+    nominations_close_at: datetime | None = None
+    poll_close_at: datetime | None = None
+    winner_album_id: UUID | None = None
+    legacy_week_id: str | None = None
+    nominations_thread_id: int | None = None
+    poll_thread_id: int | None = None
+    winner_thread_id: int | None = None
+    ratings_thread_id: int | None = None
+
+
 class WeekRead(WeekBase):
     id: UUID
     created_at: datetime
+
+
+class VoteAggregate(OrmSchema):
+    points: int
+    first_place: int
+    second_place: int
+    total_votes: int
+
+
+class RatingAggregate(OrmSchema):
+    average: float | None
+    count: int
+
+
+class NominationWithStats(NominationRead):
+    vote_summary: VoteAggregate
+    rating_summary: RatingAggregate
+
+
+class WeekAggregates(OrmSchema):
+    nomination_count: int
+    vote_count: int
+    rating_count: int
+    rating_average: float | None
+
+
+class WeekDetail(WeekRead):
+    nominations: list[NominationWithStats]
+    aggregates: WeekAggregates
 
 
 class NominationBase(OrmSchema):
