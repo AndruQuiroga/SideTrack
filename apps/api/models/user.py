@@ -51,6 +51,24 @@ class User(Base):
     votes: Mapped[list["Vote"]] = relationship(back_populates="user")
     ratings: Mapped[list["Rating"]] = relationship(back_populates="user")
     listen_events: Mapped[list["ListenEvent"]] = relationship(back_populates="user")
+    taste_profiles: Mapped[list["TasteProfile"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+    followers: Mapped[list["Follow"]] = relationship(
+        "Follow", foreign_keys="Follow.followee_id", back_populates="followee"
+    )
+    following: Mapped[list["Follow"]] = relationship(
+        "Follow", foreign_keys="Follow.follower_id", back_populates="follower"
+    )
+    compatibility_a: Mapped[list["Compatibility"]] = relationship(
+        "Compatibility", foreign_keys="Compatibility.user_a_id", back_populates="user_a"
+    )
+    compatibility_b: Mapped[list["Compatibility"]] = relationship(
+        "Compatibility", foreign_keys="Compatibility.user_b_id", back_populates="user_b"
+    )
+    recommendations: Mapped[list["UserRecommendation"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
 
 
 class LinkedAccount(Base):

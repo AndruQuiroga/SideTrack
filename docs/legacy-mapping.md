@@ -36,8 +36,8 @@ This report inventories the current SQLAlchemy models/migrations and compares th
 
 ## Phase 2 migration notes
 
-- Introduce canonical user/social tables (users, linked_accounts, follows, compatibility, taste_profiles, user_recommendations) and plan data backfill from `user_account`/`user_settings`.
-- Add club tables (weeks, nominations, votes, ratings) per canonical schema; no legacy equivalents exist.
-- Stand up canonical album/track tables (UUIDs) alongside legacy `release`/`track` and design mapping/duplication strategy.
-- Normalize listening + features: create `listen_events` with UUID FKs and migrate from `listen`; reconcile `features` vs `track_features` and align with canonical `TrackFeatures` fields.
+- Introduce canonical user/social tables (users, linked_accounts, follows, compatibility, taste_profiles, user_recommendations) and plan data backfill from `user_account`/`user_settings`. **Status:** handled via Alembic revision `e64c65df3bdf` plus reusable ETL in `scripts/migrate_legacy.py`.
+- Add club tables (weeks, nominations, votes, ratings) per canonical schema; no legacy equivalents exist. **Status:** canonical tables live in models/migrations with deterministic backfill from legacy `week`/`nomination`/`vote`/`rating` rows.
+- Stand up canonical album/track tables (UUIDs) alongside legacy `release`/`track` and design mapping/duplication strategy. **Status:** both the Alembic revision and ETL script generate UUID albums/tracks keyed by legacy IDs to retain referential integrity.
+- Normalize listening + features: create `listen_events` with UUID FKs and migrate from `listen`; reconcile `features` vs `track_features` and align with canonical `TrackFeatures` fields. **Status:** `listen_events` backfilled from `listen`; feature reconciliation still pending.
 - Review metadata caches (`mb_tag`, `mb_label`, `mb_recording`) since models lack migrations—decide whether to keep or recreate under new schema.

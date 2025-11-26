@@ -31,6 +31,9 @@ class Album(Base):
     nominations: Mapped[list["Nomination"]] = relationship(back_populates="album")
     ratings: Mapped[list["Rating"]] = relationship(back_populates="album")
     winner_weeks: Mapped[list["Week"]] = relationship(back_populates="winner_album")
+    recommendations: Mapped[list["UserRecommendation"]] = relationship(
+        back_populates="album", cascade="all, delete-orphan"
+    )
 
 
 class Track(Base):
