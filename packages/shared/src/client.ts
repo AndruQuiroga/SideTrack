@@ -4,6 +4,7 @@ import {
   LinkedAccountCreate,
   LinkedAccountRead,
   ProviderType,
+  UserCreate,
   RatingCreate,
   RatingRead,
   RatingSummary,
@@ -13,7 +14,9 @@ import {
   WeekDetail,
   WeekUpdate,
   NominationRead,
+  NominationCreate,
   VoteRead,
+  VoteCreate,
   RatingBase,
   WeekRead,
 } from './types';
@@ -139,6 +142,10 @@ export class SidetrackApiClient {
     return this.request<UserRead>({ method: 'GET', url: `/users/${userId}` });
   }
 
+  async createUser(payload: UserCreate): Promise<UserRead> {
+    return this.request<UserRead>({ method: 'POST', url: '/users', data: payload });
+  }
+
   async listLinkedAccounts(userId: UUID): Promise<LinkedAccountRead[]> {
     return this.request<LinkedAccountRead[]>({ method: 'GET', url: `/users/${userId}/linked-accounts` });
   }
@@ -165,6 +172,36 @@ export class SidetrackApiClient {
     });
   }
 
+  async createWeekNomination(weekId: UUID, payload: NominationCreate): Promise<NominationRead> {
+    try {
+      return await this.request<NominationRead>({
+        method: 'POST',
+        url: `/weeks/${weekId}/nominations`,
+        data: payload,
+      });
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 409) {
+        throw new ApiError('Nomination already exists for this user and album.', error.status, error.data, false);
+      }
+      throw error;
+    }
+  }
+
+  async createWeekVote(weekId: UUID, payload: VoteCreate): Promise<VoteRead> {
+    try {
+      return await this.request<VoteRead>({
+        method: 'POST',
+        url: `/weeks/${weekId}/votes`,
+        data: payload,
+      });
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 409) {
+        throw new ApiError('Vote already exists for this user and rank.', error.status, error.data, false);
+      }
+      throw error;
+    }
+  }
+
   private normalizeBaseUrl(baseUrl: string): string {
     return baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
   }
@@ -184,6 +221,22 @@ export class SidetrackApiClient {
   }
 }
 
-export type { LinkedAccountCreate, LinkedAccountRead, RatingCreate, RatingRead, WeekDetail, WeekRead, WeekCreate, WeekUpdate, NominationRead, VoteRead, RatingSummary, UserRead };
+export type {
+  LinkedAccountCreate,
+  LinkedAccountRead,
+  RatingCreate,
+  RatingRead,
+  WeekDetail,
+  WeekRead,
+  WeekCreate,
+  WeekUpdate,
+  NominationRead,
+  NominationCreate,
+  VoteRead,
+  VoteCreate,
+  RatingSummary,
+  UserRead,
+  UserCreate,
+};
 export type { ProviderType };
 export type { RatingBase };
