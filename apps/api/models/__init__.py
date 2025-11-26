@@ -4,7 +4,7 @@ from .base import Base
 from .club import Nomination, Rating, Vote, Week
 from .legacy import LegacyBase, legacy_metadata
 from .listening import ListenEvent, ListenSource
-from .music import Album, Track
+from .music import Album, Track, TrackFeature
 from .social import Compatibility, Follow, TasteProfile, UserRecommendation
 from .user import LinkedAccount, ProviderType, User
 
@@ -26,6 +26,7 @@ __all__ = [
     "Rating",
     "TasteProfile",
     "Track",
+    "TrackFeature",
     "User",
     "UserRecommendation",
     "Vote",

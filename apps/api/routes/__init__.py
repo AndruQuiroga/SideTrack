@@ -2,7 +2,7 @@
 
 from fastapi import FastAPI
 
-from . import listen_events, nominations, ratings, users, votes, weeks
+from . import listen_events, nominations, ratings, users, votes, weeks, taste_profiles
 
 
 def register_routes(app: FastAPI) -> None:
@@ -15,5 +15,6 @@ def register_routes(app: FastAPI) -> None:
         votes.router,
         ratings.router,
         listen_events.router,
+        taste_profiles.router,
     ):
         app.include_router(router)

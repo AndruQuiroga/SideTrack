@@ -266,3 +266,25 @@ class ListenEventCreate(ListenEventBase):
 
 class ListenEventRead(ListenEventBase):
     id: UUID
+
+
+class TasteFingerprint(OrmSchema):
+    labels: list[str]
+    values: list[float]
+
+
+class TasteProfileSummary(OrmSchema):
+    listen_count: int
+    tracks_with_features: int
+    missing_feature_listens: int
+    feature_means: dict[str, float | None]
+    genre_histogram: dict[str, float]
+    fingerprint: TasteFingerprint | None = None
+
+
+class TasteProfileRead(OrmSchema):
+    id: UUID
+    user_id: UUID
+    scope: str
+    summary: TasteProfileSummary | None = None
+    updated_at: datetime
