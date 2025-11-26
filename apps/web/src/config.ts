@@ -7,3 +7,7 @@ export function getApiBaseUrl(): string {
 export function getLegacyDataPath(): string {
   return path.resolve(__dirname, 'legacy', 'legacy-weeks.json');
 }
+
+export function getDiscordGuildId(): string | undefined {
+  return process.env.NEXT_PUBLIC_DISCORD_GUILD_ID || process.env.SIDETRACK_DISCORD_GUILD_ID;
+}

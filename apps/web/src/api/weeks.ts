@@ -8,6 +8,18 @@ export interface WeekDetailWithRatings extends WeekDetail {
   source: 'api' | 'legacy';
 }
 
+async function attachRatingSummaries(
+  client: SidetrackApiClient,
+  weeks: WeekDetail[]
+): Promise<WeekDetailWithRatings[]> {
+  return Promise.all(
+    weeks.map(async (week) => {
+      const rating_summary = await client.getWeekRatingSummary(week.id).catch(() => undefined);
+      return { ...week, rating_summary, source: 'api' as const };
+    })
+  );
+}
+
 function createClient(): SidetrackApiClient {
   return new SidetrackApiClient({ baseUrl: getApiBaseUrl() });
 }
@@ -17,7 +29,7 @@ export async function fetchWeekListWithFallback(): Promise<WeekDetailWithRatings
   try {
     const weeks = await client.listWeeks({ has_winner: true });
     if (weeks.length > 0) {
-      return weeks.map((week) => ({ ...week, source: 'api' as const }));
+      return attachRatingSummaries(client, weeks);
     }
   } catch (error) {
     console.warn('API week list failed, falling back to legacy data', error);
