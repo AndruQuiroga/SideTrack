@@ -66,6 +66,11 @@ export interface ProfileOverview {
   recent_listens?: RecentListen[];
   visibility: 'public' | 'private';
   worker_sync_ready?: boolean;
+export enum ListenSource {
+  SPOTIFY = 'spotify',
+  LASTFM = 'lastfm',
+  LISTENBRAINZ = 'listenbrainz',
+  MANUAL = 'manual',
 }
 
 export interface UserRead {
@@ -218,5 +223,20 @@ export interface RatingBase {
 export interface RatingCreate extends RatingBase {}
 
 export interface RatingRead extends RatingBase {
+  id: UUID;
+}
+
+export interface ListenEventBase {
+  user_id: UUID;
+  track_id: UUID;
+  played_at: IsoDateString;
+  source: ListenSource;
+  metadata?: Record<string, unknown> | null;
+  ingested_at?: IsoDateString | null;
+}
+
+export interface ListenEventCreate extends ListenEventBase {}
+
+export interface ListenEventRead extends ListenEventBase {
   id: UUID;
 }

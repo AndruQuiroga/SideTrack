@@ -27,6 +27,8 @@ import {
   ListeningTimelinePoint,
   NowPlaying,
   RecentListen,
+  ListenEventCreate,
+  ListenEventRead,
 } from './types';
 import { ApiError, toApiError } from './errors';
 
@@ -116,6 +118,22 @@ export class SidetrackApiClient {
 
   async getVote(voteId: UUID): Promise<VoteRead> {
     return this.request<VoteRead>({ method: 'GET', url: `/votes/${voteId}` });
+  }
+
+  async listListenEvents(): Promise<ListenEventRead[]> {
+    return this.request<ListenEventRead[]>({ method: 'GET', url: '/listen-events' });
+  }
+
+  async getListenEvent(listenEventId: UUID): Promise<ListenEventRead> {
+    return this.request<ListenEventRead>({ method: 'GET', url: `/listen-events/${listenEventId}` });
+  }
+
+  async upsertListenEvents(payload: ListenEventCreate[]): Promise<ListenEventRead[]> {
+    return this.request<ListenEventRead[]>({
+      method: 'POST',
+      url: '/listen-events',
+      data: { listens: payload },
+    });
   }
 
   async listRatings(): Promise<RatingRead[]> {
@@ -315,6 +333,8 @@ export type {
   ListeningTimelinePoint,
   NowPlaying,
   RecentListen,
+  ListenEventCreate,
+  ListenEventRead,
 };
 export type { ProviderType };
 export type { RatingBase };
