@@ -106,6 +106,15 @@ class RatingAggregate(OrmSchema):
     count: int
 
 
+class RatingHistogramBin(OrmSchema):
+    value: float
+    count: int
+
+
+class RatingSummary(RatingAggregate):
+    histogram: list[RatingHistogramBin] | None = None
+
+
 class NominationWithStats(NominationRead):
     vote_summary: VoteAggregate
     rating_summary: RatingAggregate
@@ -168,6 +177,7 @@ class RatingBase(OrmSchema):
     favorite_track: str | None = None
     review: str | None = None
     created_at: datetime | None = None
+    metadata: dict | None = None
 
 
 class RatingCreate(RatingBase):
