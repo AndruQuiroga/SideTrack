@@ -12,14 +12,14 @@ sys.path.append(str(BASE_DIR))
 
 from sqlalchemy.engine import make_url
 from sidetrack.config import get_settings  # type: ignore
-from sidetrack.common.models import Base  # type: ignore
+from apps.api.models import all_metadata  # type: ignore
 
 config = context.config
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-target_metadata = Base.metadata
+target_metadata = all_metadata
 
 
 def get_url() -> str:
