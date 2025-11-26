@@ -1,26 +1,43 @@
-# Legacy → Reboot Data Mapping
+# Legacy Schema Audit (Current vs Canonical)
 
-| Legacy table/model | Legacy purpose | Reboot entity alignment | Gaps / deprecation callouts |
-| --- | --- | --- | --- |
-| `user_account` | Minimal auth record with password/token hash and role for a string `user_id`. | Roughly maps to `User`, but missing profile fields and richer identity model. | Should be replaced by full `User` table with UUID keys and profile metadata; legacy table becomes migration source only. |
-| `user_settings` | One-row-per-user settings combining ListenBrainz/Last.fm/Spotify handles and tokens plus processing flags. | Closest to `LinkedAccount`, but multi-provider fields are denormalized into one table. | Split into provider-scoped `LinkedAccount` rows with per-provider tokens; legacy structure a deprecation candidate after migration. |
-| `artist` | Canonical artist metadata (name, MusicBrainz ID) referenced by releases/tracks. | Supports `Album`/`Track` catalog needs. | Likely retained but should align naming/keys with reboot catalog; ensure downstream models reference reboot `Album`/`Track`. |
-| `release` | Album-like container with title/date/label and artist FK. | Maps to reboot `Album`. | Rename and expand to match album schema (year, cover, external IDs); migrate before deprecating `release` naming. |
-| `track` | Track metadata with artist/release links, durations, fingerprints, and optional Spotify/MB IDs. | Maps to reboot `Track`. | Keep core but normalize album FK to reboot `Album`; consider removing legacy embedding column after migration to derived tables. |
-| `listen` | Scrobble-style events per user, track, timestamp, and source. | Maps directly to `ListenEvent`. | Rename and add FK to reboot `User`; ensure source enum matches providers; keep as migration seed. |
-| `track_features` | Consolidated per-track audio features (tempo, MFCC, etc.) with dataset versioning. | Maps to `TrackFeatures`. | Likely retained with column cleanup; ensure single authoritative features table to avoid overlap with `features`. |
-| `features` | Older feature store with diverse metrics and provenance versioning. | Superseded by `TrackFeatures`. | Candidate for deprecation after verifying no unique columns are needed in the unified features model. |
-| `track_embeddings` | Normalized pgvector storage for per-track embedding vectors by model/version. | Derived analytics supporting recommendations; adjunct to `TrackFeatures`. | Keep as derived table but align naming and FK to reboot catalog. |
-| `embeddings` | JSON-stored embeddings with model/dataset columns (pre-pgvector). | Legacy precursor to `track_embeddings`. | Deprecate after migrating vectors to `track_embeddings`. |
-| `track_scores` | Arbitrary per-track metric scores keyed by metric/model. | Derived analytics; could feed recommendations/compatibility. | Retain as derived data if needed; otherwise consolidate into new analytics schema. |
-| `mood_scores` | Per-track mood axis scores by method. | Fits under derived `TrackFeatures`/mood facets. | Keep as derived table; ensure linkage to reboot track IDs and move to consolidated features schema. |
-| `labels_user` | User-submitted per-track labels on custom axes. | Could map to user taste annotations; no direct reboot entity. | Decide whether to surface as part of `Rating` notes or a future `UserTag` model; otherwise deprecate. |
-| `mood_agg_week` | User-level weekly mood aggregates (mean/var/momentum per axis). | Partial overlap with `TasteProfile`. | Migrate useful aggregates into `TasteProfile`; deprecate table post-migration. |
-| `lastfm_tags` | Cached Last.fm tags per track/source. | Catalog enrichment supporting `Album`/`Track`. | Keep as metadata cache but align to reboot track IDs and consider consolidating with other tag tables. |
-| `mb_tag` | MusicBrainz tag cache per track. | Catalog enrichment for `Album`/`Track`. | Same as above; consolidate tag storage. |
-| `mb_label` | Label/era metadata per track. | Additional catalog enrichment. | Keep if needed for album metadata; otherwise merge into reboot album schema and drop table. |
-| `mb_recording` | Cached MusicBrainz recording lookups by ISRC with tags and label/year. | Catalog enrichment aiding track/album resolution. | Retain as cache but ensure harmonized IDs; deprecate if new ingestion replaces it. |
-| `graph_edges` | Track-to-track similarity/edge weights by kind. | Derived analytics supporting recommendations/graph-based features. | Keep as derived table if graph recs remain; otherwise migrate or drop once new rec stack is built. |
-| `insight_events` | User-scoped analytic/alert events with summary/details/severity. | No direct reboot entity; closest to telemetry/notification logs. | Evaluate need; deprecate if new observability pipeline replaces it. |
-| *Gap: Week/Nomination/Vote/Rating* | — no legacy tables for club weeks, nominations, ranked votes, or album ratings. | Required reboot entities `Week`, `Nomination`, `Vote`, `Rating`. | Must be introduced anew per domain model; migrate historical club data from Discord/exports when available. |
-| *Gap: Social graph & recommendations* | — no legacy tables for `Follow`, `Compatibility`, `UserRecommendations`. | Needed for social features. | Add fresh tables aligned to reboot design; no legacy data to migrate. |
+This report inventories the current SQLAlchemy models/migrations and compares them with the canonical domain model in `agents/data-model.md`. Use it to guide Phase 2 migrations.
+
+## Current tables (models + migrations)
+
+- **artist / release / track**: legacy music catalog tables using integer primary keys and optional MusicBrainz IDs. Track includes ISRC, Spotify ID, duration, local path, fingerprint, and pgvector embeddings. Constraints added for embeddings/features uniqueness and IVFFlat index on `track.embeddings`.
+- **listen**: per-play log with `user_id` (string), `track_id` FK, `played_at`, and `source`. Indexes on `user_id`, `played_at`, and `track_id`.
+- **features / embeddings**: JSON audio features and generic embedding storage with `dataset_version`, model identifiers, and uniqueness constraints.
+- **track_features / track_embeddings / track_scores**: more structured per-track features, vector embeddings, and metric scores (composite PKs include `dataset_version`/`model`).
+- **mood_scores / mood_agg_week**: mood metrics per track and aggregated per user/week/axis.
+- **labels_user**: user-provided labels per track (axis/value).
+- **lastfm_tags / mb_tag / mb_label / mb_recording**: cached tag/label metadata from Last.fm and MusicBrainz (MB tag/label/recording tables exist in models but not covered by current migrations).
+- **graph_edges**: edges between tracks with weight and kind, unique per (src, dst, kind).
+- **user_account**: auth table with password hash, optional token hash, role (default `user`), and timestamps.
+- **user_settings**: per-user external account config (ListenBrainz, Last.fm session key stored as `lastfm_api_key`, Spotify tokens/usernames, GPU/stems/excerpts flags).
+- **insight_events**: timestamped user events with type, summary, optional details JSON, and severity.
+
+## Alignment against canonical model (`agents/data-model.md`)
+
+| Canonical entity | Current status | Gaps / differences |
+| --- | --- | --- |
+| User | Only `user_account` (string PK, password/token/role) and `user_settings` (provider tokens) exist; no UUID `users` table or `display_name`/`handle` fields. | Add canonical `users` table; map legacy `user_id` strings; migrate auth/settings appropriately. |
+| LinkedAccount | Missing; provider details live in `user_settings` columns. | Introduce `linked_accounts` with provider enum + identifiers/tokens; backfill from `user_settings`. |
+| Album / Track | Legacy `release`/`track`/`artist` tables differ from canonical `albums`/`tracks` (UUID PKs, album-centric). | Decide mapping of `release`→`albums`; add canonical album/track tables alongside or migrate; normalize artist fields. |
+| Week | Missing entirely. | Add `weeks` table with scheduling + Discord thread IDs. |
+| Nomination | Missing. | Add `nominations` linked to `weeks`/`users`/`albums` with pitch + tags. |
+| Vote | Missing. | Add `votes` with unique (week, user, rank) + nomination FK. |
+| Rating | Missing. | Add `ratings` with (week, user) uniqueness, album FK, favorite track, review. |
+| ListenEvent | `listen` table partially matches but uses string `user_id` and integer track IDs; lacks source enum/UUIDs. | Add canonical `listen_events` with UUIDs, migrate data from `listen`. |
+| TrackFeatures | Two overlapping systems (`features` JSON + `track_features` JSONB). Canonical expects lighter-weight audio features per track. | Decide canonical structure; likely map to `track_features` (drop legacy `features`?) with UUID FKs. |
+| TasteProfile | Missing. | Add `taste_profiles` JSONB aggregates per user. |
+| Follow | Missing. | Add `follows` with unique follower/followee. |
+| Compatibility | Missing. | Add compatibility table keyed by user pairs. |
+| UserRecommendations | Missing. | Add `user_recommendations` table for cached suggestions. |
+
+## Phase 2 migration notes
+
+- Introduce canonical user/social tables (users, linked_accounts, follows, compatibility, taste_profiles, user_recommendations) and plan data backfill from `user_account`/`user_settings`.
+- Add club tables (weeks, nominations, votes, ratings) per canonical schema; no legacy equivalents exist.
+- Stand up canonical album/track tables (UUIDs) alongside legacy `release`/`track` and design mapping/duplication strategy.
+- Normalize listening + features: create `listen_events` with UUID FKs and migrate from `listen`; reconcile `features` vs `track_features` and align with canonical `TrackFeatures` fields.
+- Review metadata caches (`mb_tag`, `mb_label`, `mb_recording`) since models lack migrations—decide whether to keep or recreate under new schema.
