@@ -8,6 +8,66 @@ export enum ProviderType {
   LISTENBRAINZ = 'listenbrainz',
 }
 
+export type ListeningRange = '7d' | '30d' | '90d' | 'all';
+
+export interface ArtistStat {
+  id?: UUID;
+  name: string;
+  play_count: number;
+  image_url?: string | null;
+}
+
+export interface GenreStat {
+  name: string;
+  play_count: number;
+}
+
+export interface TasteMetric {
+  id: string;
+  label: string;
+  value: number;
+  unit?: string | null;
+  percentile?: number | null;
+  description?: string | null;
+}
+
+export interface ListeningTimelinePoint {
+  date: IsoDateString;
+  play_count: number;
+  minutes_listened?: number | null;
+  highlight_artist?: string | null;
+}
+
+export interface NowPlaying {
+  track_name: string;
+  artist_name: string;
+  album_name?: string | null;
+  started_at?: IsoDateString | null;
+  source?: ProviderType;
+  artwork_url?: string | null;
+}
+
+export interface RecentListen {
+  track_name: string;
+  artist_name: string;
+  listened_at: IsoDateString;
+  source?: ProviderType;
+}
+
+export interface ProfileOverview {
+  user_id: UUID;
+  display_name?: string | null;
+  range?: ListeningRange;
+  top_artists: ArtistStat[];
+  top_genres: GenreStat[];
+  taste_metrics: TasteMetric[];
+  timeline: ListeningTimelinePoint[];
+  now_playing?: NowPlaying | null;
+  recent_listens?: RecentListen[];
+  visibility: 'public' | 'private';
+  worker_sync_ready?: boolean;
+}
+
 export interface UserRead {
   id: UUID;
   display_name: string;

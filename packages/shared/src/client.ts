@@ -19,6 +19,14 @@ import {
   VoteCreate,
   RatingBase,
   WeekRead,
+  ProfileOverview,
+  ArtistStat,
+  GenreStat,
+  TasteMetric,
+  ListeningRange,
+  ListeningTimelinePoint,
+  NowPlaying,
+  RecentListen,
 } from './types';
 import { ApiError, toApiError } from './errors';
 
@@ -38,6 +46,16 @@ export interface SidetrackClientOptions {
   authToken?: string;
   getAuthToken?: () => string | undefined;
   axiosConfig?: AxiosRequestConfig;
+}
+
+export interface ListeningStatsParams {
+  range?: ListeningRange;
+  limit?: number;
+}
+
+export interface TimelineParams {
+  range?: ListeningRange;
+  bucket?: 'day' | 'week' | 'month';
 }
 
 export class SidetrackApiClient {
@@ -172,6 +190,58 @@ export class SidetrackApiClient {
     });
   }
 
+  async getUserProfileOverview(userId: UUID, params?: ListeningStatsParams): Promise<ProfileOverview> {
+    return this.request<ProfileOverview>({
+      method: 'GET',
+      url: `/users/${userId}/profile`,
+      params: { range: params?.range },
+    });
+  }
+
+  async getUserTopArtists(userId: UUID, params?: ListeningStatsParams): Promise<ArtistStat[]> {
+    return this.request<ArtistStat[]>({
+      method: 'GET',
+      url: `/users/${userId}/listening/top-artists`,
+      params: { range: params?.range, limit: params?.limit },
+    });
+  }
+
+  async getUserTopGenres(userId: UUID, params?: ListeningStatsParams): Promise<GenreStat[]> {
+    return this.request<GenreStat[]>({
+      method: 'GET',
+      url: `/users/${userId}/listening/top-genres`,
+      params: { range: params?.range, limit: params?.limit },
+    });
+  }
+
+  async getUserTasteMetrics(userId: UUID, params?: ListeningStatsParams): Promise<TasteMetric[]> {
+    return this.request<TasteMetric[]>({
+      method: 'GET',
+      url: `/users/${userId}/taste`,
+      params: { range: params?.range },
+    });
+  }
+
+  async getUserListeningTimeline(userId: UUID, params?: TimelineParams): Promise<ListeningTimelinePoint[]> {
+    return this.request<ListeningTimelinePoint[]>({
+      method: 'GET',
+      url: `/users/${userId}/listening/timeline`,
+      params: { range: params?.range, bucket: params?.bucket },
+    });
+  }
+
+  async getUserNowPlaying(userId: UUID): Promise<NowPlaying | null> {
+    return this.request<NowPlaying | null>({ method: 'GET', url: `/users/${userId}/listening/now-playing` });
+  }
+
+  async getUserRecentListens(userId: UUID, params?: ListeningStatsParams): Promise<RecentListen[]> {
+    return this.request<RecentListen[]>({
+      method: 'GET',
+      url: `/users/${userId}/listening/recent`,
+      params: { range: params?.range, limit: params?.limit },
+    });
+  }
+
   async createWeekNomination(weekId: UUID, payload: NominationCreate): Promise<NominationRead> {
     try {
       return await this.request<NominationRead>({
@@ -237,6 +307,14 @@ export type {
   RatingSummary,
   UserRead,
   UserCreate,
+  ProfileOverview,
+  ArtistStat,
+  GenreStat,
+  TasteMetric,
+  ListeningRange,
+  ListeningTimelinePoint,
+  NowPlaying,
+  RecentListen,
 };
 export type { ProviderType };
 export type { RatingBase };

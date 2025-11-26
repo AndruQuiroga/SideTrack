@@ -17,3 +17,11 @@ export function buildWeekMetadata(titleText: string, summary?: string): PageMeta
   const description = summary?.slice(0, 180) ?? 'Winner, nominees, and poll results for this Sidetrack Club week.';
   return { title, description };
 }
+
+export function buildProfileMetadata(displayName: string): PageMetadata {
+  return {
+    title: `${displayName} — Sidetrack Profile`,
+    description:
+      'View listening stats, taste metrics, and now playing info across Sidetrack. Charts adapt for mobile and desktop views.',
+  };
+}
