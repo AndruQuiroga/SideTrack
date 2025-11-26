@@ -1,320 +1,315 @@
-# SideTrack
+# Sidetrack
 
-Hosted mood/taste analytics for your music listening history.
+> A Discord-powered album club, public archive, and social music tracking platform.
 
-Pull listens from Spotify or Last.fm (with ListenBrainz as a fallback) → resolve MusicBrainz metadata → compute audio features/embeddings locally → score tracks on interpretable axes → aggregate to weekly trends → visualize in a dashboard. Fully containerized; GPU optional. The application now assumes a logged‑in user and links their Spotify or Last.fm accounts to build a unified picture of listening habits.
+Sidetrack is a unified project that combines:
 
----
+1. **Sidetrack Club** — a weekly album club run entirely through Discord.
+2. **Public Web Archive** — a sleek site that showcases every week’s winner, nominees, poll results, and ratings.
+3. **Social Music Tracker** — a Last.fm/Spotify-powered platform for tracking listening habits, analyzing mood/taste/genre, and comparing your taste with friends.
 
-## Services
-
-- db: Postgres 16 + TimescaleDB (primary store)
-- cache: Redis 7 (queues, rate limiting)
-- api: FastAPI
-- extraction: audio features/embeddings (Librosa + optional models)
-- jobrunner: periodic scheduling via queue (ingest, tags sync, aggregates, insights)
-- worker: background jobs (RQ)
-- ui: Next.js dashboard
-- proxy: Caddy reverse proxy
+This repo is being rebooted: the goal is to replace the old Sidetrack code with a cleaner, modular architecture that plays nicely with Codex-based agents.
 
 ---
 
-## Containerization
+## High-Level Overview
 
-Single Docker Compose with all services enabled.
+### What Sidetrack Does
 
-- File: `compose.yml`
-- Build the shared base image:
+* **On Discord (Sidetrack Club)**
 
+  * Runs a weekly cycle:
+
+    * Nominations → Ranked poll (1st/2nd choice) → Winner → Discussion → Ratings.
+  * Provides pinned mini-forms for:
+
+    * Nominations (album, pitch, tags).
+    * Ratings (1.0–5.0 with half-stars, fav track, final thoughts).
+  * Automates:
+
+    * Thread creation for each phase.
+    * Reminders for deadlines and discussion time.
+    * Tallying votes & announcing the winner.
+    * Collecting ratings and posting summaries.
+
+* **On the Web**
+
+  * Public **winners gallery** of all weeks.
+  * Detailed **week pages**:
+
+    * Winner album.
+    * Full list of nominees & nominator pitches.
+    * Poll results (points, rankings).
+    * Ratings, reviews, and average score.
+  * **User profiles** (for logged-in users):
+
+    * Listening stats (top artists/albums/genres).
+    * Mood/taste graphs (energy, valence, etc.).
+    * Ratings & reviews history.
+  * **Social features**:
+
+    * Follow/friends.
+    * “Taste match” / compatibility scores.
+    * Activity feed.
+    * Friend-blend & mood-based suggestions.
+
+* **Under the Hood**
+
+  * Integrates with:
+
+    * **Spotify** (OAuth, recently played, audio features, playlists).
+    * **Last.fm / ListenBrainz** (scrobbles).
+    * **MusicBrainz** (metadata / search, potentially via a local mirror).
+  * Computes:
+
+    * Per-user **TasteProfile** (genre distribution, mood vectors, etc.).
+    * **Compatibility** between users.
+    * **Recommendations** (albums you might like, club picks you missed).
+
+---
+
+## Architecture
+
+Sidetrack is organized as a small monorepo with multiple apps and shared packages:
+
+```text
+apps/
+  bot/       # Discord bot (Sidetrack Club automation)
+  api/       # Backend API (FastAPI or similar, Postgres)
+  web/       # Web frontend (Next.js + Tailwind)
+  worker/    # Background jobs (sync & analysis)
+
+packages/
+  shared/    # Shared types, API client(s), common utilities
+
+agents/
+  core.md            # Infra/monorepo/env tasks
+  api.md             # Backend/API tasks
+  bot.md             # Discord bot tasks
+  web.md             # Frontend tasks
+  worker.md          # Worker/sync tasks
+  analysis.md        # Taste/ML tasks
+  data-model.md      # Canonical data model & schema
+
+AGENTS.md            # High-level project + agent overview
 ```
-docker build -f services/base/Dockerfile -t sidetrack-base .
-```
 
-- Start everything:
+### Conceptual Data Model
+
+Core entities (see `agents/data-model.md` for details):
+
+* `User` + `LinkedAccount` (Discord / Spotify / Last.fm / ListenBrainz).
+* `Album` + `Track` (canonical music catalog entries).
+* `Week` (one club session), `Nomination`, `Vote`, `Rating`.
+* `ListenEvent` (scrobble-like events), `TrackFeatures`, `TasteProfile`.
+* Social: `Follow`, `Compatibility`, `UserRecommendation`.
+
+The backend (`apps/api`) is the single source of truth for all of this; the bot, web frontend, and workers all talk to it.
+
+---
+
+## Tech Stack (Target)
+
+> The repo is currently being refactored toward this stack. Some pieces may still be in flux.
+
+* **Backend API**: Python, FastAPI, SQLAlchemy, Postgres, Alembic.
+* **Discord bot**: TypeScript (`discord.js`) or Python (`discord.py`), using a small API client.
+* **Web**: Next.js (App Router), React, TailwindCSS, React-chart library for visuals.
+* **Workers**: Python, same stack as API, using Redis-backed queue (RQ/Celery).
+* **Infra**: Docker, docker-compose, Postgres, Redis.
+
+---
+
+## Repo Status & Reboot Plan
+
+This repo previously hosted the original Sidetrack music taste/mood tracker. The **current work is a reboot** that:
+
+1. Introduces a clean, well-normalized domain model (see `agents/data-model.md`).
+2. Splits the system into clear services (bot, api, web, worker).
+3. Uses a set of **agent task specs** (`AGENTS.md` + `agents/*.md`) to guide Codex in refactoring and building new functionality.
+
+There will be a period where:
+
+* Old code and tables coexist with new ones.
+* Data is gradually migrated.
+* The README may be “ahead” of the implementation in some places.
+
+See the **Migration Tasks** in `agents/data-model.md`:
+
+* `data-model/audit-existing-schema`
+* `data-model/introduce-new-tables-phase1`
+* `data-model/migrate-data-phase2`
+* `data-model/deprecate-legacy`
+* `data-model/indexing-and-performance-pass`
+
+---
+
+## Getting Started (Development)
+
+> These steps are the target workflow; some commands may need adjustment depending on how far along the refactor is.
+
+### Prerequisites
+
+* Node.js (LTS) + `pnpm` (preferred) or `npm`.
+* Python 3.11+.
+* Docker + docker-compose.
+* A Discord bot token and test server.
+* Spotify dev app credentials, Last.fm credentials (for full integration).
+
+### 1. Clone & Install
 
 ```bash
-docker compose up -d --build
+git clone <this-repo-url> sidetrack
+cd sidetrack
+
+# Install JS/TS deps
+pnpm install
 ```
 
-The extraction service uses GPU automatically when available (NVIDIA runtime) and falls back to CPU.
+### 2. Environment Variables
 
----
-
-## Quick Start
+Copy the example env and fill in values:
 
 ```bash
-# 0) Clone and enter
-git clone https://github.com/AndruQuiroga/SideTrack.git
-cd SideTrack
-
-# 1) Configure environment
 cp .env.example .env
-# (Optional) set LASTFM_API_KEY and NEXT_PUBLIC_API_BASE if needed
-
-# 2) Build the base image
-docker build -f services/base/Dockerfile -t sidetrack-base .
-
-# 3) Start the stack (single compose)
-docker compose up -d --build
-
-# 4) Apply DB migrations
-docker compose exec api alembic upgrade head
-
-# 5) Pull listens and aggregate for a user
-# The ingest endpoint now attempts Spotify, then Last.fm, and finally ListenBrainz
-# (using bundled sample data as a last resort).
-curl -H "X-User-Id: some_user" -X POST "http://localhost:8000/api/v1/ingest/listens?since=2024-01-01"
-curl -H "X-User-Id: some_user" -X POST "http://localhost:8000/tags/lastfm/sync?since=2024-01-01"
-curl -H "X-User-Id: some_user" -X POST "http://localhost:8000/aggregate/weeks"
-# Sample listens file uses placeholder user IDs (`user1`–`user5`).
-
-# 6) Open the UI
-open http://localhost:3000
-# Use the "Continue with Google" button on the login page to sign in
-# Production: https://sidetrack.network
 ```
 
-Developer tooling (optional):
+Key variables (see `agents/core.md` and `config/ENVIRONMENT.md` if present):
+
+* `DISCORD_TOKEN`, `DISCORD_GUILD_ID`
+* `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`
+* `LASTFM_API_KEY`, `LASTFM_SHARED_SECRET`
+* `DATABASE_URL` (Postgres)
+* `REDIS_URL`
+* `NEXT_PUBLIC_API_BASE_URL`
+
+### 3. Run Services with Docker Compose (Recommended)
 
 ```bash
-python3.11 -m venv .venv && source .venv/bin/activate
-pip install -e ".[api,jobrunner,worker,dev]"
-# Install heavy extraction extras only when needed
-# pip install -e ".[extraction]"
-pre-commit install && pre-commit run --all-files
+docker compose up --build
 ```
 
----
+Expected (target) services:
 
-## Configuration (`.env`)
+* `db` – Postgres
+* `redis` – Redis
+* `api` – FastAPI backend at `http://localhost:8000`
+* `web` – Next.js frontend at `http://localhost:3000`
+* `bot` – Discord bot (connects to your server)
+* `worker` – background jobs
 
-```
-# DB
-POSTGRES_HOST=db
-POSTGRES_DB=vibescope
-POSTGRES_USER=vibe
-POSTGRES_PASSWORD=vibe
-POSTGRES_PORT=5432
-
-# ListenBrainz / MusicBrainz
-# Per-user credentials are managed via the API/UI
-# LISTENBRAINZ_USER=
-# LISTENBRAINZ_TOKEN=
-MUSICBRAINZ_RATE_LIMIT=1.0   # req/sec
-
-# Last.fm
-LASTFM_API_KEY=lfm_xxx
-LASTFM_API_SECRET=lfm_secret
-
-# Auth.js (NextAuth) – Google OAuth
-NEXTAUTH_URL=https://sidetrack.network
-NEXTAUTH_SECRET=supersecretlongrandom
-GOOGLE_CLIENT_ID=...
-GOOGLE_CLIENT_SECRET=...
-
-# Paths
-AUDIO_ROOT=/audio
-CACHE_DIR=/tmp/vibescope
-EXCERPT_SECONDS=0   # 0 = full tracks; set 30/60 for excerpts
-
-# Models
-EMBEDDING_MODEL=openl3,musicnn,clap,panns  # comma‑sep options
-USE_CLAP=true
-USE_DEMUCS=false
-TORCH_DEVICE=auto  # cuda|cpu|auto
-
-# Scheduler intervals (minutes)
-INGEST_LISTENS_INTERVAL_MINUTES=1
-LASTFM_SYNC_INTERVAL_MINUTES=30
-AGGREGATE_WEEKS_INTERVAL_MINUTES=1440
-WEEKLY_INSIGHTS_INTERVAL_MINUTES=1440
-TZ=America/New_York
-```
-
-The job runner enqueues `worker.jobs.generate_weekly_insights` for each user on
-the `analysis` queue using the configured `WEEKLY_INSIGHTS_INTERVAL_MINUTES`
-interval (defaults to once per day).
-
----
-
-## API (FastAPI)
-
-- `GET /health` – service liveness
-- `POST /api/v1/ingest/listens?since=YYYY-MM-DD` – sync listens
-- `GET /api/v1/listens/recent?limit=50` – most recent listens
-- `POST /tags/lastfm/sync?since=YYYY-MM-DD` – fetch & cache Last.fm tags
-- `POST /analyze/track/{track_id}` – compute features/embeddings
-- `POST /score/track/{track_id}` – compute mood scores
-- `POST /aggregate/weeks` – refresh weekly materializations
-- `GET /api/v1/dashboard/trajectory?window=12w` – UMAP positions + arrows
-- `GET /api/v1/dashboard/radar?week=YYYY-WW&cohort=type:value` – radar data vs baseline; `cohort`
-  may target `artist`, `label`, or `primary_label` (e.g. `label:Warp Records`), falling
-  back to the user's aggregate when omitted or unrecognized.
-- `POST /labels` – (optional) submit personal labels (axis,value)
-
-### API versioning
-
-Endpoints are prefixed with `/api/{version}`. The current stable version is
-`v1`; requests to `/` redirect to `/api/v1`. Unversioned paths are deprecated
-and will be removed in a future release. Clients should update any calls such as
-`/ingest/listens` to `/api/v1/ingest/listens` to ensure compatibility.
-
-**Multi-user note**: API endpoints that read or write user data expect an
-`X-User-Id` header identifying the caller.
-
-**Auth model**
-
-- UI uses **Auth.js (NextAuth)** with Google; UI acts as a **BFF proxy** to the API, forwarding an `X-User-Id` header derived from the session. The API authorizes requests per‑user and never stores Google tokens.
-
----
-
-## Dashboard (Next.js + Plotly/Recharts)
-
-Built with **Next.js 14**, **Tailwind**, **shadcn/ui**, **framer‑motion**, **Plotly** (for arrows/UMAP) and **Recharts** (for streamgraphs). Auth via **Auth.js** (Google provider). Mobile‑friendly.
-
-**Pages**
-
-- `/` – Overview KPIs (listen count, diversity, momentum index)
-- `/trajectory` – 2D taste map with weekly arrows; color by energy; tooltip drill‑downs
-- `/moods` – streamgraph of mood shares; filters by artist/label/source
-- `/radar` – weekly radar vs 6‑month baseline; compare weeks
-- `/outliers` – tracks farthest from your recent centroid; supports `?range=` (e.g. `90d`, `12w`) and `?limit=`
-- `/settings` – connect **ListenBrainz** and **Last.fm**; toggle GPU/stems/excerpts
-
-**UI niceties**
-
-- Smooth transitions (framer‑motion), dark/light theme, keyboard nav, persistent filters.
-
-### Adding charts
-
-Dashboard charts live in `services/ui/components/charts` and are wrapped on pages with
-`ChartCard`. `ChartCard` ensures Plotly charts are responsive and accessible – pass
-`ariaLabel` and data/layout just like you would to `react-plotly.js`.
-
-Use **Plotly** for highly interactive or exploratory visuals (scatter plots, UMAP, etc.).
-Use **Recharts/Visx** for lightweight trend or stream graphs.
-
----
-
-## Local Development
+If you prefer manual runs in local environment:
 
 ```bash
-# 1) Copy example env and adjust
-cp .env.example .env
+# In one terminal (API)
+cd apps/api
+uvicorn main:app --reload
 
-# 2) Set up Google OAuth creds
-#    - Create a Google Cloud OAuth Client (Web)
-#    - Authorized redirect URI: https://sidetrack.network/api/auth/callback/google
-#    - Put GOOGLE_CLIENT_ID/SECRET into .env and set NEXTAUTH_URL
+# In another (web)
+cd apps/web
+pnpm dev
 
-# 2b) API base for UI fetches (default: http://localhost:8000)
-#     - NEXT_PUBLIC_API_BASE points the Next.js UI at the API
-#     - Override in production, e.g., https://sidetrack.network/api
+# In another (bot)
+cd apps/bot
+pnpm dev   # or python main.py
 
-# 3) Build the base image
-docker build -f services/base/Dockerfile -t sidetrack-base .
-
-# 4) Start the stack (single compose)
-docker compose up -d --build
-
-# 5) Bootstrap DB (migrations)
-docker compose exec api alembic upgrade head
-
-# 6) First sync + analysis for a user
-curl -H "X-User-Id: some_user" -X POST http://localhost:8000/api/v1/ingest/listens?since=2024-01-01
-curl -H "X-User-Id: some_user" -X POST http://localhost:8000/tags/lastfm/sync?since=2024-01-01
-curl -H "X-User-Id: some_user" -X POST http://localhost:8000/aggregate/weeks
-
-# 7) Open UI (default port)
-http://localhost:3000
+# In another (worker)
+cd apps/worker
+python worker_main.py
 ```
 
 ---
 
-## Data Science Details
+## Using Agents (Codex) With This Repo
 
-**UMAP prep**
+Sidetrack is designed to be agent-friendly.
 
-- Take per‑track embedding; standardize; neighbors=50, min_dist=0.1; fit on full set
-- Weekly position = mean of contained tracks → arrow to next week
+### 1. High-Level Context
 
-**Momentum**
+Start by feeding **`AGENTS.md`** to an agent. It explains:
 
-- `m_t = EMA(centroid_t, span=4)`; momentum = `m_t − m_{t-1}`
+* What Sidetrack is.
+* The main components.
+* Core user flows.
+* Tech assumptions.
 
-**Change‑points**
+### 2. Component-Specific Work
 
-- CUSUM on energy/valence; alert when exceeding tuned threshold
+Then give the agent the relevant `agents/*.md` file, for example:
 
-**Mixtape selection**
+* **Backend/API work**: `agents/api.md` + `agents/data-model.md`
+* **Discord bot work**: `agents/bot.md`
+* **Web UI work**: `agents/web.md`
+* **Worker/sync work**: `agents/worker.md`
+* **Taste/ML logic**: `agents/analysis.md`
+* **Infra/monorepo**: `agents/core.md`
 
-- Dominant cluster (HDBSCAN) of the week; pick k‑medoids with diversity penalty; 60–90 minutes
+Each task has a clear **ID**, goal, steps, and acceptance criteria (e.g. `api/schema-club`, `bot/nominations-parser`, `web/archive/week-detail`).
 
----
+### 3. Refactor & Cleanup
 
-## Options & Swaps
+To clean up existing code and align with the new model:
 
-- **Job runner**: queue-backed scheduler ↔ cron
-- **Queue**: none ↔ RQ ↔ Celery
-- **DB**: TimescaleDB only ↔ +pgvector
-- **Embeddings**: OpenL3 ↔ musicnn ↔ CLAP ↔ PANNs (you can enable multiple)
-- **UI**: Next.js+Plotly (default) ↔ Streamlit (fast) ↔ Dash
-- **Audio**: **full tracks (default)** ↔ cached excerpts ↔ stems
+1. Run tasks from `agents/data-model.md`:
 
----
-
-## Privacy & Licensing
-
-- Raw audio never leaves your machine. Embeddings and features are stored in DB.
-- Respect licenses; do not redistribute audio or stems.
-
----
-
-## Testing
-
-### Backend (FastAPI, job runner, worker)
-
-Set up a virtual environment and install the test dependencies:
-
-```bash
-python3.11 -m venv .venv && source .venv/bin/activate
-pip install -e ".[api,jobrunner,worker,dev]"
-# Install extraction extras only for extraction-related tests
-# pip install -e ".[extraction]"
-pytest -m "unit and not slow and not gpu" -q
-```
-
-### Frontend (Next.js dashboard)
-
-Install Node modules (`npm install`) once, then run the lint and unit test suites
-inside `services/ui` before opening a PR:
-
-```bash
-cd services/ui
-npm run lint
-npm test
-```
-
-`make test-ui` is a convenience wrapper that runs the lint and Jest suites from
-the repository root.
-
-See [`tests/README.md`](tests/README.md) for the full pyramid, speed budget and
-fixture layout.
-
-- Synthetic audio fixtures; golden feature vectors
-- Deterministic seeds for embeddings/UMAP
-- Snapshot tests for API responses and charts
+   * `data-model/audit-existing-schema`
+   * `data-model/introduce-new-tables-phase1`
+2. Then adjust API endpoints per `agents/api.md`.
+3. Finally, migrate any old frontend/bot logic toward the new contracts.
 
 ---
 
-## Roadmap
+## Project Roadmap (High-Level)
 
-- Smart **vibe summaries** (top words per week) using zero‑shot + tag fusion
-- Per‑artist drift and **label influence** diagnostics
-- **DJ‑set** segmentation and intra‑track contour plots (post‑v1)
-- Export to **ListenBrainz playlists** / local M3U
-- Spotify‑style audio features backfill (if you choose to connect their API later)
+1. **Core & API**
+
+   * Monorepo setup, env config, Docker compose.
+   * Data model & migrations.
+   * Basic users + music catalog endpoints.
+
+2. **Discord Bot**
+
+   * Minimal bot: respond to `/ping` and log in.
+   * Week lifecycle: create week in API + nomination thread.
+   * Nominations parsing + sync.
+   * Polls, winner announcement, ratings parsing.
+
+3. **Web Archive**
+
+   * Winners gallery.
+   * Week detail pages (read-only from API).
+   * Basic club stats.
+
+4. **Tracking & Social**
+
+   * Auth & account linking (Spotify/Last.fm/Discord).
+   * Listening sync workers.
+   * TasteProfile & compatibility endpoints.
+   * Profiles, feed, and taste visualizations.
+
+5. **Recommendations & Playlists**
+
+   * Basic recommendation engine.
+   * Friend-blend & mood playlists exported to Spotify.
 
 ---
 
-**Rename** the project if you like: _VibeScope_, _TasteTrax_, _Pulseboard_, _Audiograph_, _RhythmLens_. Have fun measuring your vibe. 🎛️
+## Contributing
+
+This repo is in an active refactor/reboot phase. If you’re contributing:
+
+* Keep `agents/*.md` up-to-date with any new endpoints, models, or flows.
+* Try to keep changes scoped to a small number of tasks at a time.
+* When adding new models or endpoints:
+
+  * Update `agents/data-model.md` if you change the domain.
+  * Update `agents/api.md` if you add/modify routes.
+
+PRs that bring the codebase closer to the architecture described here (and in `AGENTS.md`) are very welcome.
+
+---
+
+## License
+
+TBD – choose a license once the reboot stabilizes (e.g. MIT/AGPL/etc.).
+For now, assume private/internal use while the project is under heavy development.
