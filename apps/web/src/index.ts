@@ -1,8 +1,10 @@
-import { describeProject } from '@sidetrack/shared';
+import { UUID, describeProject } from '@sidetrack/shared';
 
 import { fetchWeekDetailWithFallback, fetchWeekListWithFallback } from './api/weeks';
+import { fetchProfileForServer } from './api/profile';
 import { renderWinnersGallery } from './ui/winnersGallery';
 import { renderWeekDetail } from './ui/weekDetail';
+import { renderProfilePage } from './ui/profile';
 
 export async function startWebApp(): Promise<void> {
   console.log('Starting web app with shared context:', describeProject());
@@ -23,6 +25,16 @@ export async function startWebApp(): Promise<void> {
     console.log('SEO', emptyState.metadata);
     console.log(emptyState.body);
   }
+
+  const demoUserId: UUID = (process.env.NEXT_PUBLIC_DEMO_USER_ID as UUID) ?? '00000000-0000-0000-0000-000000000000';
+  const profile = await fetchProfileForServer(demoUserId, {
+    allowPrivateData: Boolean(process.env.SHOW_PRIVATE_PROFILE),
+    workerSyncReady: true,
+    range: '30d',
+  });
+  const profileRender = renderProfilePage(profile);
+  console.log('SEO', profileRender.metadata);
+  console.log(profileRender.body);
 }
 
 startWebApp().catch((error) => {
