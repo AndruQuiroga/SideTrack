@@ -26,6 +26,7 @@ class Week(Base):
     winner_album_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("albums.id")
     )
+    legacy_week_id: Mapped[str | None] = mapped_column(String(128))
 
     nominations_thread_id: Mapped[int | None] = mapped_column(BigInteger)
     poll_thread_id: Mapped[int | None] = mapped_column(BigInteger)
