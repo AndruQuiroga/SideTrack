@@ -1,97 +1,187 @@
-"""Pydantic schemas for the rebooted core domain.
+"""Pydantic schemas aligned with the rebooted ORM models.
 
-These capture the new tables at a high level and keep API contracts loosely
-coupled while we build out the rest of the service.
+These schemas mirror the SQLAlchemy definitions so routes, workers, and the
+bot can share consistent contracts while the persistence layer is wired up.
 """
 
 from __future__ import annotations
 
-from datetime import date, datetime
-from typing import Optional
+from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
-
-class User(BaseModel):
-    id: UUID | str
-    email: Optional[str] = None
-    display_name: Optional[str] = None
-    legacy_user_id: Optional[str] = None
-    created_at: Optional[datetime] = None
-
-    model_config = ConfigDict(from_attributes=True)
+from apps.api.models.listening import ListenSource
+from apps.api.models.user import ProviderType
 
 
-class LinkedAccount(BaseModel):
-    id: Optional[int] = None
-    user_id: UUID | str
-    provider: str
-    external_id: str
-    display_name: Optional[str] = None
-    created_at: Optional[datetime] = None
+class OrmSchema(BaseModel):
+    """Base schema configured for ORM compatibility."""
 
     model_config = ConfigDict(from_attributes=True)
 
 
-class Week(BaseModel):
-    id: Optional[int] = None
-    slug: str
-    title: Optional[str] = None
-    starts_at: date
-    ends_at: Optional[date] = None
-    winning_nomination_id: Optional[int] = None
-    status: Optional[str] = None
-    created_at: Optional[datetime] = None
-
-    model_config = ConfigDict(from_attributes=True)
+# Users and accounts
+class UserBase(OrmSchema):
+    display_name: str
+    handle: str | None = None
 
 
-class Nomination(BaseModel):
-    id: Optional[int] = None
-    week_id: int
-    user_id: UUID | str
-    album_title: str
-    artist_name: str
-    album_year: Optional[int] = None
-    notes: Optional[str] = None
-    submission_link: Optional[str] = None
-    submitted_at: Optional[datetime] = None
-
-    model_config = ConfigDict(from_attributes=True)
+class UserCreate(UserBase):
+    pass
 
 
-class Vote(BaseModel):
-    id: Optional[int] = None
-    nomination_id: int
-    user_id: UUID | str
+class UserRead(UserBase):
+    id: UUID
+    created_at: datetime
+    updated_at: datetime
+
+
+class LinkedAccountBase(OrmSchema):
+    user_id: UUID
+    provider: ProviderType
+    provider_user_id: str
+    display_name: str | None = None
+    access_token: str | None = None
+    refresh_token: str | None = None
+    token_expires_at: datetime | None = None
+
+
+class LinkedAccountCreate(LinkedAccountBase):
+    pass
+
+
+class LinkedAccountRead(LinkedAccountBase):
+    id: UUID
+    created_at: datetime
+
+
+# Club weeks and nominations
+class WeekBase(OrmSchema):
+    label: str
+    week_number: int | None = None
+    discussion_at: datetime | None = None
+    nominations_close_at: datetime | None = None
+    poll_close_at: datetime | None = None
+    winner_album_id: UUID | None = None
+    nominations_thread_id: int | None = None
+    poll_thread_id: int | None = None
+    winner_thread_id: int | None = None
+    ratings_thread_id: int | None = None
+
+
+class WeekCreate(WeekBase):
+    pass
+
+
+class WeekRead(WeekBase):
+    id: UUID
+    created_at: datetime
+
+
+class NominationBase(OrmSchema):
+    week_id: UUID
+    user_id: UUID
+    album_id: UUID
+    pitch: str | None = None
+    pitch_track_url: str | None = None
+    genre_tag: str | None = None
+    decade_tag: str | None = None
+    country_tag: str | None = None
+    submitted_at: datetime | None = None
+
+
+class NominationCreate(NominationBase):
+    pass
+
+
+class NominationRead(NominationBase):
+    id: UUID
+
+
+class VoteBase(OrmSchema):
+    week_id: UUID
+    nomination_id: UUID
+    user_id: UUID
     rank: int
-    submitted_at: Optional[datetime] = None
-
-    model_config = ConfigDict(from_attributes=True)
+    submitted_at: datetime | None = None
 
 
-class Rating(BaseModel):
-    id: Optional[int] = None
-    week_id: int
-    nomination_id: Optional[int] = None
-    user_id: UUID | str
-    score: float
-    review: Optional[str] = None
-    favorite_track: Optional[str] = None
-    created_at: Optional[datetime] = None
-
-    model_config = ConfigDict(from_attributes=True)
+class VoteCreate(VoteBase):
+    pass
 
 
-class ListenEvent(BaseModel):
-    id: Optional[int] = None
-    user_id: UUID | str
-    track_id: Optional[int] = None
+class VoteRead(VoteBase):
+    id: UUID
+
+
+class RatingBase(OrmSchema):
+    week_id: UUID
+    user_id: UUID
+    album_id: UUID
+    nomination_id: UUID | None = None
+    value: float
+    favorite_track: str | None = None
+    review: str | None = None
+    created_at: datetime | None = None
+
+
+class RatingCreate(RatingBase):
+    pass
+
+
+class RatingRead(RatingBase):
+    id: UUID
+
+
+# Music catalog
+class AlbumBase(OrmSchema):
+    title: str
+    artist_name: str
+    release_year: int | None = None
+    musicbrainz_id: str | None = None
+    spotify_id: str | None = None
+    cover_url: str | None = None
+
+
+class AlbumCreate(AlbumBase):
+    pass
+
+
+class AlbumRead(AlbumBase):
+    id: UUID
+
+
+class TrackBase(OrmSchema):
+    album_id: UUID
+    title: str
+    artist_name: str
+    duration_ms: int | None = None
+    musicbrainz_id: str | None = None
+    spotify_id: str | None = None
+
+
+class TrackCreate(TrackBase):
+    pass
+
+
+class TrackRead(TrackBase):
+    id: UUID
+
+
+# Listening data
+class ListenEventBase(OrmSchema):
+    user_id: UUID
+    track_id: UUID
     played_at: datetime
-    source: Optional[str] = None
-    metadata: Optional[dict] = None
-    ingested_at: Optional[datetime] = None
-    legacy_listen_id: Optional[int] = None
+    source: ListenSource
+    metadata: dict | None = None
+    ingested_at: datetime | None = None
 
-    model_config = ConfigDict(from_attributes=True)
+
+class ListenEventCreate(ListenEventBase):
+    pass
+
+
+class ListenEventRead(ListenEventBase):
+    id: UUID
