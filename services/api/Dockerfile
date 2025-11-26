@@ -26,5 +26,18 @@ RUN sed -i 's#^script_location\s*=.*#script_location = /srv/api/migrations#' /sr
 # Allow running `alembic upgrade head` without specifying -c each time
 ENV ALEMBIC_CONFIG=/srv/api/alembic.ini
 
+# Ship the application code used by the FastAPI app factory
+COPY apps /app/apps
+
 EXPOSE 8000
-CMD ["python", "-m", "uvicorn", "sidetrack.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD [
+  "python",
+  "-m",
+  "uvicorn",
+  "apps.api.main:create_app",
+  "--factory",
+  "--host",
+  "0.0.0.0",
+  "--port",
+  "8000"
+]
