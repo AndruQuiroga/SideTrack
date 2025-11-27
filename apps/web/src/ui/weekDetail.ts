@@ -40,7 +40,7 @@ function renderNomination(nomination: WeekDetailWithRatings['nominations'][numbe
   const ratingCopy = nomination.rating_summary.average
     ? `${nomination.rating_summary.average.toFixed(2)} avg / ${nomination.rating_summary.count} ratings`
     : 'Ratings pending';
-  const tags = [nomination.genre_tag, nomination.decade_tag, nomination.country_tag].filter(Boolean).join(' · ');
+  const tags = [nomination.genre, nomination.decade, nomination.country].filter(Boolean).join(' · ');
 
   return `
   <li class="nomination">
@@ -116,13 +116,12 @@ export function renderWeekDetail(
     <div class="week-header__primary">
       <p class="week-label">${week.label}</p>
       <p class="week-date">Discussion: ${week.discussion_at ?? 'TBD'}</p>
-      <p class="week-tags">${[week.nominations[0]?.genre_tag, week.nominations[0]?.decade_tag, week.nominations[0]?.country_tag]
+      <p class="week-tags">${[week.nominations[0]?.genre, week.nominations[0]?.decade, week.nominations[0]?.country]
         .filter(Boolean)
         .join(' · ')}</p>
     </div>
     <div class="week-header__meta">
       <p class="week-rating">${week.aggregates.rating_average ? `${week.aggregates.rating_average.toFixed(2)} avg` : 'No ratings yet'}</p>
-      <p class="week-source">${week.source === 'legacy' ? 'Legacy data' : 'Live API'}</p>
     </div>
   </header>`;
 

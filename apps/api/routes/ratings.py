@@ -6,7 +6,7 @@ from decimal import Decimal, ROUND_FLOOR
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
-from sqlalchemy import String, cast, func, select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -136,22 +136,6 @@ async def create_week_rating(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Ratings must fall between 1.0 and 5.0.",
         )
-
-    legacy_id: str | None = None
-    if payload.metadata:
-        legacy_raw = payload.metadata.get("legacy_id")
-        if legacy_raw is not None:
-            legacy_id = str(legacy_raw)
-
-    if legacy_id:
-        legacy_rating = db.execute(
-            select(Rating)
-            .where(Rating.week_id == week_id)
-            .where(cast(Rating.metadata["legacy_id"], String) == legacy_id)
-        ).scalar_one_or_none()
-        if legacy_rating:
-            response.status_code = status.HTTP_200_OK
-            return RatingRead.model_validate(legacy_rating)
 
     existing_rating = db.execute(
         select(Rating).where(

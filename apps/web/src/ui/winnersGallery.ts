@@ -27,9 +27,9 @@ function buildFilterOptions(weeks: WeekDetailWithRatings[]): FilterOptions {
 
   weeks.forEach((week) => {
     week.nominations.forEach((nomination) => {
-      if (nomination.genre_tag) genres.add(nomination.genre_tag);
-      if (nomination.decade_tag) decades.add(nomination.decade_tag);
-      if (nomination.country_tag) countries.add(nomination.country_tag);
+      if (nomination.genre) genres.add(nomination.genre);
+      if (nomination.decade) decades.add(nomination.decade);
+      if (nomination.country) countries.add(nomination.country);
     });
   });
 
@@ -45,9 +45,9 @@ function applyTagFilters(weeks: WeekDetailWithRatings[], filters?: TagFilters): 
 
   return weeks.filter((week) => {
     return week.nominations.some((nomination) => {
-      const matchesGenre = !filters.genre || nomination.genre_tag === filters.genre;
-      const matchesDecade = !filters.decade || nomination.decade_tag === filters.decade;
-      const matchesCountry = !filters.country || nomination.country_tag === filters.country;
+      const matchesGenre = !filters.genre || nomination.genre === filters.genre;
+      const matchesDecade = !filters.decade || nomination.decade === filters.decade;
+      const matchesCountry = !filters.country || nomination.country === filters.country;
       return matchesGenre && matchesDecade && matchesCountry;
     });
   });
@@ -81,14 +81,10 @@ function renderCard(week: WeekDetailWithRatings): string {
 
   const topNomination = week.nominations[0];
   const winnerLine = topNomination
-    ? `${topNomination.pitch ?? 'Winner announced'} (${topNomination.genre_tag ?? 'Genre TBD'})`
+    ? `${topNomination.pitch ?? 'Winner announced'} (${topNomination.genre ?? 'Genre TBD'})`
     : 'Winner pending';
 
-  const tags = [topNomination?.genre_tag, topNomination?.decade_tag, topNomination?.country_tag]
-    .filter(Boolean)
-    .join(' · ');
-
-  const sourceBadge = week.source === 'legacy' ? 'Legacy data' : 'Live API';
+  const tags = [topNomination?.genre, topNomination?.decade, topNomination?.country].filter(Boolean).join(' · ');
 
   const ratingSummaryCopy = week.rating_summary
     ? `${week.rating_summary.average?.toFixed(2) ?? '—'} (${week.rating_summary.count} reviews)`
@@ -102,7 +98,6 @@ function renderCard(week: WeekDetailWithRatings): string {
   </header>
   <p id="week-${week.id}-title" class="week-summary">${winnerLine}</p>
   <p class="week-tags">${tags || 'Tags pending'}</p>
-  <p class="week-source">${sourceBadge}</p>
   <a class="week-link" href="/weeks/${week.id}" aria-label="View details for ${week.label}">Open week detail</a>
 </article>
 `;

@@ -35,8 +35,6 @@ class Week(Base):
     winner_album_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("albums.id")
     )
-    legacy_week_id: Mapped[str | None] = mapped_column(String(128))
-
     nominations_thread_id: Mapped[int | None] = mapped_column(BigInteger)
     poll_thread_id: Mapped[int | None] = mapped_column(BigInteger)
     winner_thread_id: Mapped[int | None] = mapped_column(BigInteger)
@@ -71,9 +69,9 @@ class Nomination(Base):
     )
     pitch: Mapped[str | None] = mapped_column(Text)
     pitch_track_url: Mapped[str | None] = mapped_column(Text)
-    genre_tag: Mapped[str | None] = mapped_column(String(64))
-    decade_tag: Mapped[str | None] = mapped_column(String(32))
-    country_tag: Mapped[str | None] = mapped_column(String(64))
+    genre: Mapped[str | None] = mapped_column(String(64))
+    decade: Mapped[str | None] = mapped_column(String(16))
+    country: Mapped[str | None] = mapped_column(String(64))
     submitted_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
@@ -150,4 +148,3 @@ class Rating(Base):
     week: Mapped[Week] = relationship(back_populates="ratings")
     album: Mapped["Album"] = relationship(back_populates="ratings")
     nomination: Mapped[Nomination | None] = relationship(back_populates="ratings")
-

@@ -13,7 +13,7 @@ import {
   UUID,
 } from '@sidetrack/shared';
 
-import { getApiBaseUrl } from '../config';
+import { createWebApiClient } from './client';
 
 export interface ProfilePageData extends ProfileOverview {
   source: 'api' | 'fallback';
@@ -30,13 +30,8 @@ export interface ProfileFetchOptions {
   workerSyncReady?: boolean;
 }
 
-function createClient(options?: ProfileFetchOptions): SidetrackApiClient {
-  return new SidetrackApiClient({
-    baseUrl: getApiBaseUrl(),
-    authToken: options?.authToken,
-    getAuthToken: options?.getAuthToken,
-  });
-}
+const createClient = (options?: ProfileFetchOptions): SidetrackApiClient =>
+  createWebApiClient({ authToken: options?.authToken, getAuthToken: options?.getAuthToken });
 
 function createFallbackProfile(userId: UUID, options?: ProfileFetchOptions): ProfilePageData {
   const tasteMetrics: TasteMetric[] = [

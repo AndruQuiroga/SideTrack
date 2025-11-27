@@ -72,7 +72,7 @@ dev = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["sidetrack*"]
+include = ["apps*"]
 
 [tool.black]
 line-length = 100
@@ -103,8 +103,6 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "migrations/env.py" = ["E402"]
-"sidetrack/api/main.py" = ["E402"]
-"tests/factories/__init__.py" = ["E402"]
 
 [tool.pytest.ini_options]
 markers = [

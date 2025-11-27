@@ -87,7 +87,6 @@ class WeekBase(OrmSchema):
     nominations_close_at: datetime | None = None
     poll_close_at: datetime | None = None
     winner_album_id: UUID | None = None
-    legacy_week_id: str | None = None
     nominations_thread_id: int | None = None
     poll_thread_id: int | None = None
     winner_thread_id: int | None = None
@@ -105,7 +104,6 @@ class WeekUpdate(OrmSchema):
     nominations_close_at: datetime | None = None
     poll_close_at: datetime | None = None
     winner_album_id: UUID | None = None
-    legacy_week_id: str | None = None
     nominations_thread_id: int | None = None
     poll_thread_id: int | None = None
     winner_thread_id: int | None = None
@@ -144,9 +142,9 @@ class NominationBase(OrmSchema):
     album_id: UUID
     pitch: str | None = None
     pitch_track_url: str | None = None
-    genre_tag: str | None = None
-    decade_tag: str | None = None
-    country_tag: str | None = None
+    genre: str | None = None
+    decade: str | None = None
+    country: str | None = None
     submitted_at: datetime | None = None
 
 

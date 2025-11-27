@@ -25,9 +25,9 @@ async def list_nominations(db: Session = Depends(get_db)) -> list[NominationRead
             album_id=uuid4(),
             pitch="A classic electronic record everyone should revisit",
             pitch_track_url="https://open.spotify.com/track/example",
-            genre_tag="electronic",
-            decade_tag="2000s",
-            country_tag="France",
+            genre="electronic",
+            decade="2000s",
+            country="France",
             submitted_at=datetime(2024, 6, 30, 12, 0, tzinfo=timezone.utc),
         )
     ]
@@ -47,8 +47,8 @@ async def get_nomination(
         album_id=uuid4(),
         pitch="A shimmering slice of nu-disco",
         pitch_track_url="https://open.spotify.com/track/another-example",
-        genre_tag="disco",
-        decade_tag="2010s",
-        country_tag="UK",
+        genre="disco",
+        decade="2010s",
+        country="UK",
         submitted_at=datetime(2024, 6, 30, 13, 0, tzinfo=timezone.utc),
     )

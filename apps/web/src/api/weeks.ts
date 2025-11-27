@@ -1,11 +1,11 @@
-import { SidetrackApiClient, WeekDetail, RatingSummary, UUID } from '@sidetrack/shared';
+import { SidetrackApiClient, WeekDetail, RatingSummary, RatingRead, UUID } from '@sidetrack/shared';
 
-import { getApiBaseUrl } from '../config';
-import { findLegacyWeek, loadLegacyWeeks } from '../legacy/loadLegacyWeeks';
+import { createWebApiClient } from './client';
 
 export interface WeekDetailWithRatings extends WeekDetail {
   rating_summary?: RatingSummary;
-  source: 'api' | 'legacy';
+  ratings?: RatingRead[];
+  source: 'api';
 }
 
 async function attachRatingSummaries(
@@ -20,37 +20,19 @@ async function attachRatingSummaries(
   );
 }
 
-function createClient(): SidetrackApiClient {
-  return new SidetrackApiClient({ baseUrl: getApiBaseUrl() });
+const createClient = createWebApiClient;
+
+export async function fetchWeekList(): Promise<WeekDetailWithRatings[]> {
+  const client = createClient();
+  const weeks = await client.listWeeks({ has_winner: true });
+  return attachRatingSummaries(client, weeks);
 }
 
-export async function fetchWeekListWithFallback(): Promise<WeekDetailWithRatings[]> {
+export async function fetchWeekDetail(weekId: UUID): Promise<WeekDetailWithRatings | undefined> {
   const client = createClient();
-  try {
-    const weeks = await client.listWeeks({ has_winner: true });
-    if (weeks.length > 0) {
-      return attachRatingSummaries(client, weeks);
-    }
-  } catch (error) {
-    console.warn('API week list failed, falling back to legacy data', error);
-  }
-
-  const legacyWeeks = await loadLegacyWeeks();
-  return legacyWeeks.map((week) => ({ ...week, source: 'legacy' as const }));
-}
-
-export async function fetchWeekDetailWithFallback(weekId: UUID): Promise<WeekDetailWithRatings | undefined> {
-  const client = createClient();
-  try {
-    const week = await client.getWeek(weekId);
-    const rating_summary = await client.getWeekRatingSummary(weekId).catch(() => undefined);
-    return { ...week, rating_summary, source: 'api' };
-  } catch (error) {
-    console.warn(`API week detail failed for ${weekId}, falling back to legacy data`, error);
-    const legacyWeek = await findLegacyWeek(weekId);
-    if (legacyWeek) {
-      return { ...legacyWeek, source: 'legacy' };
-    }
-    return undefined;
-  }
+  const week = await client.getWeek(weekId);
+  const rating_summary = await client.getWeekRatingSummary(weekId).catch(() => undefined);
+  const allRatings = await client.listRatings().catch(() => []);
+  const ratings = allRatings.filter((rating) => rating.week_id === weekId);
+  return { ...week, rating_summary, ratings, source: 'api' };
 }

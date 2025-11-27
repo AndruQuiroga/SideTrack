@@ -1,15 +1,14 @@
-"""Model package wiring for the rebooted Sidetrack API schema."""
+"""Model package wiring for the canonical Sidetrack API schema."""
 
 from .base import Base
 from .club import Nomination, Rating, Vote, Week
-from .legacy import LegacyBase, legacy_metadata
 from .listening import ListenEvent, ListenSource
 from .music import Album, Track, TrackFeature
 from .social import Compatibility, Follow, TasteProfile, UserRecommendation
 from .user import LinkedAccount, ProviderType, User
 
 metadata = Base.metadata
-all_metadata = [metadata, legacy_metadata]
+all_metadata = [metadata]
 
 __all__ = [
     "Album",
@@ -17,7 +16,6 @@ __all__ = [
     "Compatibility",
     "Base",
     "Follow",
-    "LegacyBase",
     "ListenEvent",
     "ListenSource",
     "LinkedAccount",

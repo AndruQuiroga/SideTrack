@@ -16,7 +16,6 @@ RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 COPY pyproject.toml README.md ./
-COPY sidetrack ./sidetrack
 
 RUN pip install --upgrade pip \
     && pip install --no-cache-dir ".[api]"
@@ -27,7 +26,6 @@ ENV PATH="/opt/venv/bin:$PATH"
 COPY --from=deps /opt/venv /opt/venv
 COPY alembic.ini ./
 COPY migrations ./migrations
-COPY sidetrack ./sidetrack
 COPY apps/api ./apps/api
 
 # Ensure Alembic looks in the in-image migrations directory

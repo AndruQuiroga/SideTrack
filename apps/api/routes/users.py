@@ -9,7 +9,12 @@ from sqlalchemy.orm import Session
 
 from apps.api.db import get_db
 from apps.api.models import LinkedAccount, ProviderType, User
-from apps.api.schemas import LinkedAccountCreate, LinkedAccountRead, UserRead
+from apps.api.schemas import (
+    LinkedAccountCreate,
+    LinkedAccountRead,
+    UserCreate,
+    UserRead,
+)
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -20,6 +25,25 @@ async def list_users(db: Session = Depends(get_db)) -> list[UserRead]:
 
     users = db.scalars(select(User)).all()
     return users
+
+
+@router.post("/", response_model=UserRead, status_code=status.HTTP_201_CREATED)
+async def create_user(payload: UserCreate, db: Session = Depends(get_db)) -> UserRead:
+    """Create a user record (api/schema-core)."""
+
+    user = User(**payload.model_dump())
+    db.add(user)
+    try:
+        db.commit()
+    except IntegrityError as exc:  # unique handle collision
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="User with this handle already exists",
+        ) from exc
+
+    db.refresh(user)
+    return user
 
 
 @router.get("/{user_id}", response_model=UserRead)

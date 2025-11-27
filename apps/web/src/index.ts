@@ -1,6 +1,6 @@
 import { UUID, describeProject } from '@sidetrack/shared';
 
-import { fetchWeekDetailWithFallback, fetchWeekListWithFallback } from './api/weeks';
+import { fetchWeekDetail, fetchWeekList } from './api/weeks';
 import { fetchProfileForServer } from './api/profile';
 import { renderWinnersGallery } from './ui/winnersGallery';
 import { renderWeekDetail } from './ui/weekDetail';
@@ -9,14 +9,14 @@ import { renderProfilePage } from './ui/profile';
 export async function startWebApp(): Promise<void> {
   console.log('Starting web app with shared context:', describeProject());
 
-  const weeks = await fetchWeekListWithFallback();
+  const weeks = await fetchWeekList();
   const gallery = renderWinnersGallery(weeks);
   console.log('SEO', gallery.metadata);
   console.log(gallery.body);
 
   const firstWeekId = weeks[0]?.id;
   if (firstWeekId) {
-    const weekDetail = await fetchWeekDetailWithFallback(firstWeekId);
+    const weekDetail = await fetchWeekDetail(firstWeekId);
     const detailRender = renderWeekDetail(weekDetail);
     console.log('SEO', detailRender.metadata);
     console.log(detailRender.body);

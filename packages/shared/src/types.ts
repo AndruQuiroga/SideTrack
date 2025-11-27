@@ -110,7 +110,6 @@ export interface WeekBase {
   nominations_close_at?: IsoDateString | null;
   poll_close_at?: IsoDateString | null;
   winner_album_id?: UUID | null;
-  legacy_week_id?: string | null;
   nominations_thread_id?: number | null;
   poll_thread_id?: number | null;
   winner_thread_id?: number | null;
@@ -126,7 +125,6 @@ export interface WeekUpdate {
   nominations_close_at?: IsoDateString | null;
   poll_close_at?: IsoDateString | null;
   winner_album_id?: UUID | null;
-  legacy_week_id?: string | null;
   nominations_thread_id?: number | null;
   poll_thread_id?: number | null;
   winner_thread_id?: number | null;
@@ -165,9 +163,9 @@ export interface NominationBase {
   album_id: UUID;
   pitch?: string | null;
   pitch_track_url?: string | null;
-  genre_tag?: string | null;
-  decade_tag?: string | null;
-  country_tag?: string | null;
+  genre?: string | null;
+  decade?: string | null;
+  country?: string | null;
   submitted_at?: IsoDateString | null;
 }
 

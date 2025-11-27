@@ -3,6 +3,12 @@ export interface ApiConfig {
   token?: string;
 }
 
+export interface DiscordConfig {
+  token: string;
+  clientId?: string;
+  guildId?: string;
+}
+
 export interface RetryConfig {
   attempts: number;
   baseDelayMs: number;
@@ -10,7 +16,7 @@ export interface RetryConfig {
 
 export interface BotConfig {
   api: ApiConfig;
-  discordToken: string;
+  discord: DiscordConfig;
   retry: RetryConfig;
 }
 
@@ -42,7 +48,11 @@ export function loadBotConfig(env: NodeJS.ProcessEnv = process.env): BotConfig {
       baseUrl,
       token: env.SIDETRACK_API_TOKEN,
     },
-    discordToken,
+    discord: {
+      token: discordToken,
+      clientId: env.DISCORD_CLIENT_ID,
+      guildId: env.DISCORD_GUILD_ID,
+    },
     retry: {
       attempts: Number.isFinite(retryAttempts) ? retryAttempts : DEFAULT_RETRY.attempts,
       baseDelayMs: Number.isFinite(retryDelayMs) ? retryDelayMs : DEFAULT_RETRY.baseDelayMs,

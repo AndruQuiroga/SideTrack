@@ -1,18 +1,18 @@
 from __future__ import annotations
 
+from logging.config import fileConfig
 import pathlib
 import sys
-from logging.config import fileConfig
 
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
+import os
+from sqlalchemy.engine import make_url
+from apps.api.models import all_metadata  # type: ignore
+
 BASE_DIR = pathlib.Path(__file__).resolve().parents[1]
 sys.path.append(str(BASE_DIR))
-
-from sqlalchemy.engine import make_url
-from sidetrack.config import get_settings  # type: ignore
-from apps.api.models import all_metadata  # type: ignore
 
 config = context.config
 
@@ -23,19 +23,16 @@ target_metadata = all_metadata
 
 
 def get_url() -> str:
-    """Return a SQLAlchemy URL string with an explicit driver.
+    """Return database URL from env or alembic.ini (no legacy config)."""
 
-    Ensures PostgreSQL uses psycopg (v3) instead of defaulting to psycopg2.
-    """
-    raw = get_settings().db_url
-    try:
-        url = make_url(raw)
-        if url.drivername == "postgresql":
-            url = url.set(drivername="postgresql+psycopg")
-        return str(url)
-    except Exception:
-        # Fallback to raw if parsing fails
-        return raw
+    raw = os.getenv("DATABASE_URL") or config.get_main_option("sqlalchemy.url")
+    if not raw:
+        raise RuntimeError("DATABASE_URL or sqlalchemy.url must be set for migrations")
+
+    url = make_url(raw)
+    if url.drivername == "postgresql":
+        url = url.set(drivername="postgresql+psycopg")
+    return str(url)
 
 
 def run_migrations_offline() -> None:

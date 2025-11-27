@@ -11,6 +11,8 @@
     "format": "prettier --write \"src/**/*.{ts,tsx}\""
   },
   "dependencies": {
-    "@sidetrack/shared": "workspace:*"
+    "@discordjs/rest": "^2.3.0",
+    "@sidetrack/shared": "workspace:*",
+    "discord.js": "^14.16.3"
   }
 }

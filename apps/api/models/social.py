@@ -14,19 +14,20 @@ from .base import Base
 
 class TasteProfile(Base):
     __tablename__ = "taste_profiles"
-    __table_args__ = (UniqueConstraint("user_id", "scope", name="uq_taste_profiles_scope"),)
-
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    __table_args__ = (
+        UniqueConstraint("user_id", "scope", name="uq_taste_profiles_scope"),
     )
+
     user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        primary_key=True,
     )
     scope: Mapped[str] = mapped_column(String(64), default="all_time", nullable=False)
-    summary: Mapped[dict | None] = mapped_column(JSON)
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
-    )
+    genre_histogram: Mapped[dict | None] = mapped_column(JSON)
+    feature_means: Mapped[dict | None] = mapped_column(JSON)
+    time_of_day_histogram: Mapped[dict | None] = mapped_column(JSON)
+    last_computed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     user: Mapped["User"] = relationship(back_populates="taste_profiles")
 

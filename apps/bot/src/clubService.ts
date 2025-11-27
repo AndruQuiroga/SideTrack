@@ -87,14 +87,12 @@ export class ClubSyncService {
         if (error instanceof ApiError && error.status === 409) {
           this.logger.warn('Week already exists; attempting to reuse existing record.', {
             label: payload.week.label,
-            legacy_week_id: payload.week.legacy_week_id,
             week_number: payload.week.week_number,
           });
           const existingWeeks = await this.client.listWeeks();
           const match = existingWeeks.find(
             (week) =>
               week.week_number === payload.week.week_number ||
-              week.legacy_week_id === payload.week.legacy_week_id ||
               week.label.toLowerCase() === payload.week.label.toLowerCase(),
           );
           if (match) {

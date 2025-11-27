@@ -59,8 +59,6 @@ def _find_existing_week(db: Session, payload: WeekCreate) -> Week | None:
         filters.append(Week.week_number == payload.week_number)
     if payload.label:
         filters.append(func.lower(Week.label) == payload.label.lower())
-    if payload.legacy_week_id:
-        filters.append(Week.legacy_week_id == payload.legacy_week_id)
 
     if not filters:
         return None
