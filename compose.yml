@@ -49,6 +49,7 @@ services:
     environment:
       NEXT_PUBLIC_API_BASE_URL: http://api:8000
       SIDETRACK_API_BASE_URL: http://api:8000
+      NODE_ENV: production
     depends_on:
       api:
         condition: service_healthy
