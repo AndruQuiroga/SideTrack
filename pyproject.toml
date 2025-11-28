@@ -2,7 +2,7 @@
 name = "sidetrack"
 version = "0.1.0"
 description = "Multi-service SideTrack application"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.12"
 dependencies = [
     "pydantic==2.8.2",
     "pydantic-settings==2.3.4",
@@ -69,6 +69,8 @@ dev = [
     "pytest-socket==0.7.0",
     "syrupy==4.6.0",
     "respx==0.20.2",
+    "ruff==0.6.9",
+    "mypy==1.11.2",
 ]
 
 [tool.setuptools.packages.find]
@@ -103,6 +105,16 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "migrations/env.py" = ["E402"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+plugins = []
+exclude = [
+    "migrations/.*",
+]
 
 [tool.pytest.ini_options]
 markers = [

@@ -91,6 +91,13 @@ agents/
   analysis.md        # Taste/ML tasks
   data-model.md      # Canonical data model & schema
 
+docs/
+  reboot.md          # Full reboot plan / narrative
+  forms.md           # Web forms helper notes
+  api-endpoints.md   # Early API sketch
+  ui.md              # UI/UX notes
+  legacy-mapping.md  # Legacy-to-new mapping notes
+
 AGENTS.md            # High-level project + agent overview
 ```
 
@@ -128,6 +135,8 @@ This repo previously hosted the original Sidetrack music taste/mood tracker. The
 2. Splits the system into clear services (bot, api, web, worker).
 3. Uses a set of **agent task specs** (`AGENTS.md` + `agents/*.md`) to guide Codex in refactoring and building new functionality.
 
+For a full narrative of the reboot scope and goals, see `docs/reboot.md`.
+
 There will be a period where:
 
 * Old code and tables coexist with new ones.
@@ -150,11 +159,13 @@ See the **Migration Tasks** in `agents/data-model.md`:
 
 ### Prerequisites
 
-* Node.js (LTS) + `pnpm` (preferred) or `npm`.
-* Python 3.11+.
+* Node.js (LTS) with `pnpm` (preferred; via corepack).
+* Python 3.11 + `uv` for dependency/env management.
 * Docker + docker-compose.
 * A Discord bot token and test server.
 * Spotify dev app credentials, Last.fm credentials (for full integration).
+
+See `docs/package-management.md` for the expected workflows.
 
 ### 1. Clone & Install
 
@@ -164,6 +175,16 @@ cd sidetrack
 
 # Install JS/TS deps
 pnpm install
+
+# Install Python deps (API + tests)
+uv sync --python 3.11 --extra api --extra dev
+
+## Linting & formatting
+- Python lint: `uv run --frozen --extra api --extra dev ruff check apps/api apps/worker`
+- Python format: `uv run --frozen --extra api --extra dev ruff format apps/api apps/worker`
+- Python types: `uv run --frozen --extra api --extra dev mypy apps/api apps/worker`
+- JS/TS lint: `pnpm lint`
+- JS/TS format: `pnpm format`
 ```
 
 This repo uses a `pnpm` workspace (`pnpm-workspace.yaml`) that wires together `apps/web`, `apps/bot`, `packages/shared`, and future TypeScript packages.
