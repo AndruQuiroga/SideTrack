@@ -1,8 +1,8 @@
 import { Metadata } from 'next';
 
-import { fetchWeekList } from '../../src/api/weeks';
+import { fetchWeekListWithFallback } from '../../src/api/weeks';
 import { PageShell } from '../components/page-shell';
-import { WeekList } from '../components/week-list';
+import { ClubGallery } from '../components/club-gallery';
 
 export const metadata: Metadata = {
   title: 'Sidetrack Club — Winners',
@@ -10,14 +10,14 @@ export const metadata: Metadata = {
 };
 
 export default async function ClubPage() {
-  const weeks = await fetchWeekList();
+  const weeks = await fetchWeekListWithFallback();
   return (
     <PageShell
       title="Club archive"
-      description="Every week of Sidetrack in one place: winners, tags, ratings, and participation stats."
-      accent="Public and mobile friendly"
+      description="Every week of Sidetrack in one place: winners, tags, ratings, filters, and participation stats."
+      accent="Live archive + filters"
     >
-      <WeekList weeks={weeks} />
+      <ClubGallery weeks={weeks} />
     </PageShell>
   );
 }

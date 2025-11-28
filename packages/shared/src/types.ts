@@ -66,6 +66,8 @@ export interface ProfileOverview {
   recent_listens?: RecentListen[];
   visibility: 'public' | 'private';
   worker_sync_ready?: boolean;
+}
+
 export enum ListenSource {
   SPOTIFY = 'spotify',
   LASTFM = 'lastfm',
@@ -221,6 +223,21 @@ export interface RatingBase {
 export interface RatingCreate extends RatingBase {}
 
 export interface RatingRead extends RatingBase {
+  id: UUID;
+}
+
+export interface AlbumBase {
+  title: string;
+  artist_name: string;
+  release_year?: number | null;
+  musicbrainz_id?: string | null;
+  spotify_id?: string | null;
+  cover_url?: string | null;
+}
+
+export interface AlbumCreate extends AlbumBase {}
+
+export interface AlbumRead extends AlbumBase {
   id: UUID;
 }
 

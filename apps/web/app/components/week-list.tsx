@@ -3,11 +3,12 @@ import { WeekCard } from './week-card';
 
 interface WeekListProps {
   weeks: WeekDetailWithRatings[];
+  emptyMessage?: string;
 }
 
-export function WeekList({ weeks }: WeekListProps) {
+export function WeekList({ weeks, emptyMessage }: WeekListProps) {
   if (!weeks.length) {
-    return <p className="card text-sm text-slate-300">No weeks yet. Check back soon.</p>;
+    return <p className="card text-sm text-slate-300">{emptyMessage ?? 'No weeks yet. Check back soon.'}</p>;
   }
 
   return (

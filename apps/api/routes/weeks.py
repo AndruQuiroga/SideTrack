@@ -12,8 +12,10 @@ from sqlalchemy.orm import Session
 
 from apps.api.db import get_db
 from apps.api.models.club import Nomination, Rating, Vote, Week
+from apps.api.models import Album, User
 from apps.api.schemas import (
     NominationRead,
+    NominationCreate,
     NominationWithStats,
     RatingAggregate,
     VoteAggregate,
@@ -204,6 +206,21 @@ async def list_weeks(
     has_winner: bool | None = Query(
         None, description="Filter by whether a week has a winner album set."
     ),
+    label: str | None = Query(
+        None, description="Case-insensitive substring match on week label."
+    ),
+    genre: str | None = Query(
+        None, description="Filter weeks that have a nomination with this genre."
+    ),
+    decade: str | None = Query(
+        None, description="Filter weeks that have a nomination with this decade."
+    ),
+    country: str | None = Query(
+        None, description="Filter weeks that have a nomination from this country."
+    ),
+    nominator_id: UUID | None = Query(
+        None, description="Filter weeks that have a nomination from this user."
+    ),
 ) -> list[WeekDetail]:
     """Return club weeks with nomination, vote, and rating aggregates."""
 
@@ -217,6 +234,23 @@ async def list_weeks(
             query = query.where(Week.winner_album_id.is_not(None))
         else:
             query = query.where(Week.winner_album_id.is_(None))
+    if label:
+        like_expr = f"%{label.lower()}%"
+        query = query.where(func.lower(Week.label).like(like_expr))
+
+    nomination_filters = []
+    if genre:
+        nomination_filters.append(func.lower(Nomination.genre) == genre.lower())
+    if decade:
+        nomination_filters.append(func.lower(Nomination.decade) == decade.lower())
+    if country:
+        nomination_filters.append(func.lower(Nomination.country) == country.lower())
+    if nominator_id:
+        nomination_filters.append(Nomination.user_id == nominator_id)
+
+    if nomination_filters:
+        nomination_subquery = select(Nomination.week_id).where(*nomination_filters)
+        query = query.where(Week.id.in_(nomination_subquery))
 
     weeks = (
         db.execute(
@@ -237,6 +271,41 @@ async def get_week(week_id: UUID, db: Session = Depends(get_db)) -> WeekDetail:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Week not found")
 
     return _build_week_details(db, [week])[0]
+
+
+@router.post("/{week_id}/nominations", response_model=NominationRead, status_code=status.HTTP_201_CREATED)
+async def create_week_nomination(
+    week_id: UUID, payload: NominationCreate, db: Session = Depends(get_db)
+) -> NominationRead:
+    """Create a nomination for a week; enforce uniqueness per (user, album, week)."""
+
+    week = db.get(Week, week_id)
+    if not week:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Week not found")
+
+    if not db.get(User, payload.user_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    if not db.get(Album, payload.album_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Album not found")
+
+    existing = db.execute(
+        select(Nomination).where(
+            Nomination.week_id == week_id,
+            Nomination.user_id == payload.user_id,
+            Nomination.album_id == payload.album_id,
+        )
+    ).scalar_one_or_none()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Nomination already exists for this user and album.",
+        )
+
+    nomination = Nomination(**payload.model_dump())
+    db.add(nomination)
+    db.commit()
+    db.refresh(nomination)
+    return nomination
 
 
 @router.post("/", response_model=WeekDetail, status_code=status.HTTP_201_CREATED)

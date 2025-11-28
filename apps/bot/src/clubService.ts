@@ -13,6 +13,7 @@ import {
   WeekCreate,
   WeekDetail,
   WeekUpdate,
+  AlbumRead,
 } from '@sidetrack/shared';
 
 import { BotConfig } from './config';
@@ -32,13 +33,43 @@ export class ClubSyncService {
     private readonly client: SidetrackApiClient,
     private readonly config: BotConfig,
     private readonly logger: Logger,
+    private readonly nominationsThreadMap: Map<string, WeekDetail> = new Map(),
   ) {}
 
   async bootstrap(): Promise<WeekDetail[]> {
     this.logger.info('Bootstrapping bot sync service with shared API client.', {
       apiBaseUrl: this.config.api.baseUrl,
     });
-    return this.client.listWeeks({ has_winner: false });
+    const weeks = await this.client.listWeeks({ has_winner: false });
+    weeks.forEach((week) => {
+      if (week.nominations_thread_id) {
+        this.nominationsThreadMap.set(String(week.nominations_thread_id), week);
+      }
+    });
+    return weeks;
+  }
+
+  async ensureAlbumFromForm(details: {
+    title: string;
+    artist_name: string;
+    release_year?: number | null;
+  }): Promise<AlbumRead> {
+    const existing = await this.client.searchAlbums({
+      title: details.title,
+      artist_name: details.artist_name,
+      release_year: details.release_year ?? undefined,
+      limit: 1,
+    });
+    if (existing.length > 0) {
+      return existing[0];
+    }
+
+    this.logger.info('Creating album from nomination form.', {
+      title: details.title,
+      artist: details.artist_name,
+      year: details.release_year,
+    });
+    return this.client.createAlbum(details);
   }
 
   async ensureDiscordUser(discordUserId: string, displayName: string): Promise<UserRead> {
@@ -168,6 +199,19 @@ export class ClubSyncService {
         throw error;
       }
     });
+  }
+
+  async attachNominationsThread(weekId: UUID, threadId: string): Promise<WeekDetail> {
+    const parsedThreadId = Number(threadId);
+    const updated = await this.withRetry('attach-nominations-thread', () =>
+      this.client.updateWeek(weekId, { nominations_thread_id: parsedThreadId }),
+    );
+    this.nominationsThreadMap.set(String(parsedThreadId), updated);
+    return updated;
+  }
+
+  getWeekForNominationsThread(threadId: string): WeekDetail | undefined {
+    return this.nominationsThreadMap.get(threadId);
   }
 
   private async withRetry<T>(operation: string, fn: () => Promise<T>): Promise<T> {

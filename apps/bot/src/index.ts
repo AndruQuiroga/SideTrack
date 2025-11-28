@@ -5,8 +5,10 @@ import { ClubSyncService } from './clubService';
 import { loadBotConfig } from './config';
 import { createDiscordClient } from './runtime/client';
 import { registerInteractionHandlers } from './runtime/handlers';
+import { registerMessageHandlers } from './runtime/messages';
+import { ReminderScheduler } from './scheduler';
 import { createLogger } from './logger';
-import { pingCommand } from './runtime/commands';
+import { pingCommand, weekStartCommand } from './runtime/commands';
 
 export async function startBot(): Promise<void> {
   const config = loadBotConfig();
@@ -20,12 +22,14 @@ export async function startBot(): Promise<void> {
   const openWeeks = await service.bootstrap();
 
   const discordClient = createDiscordClient(config.discord.token, logger);
-  registerInteractionHandlers(discordClient, logger);
+  const scheduler = new ReminderScheduler(discordClient, service, logger);
+  registerInteractionHandlers(discordClient, service, scheduler, config, logger);
+  registerMessageHandlers(discordClient, service, config, logger);
 
   if (config.discord.clientId && config.discord.guildId) {
     const rest = new REST({ version: '10' }).setToken(config.discord.token);
     await rest.put(Routes.applicationGuildCommands(config.discord.clientId, config.discord.guildId), {
-      body: [pingCommand.data.toJSON()],
+      body: [pingCommand.data.toJSON(), weekStartCommand.data.toJSON()],
     });
     logger.info('Registered guild slash commands.', { guildId: config.discord.guildId });
   } else {
@@ -34,7 +38,11 @@ export async function startBot(): Promise<void> {
 
   await discordClient.login(config.discord.token);
 
-  logger.info('Bot service initialized.', {
+  discordClient.once('ready', () => {
+    scheduler.scheduleWeeks(openWeeks);
+  });
+
+  logger.info('Bot service initialized and scheduling reminders.', {
     discordTokenLoaded: Boolean(config.discord.token),
     openWeeks: openWeeks.length,
   });

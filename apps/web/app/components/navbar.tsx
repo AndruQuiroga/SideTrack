@@ -6,8 +6,10 @@ import { usePathname } from 'next/navigation';
 
 const links = [
   { href: '/club', label: 'Club Archive' },
+  { href: '/feed', label: 'Feed' },
   { href: '/u/demo', label: 'Demo Profile' },
   { href: '/compare?userA=demo&userB=demo2', label: 'Compatibility' },
+  { href: '/login', label: 'Sign in' },
 ];
 
 export function Navbar() {

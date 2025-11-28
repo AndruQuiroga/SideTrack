@@ -29,6 +29,8 @@ import {
   RecentListen,
   ListenEventCreate,
   ListenEventRead,
+  AlbumCreate,
+  AlbumRead,
 } from './types';
 import { ApiError, toApiError } from './errors';
 
@@ -208,6 +210,25 @@ export class SidetrackApiClient {
     });
   }
 
+  async searchAlbums(params: {
+    title?: string;
+    artist_name?: string;
+    release_year?: number | null;
+    musicbrainz_id?: string;
+    spotify_id?: string;
+    limit?: number;
+  }): Promise<AlbumRead[]> {
+    return this.request<AlbumRead[]>({
+      method: 'GET',
+      url: '/albums/search',
+      params,
+    });
+  }
+
+  async createAlbum(payload: AlbumCreate): Promise<AlbumRead> {
+    return this.request<AlbumRead>({ method: 'POST', url: '/albums', data: payload });
+  }
+
   async getUserProfileOverview(userId: UUID, params?: ListeningStatsParams): Promise<ProfileOverview> {
     return this.request<ProfileOverview>({
       method: 'GET',
@@ -314,6 +335,8 @@ export type {
   LinkedAccountRead,
   RatingCreate,
   RatingRead,
+  AlbumCreate,
+  AlbumRead,
   WeekDetail,
   WeekRead,
   WeekCreate,

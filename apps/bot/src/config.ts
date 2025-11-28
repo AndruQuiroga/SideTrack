@@ -18,6 +18,12 @@ export interface BotConfig {
   api: ApiConfig;
   discord: DiscordConfig;
   retry: RetryConfig;
+  club: ClubConfig;
+}
+
+export interface ClubConfig {
+  nominationsForumId?: string;
+  adminRoleIds?: string[];
 }
 
 const DEFAULT_RETRY: RetryConfig = {
@@ -56,6 +62,17 @@ export function loadBotConfig(env: NodeJS.ProcessEnv = process.env): BotConfig {
     retry: {
       attempts: Number.isFinite(retryAttempts) ? retryAttempts : DEFAULT_RETRY.attempts,
       baseDelayMs: Number.isFinite(retryDelayMs) ? retryDelayMs : DEFAULT_RETRY.baseDelayMs,
+    },
+    club: {
+      nominationsForumId:
+        env.SIDETRACK_NOMINATIONS_FORUM_ID || env.NOMINATIONS_FORUM_ID || env.DISCORD_NOMINATIONS_FORUM_ID,
+      adminRoleIds:
+        env.SIDETRACK_ADMIN_ROLE_IDS || env.DISCORD_ADMIN_ROLE_IDS
+          ? (env.SIDETRACK_ADMIN_ROLE_IDS || env.DISCORD_ADMIN_ROLE_IDS || '')
+              .split(',')
+              .map((value) => value.trim())
+              .filter(Boolean)
+          : undefined,
     },
   };
 }
