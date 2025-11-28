@@ -159,7 +159,8 @@ function parseDateOption(
   if (!raw) return undefined;
   const parsed = new Date(raw);
   if (Number.isNaN(parsed.getTime())) {
-    return new Error(`Could not parse ${optionName.replaceAll('_', ' ')}. Use an ISO timestamp like 2025-11-24T18:00Z.`);
+    const label = optionName.replace(/_/g, ' ');
+    return new Error(`Could not parse ${label}. Use an ISO timestamp like 2025-11-24T18:00Z.`);
   }
   return parsed;
 }
@@ -182,7 +183,8 @@ function isAdmin(interaction: ChatInputCommandInteraction, config: BotConfig): b
     return roleIds.some((roleId) => roles.cache.has(roleId));
   }
   if (Array.isArray(roles)) {
-    return roleIds.some((roleId) => roles.includes(roleId));
+    const roleList = roles as string[];
+    return roleIds.some((roleId) => roleList.includes(roleId));
   }
 
   return false;

@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { RatingRead } from '@sidetrack/shared';
 
 import { getDiscordGuildId } from '../../src/config';
@@ -125,13 +124,15 @@ export function WeekDetailPanel({ week }: WeekDetailPanelProps) {
                     { label: 'Ratings', href: threadHref(week.ratings_thread_id) },
                   ].map((link) =>
                     link.href ? (
-                      <Link
+                      <a
                         key={link.label}
                         href={link.href}
+                        target="_blank"
+                        rel="noreferrer"
                         className="rounded-full bg-slate-800 px-3 py-1 text-[0.7rem] uppercase tracking-wide text-emerald-200 hover:text-white"
                       >
                         {link.label}
-                      </Link>
+                      </a>
                     ) : (
                       <span
                         key={link.label}
@@ -221,12 +222,14 @@ export function WeekDetailPanel({ week }: WeekDetailPanelProps) {
               </p>
               <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-300">
                 {nomination.pitch_track_url ? (
-                  <Link
+                  <a
                     href={nomination.pitch_track_url}
+                    target="_blank"
+                    rel="noreferrer"
                     className="rounded-full bg-slate-800 px-3 py-1 text-[0.7rem] font-semibold text-emerald-200 hover:text-white"
                   >
                     Pitch track
-                  </Link>
+                  </a>
                 ) : (
                   <span className="rounded-full bg-slate-900 px-3 py-1 text-[0.7rem] text-slate-400">Track link pending</span>
                 )}

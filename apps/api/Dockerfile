@@ -36,12 +36,4 @@ RUN sed -i 's#^script_location\s*=.*#script_location = migrations#' alembic.ini
 
 EXPOSE 8000
 
-CMD [
-  "uvicorn",
-  "apps.api.main:create_app",
-  "--factory",
-  "--host",
-  "0.0.0.0",
-  "--port",
-  "8000"
-]
+CMD ["uvicorn", "apps.api.main:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000"]

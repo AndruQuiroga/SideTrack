@@ -1,0 +1,14 @@
+node_modules
+**/node_modules
+.git
+.venv
+__pycache__
+*.pyc
+.mypy_cache
+.pytest_cache
+dist
+.next
+.DS_Store
+.env
+.env.*
+package-lock.json

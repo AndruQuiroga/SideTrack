@@ -71,7 +71,6 @@ export default function ComparePage({ searchParams }: ComparePageProps) {
       accent="Prototype view"
     >
       <Suspense fallback={<p className="text-sm text-slate-300">Loading compatibility…</p>}>
-        {/* @ts-expect-error Server Component async */}
         <CompatibilityResult userA={userA} userB={userB} />
       </Suspense>
     </PageShell>

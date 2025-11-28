@@ -24,7 +24,7 @@ export function registerMessageHandlers(
 
     const parsed = parseNominationForm(message.content);
     if (!parsed.ok) {
-      await safeReply(message, parsed.error, logger);
+      await safeReply(message, parsed.error ?? 'Nomination appears invalid. Please paste the mini-form.', logger);
       return;
     }
 

@@ -3,12 +3,15 @@
 import clsx from 'clsx';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import type { Route } from 'next';
 
-const links = [
+type NavLink = { href: Route | { pathname: Route; query?: Record<string, string> }; label: string };
+
+const links: NavLink[] = [
   { href: '/club', label: 'Club Archive' },
   { href: '/feed', label: 'Feed' },
-  { href: '/u/demo', label: 'Demo Profile' },
-  { href: '/compare?userA=demo&userB=demo2', label: 'Compatibility' },
+  { href: { pathname: '/u/[id]' as Route, query: { id: 'demo' } }, label: 'Demo Profile' },
+  { href: { pathname: '/compare' as Route, query: { userA: 'demo', userB: 'demo2' } }, label: 'Compatibility' },
   { href: '/login', label: 'Sign in' },
 ];
 
@@ -30,10 +33,15 @@ export function Navbar() {
 
         <nav className="hidden gap-1 rounded-full border border-slate-800/80 bg-sidetrack-soft/70 p-1 text-xs font-medium text-slate-300 shadow-soft md:flex">
           {links.map((link) => {
-            const active = link.href === '/' ? pathname === '/' : pathname.startsWith(link.href);
+            const targetPath =
+              typeof link.href === 'string'
+                ? link.href.split('?')[0]
+                : link.href.pathname ?? '/';
+            const normalizedTarget = targetPath.replace(/\[.*?\]/g, '');
+            const active = normalizedTarget === '/' ? pathname === '/' : pathname.startsWith(normalizedTarget);
             return (
               <Link
-                key={link.href}
+                key={link.label}
                 href={link.href}
                 className={clsx(
                   'relative rounded-full px-3 py-1.5 transition-colors',

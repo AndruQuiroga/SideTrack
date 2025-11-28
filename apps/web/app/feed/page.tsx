@@ -1,5 +1,3 @@
-import Link from 'next/link';
-
 import { PageShell } from '../components/page-shell';
 import { Card, SectionHeading } from '../components/ui';
 import { RatingBadge } from '../components/rating-badge';
@@ -75,9 +73,9 @@ export default function FeedPage() {
                 <p className="text-sm text-slate-200">
                   <span className="font-semibold text-white">{item.actor}</span> {item.action}{' '}
                   {item.targetLink ? (
-                    <Link href={item.targetLink} className="text-emerald-200 hover:text-white">
+                    <a href={item.targetLink} className="text-emerald-200 hover:text-white" target="_blank" rel="noreferrer">
                       {item.target}
-                    </Link>
+                    </a>
                   ) : (
                     <span className="font-medium text-white">{item.target}</span>
                   )}
