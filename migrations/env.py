@@ -26,13 +26,13 @@ def get_url() -> str:
     """Return database URL from env or alembic.ini (no legacy config)."""
 
     raw = os.getenv("DATABASE_URL") or config.get_main_option("sqlalchemy.url")
-    if not raw:
-        raise RuntimeError("DATABASE_URL or sqlalchemy.url must be set for migrations")
-
-    url = make_url(raw)
-    if url.drivername == "postgresql":
-        url = url.set(drivername="postgresql+psycopg")
-    return str(url)
+    # if not raw:
+    #     raise RuntimeError("DATABASE_URL or sqlalchemy.url must be set for migrations")
+    #
+    # url = make_url(raw)
+    # if url.drivername == "postgresql":
+    #     url = url.set(drivername="postgresql+psycopg")
+    return str(raw)
 
 
 def run_migrations_offline() -> None:
