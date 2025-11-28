@@ -30,10 +30,12 @@ COPY --from=deps /opt/venv /opt/venv
 COPY alembic.ini ./
 COPY migrations ./migrations
 COPY apps/api ./apps/api
+COPY apps/api/entrypoint.sh ./entrypoint.sh
 
 # Ensure Alembic looks in the in-image migrations directory
 RUN sed -i 's#^script_location\s*=.*#script_location = migrations#' alembic.ini
+RUN chmod +x /app/entrypoint.sh
 
 EXPOSE 8000
 
-CMD ["uvicorn", "apps.api.main:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["./entrypoint.sh"]

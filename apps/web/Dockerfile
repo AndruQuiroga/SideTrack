@@ -33,4 +33,4 @@ WORKDIR /app
 COPY --from=build /app /app
 
 EXPOSE 3000
-CMD ["node", "apps/web/dist/index.js"]
+CMD ["pnpm", "--filter", "@sidetrack/web", "exec", "next", "start", "-H", "0.0.0.0", "-p", "3000"]
