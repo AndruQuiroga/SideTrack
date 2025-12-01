@@ -8,7 +8,7 @@ import { registerInteractionHandlers } from './runtime/handlers';
 import { registerMessageHandlers } from './runtime/messages';
 import { ReminderScheduler } from './scheduler';
 import { createLogger } from './logger';
-import { pingCommand, weekStartCommand } from './runtime/commands';
+import { allCommands } from './runtime/commands';
 
 export async function startBot(): Promise<void> {
   const config = loadBotConfig();
@@ -28,10 +28,14 @@ export async function startBot(): Promise<void> {
 
   if (config.discord.clientId && config.discord.guildId) {
     const rest = new REST({ version: '10' }).setToken(config.discord.token);
+    const commandsPayload = allCommands.map((cmd) => cmd.data.toJSON());
     await rest.put(Routes.applicationGuildCommands(config.discord.clientId, config.discord.guildId), {
-      body: [pingCommand.data.toJSON(), weekStartCommand.data.toJSON()],
+      body: commandsPayload,
     });
-    logger.info('Registered guild slash commands.', { guildId: config.discord.guildId });
+    logger.info('Registered guild slash commands.', {
+      guildId: config.discord.guildId,
+      commands: allCommands.map((cmd) => cmd.data.name),
+    });
   } else {
     logger.warn('Skipping slash command registration; DISCORD_CLIENT_ID or DISCORD_GUILD_ID missing.');
   }
