@@ -1,23 +1,26 @@
 services:
   db:
     image: postgres:15
+    env_file: .env
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-sidetrack}
-      POSTGRES_USER: ${POSTGRES_USER:-sidetrack}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sidetrack}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - db_data:/var/lib/postgresql/data
-    ports: ["5432:5432"]
+    ports:
+      - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sidetrack}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   redis:
     image: redis:7
-    ports: ["6379:6379"]
+    ports:
+      - "6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -30,13 +33,20 @@ services:
       dockerfile: apps/api/Dockerfile
     env_file: .env
     environment:
-      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-sidetrack}:${POSTGRES_PASSWORD:-sidetrack}@db:5432/${POSTGRES_DB:-sidetrack}
+      DATABASE_URL: ${DATABASE_URL}
     depends_on:
       db:
         condition: service_healthy
-    ports: ["8000:8000"]
+    ports:
+      - "8000:8000"
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -53,12 +63,14 @@ services:
     depends_on:
       api:
         condition: service_healthy
-    ports: ["3000:3000"]
+    ports:
+      - "3000:3000"
     healthcheck:
-      test: [
-        "CMD-SHELL",
-        "node -e \"fetch('http://localhost:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""
-      ]
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"fetch('http://localhost:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\"",
+        ]
       interval: 15s
       timeout: 5s
       retries: 5

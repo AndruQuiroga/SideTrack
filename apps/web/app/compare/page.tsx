@@ -28,18 +28,34 @@ async function CompatibilityResult({ userA, userB }: { userA: string; userB: str
         <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-3">
           <p className="text-xs uppercase tracking-wide text-slate-400">Shared artists</p>
           <div className="mt-2 flex flex-wrap gap-2 text-xs font-semibold text-slate-200">
-            {['Bjork', 'Little Simz', 'Radiohead'].map((artist) => (
-              <span key={artist} className="rounded-full bg-slate-800 px-3 py-1">
-                {artist}
-              </span>
-            ))}
+            {Array.isArray((result.overlap as any)?.shared_artists)
+              ? ((result.overlap as any).shared_artists as string[]).map((artist) => (
+                  <span key={artist} className="rounded-full bg-slate-800 px-3 py-1">
+                    {artist}
+                  </span>
+                ))
+              : ['Bjork', 'Little Simz', 'Radiohead'].map((artist) => (
+                  <span key={artist} className="rounded-full bg-slate-800 px-3 py-1">
+                    {artist}
+                  </span>
+                ))}
           </div>
         </div>
         <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-3">
-          <p className="text-xs uppercase tracking-wide text-slate-400">Differing vibes</p>
-          <p className="mt-2 text-xs text-slate-300">
-            User B leans more electronic; User A spins more folk. Great pairing for recommendations and friend-blend playlists.
-          </p>
+          <p className="text-xs uppercase tracking-wide text-slate-400">Shared genres</p>
+          <div className="mt-2 flex flex-wrap gap-2 text-xs font-semibold text-slate-200">
+            {Array.isArray((result.overlap as any)?.shared_genres)
+              ? ((result.overlap as any).shared_genres as string[]).map((g) => (
+                  <span key={g} className="rounded-full bg-slate-800 px-3 py-1">
+                    {g}
+                  </span>
+                ))
+              : ['Art Pop', 'Indie Rock', 'Alt Hip-Hop'].map((g) => (
+                  <span key={g} className="rounded-full bg-slate-800 px-3 py-1">
+                    {g}
+                  </span>
+                ))}
+          </div>
         </div>
       </div>
     </Card>

@@ -15,38 +15,26 @@ branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
 
-def _create_enum_if_not_exists(name: str, values: Sequence[str]) -> None:
-    values_list = ", ".join(f"'{value}'" for value in values)
-    op.execute(
-        sa.text(
-            f"""
-            DO $$
-            BEGIN
-                IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = '{name}') THEN
-                    CREATE TYPE {name} AS ENUM ({values_list});
-                END IF;
-            END
-            $$;
-            """
-        )
-    )
-
-
 def upgrade() -> None:
     provider_values = ("discord", "spotify", "lastfm", "listenbrainz")
     listen_source_values = ("spotify", "lastfm", "listenbrainz", "manual")
 
-    # Guard against the enum type already existing when rerunning migrations on
-    # a partially initialized database.
-    _create_enum_if_not_exists("provider_type", provider_values)
-    _create_enum_if_not_exists("listen_source", listen_source_values)
+    # Use PostgreSQL-specific ENUM so create_type=False is honored
+    provider_type = postgresql.ENUM(
+        *provider_values,
+        name="provider_type",
+        create_type=False,
+    )
+    listen_source = postgresql.ENUM(
+        *listen_source_values,
+        name="listen_source",
+        create_type=False,
+    )
 
-    provider_type = sa.Enum(
-        *provider_values, name="provider_type", create_type=False
-    )
-    listen_source = sa.Enum(
-        *listen_source_values, name="listen_source", create_type=False
-    )
+    # Create the enums once, if they don't already exist
+    bind = op.get_bind()
+    provider_type.create(bind, checkfirst=True)
+    listen_source.create(bind, checkfirst=True)
 
     op.create_table(
         "users",
@@ -446,5 +434,6 @@ def downgrade() -> None:
     op.drop_index("ix_users_display_name", table_name="users")
     op.drop_table("users")
 
-    sa.Enum(name="listen_source").drop(op.get_bind(), checkfirst=True)
-    sa.Enum(name="provider_type").drop(op.get_bind(), checkfirst=True)
+    bind = op.get_bind()
+    postgresql.ENUM(name="listen_source").drop(bind, checkfirst=True)
+    postgresql.ENUM(name="provider_type").drop(bind, checkfirst=True)

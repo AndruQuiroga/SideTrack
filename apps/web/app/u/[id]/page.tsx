@@ -4,6 +4,7 @@ import { ListeningTimelinePoint } from '@sidetrack/shared';
 
 import { fetchProfileForServer } from '../../../src/api/profile';
 import { Card, Pill, SectionHeading } from '../../components/ui';
+import { TasteRadar } from '../../components/taste-radar';
 import { PageShell } from '../../components/page-shell';
 
 interface ProfilePageProps {
@@ -133,26 +134,32 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         <Card className="space-y-3">
           <SectionHeading eyebrow="Taste metrics" title="Mood + energy fingerprint" />
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {profile.taste_metrics.map((metric) => (
-              <div key={metric.id} className="rounded-2xl border border-slate-800 bg-slate-900/60 p-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold text-white">{metric.label}</p>
-                  {metric.percentile !== undefined && (
-                    <span className="text-xs text-slate-400">{Math.round((metric.percentile ?? 0) * 100)}%</span>
-                  )}
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-3">
+              <p className="mb-2 text-sm font-semibold text-white">Radar</p>
+              <TasteRadar metrics={profile.taste_metrics} />
+            </div>
+            <div className="space-y-3">
+              {profile.taste_metrics.slice(0, 3).map((metric) => (
+                <div key={metric.id} className="rounded-2xl border border-slate-800 bg-slate-900/60 p-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold text-white">{metric.label}</p>
+                    {metric.percentile !== undefined && (
+                      <span className="text-xs text-slate-400">{Math.round((metric.percentile ?? 0) * 100)}%</span>
+                    )}
+                  </div>
+                  <div className="mt-2 h-2 rounded-full bg-slate-800">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-sky-400 to-purple-500"
+                      style={{ width: `${Math.min((metric.value / 1) * 100, 100)}%`, minWidth: '6%' }}
+                    />
+                  </div>
+                  <p className="mt-1 text-xs text-slate-400">{metric.value} {metric.unit ?? ''}</p>
                 </div>
-                <div className="mt-2 h-2 rounded-full bg-slate-800">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-sky-400 to-purple-500"
-                    style={{ width: `${Math.min((metric.value / 1) * 100, 100)}%`, minWidth: '6%' }}
-                  />
-                </div>
-                <p className="mt-1 text-xs text-slate-400">{metric.value} {metric.unit ?? ''}</p>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
           <p className="text-xs text-slate-400">
-            These bars will come straight from Spotify/Last.fm audio features once linked. They also power compatibility and recommendations.
+            Visual fingerprint based on Spotify/Last.fm audio features. Powers compatibility and recommendations.
           </p>
         </Card>
 
