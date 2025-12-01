@@ -36,6 +36,11 @@ export class ClubSyncService {
     private readonly nominationsThreadMap: Map<string, WeekDetail> = new Map(),
   ) {}
 
+  /** Get the underlying API client for direct access. */
+  getClient(): SidetrackApiClient {
+    return this.client;
+  }
+
   async bootstrap(): Promise<WeekDetail[]> {
     this.logger.info('Bootstrapping bot sync service with shared API client.', {
       apiBaseUrl: this.config.api.baseUrl,
@@ -218,7 +223,7 @@ export class ClubSyncService {
     let attempt = 0;
     const { attempts, baseDelayMs } = this.config.retry;
 
-    while (true) {
+    for (;;) {
       try {
         return await fn();
       } catch (error) {
