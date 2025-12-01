@@ -18,6 +18,7 @@ from . import (
     compatibility,
     playlists,
     ingest,
+    feed,
 )
 
 
@@ -40,5 +41,6 @@ def register_routes(app: FastAPI) -> None:
         compatibility.router,
         playlists.router,
         ingest.router,
+        feed.router,
     ):
         app.include_router(router)

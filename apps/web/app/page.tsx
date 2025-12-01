@@ -1,7 +1,9 @@
 import Link from 'next/link';
 
+import { fetchWeekListWithFallback } from '../src/api/weeks';
 import { PageShell } from './components/page-shell';
 import { Card, SectionHeading } from './components/ui';
+import { RatingBadge } from './components/rating-badge';
 
 export const metadata = {
   title: 'Sidetrack — Music tracker & social',
@@ -9,84 +11,154 @@ export const metadata = {
     'Track what you listen to, compare tastes with friends, and browse the Sidetrack Club archive — all in one sleek place.',
 };
 
-export default function Home() {
+export default async function Home() {
+  let latestWeek = null;
+  try {
+    const weeks = await fetchWeekListWithFallback();
+    if (weeks && weeks.length > 0) {
+      latestWeek = weeks[0];
+    }
+  } catch {
+    // Fallback gracefully
+  }
+
   return (
     <PageShell
-      accent="Tracker + social"
+      accent="Welcome to Sidetrack"
       title="Track your music. Find your people."
-      description="Sidetrack is a modern music tracker with a social feed and taste tools — plus a public archive of our Discord album club. Link Spotify/Last.fm to light it up."
+      description="A modern music tracker with social features and our Discord album club archive. Link Spotify or Last.fm to unlock everything."
       actions={
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Link
-            href="/feed"
-            className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-sidetrack-bg shadow-soft transition hover:brightness-95"
+            href="/discover"
+            className="rounded-full bg-gradient-to-r from-purple-500 to-emerald-400 px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:opacity-90"
           >
-            Open feed
+            Start discovering
           </Link>
           <Link
             href="/login"
-            className="rounded-full border border-slate-700/70 bg-slate-900/80 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:bg-slate-800/80"
+            className="rounded-full border border-slate-700/70 bg-slate-900/80 px-5 py-2.5 text-sm font-semibold text-slate-100 transition hover:bg-slate-800/80"
           >
             Sign in
           </Link>
         </div>
       }
     >
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Card className="h-full">
-          <SectionHeading eyebrow="Profiles" title="Your listening, visualized" />
-          <ul className="mt-3 space-y-2 text-sm text-slate-300">
-            <li>• Top artists, albums, and genres over time.</li>
-            <li>• Ratings and short reviews with sleek badges.</li>
-            <li>• Mood vectors from Spotify audio features.</li>
-          </ul>
-          <div className="mt-4">
-            <Link href={{ pathname: '/u/[id]', query: { id: 'demo' } }} className="text-emerald-200 hover:text-white">
-              View demo profile →
+      {/* Hero features grid */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <Card className="group relative overflow-hidden">
+          <div className="absolute -right-12 -top-12 h-32 w-32 rounded-full bg-gradient-to-br from-purple-500/20 to-transparent blur-2xl transition-all group-hover:from-purple-500/30" />
+          <div className="relative">
+            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-purple-500/20 text-lg">
+              🎧
+            </div>
+            <SectionHeading eyebrow="Track" title="Your listening stats" />
+            <p className="mt-3 text-sm text-slate-400">
+              Top artists, albums, genres over time. Mood and energy patterns from audio features. Beautiful graphs and timelines.
+            </p>
+            <Link href="/u/demo" className="mt-4 inline-flex items-center gap-1 text-sm text-emerald-300 transition-colors hover:text-white">
+              View demo profile <span aria-hidden>→</span>
             </Link>
           </div>
         </Card>
 
-        <Card className="h-full">
-          <SectionHeading eyebrow="Social" title="Feed and compatibility" />
-          <ul className="mt-3 space-y-2 text-sm text-slate-300">
-            <li>• Live feed of friends’ listens and ratings.</li>
-            <li>• “Taste match” comparisons and overlaps.</li>
-            <li>• Friend‑blend ideas and playlist seeds.</li>
-          </ul>
-          <div className="mt-4 flex items-center gap-4">
-            <Link href="/feed" className="text-emerald-200 hover:text-white">
-              Open feed →
-            </Link>
-            <Link href={{ pathname: '/compare', query: { userA: 'demo', userB: 'demo2' } }} className="text-emerald-200 hover:text-white">
-              Try compatibility →
-            </Link>
+        <Card className="group relative overflow-hidden">
+          <div className="absolute -right-12 -top-12 h-32 w-32 rounded-full bg-gradient-to-br from-sky-500/20 to-transparent blur-2xl transition-all group-hover:from-sky-500/30" />
+          <div className="relative">
+            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500/20 text-lg">
+              🤝
+            </div>
+            <SectionHeading eyebrow="Connect" title="Social feed & matches" />
+            <p className="mt-3 text-sm text-slate-400">
+              See what friends are listening to. Get taste compatibility scores. Create blend playlists together.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <Link href="/feed" className="text-sm text-emerald-300 transition-colors hover:text-white">
+                Open feed →
+              </Link>
+              <Link href="/compare?userA=demo&userB=demo2" className="text-sm text-emerald-300 transition-colors hover:text-white">
+                Try matching →
+              </Link>
+            </div>
           </div>
         </Card>
 
-        <Card className="h-full">
-          <SectionHeading eyebrow="Club" title="Sidetrack Club archive" />
-          <p className="mt-3 text-sm text-slate-300">
-            Explore every week of the Discord album club: winners, tags, ratings, filters, and participation stats.
-          </p>
-          <div className="mt-4">
-            <Link href="/club" className="text-emerald-200 hover:text-white">
-              Browse the archive →
+        <Card className="group relative overflow-hidden">
+          <div className="absolute -right-12 -top-12 h-32 w-32 rounded-full bg-gradient-to-br from-emerald-500/20 to-transparent blur-2xl transition-all group-hover:from-emerald-500/30" />
+          <div className="relative">
+            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/20 text-lg">
+              🏆
+            </div>
+            <SectionHeading eyebrow="Club" title="Weekly album picks" />
+            <p className="mt-3 text-sm text-slate-400">
+              Browse our Discord album club archive. See winners, ratings, poll results, and join the listening sessions.
+            </p>
+            <Link href="/club" className="mt-4 inline-flex items-center gap-1 text-sm text-emerald-300 transition-colors hover:text-white">
+              Browse archive <span aria-hidden>→</span>
             </Link>
           </div>
         </Card>
       </div>
 
-      <Card className="mt-2">
-        <SectionHeading eyebrow="Get set up" title="Link Spotify or Last.fm in Settings" />
-        <p className="mt-2 text-sm text-slate-300">
-          Once you sign in, head to Settings to connect accounts. We’ll pull in recent listens and compute your taste
-          profile automatically.
-        </p>
-        <div className="mt-4">
-          <Link href="/settings" className="text-emerald-200 hover:text-white">
-            Go to Settings →
-          </Link>
+      {/* Latest week highlight */}
+      {latestWeek && latestWeek.nominations && latestWeek.nominations.length > 0 && (
+        <Card className="relative overflow-hidden">
+          <div className="absolute -left-20 -top-20 h-40 w-40 rounded-full bg-gradient-to-br from-purple-500/15 via-sky-500/10 to-transparent blur-3xl" />
+          <div className="relative grid gap-5 md:grid-cols-[1fr,auto]">
+            <div>
+              <SectionHeading eyebrow="Latest from the club" title={latestWeek.label} />
+              <div className="mt-3 space-y-2">
+                <p className="text-lg font-semibold text-white">
+                  {latestWeek.nominations[0]?.pitch ?? 'Winner pending'}
+                </p>
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  {[latestWeek.nominations[0]?.genre, latestWeek.nominations[0]?.decade, latestWeek.nominations[0]?.country]
+                    .filter(Boolean)
+                    .map((tag) => (
+                      <span key={tag as string} className="rounded-full bg-slate-800/80 px-3 py-1 text-slate-300">
+                        {tag as string}
+                      </span>
+                    ))}
+                  <span className="rounded-full bg-slate-800/60 px-3 py-1 text-slate-400">
+                    {latestWeek.aggregates?.vote_count ?? 0} votes · {latestWeek.aggregates?.rating_count ?? 0} ratings
+                  </span>
+                </div>
+              </div>
+              <Link
+                href={`/club/weeks/${latestWeek.id}`}
+                className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-emerald-300 transition-colors hover:text-white"
+              >
+                View full week <span aria-hidden>→</span>
+              </Link>
+            </div>
+            <div className="flex items-center">
+              <RatingBadge
+                value={latestWeek.rating_summary?.average ?? latestWeek.aggregates?.rating_average}
+                count={latestWeek.rating_summary?.count ?? latestWeek.aggregates?.rating_count}
+              />
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Get started */}
+      <Card className="border-slate-800/40 bg-gradient-to-br from-slate-900/50 to-slate-900/30">
+        <div className="grid gap-4 md:grid-cols-[1fr,auto]">
+          <div>
+            <SectionHeading eyebrow="Get started" title="Link your music services" />
+            <p className="mt-2 text-sm text-slate-400">
+              Connect Spotify or Last.fm to unlock listening stats, taste profiles, and personalized recommendations.
+              Discord linking enables club participation.
+            </p>
+          </div>
+          <div className="flex items-center">
+            <Link
+              href="/settings"
+              className="rounded-full border border-slate-700/70 bg-slate-800/80 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700/80"
+            >
+              Open settings
+            </Link>
+          </div>
         </div>
       </Card>
     </PageShell>
