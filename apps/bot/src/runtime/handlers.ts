@@ -51,9 +51,25 @@ import { buildNominationModal, buildRatingModal } from '../interactions/modals';
 interface BallotSession {
   firstChoice?: string;
   secondChoice?: string;
+  createdAt: number;
 }
 
 const ballotSessions = new Map<string, BallotSession>();
+
+/** Cleanup stale ballot sessions (older than 30 minutes) */
+const BALLOT_SESSION_TTL_MS = 30 * 60 * 1000;
+
+function cleanupStaleBallotSessions(): void {
+  const now = Date.now();
+  for (const [key, session] of ballotSessions.entries()) {
+    if (now - session.createdAt > BALLOT_SESSION_TTL_MS) {
+      ballotSessions.delete(key);
+    }
+  }
+}
+
+// Run cleanup every 10 minutes
+setInterval(cleanupStaleBallotSessions, 10 * 60 * 1000);
 
 export function registerInteractionHandlers(
   client: Client,
@@ -93,22 +109,27 @@ export function registerInteractionHandlers(
         interactionType: interaction.type,
       });
 
-      // Try to respond with error if possible
-      if ('reply' in interaction && typeof interaction.reply === 'function') {
-        try {
-          const replyFn = interaction.deferred || interaction.replied
-            ? interaction.editReply.bind(interaction)
-            : interaction.reply.bind(interaction);
-          await replyFn({
-            content: '❌ An error occurred while processing your request. Please try again.',
-            ephemeral: true,
-          });
-        } catch {
-          // Ignore reply errors
-        }
-      }
+      // Try to respond with error if possible using type-safe checks
+      await safeErrorReply(interaction, logger);
     }
   });
+}
+
+/** Safely attempt to reply with an error message for any interaction type */
+async function safeErrorReply(interaction: Interaction, logger: Logger): Promise<void> {
+  const errorContent = '❌ An error occurred while processing your request. Please try again.';
+
+  try {
+    if (interaction.isRepliable()) {
+      if (interaction.deferred || interaction.replied) {
+        await interaction.editReply({ content: errorContent });
+      } else {
+        await interaction.reply({ content: errorContent, ephemeral: true });
+      }
+    }
+  } catch {
+    logger.debug('Could not send error reply to interaction.');
+  }
 }
 
 async function handleSlashCommand(
@@ -657,9 +678,9 @@ async function handleBallotOpen(
       return;
     }
 
-    // Initialize session
+    // Initialize session with timestamp
     const sessionKey = `${interaction.user.id}:${weekId}`;
-    ballotSessions.set(sessionKey, {});
+    ballotSessions.set(sessionKey, { createdAt: Date.now() });
 
     const selectMenus = buildBallotSelectMenus(weekId, week.nominations);
     const submitButton = buildBallotSubmitButton(weekId);
@@ -797,7 +818,7 @@ async function handleSelectMenuInteraction(
   let session = ballotSessions.get(sessionKey);
 
   if (!session) {
-    session = {};
+    session = { createdAt: Date.now() };
     ballotSessions.set(sessionKey, session);
   }
 
@@ -1117,17 +1138,21 @@ function parseDateOption(
   return parsed;
 }
 
+/** Check if a user has admin permissions for Sidetrack commands. */
 function isAdmin(interaction: ChatInputCommandInteraction | ButtonInteraction, config: BotConfig): boolean {
-  if ('memberPermissions' in interaction && interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild)) {
+  // Check for Manage Server permission using type-safe method
+  if (interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild)) {
     return true;
   }
 
+  // Check for configured admin roles
   const roleIds = config.club.adminRoleIds;
   if (!roleIds || roleIds.length === 0) return false;
 
   const member = interaction.member;
   if (!member) return false;
 
+  // Handle both GuildMember and APIInteractionGuildMember types
   const roles = (member as GuildMember).roles ?? (member as APIInteractionGuildMember).roles;
   if (!roles) return false;
 
