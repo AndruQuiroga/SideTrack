@@ -16,6 +16,9 @@ dist/
 .env
 .DS_Store
 
+# Database
+*.db
+
 # Docker
 **/.dockerignore
 
