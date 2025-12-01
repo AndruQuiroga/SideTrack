@@ -5,9 +5,13 @@ from __future__ import annotations
 from typing import Any
 
 from apps.api.config import get_settings
+
 from .http import request_json
 
 BASE_URL = "https://ws.audioscrobbler.com/2.0/"
+
+# Re-export request_json for use by other modules
+__all__ = ["BASE_URL", "get_recent_tracks", "get_top_artists", "get_top_albums", "request_json"]
 
 
 def _params(method: str, extra: dict[str, str] | None = None) -> dict[str, str]:
