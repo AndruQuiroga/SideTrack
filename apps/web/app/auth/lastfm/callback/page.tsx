@@ -33,11 +33,11 @@ export default function LastFmCallbackPage() {
       return;
     }
 
-    async function completeAuth() {
+    async function completeAuth(authToken: string) {
       try {
         const baseUrl = getApiBaseUrl();
         // TODO: Pass user_id when we have auth context
-        const res = await fetch(`${baseUrl}/integrations/lastfm/callback?token=${encodeURIComponent(token!)}`);
+        const res = await fetch(`${baseUrl}/integrations/lastfm/callback?token=${encodeURIComponent(authToken)}`);
 
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
@@ -58,7 +58,7 @@ export default function LastFmCallbackPage() {
       }
     }
 
-    completeAuth();
+    completeAuth(token);
   }, [searchParams, router]);
 
   if (state === 'loading') {

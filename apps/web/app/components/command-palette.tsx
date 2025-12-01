@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { webSearch, SearchResult } from '../../src/api/discover';
 import { showToast } from './toast';
 
@@ -124,30 +125,60 @@ function Section<T>({ title, items, render, emptyText }: { title: string; items:
 }
 
 function DefaultShortcuts({ onClose }: { onClose: () => void }) {
-  const items = [
-    { label: 'Go to Discover', href: '/discover' as const },
-    { label: 'Open Feed', href: '/feed' as const },
-    { label: 'View Club Archive', href: '/club' as const },
-    { label: 'Open Settings', href: '/settings' as const },
-    { label: 'Compare tastes', href: '/compare?userA=demo&userB=demo2' },
-    { label: 'Friend blend', href: '/blend' as const },
-  ];
+  const router = useRouter();
+
+  function handleNavigate(href: string) {
+    router.push(href as '/discover' | '/feed' | '/club' | '/settings' | '/blend');
+    onClose();
+  }
+
   return (
     <div className="p-2">
-      {items.map((item) => (
-        <a
-          key={item.href}
-          href={item.href}
-          onClick={(e) => {
-            e.preventDefault();
-            window.location.href = item.href;
-            onClose();
-          }}
-          className="block rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-slate-900"
-        >
-          {item.label}
-        </a>
-      ))}
+      <button
+        type="button"
+        onClick={() => handleNavigate('/discover')}
+        className="block w-full text-left rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-slate-900"
+      >
+        Go to Discover
+      </button>
+      <button
+        type="button"
+        onClick={() => handleNavigate('/feed')}
+        className="block w-full text-left rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-slate-900"
+      >
+        Open Feed
+      </button>
+      <button
+        type="button"
+        onClick={() => handleNavigate('/club')}
+        className="block w-full text-left rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-slate-900"
+      >
+        View Club Archive
+      </button>
+      <button
+        type="button"
+        onClick={() => handleNavigate('/settings')}
+        className="block w-full text-left rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-slate-900"
+      >
+        Open Settings
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          router.push('/compare?userA=demo&userB=demo2' as '/compare');
+          onClose();
+        }}
+        className="block w-full text-left rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-slate-900"
+      >
+        Compare tastes
+      </button>
+      <button
+        type="button"
+        onClick={() => handleNavigate('/blend')}
+        className="block w-full text-left rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-slate-900"
+      >
+        Friend blend
+      </button>
     </div>
   );
 }

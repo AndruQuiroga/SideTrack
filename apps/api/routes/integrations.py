@@ -7,6 +7,8 @@ music services.
 from __future__ import annotations
 
 import hashlib
+import logging
+import re
 import urllib.parse
 from typing import Annotated
 
@@ -19,7 +21,12 @@ from apps.api.db import get_db
 from apps.api.external import lastfm
 from apps.api.models import LinkedAccount, ProviderType, User
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/integrations", tags=["integrations"])
+
+# Token validation regex: Last.fm tokens are alphanumeric and have a fixed length
+LASTFM_TOKEN_PATTERN = re.compile(r"^[a-zA-Z0-9]{32}$")
 
 
 class ConnectRequest(BaseModel):
@@ -113,6 +120,13 @@ async def lastfm_callback(
     The token is provided by Last.fm after user authorization and is used to
     obtain a session key via the auth.getSession API method.
     """
+    # Validate token format to prevent injection attacks
+    if not LASTFM_TOKEN_PATTERN.match(token):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid token format",
+        )
+
     settings = get_settings()
     if not settings.lastfm_api_key or not settings.lastfm_api_secret:
         raise HTTPException(
@@ -137,9 +151,11 @@ async def lastfm_callback(
             params=params,
         )
     except Exception as e:
+        # Log the full exception for debugging, but return a generic message
+        logger.exception("Last.fm authentication failed: %s", e)
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Failed to complete Last.fm authentication: {str(e)}",
+            detail="Failed to complete Last.fm authentication. Please try again.",
         ) from e
 
     # Check for Last.fm error response
