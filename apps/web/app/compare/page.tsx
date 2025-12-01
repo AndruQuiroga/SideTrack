@@ -8,6 +8,11 @@ interface ComparePageProps {
   searchParams: { userA?: string; userB?: string };
 }
 
+interface OverlapData {
+  shared_artists?: string[];
+  shared_genres?: string[];
+}
+
 async function CompatibilityResult({ userA, userB }: { userA: string; userB: string }) {
   const result = await fetchCompatibility(userA, userB).catch(() => null);
 
@@ -19,6 +24,8 @@ async function CompatibilityResult({ userA, userB }: { userA: string; userB: str
     );
   }
 
+  const overlap = result.overlap as OverlapData | undefined;
+
   return (
     <Card className="space-y-3">
       <p className="text-sm uppercase tracking-wide text-slate-400">Taste match</p>
@@ -28,8 +35,8 @@ async function CompatibilityResult({ userA, userB }: { userA: string; userB: str
         <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-3">
           <p className="text-xs uppercase tracking-wide text-slate-400">Shared artists</p>
           <div className="mt-2 flex flex-wrap gap-2 text-xs font-semibold text-slate-200">
-            {Array.isArray((result.overlap as any)?.shared_artists)
-              ? ((result.overlap as any).shared_artists as string[]).map((artist) => (
+            {Array.isArray(overlap?.shared_artists)
+              ? overlap.shared_artists.map((artist) => (
                   <span key={artist} className="rounded-full bg-slate-800 px-3 py-1">
                     {artist}
                   </span>
@@ -44,8 +51,8 @@ async function CompatibilityResult({ userA, userB }: { userA: string; userB: str
         <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-3">
           <p className="text-xs uppercase tracking-wide text-slate-400">Shared genres</p>
           <div className="mt-2 flex flex-wrap gap-2 text-xs font-semibold text-slate-200">
-            {Array.isArray((result.overlap as any)?.shared_genres)
-              ? ((result.overlap as any).shared_genres as string[]).map((g) => (
+            {Array.isArray(overlap?.shared_genres)
+              ? overlap.shared_genres.map((g) => (
                   <span key={g} className="rounded-full bg-slate-800 px-3 py-1">
                     {g}
                   </span>

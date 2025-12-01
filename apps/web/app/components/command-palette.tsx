@@ -1,9 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import clsx from 'clsx';
-import { webSearch } from '../../src/api/discover';
+import { webSearch, SearchResult } from '../../src/api/discover';
 import { showToast } from './toast';
 
 interface CommandPaletteProps {
@@ -14,7 +13,7 @@ interface CommandPaletteProps {
 export function CommandPalette({ open, onClose }: CommandPaletteProps) {
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState<{ users: any[]; albums: any[]; tracks: any[] } | null>(null);
+  const [results, setResults] = useState<SearchResult | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -126,24 +125,28 @@ function Section<T>({ title, items, render, emptyText }: { title: string; items:
 
 function DefaultShortcuts({ onClose }: { onClose: () => void }) {
   const items = [
-    { label: 'Go to Discover', href: '/discover' },
-    { label: 'Open Feed', href: '/feed' },
-    { label: 'View Club Archive', href: '/club' },
-    { label: 'Open Settings', href: '/settings' },
+    { label: 'Go to Discover', href: '/discover' as const },
+    { label: 'Open Feed', href: '/feed' as const },
+    { label: 'View Club Archive', href: '/club' as const },
+    { label: 'Open Settings', href: '/settings' as const },
     { label: 'Compare tastes', href: '/compare?userA=demo&userB=demo2' },
-    { label: 'Friend blend', href: '/blend' },
+    { label: 'Friend blend', href: '/blend' as const },
   ];
   return (
     <div className="p-2">
       {items.map((item) => (
-        <Link
+        <a
           key={item.href}
           href={item.href}
-          onClick={onClose}
+          onClick={(e) => {
+            e.preventDefault();
+            window.location.href = item.href;
+            onClose();
+          }}
           className="block rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-slate-900"
         >
           {item.label}
-        </Link>
+        </a>
       ))}
     </div>
   );
