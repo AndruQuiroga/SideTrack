@@ -4,12 +4,6 @@ import { PageShell } from '../components/page-shell';
 import { Card, SectionHeading } from '../components/ui';
 import { ConnectionsGrid } from '../components/connections-grid';
 
-const accounts = [
-  { name: 'Discord', status: 'Required for club identity', linked: false, cta: 'Link Discord' },
-  { name: 'Spotify', status: 'Enables now playing + taste metrics', linked: false, cta: 'Connect Spotify' },
-  { name: 'Last.fm', status: 'Pulls scrobbles + history', linked: true, cta: 'Reconnect' },
-];
-
 export const metadata = {
   title: 'Sidetrack — Settings',
   description: 'Manage linked accounts and privacy.',
