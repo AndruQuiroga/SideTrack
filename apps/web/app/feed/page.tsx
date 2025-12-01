@@ -1,110 +1,103 @@
+import Link from 'next/link';
+import type { Route } from 'next';
+
+import { fetchFeedWithFallback, type FeedItem } from '../../src/api/feed';
 import { PageShell } from '../components/page-shell';
 import { Card, SectionHeading } from '../components/ui';
 import { RatingBadge } from '../components/rating-badge';
-
-interface FeedItem {
-  id: string;
-  actor: string;
-  action: string;
-  target?: string;
-  targetLink?: string;
-  rating?: number;
-  timestamp: string;
-  type: 'rating' | 'listen' | 'club';
-}
-
-const demoFeed: FeedItem[] = [
-  {
-    id: '1',
-    actor: 'lydia',
-    action: 'rated',
-    target: 'Spirit of Eden',
-    rating: 4.5,
-    timestamp: '5m ago',
-    type: 'rating',
-  },
-  {
-    id: '2',
-    actor: 'arden',
-    action: 'is now playing',
-    target: 'Open My Eyes · Yeule',
-    timestamp: '12m ago',
-    type: 'listen',
-  },
-  {
-    id: '3',
-    actor: 'bot',
-    action: 'announced winner for WEEK 003',
-    target: 'Join the ratings thread',
-    targetLink: '/club/weeks/week-demo-3',
-    timestamp: '1h ago',
-    type: 'club',
-  },
-  {
-    id: '4',
-    actor: 'demo',
-    action: 'followed you back',
-    timestamp: '2h ago',
-    type: 'club',
-  },
-];
 
 export const metadata = {
   title: 'Sidetrack — Feed',
   description: 'Recent club and friend activity.',
 };
 
-export default function FeedPage() {
+function formatTimeAgo(timestamp: string): string {
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return 'Recently';
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  return `${diffDays}d ago`;
+}
+
+function getEventColor(type: FeedItem['type']): { bg: string; text: string } {
+  switch (type) {
+    case 'rating':
+      return { bg: 'rgba(251, 191, 36, 0.15)', text: '#fbbf24' };
+    case 'listen':
+      return { bg: 'rgba(52, 211, 153, 0.15)', text: '#34d399' };
+    case 'follow':
+      return { bg: 'rgba(244, 114, 182, 0.15)', text: '#f472b6' };
+    case 'club':
+    default:
+      return { bg: 'rgba(59, 130, 246, 0.15)', text: '#60a5fa' };
+  }
+}
+
+function FeedItemCard({ item }: { item: FeedItem }) {
+  const color = getEventColor(item.type);
+
+  return (
+    <div className="group flex flex-col gap-3 rounded-2xl border border-slate-800/60 bg-slate-900/40 p-4 backdrop-blur-sm transition-all hover:border-slate-700/80 hover:bg-slate-900/60 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-start gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-800/80 text-sm font-semibold text-slate-200">
+          {item.actor.charAt(0).toUpperCase()}
+        </div>
+        <div className="space-y-1">
+          <p className="text-sm text-slate-200">
+            <span className="font-semibold text-white">{item.actor}</span>{' '}
+            <span className="text-slate-400">{item.action}</span>{' '}
+            {item.target_link ? (
+              <Link href={item.target_link as Route} className="font-medium text-emerald-300 transition-colors hover:text-white">
+                {item.target}
+              </Link>
+            ) : item.target ? (
+              <span className="font-medium text-white">{item.target}</span>
+            ) : null}
+          </p>
+          <p className="text-xs text-slate-500">{formatTimeAgo(item.timestamp)}</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-3 pl-13 sm:pl-0">
+        {item.rating != null && <RatingBadge value={item.rating} />}
+        <span
+          className="rounded-full px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-wider"
+          style={{ background: color.bg, color: color.text }}
+        >
+          {item.type}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+export default async function FeedPage() {
+  const feed = await fetchFeedWithFallback();
+
   return (
     <PageShell
       title="Activity feed"
-      description="See what friends are rating, listening to, and celebrating. The feed turns live once you link Discord and Spotify."
-      accent="Social preview"
+      description="See what friends are rating, listening to, and celebrating. Live updates once you link Discord and Spotify."
+      accent="Live"
     >
-      <Card className="space-y-4">
-        <SectionHeading eyebrow="Live surface" title="Club + friends" />
+      <Card className="space-y-5">
+        <SectionHeading eyebrow="Recent activity" title="Club + friends" />
         <div className="space-y-3">
-          {demoFeed.map((item) => (
-            <div
-              key={item.id}
-              className="flex flex-col gap-2 rounded-2xl border border-slate-800/70 bg-slate-900/60 p-4 sm:flex-row sm:items-center sm:justify-between"
-            >
-              <div className="space-y-1">
-                <p className="text-sm text-slate-200">
-                  <span className="font-semibold text-white">{item.actor}</span> {item.action}{' '}
-                  {item.targetLink ? (
-                    <a href={item.targetLink} className="text-emerald-200 hover:text-white" target="_blank" rel="noreferrer">
-                      {item.target}
-                    </a>
-                  ) : (
-                    <span className="font-medium text-white">{item.target}</span>
-                  )}
-                </p>
-                <p className="text-xs text-slate-400">{item.timestamp}</p>
-              </div>
-              <div className="flex items-center gap-3">
-                {item.rating && <RatingBadge value={item.rating} />}
-                <span
-                  className="rounded-full px-3 py-1 text-[0.7rem] font-semibold uppercase tracking-wide"
-                  style={{
-                    background:
-                      item.type === 'rating'
-                        ? 'rgba(251, 191, 36, 0.15)'
-                        : item.type === 'listen'
-                          ? 'rgba(52, 211, 153, 0.15)'
-                          : 'rgba(59, 130, 246, 0.15)',
-                    color: item.type === 'rating' ? '#fbbf24' : item.type === 'listen' ? '#34d399' : '#60a5fa',
-                  }}
-                >
-                  {item.type}
-                </span>
-              </div>
+          {feed.length > 0 ? (
+            feed.map((item) => <FeedItemCard key={item.id} item={item} />)
+          ) : (
+            <div className="rounded-2xl border border-slate-800/60 bg-slate-900/40 p-6 text-center">
+              <p className="text-sm text-slate-400">No activity yet. Rate an album or follow a friend to see updates here.</p>
             </div>
-          ))}
+          )}
         </div>
-        <p className="text-xs text-slate-400">
-          Hook up Spotify/Last.fm for listening events and keep Discord open for live club reactions. We surface presence indicators and now playing
-          once accounts are linked.
+        <p className="text-xs text-slate-500">
+          Hook up Spotify or Last.fm for listening events. Presence indicators and now-playing badges appear once accounts are linked.
         </p>
       </Card>
     </PageShell>
