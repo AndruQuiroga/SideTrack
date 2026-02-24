@@ -13,8 +13,13 @@ We want a single repo containing:
 - `apps/web` — Web frontend (Next.js)
 - `apps/worker` — Background jobs (sync & analysis)
 - `packages/shared` — Shared types, utilities, and SDKs
+- `services/extraction` — GPU-heavy audio extraction (standalone Python project)
 
 We prefer a workspace‑friendly package manager such as **pnpm** (for TS parts) and a pattern that plays nicely with Python services (via Docker and shared configs).
+
+### Dependency Isolation Rule
+
+Heavy/GPU Python packages (tensorflow, librosa, openl3, scipy, torch, etc.) must **never** be added to the root `pyproject.toml`. uv resolves all optional extras into a single lockfile — even unused extras slow down every `uv lock` and `uv sync`. Instead, heavy workloads live as standalone Python projects under `services/` with their own `pyproject.toml` and `uv.lock`. They are NOT uv workspace members. See `services/extraction/README.md`.
 
 ---
 
@@ -33,7 +38,6 @@ We prefer a workspace‑friendly package manager such as **pnpm** (for TS parts)
 **Steps (high level):**
 
 1. Create the folder structure:
-
    - `apps/bot/`
    - `apps/api/`
    - `apps/web/`

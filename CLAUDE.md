@@ -78,13 +78,14 @@ Sidetrack is a monorepo. All services communicate through the central FastAPI ba
 
 ### Services
 
-| App               | Language                        | Purpose                                                                  |
-| ----------------- | ------------------------------- | ------------------------------------------------------------------------ |
-| `apps/api`        | Python / FastAPI / SQLAlchemy   | Single source of truth; all DB access goes here                          |
-| `apps/bot`        | TypeScript / discord.js         | Weekly club cycle automation; syncs to API                               |
-| `apps/web`        | TypeScript / Next.js / Tailwind | Public archive + authenticated social UI                                 |
-| `apps/worker`     | TypeScript                      | Spotify/Last.fm sync; taste analysis batch jobs                          |
-| `packages/shared` | TypeScript                      | Typed interfaces + `SidetrackApiClient` (Axios) shared by bot/web/worker |
+| App                   | Language                        | Purpose                                                                  |
+| --------------------- | ------------------------------- | ------------------------------------------------------------------------ |
+| `apps/api`            | Python / FastAPI / SQLAlchemy   | Single source of truth; all DB access goes here                          |
+| `apps/bot`            | TypeScript / discord.js         | Weekly club cycle automation; syncs to API                               |
+| `apps/web`            | TypeScript / Next.js / Tailwind | Public archive + authenticated social UI                                 |
+| `apps/worker`         | TypeScript                      | Spotify/Last.fm sync; taste analysis batch jobs                          |
+| `packages/shared`     | TypeScript                      | Typed interfaces + `SidetrackApiClient` (Axios) shared by bot/web/worker |
+| `services/extraction` | Python / FastAPI / librosa      | GPU-heavy audio feature extraction (standalone, see below)               |
 
 ### API Layer Pattern (apps/api)
 
@@ -112,6 +113,25 @@ The app uses a factory pattern: `apps.api.main:create_app`. Settings are loaded 
 
 - **Python**: Use `uv` exclusively — never `pip install` or `python -m venv`. Lockfile is `uv.lock` (checked in, do not edit by hand). Build backend is `hatchling`. Target Python 3.11 (3.12+ currently avoided).
 - **TypeScript**: Use `pnpm` exclusively — never `npm` or `yarn`. Lockfile is `pnpm-lock.yaml` (checked in). Workspace config is `pnpm-workspace.yaml`.
+
+### Heavy / GPU Dependency Isolation
+
+**Never add heavy ML/GPU packages** (tensorflow, librosa, openl3, scipy, torch, etc.) to the root `pyproject.toml`. uv resolves ALL optional extras into a single lockfile — even if you only install `--extra api`, the lock step must resolve every extra, making it slow and fragile for everyone.
+
+Instead, heavy workloads live as **standalone Python projects** under `services/`:
+
+```
+services/
+  extraction/           # GPU audio analysis — own pyproject.toml + uv.lock
+    pyproject.toml
+    uv.lock
+    Dockerfile          # nvidia/cuda base
+    src/extraction/
+```
+
+These services are NOT uv workspace members (workspaces share lockfiles). They communicate with the API over HTTP and deploy independently. Use `docker compose --profile gpu up extraction` to run locally.
+
+See `services/extraction/README.md` for the full pattern.
 
 ## Code Style
 
