@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { getServerSession } from 'next-auth/next';
 
-import { authOptions } from '../lib/auth';
+import { authOptions } from './lib/auth';
 import { Navbar } from './components/navbar';
 import { SessionProvider } from './components/session-provider';
 import './globals.css';

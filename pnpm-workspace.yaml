@@ -1,6 +1,4 @@
 packages:
-  - "apps/web"
-  - "apps/bot"
-  - "apps/*"
-  - "packages/shared"
-  - "packages/*"
+  - 'apps/web'
+  - 'apps/bot'
+  - 'packages/api-client'

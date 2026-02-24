@@ -1,5 +1,5 @@
 import { REST, Routes } from 'discord.js';
-import { SidetrackApiClient } from '@sidetrack/shared';
+import { SidetrackApiClient } from '@sidetrack/api-client';
 
 import { ClubSyncService } from './clubService';
 import { loadBotConfig } from './config';

@@ -4,7 +4,7 @@ import clsx from 'clsx';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
-import { WeekDetailWithRatings } from '../../src/api/weeks';
+import { WeekDetailWithRatings } from '../lib/api/weeks';
 import { Card, Pill, SectionHeading } from './ui';
 import { WeekList } from './week-list';
 import { RatingBadge } from './rating-badge';
@@ -61,7 +61,9 @@ export function ClubGallery({ weeks }: ClubGalleryProps) {
     return sorted.filter((week) => {
       const winner = week.nominations[0];
       const tagMatch = tag
-        ? week.nominations.some((nom) => nom.genre === tag || nom.decade === tag || nom.country === tag)
+        ? week.nominations.some(
+            (nom) => nom.genre === tag || nom.decade === tag || nom.country === tag,
+          )
         : true;
       const textMatch = query
         ? [week.label, winner?.pitch, winner?.genre, winner?.country, winner?.decade]
@@ -77,7 +79,11 @@ export function ClubGallery({ weeks }: ClubGalleryProps) {
   return (
     <div className="space-y-6">
       <Card className="space-y-5">
-        <SectionHeading eyebrow="Live archive" title="Winners gallery" aside={<Pill>{livePresenceCopy(weeks)}</Pill>} />
+        <SectionHeading
+          eyebrow="Live archive"
+          title="Winners gallery"
+          aside={<Pill>{livePresenceCopy(weeks)}</Pill>}
+        />
         <div className="grid gap-4 lg:grid-cols-[1.4fr,1fr]">
           <div className="rounded-2xl border border-slate-800/70 bg-slate-900/60 p-4">
             <p className="text-xs uppercase tracking-wide text-slate-400">Search & filter</p>
@@ -107,13 +113,17 @@ export function ClubGallery({ weeks }: ClubGalleryProps) {
                     'rounded-full border px-3 py-1 text-[0.75rem] font-semibold transition-colors',
                     tag === option
                       ? 'border-emerald-400/80 bg-emerald-400/10 text-emerald-200'
-                      : 'border-slate-700/70 bg-slate-900/70 text-slate-200 hover:border-slate-500'
+                      : 'border-slate-700/70 bg-slate-900/70 text-slate-200 hover:border-slate-500',
                   )}
                 >
                   {option}
                 </button>
               ))}
-              {!tags.length && <span className="text-sm text-slate-400">Tags will appear when nominations include metadata.</span>}
+              {!tags.length && (
+                <span className="text-sm text-slate-400">
+                  Tags will appear when nominations include metadata.
+                </span>
+              )}
               {tag && (
                 <button
                   onClick={() => setTag(null)}
@@ -131,14 +141,25 @@ export function ClubGallery({ weeks }: ClubGalleryProps) {
               <div className="mt-3 space-y-3">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-sm font-semibold text-white">{newest.nominations[0]?.pitch ?? 'Winner pending'}</p>
+                    <p className="text-sm font-semibold text-white">
+                      {newest.nominations[0]?.pitch ?? 'Winner pending'}
+                    </p>
                     <p className="text-xs text-slate-200/80">{newest.label}</p>
-                    <p className="text-xs text-slate-300">{formatShortDate(newest.discussion_at ?? newest.created_at)}</p>
+                    <p className="text-xs text-slate-300">
+                      {formatShortDate(newest.discussion_at ?? newest.created_at)}
+                    </p>
                   </div>
-                  <RatingBadge value={newest.rating_summary?.average ?? newest.aggregates.rating_average} count={newest.rating_summary?.count} />
+                  <RatingBadge
+                    value={newest.rating_summary?.average ?? newest.aggregates.rating_average}
+                    count={newest.rating_summary?.count}
+                  />
                 </div>
                 <div className="flex flex-wrap gap-2 text-xs text-slate-200">
-                  {[newest.nominations[0]?.genre, newest.nominations[0]?.decade, newest.nominations[0]?.country]
+                  {[
+                    newest.nominations[0]?.genre,
+                    newest.nominations[0]?.decade,
+                    newest.nominations[0]?.country,
+                  ]
                     .filter(Boolean)
                     .slice(0, 3)
                     .map((chip) => (
@@ -150,7 +171,8 @@ export function ClubGallery({ weeks }: ClubGalleryProps) {
                       </span>
                     ))}
                   <span className="rounded-full bg-slate-900/80 px-3 py-1 text-[0.7rem] text-slate-300">
-                    {newest.aggregates.vote_count} votes · {newest.aggregates.nomination_count} nominees
+                    {newest.aggregates.vote_count} votes · {newest.aggregates.nomination_count}{' '}
+                    nominees
                   </span>
                 </div>
                 <Link

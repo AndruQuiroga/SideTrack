@@ -21,8 +21,10 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 
 FROM base AS deps
 
-COPY services/extraction/pyproject.toml services/extraction/uv.lock ./
-RUN uv sync --frozen --no-dev --no-install-project
+COPY services/extraction/pyproject.toml ./
+# No uv.lock committed — use --no-lock to skip lock-file validation.
+# To pin deps, run `uv lock` inside services/extraction/ and commit uv.lock.
+RUN uv sync --no-lock --no-dev --no-install-project
 
 FROM base AS runtime
 ENV PATH="/opt/venv/bin:$PATH"

@@ -6,7 +6,7 @@ import Link from 'next/link';
 
 import { PageShell } from '../components/page-shell';
 import { Card, SectionHeading } from '../components/ui';
-import { createFriendBlend, type BlendPreview } from '../../src/api/social';
+import { createFriendBlend, type BlendPreview } from '../lib/api/social';
 import { showToast } from '../components/toast';
 
 // Demo tracks for fallback
@@ -14,7 +14,12 @@ const demoTracks = [
   { id: '1', title: 'Hyperballad', artist_name: 'Björk', reason: 'Shared favorite' },
   { id: '2', title: 'Vroom Vroom', artist_name: 'Charli XCX', reason: 'High energy match' },
   { id: '3', title: 'Intro', artist_name: 'The xx', reason: 'Mood similarity' },
-  { id: '4', title: 'How to Disappear Completely', artist_name: 'Radiohead', reason: 'Top artist overlap' },
+  {
+    id: '4',
+    title: 'How to Disappear Completely',
+    artist_name: 'Radiohead',
+    reason: 'Top artist overlap',
+  },
   { id: '5', title: 'Oblivion', artist_name: 'Grimes', reason: 'Genre blend' },
 ];
 
@@ -66,7 +71,9 @@ export default function BlendPage() {
         <SectionHeading eyebrow="Select users" title="Who's blending?" />
         <div className="grid gap-4 md:grid-cols-[1fr,auto,1fr]">
           <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">User A</label>
+            <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+              User A
+            </label>
             <input
               value={userA}
               onChange={(e) => setUserA(e.target.value)}
@@ -78,7 +85,9 @@ export default function BlendPage() {
             <span className="text-2xl text-slate-600">×</span>
           </div>
           <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">User B</label>
+            <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+              User B
+            </label>
             <input
               value={userB}
               onChange={(e) => setUserB(e.target.value)}
@@ -119,9 +128,7 @@ export default function BlendPage() {
         />
         {preview ? (
           <div className="space-y-4">
-            {preview.description && (
-              <p className="text-sm text-slate-400">{preview.description}</p>
-            )}
+            {preview.description && <p className="text-sm text-slate-400">{preview.description}</p>}
             <div className="space-y-2">
               {preview.tracks.map((track, index) => (
                 <div

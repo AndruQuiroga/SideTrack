@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 
-import { fetchWeekListWithFallback } from '../../src/api/weeks';
+import { fetchWeekListWithFallback } from '../lib/api/weeks';
 import { PageShell } from '../components/page-shell';
 import { ClubGallery } from '../components/club-gallery';
 

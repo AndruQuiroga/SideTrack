@@ -1,6 +1,12 @@
 import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
-import { RatingSummary, AlbumRead, WeekDetail } from '@sidetrack/shared';
-import { createBaseEmbed, BRAND_COLORS, formatWeekLabel, formatStarRating, createProgressBar } from './common';
+import { RatingSummary, AlbumRead, WeekDetail } from '@sidetrack/api-client';
+import {
+  createBaseEmbed,
+  BRAND_COLORS,
+  formatWeekLabel,
+  formatStarRating,
+  createProgressBar,
+} from './common';
 
 export interface RatingsCallOptions {
   week: WeekDetail;
@@ -118,7 +124,10 @@ export function buildRatingsSummaryEmbed(options: RatingsSummaryOptions): EmbedB
   if (sampleReviews && sampleReviews.length > 0) {
     const reviewsText = sampleReviews
       .slice(0, 3)
-      .map((r) => `**${r.userName}** (${r.score.toFixed(1)}): "${r.review.slice(0, 100)}${r.review.length > 100 ? '...' : ''}"`)
+      .map(
+        (r) =>
+          `**${r.userName}** (${r.score.toFixed(1)}): "${r.review.slice(0, 100)}${r.review.length > 100 ? '...' : ''}"`,
+      )
       .join('\n\n');
 
     fields.push({

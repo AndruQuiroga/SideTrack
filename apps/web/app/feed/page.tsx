@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { Route } from 'next';
 
-import { fetchFeedWithFallback, type FeedItem } from '../../src/api/feed';
+import { fetchFeedWithFallback, type FeedItem } from '../lib/api/feed';
 import { PageShell } from '../components/page-shell';
 import { Card, SectionHeading } from '../components/ui';
 import { RatingBadge } from '../components/rating-badge';
@@ -53,7 +53,10 @@ function FeedItemCard({ item }: { item: FeedItem }) {
             <span className="font-semibold text-white">{item.actor}</span>{' '}
             <span className="text-slate-400">{item.action}</span>{' '}
             {item.target_link ? (
-              <Link href={item.target_link as Route} className="font-medium text-emerald-300 transition-colors hover:text-white">
+              <Link
+                href={item.target_link as Route}
+                className="font-medium text-emerald-300 transition-colors hover:text-white"
+              >
                 {item.target}
               </Link>
             ) : item.target ? (
@@ -92,12 +95,15 @@ export default async function FeedPage() {
             feed.map((item) => <FeedItemCard key={item.id} item={item} />)
           ) : (
             <div className="rounded-2xl border border-slate-800/60 bg-slate-900/40 p-6 text-center">
-              <p className="text-sm text-slate-400">No activity yet. Rate an album or follow a friend to see updates here.</p>
+              <p className="text-sm text-slate-400">
+                No activity yet. Rate an album or follow a friend to see updates here.
+              </p>
             </div>
           )}
         </div>
         <p className="text-xs text-slate-500">
-          Hook up Spotify or Last.fm for listening events. Presence indicators and now-playing badges appear once accounts are linked.
+          Hook up Spotify or Last.fm for listening events. Presence indicators and now-playing
+          badges appear once accounts are linked.
         </p>
       </Card>
     </PageShell>

@@ -1,0 +1,30 @@
+{
+  "name": "@sidetrack/api-client",
+  "version": "0.2.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/index.js",
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "generate": "openapi-typescript ../../openapi.json -o src/api-types.ts",
+    "build": "tsc -b tsconfig.json",
+    "lint": "eslint src",
+    "test": "echo \"No tests configured\"",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\""
+  },
+  "dependencies": {
+    "axios": "^1.7.2"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.4.0"
+  },
+  "license": "MIT"
+}

@@ -13,12 +13,12 @@ This service has its own `pyproject.toml` and `uv.lock` because:
 ## Architecture
 
 ```
-Browser / Bot / Worker
-        │
-        ▼
-   apps/api  ◄────►  PostgreSQL
-        │
-        ▼ (HTTP)
+Browser / Bot
+       │
+       ▼
+  services/api  ◄────►  PostgreSQL
+       │
+       ▼ (HTTP)
 services/extraction   ← YOU ARE HERE
 ```
 

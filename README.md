@@ -67,14 +67,17 @@ This repo is being rebooted: the goal is to replace the old Sidetrack code with 
 Sidetrack is organized as a small monorepo with multiple apps and shared packages:
 
 ```text
+services/
+  api/       # Backend API (FastAPI, PostgreSQL)
+  worker/    # Background jobs — Spotify/Last.fm sync, taste analysis (Python, RQ + APScheduler)
+  extraction/# GPU audio feature extraction (standalone Python project)
+
 apps/
   bot/       # Discord bot (Sidetrack Club automation)
-  api/       # Backend API (FastAPI or similar, Postgres)
   web/       # Web frontend (Next.js + Tailwind)
-  worker/    # Background jobs (sync & analysis)
 
 packages/
-  shared/    # Shared types, API client(s), common utilities
+  api-client/# Codegen'd TS types + typed API client shared by bot/web
 
 agents/
   core.md            # Infra/monorepo/env tasks
@@ -105,7 +108,7 @@ Core entities (see `agents/data-model.md` for details):
 - `ListenEvent` (scrobble-like events), `TrackFeatures`, `TasteProfile`.
 - Social: `Follow`, `Compatibility`, `UserRecommendation`.
 
-The backend (`apps/api`) is the single source of truth for all of this; the bot, web frontend, and workers all talk to it.
+The backend (`services/api`) is the single source of truth for all of this; the bot, web frontend, and workers all talk to it.
 
 ---
 
@@ -114,9 +117,9 @@ The backend (`apps/api`) is the single source of truth for all of this; the bot,
 > The repo is currently being refactored toward this stack. Some pieces may still be in flux.
 
 - **Backend API**: Python 3.11, FastAPI, SQLAlchemy, Postgres, Alembic. Managed by `uv` (hatchling build backend).
-- **Discord bot**: TypeScript (`discord.js`), using a small API client.
+- **Worker**: Python, RQ (Redis Queue) + APScheduler. Spotify/Last.fm sync, taste analysis.
+- **Discord bot**: TypeScript (`discord.js`), using a codegen'd API client.
 - **Web**: Next.js 14, React, TailwindCSS, React-chart library for visuals.
-- **Workers**: TypeScript, background sync and analysis jobs.
 - **Tooling**: Ruff (lint + format for Python), mypy, ESLint 9 (flat config) + Prettier (TypeScript), pre-commit.
 - **Infra**: Docker, docker-compose, Postgres, Redis. Node 22 LTS.
 
@@ -175,14 +178,14 @@ pnpm install
 uv sync --python 3.11 --extra api --extra dev
 
 ## Linting & formatting
-- Python lint: `uv run --frozen --extra api --extra dev ruff check apps/api apps/worker`
-- Python format: `uv run --frozen --extra api --extra dev ruff format apps/api apps/worker`
-- Python types: `uv run --frozen --extra api --extra dev mypy apps/api apps/worker`
+- Python lint: `uv run --frozen --extra api --extra dev ruff check services/api`
+- Python format: `uv run --frozen --extra api --extra dev ruff format services/api`
+- Python types: `uv run --frozen --extra api --extra dev mypy services/api`
 - JS/TS lint: `pnpm lint`
 - JS/TS format: `pnpm format`
 ```
 
-This repo uses a `pnpm` workspace (`pnpm-workspace.yaml`) that wires together `apps/web`, `apps/bot`, `packages/shared`, and future TypeScript packages.
+This repo uses a `pnpm` workspace (`pnpm-workspace.yaml`) that wires together `apps/web`, `apps/bot`, and `packages/api-client`.
 
 ### 2. Environment Variables
 
@@ -225,8 +228,7 @@ If you prefer manual runs in local environment:
 
 ```bash
 # In one terminal (API)
-cd apps/api
-uvicorn apps.api.main:create_app --factory --reload
+uvicorn services.api.main:create_app --factory --reload
 
 # In another (web)
 pnpm --filter @sidetrack/web run build
@@ -235,10 +237,6 @@ node apps/web/dist/index.js
 # In another (bot)
 pnpm --filter @sidetrack/bot run build
 SIDETRACK_API_BASE_URL=http://localhost:8000 node apps/bot/dist/index.js
-
-# In another (worker)
-pnpm --filter @sidetrack/worker run build
-SIDETRACK_API_BASE_URL=http://localhost:8000 node apps/worker/dist/index.js
 ```
 
 ---

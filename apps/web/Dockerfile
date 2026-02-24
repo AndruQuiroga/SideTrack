@@ -9,13 +9,12 @@ WORKDIR /app
 
 FROM base AS deps
 ENV NODE_ENV=development
-COPY package.json pnpm-workspace.yaml tsconfig.base.json ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
 COPY apps/web/package.json apps/web/package.json
 COPY apps/bot/package.json apps/bot/package.json
-COPY apps/worker/package.json apps/worker/package.json
-COPY packages/shared/package.json packages/shared/package.json
+COPY packages/api-client/package.json packages/api-client/package.json
 
-RUN pnpm install --ignore-scripts --frozen-lockfile=false
+RUN pnpm install --ignore-scripts --frozen-lockfile
 
 FROM deps AS build
 ENV NODE_ENV=production

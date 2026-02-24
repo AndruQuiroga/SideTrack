@@ -2,7 +2,7 @@
 
 import { signIn } from 'next-auth/react';
 import { useState } from 'react';
-import { requestIntegrationConnect } from '../../src/api/discover';
+import { requestIntegrationConnect } from '../lib/api/discover';
 import { showToast } from './toast';
 
 type Provider = 'discord' | 'spotify' | 'lastfm';
@@ -38,7 +38,7 @@ export function OAuthButton({ provider, label, userId, className = '' }: OAuthBu
       } else {
         showToast(`No redirect URL received for ${providerLabels[provider]}`, 'error');
       }
-    } catch (e) {
+    } catch {
       showToast(`Failed to start ${providerLabels[provider]} connect flow`, 'error');
     } finally {
       setLoading(false);

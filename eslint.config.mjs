@@ -15,4 +15,12 @@ export default tseslint.config(
   {
     ignores: ['**/node_modules/**', '**/.next/**', '**/dist/**', '**/build/**'],
   },
+  {
+    rules: {
+      '@typescript-eslint/no-empty-object-type': [
+        'error',
+        { allowInterfaces: 'with-single-extends' },
+      ],
+    },
+  },
 );

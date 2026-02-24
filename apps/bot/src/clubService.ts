@@ -14,7 +14,7 @@ import {
   WeekDetail,
   WeekUpdate,
   AlbumRead,
-} from '@sidetrack/shared';
+} from '@sidetrack/api-client';
 
 import { BotConfig } from './config';
 import { Logger } from './logger';

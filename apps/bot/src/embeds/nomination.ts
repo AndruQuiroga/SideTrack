@@ -1,5 +1,5 @@
 import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
-import { NominationRead, NominationWithStats, AlbumRead } from '@sidetrack/shared';
+import { NominationRead, NominationWithStats, AlbumRead } from '@sidetrack/api-client';
 import { createBaseEmbed, BRAND_COLORS, truncate } from './common';
 
 export interface NominationEmbedOptions {
@@ -25,9 +25,7 @@ export function buildNominationEmbed(options: NominationEmbedOptions): EmbedBuil
     ? `${albumTitle} — ${artistName} (${releaseYear})`
     : `${albumTitle} — ${artistName}`;
 
-  const embed = createBaseEmbed()
-    .setColor(BRAND_COLORS.nomination)
-    .setTitle(`🎵 ${titleLine}`);
+  const embed = createBaseEmbed().setColor(BRAND_COLORS.nomination).setTitle(`🎵 ${titleLine}`);
 
   if (coverUrl) {
     embed.setThumbnail(coverUrl);
@@ -124,10 +122,7 @@ export function buildNominationButtons(
 /**
  * Build a simple confirmation embed for nomination success.
  */
-export function buildNominationConfirmEmbed(
-  albumTitle: string,
-  artistName: string,
-): EmbedBuilder {
+export function buildNominationConfirmEmbed(albumTitle: string, artistName: string): EmbedBuilder {
   return createBaseEmbed()
     .setColor(BRAND_COLORS.success)
     .setTitle('✅ Nomination Submitted!')

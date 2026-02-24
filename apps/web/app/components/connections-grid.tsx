@@ -1,6 +1,6 @@
 'use client';
 
-import { requestIntegrationConnect } from '../../src/api/discover';
+import { requestIntegrationConnect } from '../lib/api/discover';
 import { showToast } from './toast';
 
 type Connection = {
@@ -49,7 +49,7 @@ export function ConnectionsGrid({
         showToast(`Opening ${key} connect…`, 'success');
         window.open(url, '_blank');
       }
-    } catch (e) {
+    } catch {
       showToast(`Failed to start ${key} connect flow`, 'error');
     }
   }

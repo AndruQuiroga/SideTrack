@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getServerSession } from 'next-auth/next';
 
-import { authOptions } from '../../lib/auth';
+import { authOptions } from '../lib/auth';
 import { PageShell } from '../components/page-shell';
 import { Card, SectionHeading } from '../components/ui';
 import { ConnectionsGrid } from '../components/connections-grid';

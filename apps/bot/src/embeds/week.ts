@@ -1,5 +1,5 @@
 import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
-import { WeekDetail } from '@sidetrack/shared';
+import { WeekDetail } from '@sidetrack/api-client';
 import { createBaseEmbed, BRAND_COLORS, formatWeekLabel, formatDiscordTimestamp } from './common';
 
 export interface WeekOverviewOptions {
@@ -98,8 +98,6 @@ export function buildWeekCompactEmbed(week: WeekDetail): EmbedBuilder {
     .setColor(week.winner_album_id ? BRAND_COLORS.winner : BRAND_COLORS.primary)
     .setTitle(weekLabel)
     .setDescription(
-      week.winner_album_id
-        ? '🏆 Winner announced'
-        : `${nominationCount} nominations`,
+      week.winner_album_id ? '🏆 Winner announced' : `${nominationCount} nominations`,
     );
 }

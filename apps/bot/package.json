@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@discordjs/rest": "^2.3.0",
-    "@sidetrack/shared": "workspace:*",
+    "@sidetrack/api-client": "workspace:*",
     "discord.js": "^14.16.3"
   }
 }

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { fetchWeekListWithFallback } from '../src/api/weeks';
+import { fetchWeekListWithFallback } from './lib/api/weeks';
 import { PageShell } from './components/page-shell';
 import { Card, SectionHeading } from './components/ui';
 import { RatingBadge } from './components/rating-badge';
@@ -54,9 +54,13 @@ export default async function Home() {
             </div>
             <SectionHeading eyebrow="Track" title="Your listening stats" />
             <p className="mt-3 text-sm text-slate-400">
-              Top artists, albums, genres over time. Mood and energy patterns from audio features. Beautiful graphs and timelines.
+              Top artists, albums, genres over time. Mood and energy patterns from audio features.
+              Beautiful graphs and timelines.
             </p>
-            <Link href="/u/demo" className="mt-4 inline-flex items-center gap-1 text-sm text-emerald-300 transition-colors hover:text-white">
+            <Link
+              href="/u/demo"
+              className="mt-4 inline-flex items-center gap-1 text-sm text-emerald-300 transition-colors hover:text-white"
+            >
               View demo profile <span aria-hidden>→</span>
             </Link>
           </div>
@@ -70,13 +74,20 @@ export default async function Home() {
             </div>
             <SectionHeading eyebrow="Connect" title="Social feed & matches" />
             <p className="mt-3 text-sm text-slate-400">
-              See what friends are listening to. Get taste compatibility scores. Create blend playlists together.
+              See what friends are listening to. Get taste compatibility scores. Create blend
+              playlists together.
             </p>
             <div className="mt-4 flex flex-wrap gap-3">
-              <Link href="/feed" className="text-sm text-emerald-300 transition-colors hover:text-white">
+              <Link
+                href="/feed"
+                className="text-sm text-emerald-300 transition-colors hover:text-white"
+              >
                 Open feed →
               </Link>
-              <Link href="/compare?userA=demo&userB=demo2" className="text-sm text-emerald-300 transition-colors hover:text-white">
+              <Link
+                href="/compare?userA=demo&userB=demo2"
+                className="text-sm text-emerald-300 transition-colors hover:text-white"
+              >
                 Try matching →
               </Link>
             </div>
@@ -91,9 +102,13 @@ export default async function Home() {
             </div>
             <SectionHeading eyebrow="Club" title="Weekly album picks" />
             <p className="mt-3 text-sm text-slate-400">
-              Browse our Discord album club archive. See winners, ratings, poll results, and join the listening sessions.
+              Browse our Discord album club archive. See winners, ratings, poll results, and join
+              the listening sessions.
             </p>
-            <Link href="/club" className="mt-4 inline-flex items-center gap-1 text-sm text-emerald-300 transition-colors hover:text-white">
+            <Link
+              href="/club"
+              className="mt-4 inline-flex items-center gap-1 text-sm text-emerald-300 transition-colors hover:text-white"
+            >
               Browse archive <span aria-hidden>→</span>
             </Link>
           </div>
@@ -112,15 +127,23 @@ export default async function Home() {
                   {latestWeek.nominations[0]?.pitch ?? 'Winner pending'}
                 </p>
                 <div className="flex flex-wrap items-center gap-2 text-xs">
-                  {[latestWeek.nominations[0]?.genre, latestWeek.nominations[0]?.decade, latestWeek.nominations[0]?.country]
+                  {[
+                    latestWeek.nominations[0]?.genre,
+                    latestWeek.nominations[0]?.decade,
+                    latestWeek.nominations[0]?.country,
+                  ]
                     .filter(Boolean)
                     .map((tag) => (
-                      <span key={tag as string} className="rounded-full bg-slate-800/80 px-3 py-1 text-slate-300">
+                      <span
+                        key={tag as string}
+                        className="rounded-full bg-slate-800/80 px-3 py-1 text-slate-300"
+                      >
                         {tag as string}
                       </span>
                     ))}
                   <span className="rounded-full bg-slate-800/60 px-3 py-1 text-slate-400">
-                    {latestWeek.aggregates?.vote_count ?? 0} votes · {latestWeek.aggregates?.rating_count ?? 0} ratings
+                    {latestWeek.aggregates?.vote_count ?? 0} votes ·{' '}
+                    {latestWeek.aggregates?.rating_count ?? 0} ratings
                   </span>
                 </div>
               </div>
@@ -147,8 +170,8 @@ export default async function Home() {
           <div>
             <SectionHeading eyebrow="Get started" title="Link your music services" />
             <p className="mt-2 text-sm text-slate-400">
-              Connect Spotify or Last.fm to unlock listening stats, taste profiles, and personalized recommendations.
-              Discord linking enables club participation.
+              Connect Spotify or Last.fm to unlock listening stats, taste profiles, and personalized
+              recommendations. Discord linking enables club participation.
             </p>
           </div>
           <div className="flex items-center">

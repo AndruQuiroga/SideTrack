@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 
-import { fetchWeekDetailWithFallback } from '../../../../src/api/weeks';
+import { fetchWeekDetailWithFallback } from '../../../lib/api/weeks';
 import { WeekDetailPanel } from '../../../components/week-detail';
 
 interface WeekDetailPageProps {

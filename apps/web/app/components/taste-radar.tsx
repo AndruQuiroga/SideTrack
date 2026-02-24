@@ -1,5 +1,5 @@
 import React from 'react';
-import type { TasteMetric } from '@sidetrack/shared';
+import type { TasteMetric } from '@sidetrack/api-client';
 
 type Axis = { id: string; label: string; value: number };
 
@@ -32,12 +32,17 @@ export function TasteRadar({ metrics }: { metrics: TasteMetric[] }) {
   // Pick up to 3 axes that most UIs recognize
   const energy = metrics.find((m) => m.id === 'energy');
   const valence = metrics.find((m) => m.id === 'valence') ?? metrics.find((m) => m.id === 'mood');
-  const dance = metrics.find((m) => m.id === 'danceability') ?? metrics.find((m) => m.id === 'acousticness');
+  const dance =
+    metrics.find((m) => m.id === 'danceability') ?? metrics.find((m) => m.id === 'acousticness');
 
   const axes: Axis[] = [
     { id: 'energy', label: 'Energy', value: normalizeMetric('energy', energy) },
     { id: 'valence', label: 'Valence', value: normalizeMetric('valence', valence) },
-    { id: 'danceability', label: dance?.id === 'acousticness' ? 'Acousticness' : 'Danceability', value: normalizeMetric(dance?.id ?? 'danceability', dance) },
+    {
+      id: 'danceability',
+      label: dance?.id === 'acousticness' ? 'Acousticness' : 'Danceability',
+      value: normalizeMetric(dance?.id ?? 'danceability', dance),
+    },
   ];
 
   const size = 140;
@@ -58,14 +63,23 @@ export function TasteRadar({ metrics }: { metrics: TasteMetric[] }) {
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="text-emerald-300">
         {/* grid */}
         {[0.33, 0.66, 1].map((f) => (
-          <circle key={f} cx={center} cy={center} r={radius * f} fill="none" stroke="rgba(148,163,184,0.2)" />
+          <circle
+            key={f}
+            cx={center}
+            cy={center}
+            r={radius * f}
+            fill="none"
+            stroke="rgba(148,163,184,0.2)"
+          />
         ))}
         {/* axes */}
         {axes.map((_, i) => {
           const angle = ((Math.PI * 2) / axes.length) * i - Math.PI / 2;
           const x = center + radius * Math.cos(angle);
           const y = center + radius * Math.sin(angle);
-          return <line key={i} x1={center} y1={center} x2={x} y2={y} stroke="rgba(148,163,184,0.2)" />;
+          return (
+            <line key={i} x1={center} y1={center} x2={x} y2={y} stroke="rgba(148,163,184,0.2)" />
+          );
         })}
         {/* shape */}
         <polygon points={points} fill="rgba(16,185,129,0.25)" stroke="rgba(16,185,129,0.9)" />
@@ -74,7 +88,9 @@ export function TasteRadar({ metrics }: { metrics: TasteMetric[] }) {
         {axes.map((a) => (
           <li key={a.id} className="flex items-center gap-2">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" /> {a.label}
-            <span className="ml-2 rounded-full bg-slate-800 px-2 py-0.5 text-[0.65rem]">{Math.round(a.value * 100)}%</span>
+            <span className="ml-2 rounded-full bg-slate-800 px-2 py-0.5 text-[0.65rem]">
+              {Math.round(a.value * 100)}%
+            </span>
           </li>
         ))}
       </ul>

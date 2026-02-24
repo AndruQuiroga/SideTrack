@@ -18,7 +18,6 @@ Assume **Next.js + React + TailwindCSS** as the base stack.
 From the high-level design:
 
 - The site has two main faces:
-
   1. **Public Archive**
      - Winners gallery by week.
      - Week detail pages with nominees, poll results, ratings, and highlights.
@@ -27,7 +26,7 @@ From the high-level design:
      - Friend/follow network.
      - Feeds, compatibility/profiles, and recommendations.
 
-- The web app should **talk only to `apps/api`** (no direct DB or external APIs).
+- The web app should **talk only to `services/api`** (no direct DB or external APIs).
 
 ---
 
@@ -62,7 +61,7 @@ From the high-level design:
 
 **Steps:**
 
-1. Reuse `packages/shared` HTTP client where possible.
+1. Reuse `packages/api-client` HTTP client where possible.
 2. Implement functions for:
    - `listWeeks`, `getWeek(id)`
    - `getWeekRatings(id)`, `getWeekSummary(id)`

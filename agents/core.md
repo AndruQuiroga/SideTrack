@@ -6,14 +6,18 @@ Define tasks for setting up and maintaining the **Sidetrack monorepo**, shared c
 
 ## Context
 
+> **Active refactor:** See `agents/refactor-tracker.md` for the ongoing
+> restructure. The API has moved to `services/api/`, workers consolidated
+> into `services/worker/`, and `packages/shared` is now `packages/api-client`.
+
 We want a single repo containing:
 
-- `apps/bot` — Discord bot
-- `apps/api` — Backend API
-- `apps/web` — Web frontend (Next.js)
-- `apps/worker` — Background jobs (sync & analysis)
-- `packages/shared` — Shared types, utilities, and SDKs
+- `services/api` — Backend API (Python/FastAPI)
+- `services/worker` — Background jobs: Spotify/Last.fm sync, taste analysis (Python/RQ + APScheduler)
 - `services/extraction` — GPU-heavy audio extraction (standalone Python project)
+- `apps/bot` — Discord bot (TypeScript)
+- `apps/web` — Web frontend (Next.js)
+- `packages/api-client` — Codegen'd TS types + typed API client shared by bot/web
 
 We prefer a workspace‑friendly package manager such as **pnpm** (for TS parts) and a pattern that plays nicely with Python services (via Docker and shared configs).
 
@@ -38,11 +42,11 @@ Heavy/GPU Python packages (tensorflow, librosa, openl3, scipy, torch, etc.) must
 **Steps (high level):**
 
 1. Create the folder structure:
+   - `services/api/`
+   - `services/worker/`
    - `apps/bot/`
-   - `apps/api/`
    - `apps/web/`
-   - `apps/worker/`
-   - `packages/shared/`
+   - `packages/api-client/`
 
 2. Add workspace support:
    - If using pnpm, create a root `pnpm-workspace.yaml` listing `apps/*` and `packages/*`.
@@ -112,8 +116,8 @@ Heavy/GPU Python packages (tensorflow, librosa, openl3, scipy, torch, etc.) must
 1. Add `docker-compose.yml` with services:
    - `db`: Postgres (with volume for data).
    - `redis`: Redis (for queues/cache).
-   - `api`: builds `apps/api`.
-   - `worker`: builds `apps/worker`.
+   - `api`: builds `services/api`.
+   - `worker`: builds `services/worker`.
    - `bot`: builds `apps/bot`.
    - `web`: builds `apps/web`.
 
@@ -164,13 +168,13 @@ Heavy/GPU Python packages (tensorflow, librosa, openl3, scipy, torch, etc.) must
 
 **Context:**
 
-- We want bot, web, and worker to share:
+- We want bot, web to share:
   - Type definitions for entities like `Week`, `Nomination`, `Rating`, `ListenEvent`.
-  - API client code for calling the backend.
+  - A typed API client for calling the backend.
 
 **Steps:**
 
-1. Create `packages/shared/src/` and initialize a TypeScript package.
+1. Create `packages/api-client/src/` and initialize a TypeScript package.
 2. Define base interfaces/types for:
    - User, LinkedAccount, Album, Track, Week, Nomination, Vote, Rating, ListenEvent, TasteProfile.
 3. Add a basic HTTP client wrapper:
@@ -179,5 +183,5 @@ Heavy/GPU Python packages (tensorflow, librosa, openl3, scipy, torch, etc.) must
 
 **Acceptance Criteria:**
 
-- `packages/shared` builds successfully.
+- `packages/api-client` builds successfully.
 - Bot and web can import basic shared types without circular dependencies.

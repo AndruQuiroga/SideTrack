@@ -1,15 +1,14 @@
 from __future__ import annotations
 
-from logging.config import fileConfig
+import os
 import pathlib
 import sys
+from logging.config import fileConfig
 
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-import os
-from sqlalchemy.engine import make_url
-from apps.api.models import all_metadata  # type: ignore
+from services.api.models import all_metadata  # type: ignore
 
 BASE_DIR = pathlib.Path(__file__).resolve().parents[1]
 sys.path.append(str(BASE_DIR))

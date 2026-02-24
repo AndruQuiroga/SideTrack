@@ -4,14 +4,23 @@ import Link from 'next/link';
 import { PageShell } from '../components/page-shell';
 import { Card, SectionHeading } from '../components/ui';
 import { RatingBadge } from '../components/rating-badge';
-import { fetchRecommendations, fetchTrending, type RecommendationItem, type TrendingItem } from '../../src/api/discover';
+import {
+  fetchRecommendations,
+  fetchTrending,
+  type RecommendationItem,
+  type TrendingItem,
+} from '../lib/api/discover';
 
 export const metadata: Metadata = {
   title: 'Sidetrack — Discover',
   description: 'Fresh recommendations tailored to your taste, plus trending picks from the club.',
 };
 
-async function getData(): Promise<{ recs: RecommendationItem[]; trending: TrendingItem[]; source: 'api' | 'fallback' }> {
+async function getData(): Promise<{
+  recs: RecommendationItem[];
+  trending: TrendingItem[];
+  source: 'api' | 'fallback';
+}> {
   try {
     const [recs, trending] = await Promise.all([
       fetchRecommendations('demo'),
@@ -22,16 +31,67 @@ async function getData(): Promise<{ recs: RecommendationItem[]; trending: Trendi
     // Fallback demo content
     return {
       recs: [
-        { type: 'album', id: 'a2', title: 'In Rainbows', artist_name: 'Radiohead', reason: 'valence match' },
-        { type: 'album', id: 'a1', title: 'Random Access Memories', artist_name: 'Daft Punk', reason: 'danceability' },
-        { type: 'track', id: 't1', title: 'Get Lucky', artist_name: 'Daft Punk', album_title: 'Random Access Memories' },
-        { type: 'album', id: 'a3', title: 'Vespertine', artist_name: 'Björk', reason: 'mood similarity' },
-        { type: 'album', id: 'a4', title: 'Endtroducing...', artist_name: 'DJ Shadow', reason: 'tempo match' },
+        {
+          type: 'album',
+          id: 'a2',
+          title: 'In Rainbows',
+          artist_name: 'Radiohead',
+          reason: 'valence match',
+        },
+        {
+          type: 'album',
+          id: 'a1',
+          title: 'Random Access Memories',
+          artist_name: 'Daft Punk',
+          reason: 'danceability',
+        },
+        {
+          type: 'track',
+          id: 't1',
+          title: 'Get Lucky',
+          artist_name: 'Daft Punk',
+          album_title: 'Random Access Memories',
+        },
+        {
+          type: 'album',
+          id: 'a3',
+          title: 'Vespertine',
+          artist_name: 'Björk',
+          reason: 'mood similarity',
+        },
+        {
+          type: 'album',
+          id: 'a4',
+          title: 'Endtroducing...',
+          artist_name: 'DJ Shadow',
+          reason: 'tempo match',
+        },
       ],
       trending: [
-        { type: 'album', id: 'album-1', title: 'Spirit of Eden', artist_name: 'Talk Talk', average: 4.37, count: 24 },
-        { type: 'album', id: 'album-2', title: 'Visions', artist_name: 'Grimes', average: 3.9, count: 18 },
-        { type: 'album', id: 'album-3', title: 'Heat Rush', artist_name: 'Cloudy Friends', average: 3.6, count: 11 },
+        {
+          type: 'album',
+          id: 'album-1',
+          title: 'Spirit of Eden',
+          artist_name: 'Talk Talk',
+          average: 4.37,
+          count: 24,
+        },
+        {
+          type: 'album',
+          id: 'album-2',
+          title: 'Visions',
+          artist_name: 'Grimes',
+          average: 3.9,
+          count: 18,
+        },
+        {
+          type: 'album',
+          id: 'album-3',
+          title: 'Heat Rush',
+          artist_name: 'Cloudy Friends',
+          average: 3.6,
+          count: 11,
+        },
       ],
       source: 'fallback',
     };
@@ -40,7 +100,7 @@ async function getData(): Promise<{ recs: RecommendationItem[]; trending: Trendi
 
 function RecommendationCard({ item, index }: { item: RecommendationItem; index: number }) {
   const isAlbum = item.type === 'album';
-  
+
   return (
     <div className="group relative overflow-hidden rounded-2xl border border-slate-800/60 bg-gradient-to-br from-slate-900/80 to-slate-900/40 p-4 backdrop-blur-sm transition-all hover:border-slate-700/80 hover:from-slate-900/90 hover:to-slate-800/50">
       <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-gradient-to-br from-purple-500/10 via-sky-500/5 to-transparent blur-2xl transition-all group-hover:from-purple-500/15" />
@@ -83,7 +143,9 @@ function TrendingCard({ item, rank }: { item: TrendingItem; rank: number }) {
       </div>
       <div className="text-right">
         {item.average != null && <RatingBadge value={item.average} />}
-        {item.count != null && <p className="mt-1 text-[0.65rem] text-slate-500">{item.count} ratings</p>}
+        {item.count != null && (
+          <p className="mt-1 text-[0.65rem] text-slate-500">{item.count} ratings</p>
+        )}
       </div>
     </div>
   );
@@ -91,7 +153,7 @@ function TrendingCard({ item, rank }: { item: TrendingItem; rank: number }) {
 
 export default async function DiscoverPage() {
   const { recs, trending, source } = await getData();
-  
+
   return (
     <PageShell
       title="Discover"
@@ -109,8 +171,13 @@ export default async function DiscoverPage() {
             </div>
           ) : (
             <div className="rounded-2xl border border-slate-800/60 bg-slate-900/40 p-6 text-center">
-              <p className="text-sm text-slate-400">Link your Spotify or Last.fm to get personalized recommendations.</p>
-              <Link href="/settings" className="mt-2 inline-block text-sm text-emerald-300 hover:text-white">
+              <p className="text-sm text-slate-400">
+                Link your Spotify or Last.fm to get personalized recommendations.
+              </p>
+              <Link
+                href="/settings"
+                className="mt-2 inline-block text-sm text-emerald-300 hover:text-white"
+              >
                 Go to settings →
               </Link>
             </div>

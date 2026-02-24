@@ -6,19 +6,20 @@ Sidetrack is a monorepo combining a **Discord album club bot**, a **public web a
 
 ## Architecture
 
-Four apps talk through a central FastAPI backend:
+Services talk through a central FastAPI backend:
 
-- **`apps/api`** — Python/FastAPI, SQLAlchemy, PostgreSQL. Source of truth for all data.
+- **`services/api`** — Python/FastAPI, SQLAlchemy, PostgreSQL. Source of truth for all data.
+- **`services/worker`** — Python. Background jobs (RQ + APScheduler) for Spotify/Last.fm sync and taste analysis.
+- **`services/extraction`** — Python/FastAPI, GPU. Audio feature extraction (isolated, heavy deps).
 - **`apps/bot`** — TypeScript, discord.js. Orchestrates weekly club cycle on Discord, syncs to API.
 - **`apps/web`** — Next.js 14, React, TailwindCSS. Public archive + authenticated social UI. Talks only to the API.
-- **`apps/worker`** — TypeScript. Background jobs for Spotify/Last.fm sync and taste analysis.
-- **`packages/shared`** — Shared TS types and API client utilities consumed by bot/web/worker.
+- **`packages/api-client`** — Shared TS types (codegen'd from OpenAPI) and API client consumed by bot/web.
 
-Data flows: Discord → Bot → API → DB. Spotify/Last.fm → Worker → API → DB. Web → API (read).
+Data flows: Discord → Bot → API → DB. Spotify/Last.fm → Worker → DB. Web → API (read).
 
 ## Build, Test, and Lint
 
-### Python (API + Worker backend)
+### Python (API + Worker)
 
 All Python commands use `uv` with locked deps:
 
@@ -39,8 +40,8 @@ make test.all
 make test.unit
 
 # Run a single test file or test function
-$UV_RUN pytest apps/api/path/to/test_file.py -m "unit"
-$UV_RUN pytest apps/api/path/to/test_file.py::test_function_name
+$UV_RUN pytest services/api/path/to/test_file.py -m "unit"
+$UV_RUN pytest services/api/path/to/test_file.py::test_function_name
 
 # Run by marker: unit, integration, contract, slow, gpu, e2e
 $UV_RUN pytest -m "integration"
@@ -48,7 +49,7 @@ $UV_RUN pytest -m "integration"
 
 pytest is configured with `--strict-markers -x` (fail-fast) and excludes `contract` tests by default.
 
-### TypeScript (Bot, Web, Worker, Shared)
+### TypeScript (Bot, Web, API Client)
 
 ```bash
 # Install deps
@@ -74,7 +75,7 @@ docker compose up --build          # All services (db, redis, api, web, bot, wor
 docker compose up --build api web  # Just the services you're working on
 docker compose logs -f api         # Tail logs for a specific service
 docker compose down                # Stop and remove containers
-docker build -f apps/api/Dockerfile -t sidetrack/api:dev .  # Build a single image
+docker build -f services/api/Dockerfile -t sidetrack/api:dev .  # Build a single image
 ```
 
 The API is at `http://localhost:8000` and the web app at `http://localhost:3000` once containers are healthy.
@@ -85,7 +86,7 @@ GitHub Actions (`.github/workflows/ci.yml`) runs on push to `main` and all PRs:
 
 - Python: `uv run` for ruff, mypy, and pytest (no nox)
 - TypeScript: `pnpm -r run lint && pnpm -r run test` with `--frozen-lockfile`
-- Docker: builds all four app images
+- Docker: builds API, bot, and web images
 
 ## API Conventions
 
@@ -93,29 +94,29 @@ GitHub Actions (`.github/workflows/ci.yml`) runs on push to `main` and all PRs:
 
 The API follows a strict three-layer pattern:
 
-1. **Models** (`apps/api/models/`) — SQLAlchemy ORM classes inheriting from `apps.api.models.base.Base`. Organized by domain: `user.py`, `music.py`, `club.py`, `listening.py`, `social.py`.
-2. **Schemas** (`apps/api/schemas/core.py`) — Pydantic v2 models for request/response validation. Follow `{Entity}Base` / `{Entity}Create` / `{Entity}Read` naming. All schemas inherit from `OrmSchema` (which sets `model_config = ConfigDict(from_attributes=True)`).
-3. **Routes** (`apps/api/routes/`) — One file per resource. Each exports a `router` that gets registered in `routes/__init__.py` → `register_routes()`.
+1. **Models** (`services/api/models/`) — SQLAlchemy ORM classes inheriting from `services.api.models.base.Base`. Organized by domain: `user.py`, `music.py`, `club.py`, `listening.py`, `social.py`.
+2. **Schemas** (`services/api/schemas/core.py`) — Pydantic v2 models for request/response validation. Follow `{Entity}Base` / `{Entity}Create` / `{Entity}Read` naming. All schemas inherit from `OrmSchema` (which sets `model_config = ConfigDict(from_attributes=True)`).
+3. **Routes** (`services/api/routes/`) — One file per resource. Each exports a `router` that gets registered in `routes/__init__.py` → `register_routes()`.
 
 When adding a new entity: add the model, create schemas, add a route file, and register it in `routes/__init__.py`.
 
 ### Database & Migrations
 
 - Alembic manages migrations in `migrations/versions/`.
-- `migrations/env.py` imports `apps.api.models.all_metadata` to detect model changes.
+- `migrations/env.py` imports `services.api.models.all_metadata` to detect model changes.
 - `DATABASE_URL` env var drives both the API and Alembic (uses `postgresql+psycopg://` driver).
 
 ### App Factory
 
-The API uses a factory pattern: `apps.api.main:create_app`. Run locally with:
+The API uses a factory pattern: `services.api.main:create_app`. Run locally with:
 
 ```bash
-uvicorn apps.api.main:create_app --factory --reload
+uvicorn services.api.main:create_app --factory --reload
 ```
 
 ### Configuration
 
-Settings are loaded via `pydantic-settings` (`apps/api/config.py`) from environment variables and `.env`. Use `get_settings()` (cached) to access them.
+Settings are loaded via `pydantic-settings` (`services/api/config.py`) from environment variables and `.env`. Use `get_settings()` (cached) to access them.
 
 ## Code Style
 

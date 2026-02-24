@@ -1,5 +1,5 @@
 import { Message, ChannelType, Client } from 'discord.js';
-import { NominationCreate, RatingCreate } from '@sidetrack/shared';
+import { NominationCreate, RatingCreate } from '@sidetrack/api-client';
 
 import { ClubSyncService } from '../clubService';
 import { BotConfig } from '../config';

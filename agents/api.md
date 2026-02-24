@@ -16,6 +16,9 @@ Assume a **FastAPI + PostgreSQL** stack unless explicitly changed.
 
 ## Context Highlights
 
+> **Active refactor:** See `agents/refactor-tracker.md` for in-progress architectural
+> changes affecting routes, schemas, services, and the new RQ job infrastructure.
+
 Key ideas from the high-level design:
 
 - The API is the **single source of truth** for:
@@ -45,7 +48,7 @@ Key ideas from the high-level design:
 
 **Steps:**
 
-1. Initialize a FastAPI app in `apps/api`:
+1. Initialize a FastAPI app in `services/api`:
    - Entrypoint (e.g. `main.py`) with:
      - `/health` endpoint.
      - Version info.

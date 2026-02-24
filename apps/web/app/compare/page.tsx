@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
 
-import { fetchCompatibility } from '../../src/api/client';
+import { fetchCompatibility } from '../lib/api/client';
 import { PageShell } from '../components/page-shell';
 import { Card, SectionHeading } from '../components/ui';
 
@@ -26,13 +26,15 @@ function MatchScore({ score }: { score: number }) {
     <div className="relative">
       <div className="flex h-32 w-32 items-center justify-center rounded-full border-4 border-slate-800/80 bg-gradient-to-br from-slate-900/80 to-slate-900/50">
         <div className="text-center">
-          <span className={`bg-gradient-to-r ${getColor()} bg-clip-text text-4xl font-bold text-transparent`}>
+          <span
+            className={`bg-gradient-to-r ${getColor()} bg-clip-text text-4xl font-bold text-transparent`}
+          >
             {Math.round(score)}
           </span>
           <span className="text-2xl text-slate-400">%</span>
         </div>
       </div>
-      <div 
+      <div
         className={`absolute inset-0 rounded-full bg-gradient-to-r ${getColor()} opacity-20 blur-xl`}
       />
     </div>
@@ -60,12 +62,15 @@ async function CompatibilityResult({ userA, userB }: { userA: string; userB: str
         <div className="absolute -left-20 -top-20 h-40 w-40 rounded-full bg-gradient-to-br from-purple-500/20 via-sky-500/10 to-transparent blur-3xl" />
         <div className="relative flex flex-col items-center gap-6 md:flex-row md:items-start md:justify-between">
           <div className="text-center md:text-left">
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Taste match</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+              Taste match
+            </p>
             <h2 className="mt-1 text-2xl font-bold text-white">
               {userA} <span className="text-slate-500">×</span> {userB}
             </h2>
             <p className="mt-3 max-w-md text-sm text-slate-400">
-              {result.explanation ?? 'Based on shared listening patterns, genre preferences, and mood similarities.'}
+              {result.explanation ??
+                'Based on shared listening patterns, genre preferences, and mood similarities.'}
             </p>
           </div>
           <MatchScore score={result.score} />
@@ -107,17 +112,28 @@ async function CompatibilityResult({ userA, userB }: { userA: string; userB: str
         <div className="grid gap-3 md:grid-cols-3">
           <div className="rounded-xl bg-slate-900/50 p-4">
             <p className="text-sm font-semibold text-white">🎧 Create a blend</p>
-            <p className="mt-1 text-xs text-slate-400">Generate a playlist mixing both of your tastes.</p>
-            <Link href={`/blend?userA=${userA}&userB=${userB}`} className="mt-2 inline-block text-xs text-emerald-300 hover:text-white">
+            <p className="mt-1 text-xs text-slate-400">
+              Generate a playlist mixing both of your tastes.
+            </p>
+            <Link
+              href={`/blend?userA=${userA}&userB=${userB}`}
+              className="mt-2 inline-block text-xs text-emerald-300 hover:text-white"
+            >
               Try it →
             </Link>
           </div>
           <div className="rounded-xl bg-slate-900/50 p-4">
             <p className="text-sm font-semibold text-white">👀 View profiles</p>
-            <p className="mt-1 text-xs text-slate-400">See each person's full listening stats and top picks.</p>
+            <p className="mt-1 text-xs text-slate-400">
+              See each person's full listening stats and top picks.
+            </p>
             <div className="mt-2 flex gap-2 text-xs">
-              <Link href={`/u/${userA}`} className="text-emerald-300 hover:text-white">{userA} →</Link>
-              <Link href={`/u/${userB}`} className="text-emerald-300 hover:text-white">{userB} →</Link>
+              <Link href={`/u/${userA}`} className="text-emerald-300 hover:text-white">
+                {userA} →
+              </Link>
+              <Link href={`/u/${userB}`} className="text-emerald-300 hover:text-white">
+                {userB} →
+              </Link>
             </div>
           </div>
           <div className="rounded-xl bg-slate-900/50 p-4">
@@ -161,7 +177,11 @@ export default function ComparePage({ searchParams }: ComparePageProps) {
           <div>
             <p className="text-lg font-semibold text-white">Select two users to compare</p>
             <p className="mt-1 text-sm text-slate-400">
-              Add <code className="rounded bg-slate-800 px-1.5 py-0.5 text-xs">?userA=name&userB=name</code> to the URL
+              Add{' '}
+              <code className="rounded bg-slate-800 px-1.5 py-0.5 text-xs">
+                ?userA=name&userB=name
+              </code>{' '}
+              to the URL
             </p>
           </div>
           <Link

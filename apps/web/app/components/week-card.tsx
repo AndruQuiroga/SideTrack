@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { WeekDetailWithRatings } from '../../src/api/weeks';
+import { WeekDetailWithRatings } from '../lib/api/weeks';
 import { RatingBadge } from './rating-badge';
 
 interface WeekCardProps {
@@ -54,7 +54,9 @@ export function WeekCard({ week }: WeekCardProps) {
         <div className="flex-1 space-y-2">
           <div className="flex items-start justify-between gap-2">
             <div className="space-y-0.5">
-              <p className="text-xs uppercase tracking-wide text-slate-400">{formatDate(week.discussion_at ?? week.created_at)}</p>
+              <p className="text-xs uppercase tracking-wide text-slate-400">
+                {formatDate(week.discussion_at ?? week.created_at)}
+              </p>
               <h3 className="text-base font-semibold text-slate-50">{album}</h3>
               <p className="text-xs text-slate-300">{artist || 'Queued to win'}</p>
             </div>
@@ -80,7 +82,11 @@ export function WeekCard({ week }: WeekCardProps) {
                 {tag}
               </span>
             ))}
-            {!tags.length && <span className="rounded-full bg-slate-900/60 px-2.5 py-1 text-slate-500">Tags incoming</span>}
+            {!tags.length && (
+              <span className="rounded-full bg-slate-900/60 px-2.5 py-1 text-slate-500">
+                Tags incoming
+              </span>
+            )}
           </div>
         </div>
       </div>

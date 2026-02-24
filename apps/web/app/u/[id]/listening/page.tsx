@@ -1,7 +1,7 @@
 import Link from 'next/link';
-import type { RecentListen } from '@sidetrack/shared';
+import type { RecentListen } from '@sidetrack/api-client';
 
-import { createWebApiClient } from '../../../../src/api/client';
+import { createWebApiClient } from '../../../lib/api/client';
 import { PageShell } from '../../../components/page-shell';
 import { Card, SectionHeading } from '../../../components/ui';
 

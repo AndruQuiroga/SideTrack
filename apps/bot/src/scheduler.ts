@@ -1,5 +1,5 @@
 import { Client, ChannelType, TextChannel, ThreadChannel } from 'discord.js';
-import { WeekDetail } from '@sidetrack/shared';
+import { WeekDetail } from '@sidetrack/api-client';
 
 import { ClubSyncService } from './clubService';
 import { Logger } from './logger';

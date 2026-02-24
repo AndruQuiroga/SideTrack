@@ -10,17 +10,27 @@ Define tasks for background workers that:
 
 Workers should keep the API responsive by handling long-running and periodic tasks.
 
-Assume Python workers using the same stack as the API (FastAPI + SQLAlchemy) with a queue system (e.g. RQ, Celery) backed by Redis.
+The worker is a **Python service** at `services/worker/` using:
+
+- **APScheduler** for periodic tasks (sync, now-playing, feature population).
+- **RQ** for async job dispatch (Last.fm ingest, taste recompute).
+- Shares DB models and engine with `services/api` via direct imports.
+- Writes directly to PostgreSQL — no HTTP round-trips to the API.
 
 ---
 
 ## Context Highlights
 
+> **Restructure complete:** The TS worker (`apps/worker/`) has been fully replaced
+> by a Python worker at `services/worker/`. All Spotify sync, now-playing sweeps,
+> and audio feature population now run via APScheduler. The separate `rq-worker`
+> service has been merged into the same process.
+
 From the design:
 
 - Listening data comes from external services and should be pulled periodically.
 - Analysis (taste profiling, recommendations) is computationally heavier and should **not** run in the main request/response path.
-- Workers should use the same data models or an internal client to talk to the API/DB.
+- The worker uses the same SQLAlchemy models as the API for direct DB access.
 
 ---
 

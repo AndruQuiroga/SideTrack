@@ -23,7 +23,7 @@ import {
   RatingCreate,
   AlbumRead,
   WeekDetail,
-} from '@sidetrack/shared';
+} from '@sidetrack/api-client';
 import {
   pingCommand,
   stWeekCommand,

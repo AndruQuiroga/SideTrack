@@ -93,7 +93,7 @@ The system is broken into several cooperative services:
   - Orchestrates the weekly album cycle (threads, polls, reminders, ratings).
   - Syncs all structured data (nominations, votes, ratings, schedule) to the backend API.
 
-- **`apps/api` – Backend API**
+- **`services/api` – Backend API**
   - Authoritative source of truth (PostgreSQL).
   - Manages users, linked accounts (Discord, Spotify, Last.fm), albums, tracks, listens, and taste profiles.
   - Exposes endpoints used by:
@@ -102,20 +102,26 @@ The system is broken into several cooperative services:
     - Background workers (sync jobs, analysis orchestration).
 
 - **`apps/web` – Web Frontend**
-  - A sleek Next.js (or similar) app for:
+  - Next.js (App Router) + React + TailwindCSS.
     - Public club archive.
     - Authenticated social/music‑tracking experience.
-  - Talks only to `apps/api` (no direct DB/external API access).
+  - Uses `app/` directory (App Router); utilities in `app/lib/`, components in `app/components/`.
+  - Talks only to `services/api` (no direct DB/external API access).
 
-- **`apps/worker` – Background Jobs**
+- **`services/worker` – Background Jobs**
+  - Python-based worker using APScheduler for periodic tasks and RQ for async jobs.
   - Periodically syncs listening data from Spotify/Last.fm.
   - Runs batch computations for stats, taste profiles, and recommendations.
-  - Cleans up old data and handles slow/expensive tasks outside the request/response path.
+  - Writes directly to the shared PostgreSQL database (same models as the API).
 
-- **`packages/shared` – Shared Libraries**
-  - Shared TypeScript/Python types (e.g. data contracts for weeks, nominations, listens).
-  - API client utilities for bot/web/worker.
-  - Shared config and constants (e.g. rating scale, poll scoring).
+- **`packages/api-client` – Typed API Client**
+  - Codegen'd TypeScript types from OpenAPI spec (`openapi-typescript`).
+  - Typed API client shared by bot and web via `@sidetrack/api-client`.
+
+- **`services/extraction` – Audio Feature Extraction**
+  - Standalone Python/FastAPI service for GPU-heavy audio analysis (librosa, openl3).
+  - Has its own `pyproject.toml` and `uv.lock` (not a uv workspace member).
+  - Communicates with the API over HTTP; deploys independently.
 
 - **External Systems**
   - **Discord API** – events, messages, threads, user IDs.
@@ -202,10 +208,10 @@ The system is broken into several cooperative services:
 These assumptions are here to align agents; they can be adjusted if needed, but stay consistent within a pass:
 
 - **Language choices**
-  - Backend/API: Python with FastAPI (preferred) or Node/TypeScript with a solid framework.
-  - Bot: TypeScript (`discord.js`) or Python (`discord.py`), but keep it consistent with chosen stack.
+  - Backend/API: Python with FastAPI + SQLAlchemy.
+  - Bot: TypeScript with `discord.js`.
   - Frontend: Next.js + React + TailwindCSS.
-  - Workers: Same language as backend to share models and logic.
+  - Workers: Python with APScheduler (periodic tasks) + RQ (async jobs).
 
 - **Data storage**
   - Primary DB: PostgreSQL.
@@ -234,6 +240,10 @@ Each subsystem has its own task document tailored for agents:
 - `agents/web.md` — Next.js frontend (archive + social UI).
 - `agents/worker.md` — background jobs for sync and analysis.
 - `agents/analysis.md` — taste profiling, similarity, recommendations.
+- `agents/data-model.md` — canonical schema and migration tasks.
+- `agents/refactor-tracker.md` — Architecture refactor roadmap and progress tracker.
+  Contains phased work items from the 2026-02 audit. Agents should check this file
+  before starting work to avoid conflicts and understand current priorities.
 
 Each file contains:
 

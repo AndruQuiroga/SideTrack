@@ -23,3 +23,6 @@ dist/
 
 # TypeScript build info
 *.tsbuildinfo
+
+# Generated artifacts
+openapi.json

@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ListeningTimelinePoint } from '@sidetrack/shared';
+import { ListeningTimelinePoint } from '@sidetrack/api-client';
 
-import { fetchProfileForServer } from '../../../src/api/profile';
+import { fetchProfileForServer } from '../../lib/api/profile';
 import { Card, Pill, SectionHeading } from '../../components/ui';
 import { TasteRadar } from '../../components/taste-radar';
 import { PageShell } from '../../components/page-shell';

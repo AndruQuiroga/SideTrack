@@ -100,7 +100,7 @@ We aim for **simple, interpretable methods first**, with clear paths to more adv
 
 **Steps:**
 
-1. Implement a Python module in `apps/worker` or `apps/api/analysis`:
+1. Implement a Python module in `services/api/analysis` or `services/worker`:
    - Accepts:
      - List of `ListenEvent`s for a user.
      - Mapping from track IDs to `TrackFeatures` & genre tags.

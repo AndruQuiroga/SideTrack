@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-import { getApiBaseUrl } from '../../../../src/config';
+import { getApiBaseUrl } from '../../../lib/config';
 import { PageShell } from '../../../components/page-shell';
 import { Card, SectionHeading } from '../../../components/ui';
 

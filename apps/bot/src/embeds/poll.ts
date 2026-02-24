@@ -6,7 +6,7 @@ import {
   StringSelectMenuBuilder,
   StringSelectMenuOptionBuilder,
 } from 'discord.js';
-import { NominationWithStats, AlbumRead, WeekDetail } from '@sidetrack/shared';
+import { NominationWithStats, AlbumRead, WeekDetail } from '@sidetrack/api-client';
 import { createBaseEmbed, BRAND_COLORS, formatWeekLabel, truncate } from './common';
 
 export interface PollOverviewOptions {
@@ -27,10 +27,10 @@ export function buildPollOverviewEmbed(options: PollOverviewOptions): EmbedBuild
     .setColor(BRAND_COLORS.poll)
     .setTitle(`🗳️ ${weekLabel} — Voting`)
     .setDescription(
-      "Pick your **1st & 2nd choice**!\n" +
-        "• 1st choice = 2 points\n" +
-        "• 2nd choice = 1 point\n\n" +
-        "Click **Open Ballot** to vote.",
+      'Pick your **1st & 2nd choice**!\n' +
+        '• 1st choice = 2 points\n' +
+        '• 2nd choice = 1 point\n\n' +
+        'Click **Open Ballot** to vote.',
     );
 
   // List nominations
@@ -188,7 +188,9 @@ export function buildWinnerEmbed(options: WinnerAnnouncementOptions): EmbedBuild
   const embed = createBaseEmbed()
     .setColor(BRAND_COLORS.winner)
     .setTitle(`🏆 ${weekLabel} — Winner!`)
-    .setDescription(`The club has spoken! This week's album is:\n\n## ${titleLine}\nby **${artist}**`);
+    .setDescription(
+      `The club has spoken! This week's album is:\n\n## ${titleLine}\nby **${artist}**`,
+    );
 
   if (coverUrl) {
     embed.setImage(coverUrl);
@@ -212,7 +214,11 @@ export function buildWinnerEmbed(options: WinnerAnnouncementOptions): EmbedBuild
   }
 
   if (winner.pitch_track_url) {
-    fields.push({ name: '🎧 Pitch Track', value: `[Listen](${winner.pitch_track_url})`, inline: true });
+    fields.push({
+      name: '🎧 Pitch Track',
+      value: `[Listen](${winner.pitch_track_url})`,
+      inline: true,
+    });
   }
 
   embed.addFields(fields);

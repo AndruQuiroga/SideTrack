@@ -34,6 +34,12 @@ api = [
     "fastapi-limiter==0.1.6",
 ]
 
+worker = [
+    "redis==5.0.7",
+    "rq==1.16.2",
+    "apscheduler==3.10.4",
+]
+
 dev = [
     "numpy==1.26.4",
     "pytest==7.4.4",
@@ -52,7 +58,7 @@ dev = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["apps"]
+packages = ["services"]
 
 [tool.ruff]
 line-length = 100
