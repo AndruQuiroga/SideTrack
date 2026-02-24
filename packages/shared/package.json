@@ -10,10 +10,12 @@
       "types": "./dist/index.d.ts"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc -b tsconfig.json",
-    "lint": "eslint src --ext .ts",
+    "lint": "eslint src",
     "test": "echo \"No tests configured\"",
     "format": "prettier --write \"src/**/*.{ts,tsx}\""
   },

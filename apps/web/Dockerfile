@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM node:20-bookworm-slim AS base
+FROM node:22-bookworm-slim AS base
 
 ENV PNPM_HOME=/root/.local/share/pnpm \
     PATH="$PNPM_HOME:$PATH"
@@ -23,7 +23,7 @@ COPY . .
 RUN pnpm --filter @sidetrack/web... run build \
   && pnpm prune --prod
 
-FROM node:20-bookworm-slim AS runner
+FROM node:22-bookworm-slim AS runner
 ENV NODE_ENV=production \
     PNPM_HOME=/root/.local/share/pnpm \
     PATH="$PNPM_HOME:$PATH"

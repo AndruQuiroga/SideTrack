@@ -9,7 +9,7 @@ repos:
       - id: check-merge-conflict
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.6.2
+    rev: v0.6.9
     hooks:
       - id: ruff
         args: ["--fix"]
@@ -32,8 +32,8 @@ repos:
         types_or: [ts, tsx]
         files: ^apps/web/.*\.(tsx?)$
         additional_dependencies:
-          - "eslint@8.57.0"
-          - "@typescript-eslint/parser@^6"
-          - "@typescript-eslint/eslint-plugin@^6"
-          - "eslint-config-prettier@^9"
+          - "eslint@9"
+          - "typescript-eslint@8"
+          - "@eslint/js@9"
+          - "eslint-config-prettier@10"
           - "typescript@^5"

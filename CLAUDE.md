@@ -110,13 +110,13 @@ The app uses a factory pattern: `apps.api.main:create_app`. Settings are loaded 
 
 ## Package Management
 
-- **Python**: Use `uv` exclusively — never `pip install` or `python -m venv`. Lockfile is `uv.lock` (checked in, do not edit by hand). Target Python 3.11 (3.12+ currently avoided).
-- **TypeScript**: Use `pnpm` exclusively — never `npm` or `yarn`. Workspace config is `pnpm-workspace.yaml`.
+- **Python**: Use `uv` exclusively — never `pip install` or `python -m venv`. Lockfile is `uv.lock` (checked in, do not edit by hand). Build backend is `hatchling`. Target Python 3.11 (3.12+ currently avoided).
+- **TypeScript**: Use `pnpm` exclusively — never `npm` or `yarn`. Lockfile is `pnpm-lock.yaml` (checked in). Workspace config is `pnpm-workspace.yaml`.
 
 ## Code Style
 
-- **Python**: Ruff (line-length 100, py311 target) + mypy. Migrations in `migrations/versions/` are excluded from linting.
-- **TypeScript**: ESLint + Prettier (printWidth 100, single quotes, trailing commas, semicolons). Base tsconfig at `tsconfig.base.json`; each app extends it.
+- **Python**: Ruff handles all linting and formatting (line-length 100, py311 target) + mypy for type checking. No black or isort — ruff replaces both. Migrations in `migrations/versions/` are excluded from linting.
+- **TypeScript**: ESLint 9 (flat config in `eslint.config.mjs`) + Prettier (printWidth 100, single quotes, trailing commas, semicolons). Base tsconfig at `tsconfig.base.json` (ES2022 target); each app extends it.
 
 ## Agent Task Specs
 

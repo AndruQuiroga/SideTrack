@@ -17,10 +17,10 @@ jobs:
         run: uv sync --frozen --python 3.11 --extra api --extra dev
       - name: Lint (ruff + mypy)
         run: |
-          uv run --frozen ruff check apps/api
-          uv run --frozen mypy apps/api --ignore-missing-imports
+          uv run --frozen ruff check apps/api apps/worker
+          uv run --frozen mypy apps/api apps/worker
       - name: Unit tests
-        run: uv run --frozen pytest -m unit --strict-markers -x
+        run: uv run --frozen pytest -m unit
 
   node:
     runs-on: ubuntu-latest
@@ -28,11 +28,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - name: Enable corepack
         run: corepack enable
       - name: Install dependencies
-        run: pnpm install --ignore-scripts --frozen-lockfile=false
+        run: pnpm install --frozen-lockfile
       - name: Lint workspace (TypeScript)
         run: pnpm -r run lint
       - name: Unit suites (TypeScript)

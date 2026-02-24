@@ -18,8 +18,8 @@ dependencies = [
 ]
 
 [build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project.optional-dependencies]
 
@@ -31,7 +31,6 @@ api = [
     "redis==5.0.7",
     "rq==1.16.2",
     "google-auth==2.40.3",
-    "pytest-asyncio==0.23.7",
     "fastapi-limiter==0.1.6",
 ]
 
@@ -60,6 +59,7 @@ worker = [
 
 dev = [
     "pytest==7.4.4",
+    "pytest-asyncio==0.23.7",
     "pytest-cov==5.0.0",
     "testcontainers[postgres,redis]==4.7.1",
     "factory-boy==3.3.0",
@@ -73,19 +73,8 @@ dev = [
     "mypy==1.11.2",
 ]
 
-[tool.setuptools.packages.find]
-include = ["apps*"]
-
-[tool.black]
-line-length = 100
-target-version = ["py311"]
-extend-exclude = "^migrations/versions/"
-
-[tool.isort]
-profile = "black"
-line_length = 100
-filter_files = true
-skip_gitignore = true
+[tool.hatch.build.targets.wheel]
+packages = ["apps"]
 
 [tool.ruff]
 line-length = 100
@@ -99,9 +88,7 @@ select = [
   "I",  # isort import order
   "UP", # pyupgrade
 ]
-ignore = [
-  "E501",  # let black handle line length
-]
+ignore = []
 
 [tool.ruff.lint.per-file-ignores]
 "migrations/env.py" = ["E402"]
@@ -117,7 +104,12 @@ exclude = [
 ]
 
 [tool.pytest.ini_options]
+addopts = "-q -x --strict-markers --disable-warnings -m \"not contract\""
 markers = [
     "unit: fast-running tests that mock external services",
     "integration: tests that require external services",
+    "contract: contract tests with external APIs",
+    "slow: tests exceeding the default speed budget",
+    "gpu: tests requiring GPU hardware",
+    "e2e: end-to-end tests",
 ]
