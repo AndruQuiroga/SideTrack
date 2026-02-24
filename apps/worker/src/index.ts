@@ -1,6 +1,8 @@
 import { SidetrackApiClient } from '@sidetrack/shared';
 
 import { loadConfig } from './config';
+import { SpotifyConnector } from './connectors/spotify';
+import { PopulateFeaturesJob } from './jobs/populateFeatures';
 import { ListenEventStore } from './listenEvents';
 import { MetricsRegistry } from './metrics';
 import { StatusServer } from './statusServer';
@@ -11,7 +13,9 @@ export function startWorker(): void {
   const metrics = new MetricsRegistry();
   const client = new SidetrackApiClient({ baseUrl: config.apiBaseUrl, authToken: config.apiToken });
   const store = new ListenEventStore(client, metrics);
-  const disabledProviders = config.providers.filter((provider) => !provider.enabled).map((provider) => provider.provider);
+  const disabledProviders = config.providers
+    .filter((provider) => !provider.enabled)
+    .map((provider) => provider.provider);
 
   const coordinator = new SyncCoordinator(client, store, metrics, disabledProviders);
   const statusServer = new StatusServer(coordinator);
@@ -42,10 +46,23 @@ export function startWorker(): void {
     setInterval(runNowPlaying, config.nowPlayingIntervalMs);
   }
 
+  const populateFeatures = new PopulateFeaturesJob(client, new SpotifyConnector());
+  const runPopulateFeatures = async () => {
+    try {
+      await populateFeatures.run();
+    } catch (error) {
+      metrics.recordError('populate_features', error);
+      console.error('[worker] populate features failed', error);
+    }
+  };
+  void runPopulateFeatures();
+  setInterval(runPopulateFeatures, config.featurePopulateIntervalMs);
+
   console.log('[worker] sync loop initialized', {
     syncIntervalMs: config.syncIntervalMs,
     nowPlayingIntervalMs: config.nowPlayingIntervalMs,
     enableNowPlaying: config.enableNowPlaying,
+    featurePopulateIntervalMs: config.featurePopulateIntervalMs,
   });
 }
 

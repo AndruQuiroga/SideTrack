@@ -2,6 +2,7 @@
 
 import clsx from 'clsx';
 import Link from 'next/link';
+import { signOut, useSession } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { CommandPalette } from './command-palette';
@@ -14,13 +15,16 @@ const links: NavLink[] = [
   { href: '/discover', label: 'Discover' },
   { href: '/feed', label: 'Feed' },
   { href: { pathname: '/u/[id]' as Route, query: { id: 'demo' } }, label: 'Demo Profile' },
-  { href: { pathname: '/compare' as Route, query: { userA: 'demo', userB: 'demo2' } }, label: 'Compatibility' },
+  {
+    href: { pathname: '/compare' as Route, query: { userA: 'demo', userB: 'demo2' } },
+    label: 'Compatibility',
+  },
   { href: '/club', label: 'Club Archive' },
-  { href: '/login', label: 'Sign in' },
 ];
 
 export function Navbar() {
   const pathname = usePathname();
+  const { data: session, status } = useSession();
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -38,7 +42,10 @@ export function Navbar() {
   return (
     <header className="sticky top-0 z-40 border-b border-slate-800/80 bg-sidetrack-bg/80 backdrop-blur-xl">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 lg:px-6">
-        <Link href="/" className="flex items-center gap-2 text-slate-100 transition hover:text-white">
+        <Link
+          href="/"
+          className="flex items-center gap-2 text-slate-100 transition hover:text-white"
+        >
           <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-500 via-fuchsia-500 to-emerald-400 text-sm font-semibold shadow-soft">
             ST
           </div>
@@ -51,11 +58,10 @@ export function Navbar() {
         <nav className="hidden gap-1 rounded-full border border-slate-800/80 bg-sidetrack-soft/70 p-1 text-xs font-medium text-slate-300 shadow-soft md:flex">
           {links.map((link) => {
             const targetPath =
-              typeof link.href === 'string'
-                ? link.href.split('?')[0]
-                : link.href.pathname ?? '/';
+              typeof link.href === 'string' ? link.href.split('?')[0] : (link.href.pathname ?? '/');
             const normalizedTarget = targetPath.replace(/\[.*?\]/g, '');
-            const active = normalizedTarget === '/' ? pathname === '/' : pathname.startsWith(normalizedTarget);
+            const active =
+              normalizedTarget === '/' ? pathname === '/' : pathname.startsWith(normalizedTarget);
             return (
               <Link
                 key={link.label}
@@ -64,13 +70,36 @@ export function Navbar() {
                   'relative rounded-full px-3 py-1.5 transition-colors',
                   active
                     ? 'bg-slate-100 text-sidetrack-bg shadow-soft'
-                    : 'hover:bg-slate-700/80 hover:text-slate-50'
+                    : 'hover:bg-slate-700/80 hover:text-slate-50',
                 )}
               >
                 {link.label}
               </Link>
             );
           })}
+          {status === 'loading' ? null : session ? (
+            <>
+              <Link
+                href={`/u/${session.user.id ?? 'me'}` as Route}
+                className="relative rounded-full px-3 py-1.5 transition-colors hover:bg-slate-700/80 hover:text-slate-50"
+              >
+                @{session.user.handle ?? session.user.name}
+              </Link>
+              <button
+                onClick={() => signOut({ callbackUrl: '/' })}
+                className="relative rounded-full px-3 py-1.5 transition-colors hover:bg-slate-700/80 hover:text-slate-50"
+              >
+                Sign out
+              </button>
+            </>
+          ) : (
+            <Link
+              href="/login"
+              className="relative rounded-full px-3 py-1.5 transition-colors hover:bg-slate-700/80 hover:text-slate-50"
+            >
+              Sign in
+            </Link>
+          )}
         </nav>
 
         <div className="flex items-center">
@@ -106,6 +135,25 @@ export function Navbar() {
                 {link.label}
               </Link>
             ))}
+            {session ? (
+              <button
+                onClick={() => {
+                  setMobileOpen(false);
+                  signOut({ callbackUrl: '/' });
+                }}
+                className="block w-full rounded-lg px-3 py-2 text-left text-sm text-slate-200 hover:bg-slate-900"
+              >
+                Sign out (@{session.user.handle ?? session.user.name})
+              </button>
+            ) : (
+              <Link
+                href="/login"
+                onClick={() => setMobileOpen(false)}
+                className="block rounded-lg px-3 py-2 text-sm text-slate-200 hover:bg-slate-900"
+              >
+                Sign in
+              </Link>
+            )}
             <button
               onClick={() => {
                 setPaletteOpen(true);

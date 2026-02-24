@@ -10,6 +10,7 @@ export interface WorkerConfig {
   apiToken?: string;
   syncIntervalMs: number;
   nowPlayingIntervalMs: number;
+  featurePopulateIntervalMs: number;
   enableNowPlaying: boolean;
   providers: ProviderConfig[];
 }
@@ -34,12 +35,16 @@ export function loadConfig(): WorkerConfig {
 
   const syncMinutes = Number(process.env.WORKER_SYNC_INTERVAL_MINUTES ?? '15');
   const nowPlayingSeconds = Number(process.env.WORKER_NOW_PLAYING_SECONDS ?? '45');
+  const featurePopulateMinutes = Number(process.env.WORKER_FEATURE_POPULATE_MINUTES ?? '60');
 
   return {
     apiBaseUrl: process.env.SIDETRACK_API_BASE_URL ?? 'http://localhost:8000',
     apiToken: process.env.SIDETRACK_API_TOKEN,
     syncIntervalMs: minutes(Number.isFinite(syncMinutes) ? syncMinutes : 15),
     nowPlayingIntervalMs: (Number.isFinite(nowPlayingSeconds) ? nowPlayingSeconds : 45) * 1000,
+    featurePopulateIntervalMs: minutes(
+      Number.isFinite(featurePopulateMinutes) ? featurePopulateMinutes : 60,
+    ),
     enableNowPlaying: process.env.WORKER_ENABLE_NOW_PLAYING !== 'false',
     providers: providerEnvs,
   };

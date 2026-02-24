@@ -3,22 +3,25 @@
 from fastapi import FastAPI
 
 from . import (
+    admin,
     albums,
+    compatibility,
+    feed,
+    ingest,
+    integrations,
     listen_events,
     nominations,
+    playlists,
     ratings,
+    recommendations,
+    search,
+    social,
+    taste_profiles,
+    tracks,
+    trending,
     users,
     votes,
     weeks,
-    taste_profiles,
-    search,
-    recommendations,
-    integrations,
-    trending,
-    compatibility,
-    playlists,
-    ingest,
-    feed,
 )
 
 
@@ -26,8 +29,10 @@ def register_routes(app: FastAPI) -> None:
     """Attach all routers to the provided app."""
 
     for router in (
+        admin.router,
         users.router,
         albums.router,
+        tracks.router,
         weeks.router,
         nominations.router,
         votes.router,
@@ -42,5 +47,6 @@ def register_routes(app: FastAPI) -> None:
         playlists.router,
         ingest.router,
         feed.router,
+        social.router,
     ):
         app.include_router(router)

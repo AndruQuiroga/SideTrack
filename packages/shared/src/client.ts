@@ -5,6 +5,7 @@ import {
   LinkedAccountRead,
   ProviderType,
   UserCreate,
+  UserUpdate,
   RatingCreate,
   RatingRead,
   RatingSummary,
@@ -31,6 +32,9 @@ import {
   ListenEventRead,
   AlbumCreate,
   AlbumRead,
+  TrackRead,
+  TrackFeatureCreate,
+  TrackFeatureRead,
 } from './types';
 import { ApiError, toApiError } from './errors';
 
@@ -55,6 +59,7 @@ export interface SidetrackClientOptions {
 export interface ListeningStatsParams {
   range?: ListeningRange;
   limit?: number;
+  offset?: number;
 }
 
 export interface TimelineParams {
@@ -155,7 +160,12 @@ export class SidetrackApiClient {
       });
     } catch (error) {
       if (error instanceof ApiError && error.status === 409) {
-        throw new ApiError('User has already submitted a rating for this week.', error.status, error.data, false);
+        throw new ApiError(
+          'User has already submitted a rating for this week.',
+          error.status,
+          error.data,
+          false,
+        );
       }
       throw error;
     }
@@ -184,8 +194,19 @@ export class SidetrackApiClient {
     return this.request<UserRead>({ method: 'POST', url: '/users', data: payload });
   }
 
+  async updateUser(userId: UUID, payload: UserUpdate): Promise<UserRead> {
+    return this.request<UserRead>({ method: 'PATCH', url: `/users/${userId}`, data: payload });
+  }
+
+  async deleteUser(userId: UUID): Promise<void> {
+    await this.request<void>({ method: 'DELETE', url: `/users/${userId}` });
+  }
+
   async listLinkedAccounts(userId: UUID): Promise<LinkedAccountRead[]> {
-    return this.request<LinkedAccountRead[]>({ method: 'GET', url: `/users/${userId}/linked-accounts` });
+    return this.request<LinkedAccountRead[]>({
+      method: 'GET',
+      url: `/users/${userId}/linked-accounts`,
+    });
   }
 
   async linkAccount(userId: UUID, payload: LinkedAccountCreate): Promise<LinkedAccountRead> {
@@ -210,6 +231,10 @@ export class SidetrackApiClient {
     });
   }
 
+  async getAlbum(albumId: UUID): Promise<AlbumRead> {
+    return this.request<AlbumRead>({ method: 'GET', url: `/albums/${albumId}` });
+  }
+
   async searchAlbums(params: {
     title?: string;
     artist_name?: string;
@@ -229,7 +254,41 @@ export class SidetrackApiClient {
     return this.request<AlbumRead>({ method: 'POST', url: '/albums', data: payload });
   }
 
-  async getUserProfileOverview(userId: UUID, params?: ListeningStatsParams): Promise<ProfileOverview> {
+  async getTracksPendingFeatures(limit = 100): Promise<TrackRead[]> {
+    return this.request<TrackRead[]>({
+      method: 'GET',
+      url: '/tracks/pending-features',
+      params: { limit },
+    });
+  }
+
+  async upsertTrackFeatures(
+    trackId: UUID,
+    features: TrackFeatureCreate,
+  ): Promise<TrackFeatureRead> {
+    return this.request<TrackFeatureRead>({
+      method: 'POST',
+      url: `/tracks/${trackId}/features`,
+      data: features,
+    });
+  }
+
+  async ingestLastfm(
+    userId: UUID,
+    lastfmUsername: string,
+    sinceTs?: number,
+  ): Promise<{ inserted: number; last_ts: number }> {
+    return this.request<{ inserted: number; last_ts: number }>({
+      method: 'POST',
+      url: '/ingest/lastfm',
+      data: { user_id: userId, lastfm_username: lastfmUsername, since_ts: sinceTs ?? null },
+    });
+  }
+
+  async getUserProfileOverview(
+    userId: UUID,
+    params?: ListeningStatsParams,
+  ): Promise<ProfileOverview> {
     return this.request<ProfileOverview>({
       method: 'GET',
       url: `/users/${userId}/profile`,
@@ -261,7 +320,10 @@ export class SidetrackApiClient {
     });
   }
 
-  async getUserListeningTimeline(userId: UUID, params?: TimelineParams): Promise<ListeningTimelinePoint[]> {
+  async getUserListeningTimeline(
+    userId: UUID,
+    params?: TimelineParams,
+  ): Promise<ListeningTimelinePoint[]> {
     return this.request<ListeningTimelinePoint[]>({
       method: 'GET',
       url: `/users/${userId}/listening/timeline`,
@@ -270,14 +332,17 @@ export class SidetrackApiClient {
   }
 
   async getUserNowPlaying(userId: UUID): Promise<NowPlaying | null> {
-    return this.request<NowPlaying | null>({ method: 'GET', url: `/users/${userId}/listening/now-playing` });
+    return this.request<NowPlaying | null>({
+      method: 'GET',
+      url: `/users/${userId}/listening/now-playing`,
+    });
   }
 
   async getUserRecentListens(userId: UUID, params?: ListeningStatsParams): Promise<RecentListen[]> {
     return this.request<RecentListen[]>({
       method: 'GET',
       url: `/users/${userId}/listening/recent`,
-      params: { range: params?.range, limit: params?.limit },
+      params: { range: params?.range, limit: params?.limit, offset: params?.offset },
     });
   }
 
@@ -290,7 +355,12 @@ export class SidetrackApiClient {
       });
     } catch (error) {
       if (error instanceof ApiError && error.status === 409) {
-        throw new ApiError('Nomination already exists for this user and album.', error.status, error.data, false);
+        throw new ApiError(
+          'Nomination already exists for this user and album.',
+          error.status,
+          error.data,
+          false,
+        );
       }
       throw error;
     }
@@ -305,7 +375,12 @@ export class SidetrackApiClient {
       });
     } catch (error) {
       if (error instanceof ApiError && error.status === 409) {
-        throw new ApiError('Vote already exists for this user and rank.', error.status, error.data, false);
+        throw new ApiError(
+          'Vote already exists for this user and rank.',
+          error.status,
+          error.data,
+          false,
+        );
       }
       throw error;
     }
@@ -348,6 +423,7 @@ export type {
   RatingSummary,
   UserRead,
   UserCreate,
+  UserUpdate,
   ProfileOverview,
   ArtistStat,
   GenreStat,

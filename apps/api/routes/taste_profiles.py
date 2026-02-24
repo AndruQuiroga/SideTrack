@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -21,13 +21,13 @@ def _ensure_user(db: Session, user_id: UUID) -> User:
 
 
 @router.get("/", response_model=list[TasteProfileRead])
-async def list_taste_profiles(user_id: UUID, db: Session = Depends(get_db)) -> list[TasteProfileRead]:
+async def list_taste_profiles(
+    user_id: UUID, db: Session = Depends(get_db)
+) -> list[TasteProfileRead]:
     """Return stored taste profiles for a user."""
 
     _ensure_user(db, user_id)
-    profiles = db.scalars(
-        select(TasteProfile).where(TasteProfile.user_id == user_id)
-    ).all()
+    profiles = db.scalars(select(TasteProfile).where(TasteProfile.user_id == user_id)).all()
     return profiles
 
 
@@ -43,8 +43,8 @@ async def recompute_taste_profile(
 
     _ensure_user(db, user_id)
     profile = compute_user_taste_profile(db, user_id=user_id, scope=scope)
-    # Ensure updated_at reflects this invocation even if nothing changed
-    profile.updated_at = datetime.now(timezone.utc)
+    # Ensure last_computed_at reflects this invocation even if nothing changed
+    profile.last_computed_at = datetime.now(UTC)
     db.commit()
     db.refresh(profile)
     return profile

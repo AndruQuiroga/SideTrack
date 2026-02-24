@@ -29,18 +29,33 @@ export async function startBot(): Promise<void> {
   if (config.discord.clientId && config.discord.guildId) {
     const rest = new REST({ version: '10' }).setToken(config.discord.token);
     const commandsPayload = allCommands.map((cmd) => cmd.data.toJSON());
-    await rest.put(Routes.applicationGuildCommands(config.discord.clientId, config.discord.guildId), {
-      body: commandsPayload,
-    });
+    await rest.put(
+      Routes.applicationGuildCommands(config.discord.clientId, config.discord.guildId),
+      {
+        body: commandsPayload,
+      },
+    );
     logger.info('Registered guild slash commands.', {
       guildId: config.discord.guildId,
       commands: allCommands.map((cmd) => cmd.data.name),
     });
   } else {
-    logger.warn('Skipping slash command registration; DISCORD_CLIENT_ID or DISCORD_GUILD_ID missing.');
+    logger.warn(
+      'Skipping slash command registration; DISCORD_CLIENT_ID or DISCORD_GUILD_ID missing.',
+    );
   }
 
   await discordClient.login(config.discord.token);
+
+  const shutdown = async (signal: string): Promise<void> => {
+    logger.info('Shutting down bot.', { signal });
+    scheduler.cancelAll();
+    await discordClient.destroy();
+    process.exit(0);
+  };
+
+  process.on('SIGTERM', () => void shutdown('SIGTERM'));
+  process.on('SIGINT', () => void shutdown('SIGINT'));
 
   discordClient.once('ready', () => {
     scheduler.scheduleWeeks(openWeeks);
@@ -54,6 +69,8 @@ export async function startBot(): Promise<void> {
 
 startBot().catch((error) => {
   const logger = createLogger('startup');
-  logger.error('Bot failed to start.', { error: error instanceof Error ? error.message : String(error) });
+  logger.error('Bot failed to start.', {
+    error: error instanceof Error ? error.message : String(error),
+  });
   process.exitCode = 1;
 });

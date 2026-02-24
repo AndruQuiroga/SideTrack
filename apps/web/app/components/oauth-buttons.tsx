@@ -1,5 +1,6 @@
 'use client';
 
+import { signIn } from 'next-auth/react';
 import { useState } from 'react';
 import { requestIntegrationConnect } from '../../src/api/discover';
 import { showToast } from './toast';
@@ -9,6 +10,7 @@ type Provider = 'discord' | 'spotify' | 'lastfm';
 interface OAuthButtonProps {
   provider: Provider;
   label: string;
+  userId?: string;
   className?: string;
 }
 
@@ -18,13 +20,18 @@ const providerLabels: Record<Provider, string> = {
   lastfm: 'Last.fm',
 };
 
-export function OAuthButton({ provider, label, className = '' }: OAuthButtonProps) {
+export function OAuthButton({ provider, label, userId, className = '' }: OAuthButtonProps) {
   const [loading, setLoading] = useState(false);
 
   async function handleClick() {
     setLoading(true);
     try {
-      const { url } = await requestIntegrationConnect(provider);
+      if (provider === 'discord') {
+        // Discord is our primary auth provider — use NextAuth
+        await signIn('discord', { callbackUrl: '/' });
+        return;
+      }
+      const { url } = await requestIntegrationConnect(provider, userId);
       if (url) {
         showToast(`Opening ${providerLabels[provider]} connect…`, 'success');
         window.location.href = url;
@@ -57,15 +64,16 @@ export function OAuthButton({ provider, label, className = '' }: OAuthButtonProp
 }
 
 interface OAuthButtonsProps {
+  userId?: string;
   className?: string;
 }
 
-export function OAuthButtons({ className = '' }: OAuthButtonsProps) {
+export function OAuthButtons({ userId, className = '' }: OAuthButtonsProps) {
   return (
     <div className={`grid gap-3 md:grid-cols-2 ${className}`}>
-      <OAuthButton provider="discord" label="Continue with Discord" />
-      <OAuthButton provider="spotify" label="Continue with Spotify" />
-      <OAuthButton provider="lastfm" label="Continue with Last.fm" />
+      <OAuthButton provider="discord" label="Continue with Discord" userId={userId} />
+      <OAuthButton provider="spotify" label="Continue with Spotify" userId={userId} />
+      <OAuthButton provider="lastfm" label="Continue with Last.fm" userId={userId} />
     </div>
   );
 }

@@ -15,7 +15,15 @@ import {
 import { Logger } from '../logger';
 import { ClubSyncService } from '../clubService';
 import { BotConfig } from '../config';
-import { WeekCreate, WeekUpdate, NominationCreate, VoteCreate, RatingCreate, AlbumRead, WeekDetail } from '@sidetrack/shared';
+import {
+  WeekCreate,
+  WeekUpdate,
+  NominationCreate,
+  VoteCreate,
+  RatingCreate,
+  AlbumRead,
+  WeekDetail,
+} from '@sidetrack/shared';
 import {
   pingCommand,
   stWeekCommand,
@@ -178,14 +186,15 @@ async function handlePing(interaction: ChatInputCommandInteraction, logger: Logg
 
 // ============ ST-HELP ============
 
-async function handleStHelp(interaction: ChatInputCommandInteraction, logger: Logger): Promise<void> {
+async function handleStHelp(
+  interaction: ChatInputCommandInteraction,
+  logger: Logger,
+): Promise<void> {
   try {
     const embed = createBaseEmbed()
       .setColor(BRAND_COLORS.info)
       .setTitle('🎵 Sidetrack Club — Help')
-      .setDescription(
-        "Welcome to Sidetrack Club! Here's how our weekly album club works:",
-      )
+      .setDescription("Welcome to Sidetrack Club! Here's how our weekly album club works:")
       .addFields(
         {
           name: '📅 Weekly Flow',
@@ -270,7 +279,9 @@ async function handleWeekOverview(
     } else {
       const weeks = await service.getClient().listWeeks({ has_winner: false });
       if (weeks.length === 0) {
-        await interaction.editReply('No active weeks found. Ask an admin to start a new week with `/st-week start`.');
+        await interaction.editReply(
+          'No active weeks found. Ask an admin to start a new week with `/st-week start`.',
+        );
         return;
       }
       week = weeks[0];
@@ -383,6 +394,19 @@ async function handlePollOpen(
     const albums = new Map<string, AlbumRead>();
     const nominatorNames = new Map<string, string>();
 
+    // Fetch album data for all nominations
+    const uniqueAlbumIds = [...new Set(week.nominations.map((n) => n.album_id))];
+    await Promise.all(
+      uniqueAlbumIds.map(async (albumId) => {
+        try {
+          const album = await service.getClient().getAlbum(albumId);
+          albums.set(albumId, album);
+        } catch {
+          // Skip if album fetch fails — embed falls back to "Unknown Album"
+        }
+      }),
+    );
+
     // Populate nominator names from Discord
     for (const nom of week.nominations) {
       try {
@@ -467,6 +491,31 @@ async function handlePollClose(
     // Fetch updated week
     week = await service.getClient().getWeek(week.id);
 
+    // Fetch album data for all ranked nominations
+    const uniqueAlbumIds = [...new Set(rankedNominations.map((n) => n.album_id))];
+    await Promise.all(
+      uniqueAlbumIds.map(async (albumId) => {
+        try {
+          const album = await service.getClient().getAlbum(albumId);
+          albums.set(albumId, album);
+        } catch {
+          // Skip if album fetch fails
+        }
+      }),
+    );
+
+    // Fetch nominator names from Discord
+    for (const nom of rankedNominations) {
+      try {
+        const member = await interaction.guild?.members.fetch(nom.user_id).catch(() => null);
+        if (member) {
+          nominatorNames.set(nom.user_id, member.displayName);
+        }
+      } catch {
+        // Skip
+      }
+    }
+
     // Build results embed
     const resultsEmbed = buildPollResultsEmbed({
       week,
@@ -475,11 +524,13 @@ async function handlePollClose(
       nominatorNames,
     });
 
+    const winnerAlbum = albums.get(winner.album_id) ?? null;
+
     // Build winner embed
     const winnerEmbed = buildWinnerEmbed({
       week,
       winner,
-      album: null,
+      album: winnerAlbum,
       nominatorName: nominatorNames.get(winner.user_id),
     });
 
@@ -489,6 +540,31 @@ async function handlePollClose(
       embeds: [winnerEmbed, resultsEmbed],
       components: [ratingsButton],
     });
+
+    // Create winner thread in nominations forum
+    if (config.club.nominationsForumId && interaction.guild) {
+      try {
+        const forum = await interaction.guild.channels.fetch(config.club.nominationsForumId);
+        if (forum && forum.type === ChannelType.GuildForum) {
+          const threadName = `🏆 ${winnerAlbum?.title ?? 'Winner'} — ${week.label}`;
+          const thread = await forum.threads.create({
+            name: threadName,
+            message: {
+              content: `🎉 The winner has been announced! Share your thoughts on **${winnerAlbum?.title ?? 'the album'}**.`,
+              embeds: [winnerEmbed],
+            },
+          });
+          await service.getClient().updateWeek(week.id, {
+            winner_thread_id: thread.id,
+          });
+          logger.info('Winner thread created.', { week_id: week.id, thread_id: thread.id });
+        }
+      } catch (threadError) {
+        logger.warn('Failed to create winner thread.', {
+          error: threadError instanceof Error ? threadError.message : String(threadError),
+        });
+      }
+    }
 
     logger.info('Poll closed and winner announced.', { week_id: week.id, winner_id: winner.id });
   } catch (error) {
@@ -552,6 +628,36 @@ async function handleRatingsOpen(
     const button = buildRateAlbumButton(week.id);
 
     await interaction.editReply({ embeds: [embed], components: [button] });
+
+    // Create ratings thread in nominations forum
+    if (config.club.nominationsForumId && interaction.guild && !week.ratings_thread_id) {
+      try {
+        const forum = await interaction.guild.channels.fetch(config.club.nominationsForumId);
+        if (forum && forum.type === ChannelType.GuildForum) {
+          const thread = await forum.threads.create({
+            name: `⭐ Ratings — ${week.label}`,
+            message: {
+              content: [
+                `The winner is out! Post your rating using this format:`,
+                '```',
+                'Rating: 4.5',
+                'Favorite track: <track name>',
+                'Thoughts: <your review>',
+                '```',
+              ].join('\n'),
+              embeds: [embed],
+            },
+          });
+          await service.attachRatingsThread(week.id, thread.id);
+          logger.info('Ratings thread created.', { week_id: week.id, thread_id: thread.id });
+        }
+      } catch (threadError) {
+        logger.warn('Failed to create ratings thread.', {
+          error: threadError instanceof Error ? threadError.message : String(threadError),
+        });
+      }
+    }
+
     logger.info('Ratings opened.', { week_id: week.id });
   } catch (error) {
     logger.error('Failed to open ratings.', {
@@ -584,7 +690,9 @@ async function handleRatingsSummary(
       week = withWinner[0];
     }
 
-    const summary = await service.getClient().getWeekRatingSummary(week.id, { include_histogram: true });
+    const summary = await service
+      .getClient()
+      .getWeekRatingSummary(week.id, { include_histogram: true });
 
     const embed = buildRatingsSummaryEmbed({
       week,
@@ -793,6 +901,38 @@ async function handleRatingsOpenButton(
     const button = buildRateAlbumButton(week.id);
 
     await interaction.reply({ embeds: [embed], components: [button] });
+
+    // Create ratings thread if it doesn't exist yet
+    if (config.club.nominationsForumId && interaction.guild && !week.ratings_thread_id) {
+      try {
+        const forum = await interaction.guild.channels.fetch(config.club.nominationsForumId);
+        if (forum && forum.type === ChannelType.GuildForum) {
+          const thread = await forum.threads.create({
+            name: `⭐ Ratings — ${week.label}`,
+            message: {
+              content: [
+                `The winner is out! Post your rating using this format:`,
+                '```',
+                'Rating: 4.5',
+                'Favorite track: <track name>',
+                'Thoughts: <your review>',
+                '```',
+              ].join('\n'),
+              embeds: [embed],
+            },
+          });
+          await service.attachRatingsThread(week.id, thread.id);
+          logger.info('Ratings thread created via button.', {
+            week_id: week.id,
+            thread_id: thread.id,
+          });
+        }
+      } catch (threadError) {
+        logger.warn('Failed to create ratings thread via button.', {
+          error: threadError instanceof Error ? threadError.message : String(threadError),
+        });
+      }
+    }
   } catch (error) {
     logger.error('Failed to open ratings via button.', {
       error: error instanceof Error ? error.message : String(error),
@@ -1025,7 +1165,9 @@ async function handleWeekStart(
 
   const nominationsForumId = config.club.nominationsForumId;
   if (!nominationsForumId) {
-    await interaction.editReply('❌ Missing nominations forum ID. Set SIDETRACK_NOMINATIONS_FORUM_ID in env.');
+    await interaction.editReply(
+      '❌ Missing nominations forum ID. Set SIDETRACK_NOMINATIONS_FORUM_ID in env.',
+    );
     return;
   }
 
@@ -1065,9 +1207,13 @@ async function handleWeekStart(
       update: Object.keys(updatePayload).length > 0 ? updatePayload : undefined,
     });
 
-    const existingThreadId = week.nominations_thread_id ? String(week.nominations_thread_id) : undefined;
+    const existingThreadId = week.nominations_thread_id
+      ? String(week.nominations_thread_id)
+      : undefined;
     if (existingThreadId) {
-      const existingThread = await interaction.guild.channels.fetch(existingThreadId).catch(() => null);
+      const existingThread = await interaction.guild.channels
+        .fetch(existingThreadId)
+        .catch(() => null);
       if (existingThread && existingThread.isThread()) {
         await interaction.editReply(
           [
@@ -1100,7 +1246,9 @@ async function handleWeekStart(
 
     const starterMessage = await thread.fetchStarterMessage().catch(() => null);
     if (starterMessage && !starterMessage.pinned) {
-      await starterMessage.pin().catch((error) => logger.warn('Failed to pin nominations prompt.', { error }));
+      await starterMessage
+        .pin()
+        .catch((error) => logger.warn('Failed to pin nominations prompt.', { error }));
     }
 
     await service.attachNominationsThread(week.id, thread.id);
@@ -1139,7 +1287,10 @@ function parseDateOption(
 }
 
 /** Check if a user has admin permissions for Sidetrack commands. */
-function isAdmin(interaction: ChatInputCommandInteraction | ButtonInteraction, config: BotConfig): boolean {
+function isAdmin(
+  interaction: ChatInputCommandInteraction | ButtonInteraction,
+  config: BotConfig,
+): boolean {
   // Check for Manage Server permission using type-safe method
   if (interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild)) {
     return true;

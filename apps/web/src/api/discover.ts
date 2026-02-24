@@ -16,25 +16,40 @@ export async function webSearch(query: string): Promise<SearchResult> {
 
 export type RecommendationItem =
   | { type: 'album'; id: string; title: string; artist_name: string; reason?: string }
-  | { type: 'track'; id: string; title: string; artist_name: string; album_title?: string; reason?: string };
+  | {
+      type: 'track';
+      id: string;
+      title: string;
+      artist_name: string;
+      album_title?: string;
+      reason?: string;
+    };
 
 export async function fetchRecommendations(userId: string): Promise<RecommendationItem[]> {
-  const res = await fetch(`${getApiBaseUrl()}/recommendations?user_id=${encodeURIComponent(userId)}`, {
-    cache: 'no-store',
-  });
+  const res = await fetch(
+    `${getApiBaseUrl()}/recommendations?user_id=${encodeURIComponent(userId)}`,
+    {
+      cache: 'no-store',
+    },
+  );
   if (!res.ok) throw new Error(`Recommendations failed with status ${res.status}`);
   return (await res.json()) as RecommendationItem[];
 }
 
-export async function requestIntegrationConnect(provider: 'spotify' | 'lastfm' | 'discord') {
+export async function requestIntegrationConnect(
+  provider: 'spotify' | 'lastfm' | 'discord',
+  userId?: string,
+) {
   // Build the appropriate callback URL for the provider
   let callbackUrl: string | undefined;
   if (typeof window !== 'undefined') {
     const origin = window.location.origin;
     switch (provider) {
-      case 'lastfm':
-        callbackUrl = `${origin}/auth/lastfm/callback`;
+      case 'lastfm': {
+        const params = userId ? `?user_id=${encodeURIComponent(userId)}` : '';
+        callbackUrl = `${origin}/auth/lastfm/callback${params}`;
         break;
+      }
       case 'spotify':
         callbackUrl = `${origin}/auth/spotify/callback`;
         break;

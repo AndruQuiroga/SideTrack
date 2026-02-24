@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import (
-    BigInteger,
+    JSON,
     DateTime,
     ForeignKey,
     Integer,
-    JSON,
     String,
     Text,
     UniqueConstraint,
@@ -20,13 +20,15 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
 
+if TYPE_CHECKING:
+    from .music import Album
+    from .user import User
+
 
 class Week(Base):
     __tablename__ = "weeks"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     label: Mapped[str] = mapped_column(String(255), nullable=False)
     week_number: Mapped[int | None] = mapped_column(Integer)
     discussion_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
@@ -35,29 +37,27 @@ class Week(Base):
     winner_album_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("albums.id")
     )
-    nominations_thread_id: Mapped[int | None] = mapped_column(BigInteger)
-    poll_thread_id: Mapped[int | None] = mapped_column(BigInteger)
-    winner_thread_id: Mapped[int | None] = mapped_column(BigInteger)
-    ratings_thread_id: Mapped[int | None] = mapped_column(BigInteger)
+    nominations_thread_id: Mapped[str | None] = mapped_column(String(32))
+    poll_thread_id: Mapped[str | None] = mapped_column(String(32))
+    winner_thread_id: Mapped[str | None] = mapped_column(String(32))
+    ratings_thread_id: Mapped[str | None] = mapped_column(String(32))
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+        DateTime(timezone=True), default=lambda: datetime.now(UTC)
     )
 
-    nominations: Mapped[list["Nomination"]] = relationship(
+    nominations: Mapped[list[Nomination]] = relationship(
         back_populates="week", cascade="all, delete-orphan"
     )
-    votes: Mapped[list["Vote"]] = relationship(back_populates="week")
-    ratings: Mapped[list["Rating"]] = relationship(back_populates="week")
-    winner_album: Mapped["Album | None"] = relationship(back_populates="winner_weeks")
+    votes: Mapped[list[Vote]] = relationship(back_populates="week")
+    ratings: Mapped[list[Rating]] = relationship(back_populates="week")
+    winner_album: Mapped[Album | None] = relationship(back_populates="winner_weeks")
 
 
 class Nomination(Base):
     __tablename__ = "nominations"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     week_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("weeks.id", ondelete="CASCADE"), nullable=False
     )
@@ -73,16 +73,16 @@ class Nomination(Base):
     decade: Mapped[str | None] = mapped_column(String(16))
     country: Mapped[str | None] = mapped_column(String(64))
     submitted_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+        DateTime(timezone=True), default=lambda: datetime.now(UTC)
     )
 
     week: Mapped[Week] = relationship(back_populates="nominations")
-    user: Mapped["User"] = relationship(back_populates="nominations")
-    album: Mapped["Album"] = relationship(back_populates="nominations")
-    votes: Mapped[list["Vote"]] = relationship(
+    user: Mapped[User] = relationship(back_populates="nominations")
+    album: Mapped[Album] = relationship(back_populates="nominations")
+    votes: Mapped[list[Vote]] = relationship(
         back_populates="nomination", cascade="all, delete-orphan"
     )
-    ratings: Mapped[list["Rating"]] = relationship(back_populates="nomination")
+    ratings: Mapped[list[Rating]] = relationship(back_populates="nomination")
 
 
 class Vote(Base):
@@ -91,9 +91,7 @@ class Vote(Base):
         UniqueConstraint("week_id", "user_id", "rank", name="uq_vote_week_user_rank"),
     )
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     week_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("weeks.id", ondelete="CASCADE"), nullable=False
     )
@@ -105,23 +103,19 @@ class Vote(Base):
     )
     rank: Mapped[int] = mapped_column(Integer, nullable=False)
     submitted_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+        DateTime(timezone=True), default=lambda: datetime.now(UTC)
     )
 
     week: Mapped[Week] = relationship(back_populates="votes")
-    user: Mapped["User"] = relationship(back_populates="votes")
+    user: Mapped[User] = relationship(back_populates="votes")
     nomination: Mapped[Nomination] = relationship(back_populates="votes")
 
 
 class Rating(Base):
     __tablename__ = "ratings"
-    __table_args__ = (
-        UniqueConstraint("week_id", "user_id", name="uq_rating_week_user"),
-    )
+    __table_args__ = (UniqueConstraint("week_id", "user_id", name="uq_rating_week_user"),)
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     week_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("weeks.id", ondelete="CASCADE"), nullable=False
     )
@@ -140,11 +134,11 @@ class Rating(Base):
     favorite_track: Mapped[str | None] = mapped_column(String(255))
     review: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+        DateTime(timezone=True), default=lambda: datetime.now(UTC)
     )
     metadata_: Mapped[dict | None] = mapped_column("metadata", JSON)
 
-    user: Mapped["User"] = relationship(back_populates="ratings")
+    user: Mapped[User] = relationship(back_populates="ratings")
     week: Mapped[Week] = relationship(back_populates="ratings")
-    album: Mapped["Album"] = relationship(back_populates="ratings")
+    album: Mapped[Album] = relationship(back_populates="ratings")
     nomination: Mapped[Nomination | None] = relationship(back_populates="ratings")

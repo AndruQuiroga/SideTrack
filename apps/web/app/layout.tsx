@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
+import { getServerSession } from 'next-auth/next';
 
+import { authOptions } from '../lib/auth';
 import { Navbar } from './components/navbar';
+import { SessionProvider } from './components/session-provider';
 import './globals.css';
 import { ToastViewport } from './components/toast';
 import { PwaRegister } from './components/pwa-register';
@@ -14,17 +17,20 @@ export const metadata: Metadata = {
   manifest: '/manifest.json',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const session = await getServerSession(authOptions);
   return (
     <html lang="en">
       <body className={fontClassName}>
-        <ThemeScript />
-        <div className="flex min-h-screen flex-col bg-sidetrack-bg">
-          <Navbar />
-          <div className="flex-1">{children}</div>
-        </div>
-        <ToastViewport />
-        <PwaRegister />
+        <SessionProvider session={session}>
+          <ThemeScript />
+          <div className="flex min-h-screen flex-col bg-sidetrack-bg">
+            <Navbar />
+            <div className="flex-1">{children}</div>
+          </div>
+          <ToastViewport />
+          <PwaRegister />
+        </SessionProvider>
       </body>
     </html>
   );

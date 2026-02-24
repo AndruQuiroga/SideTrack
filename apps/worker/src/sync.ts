@@ -71,7 +71,11 @@ export class SyncCoordinator {
           await this.store.upsert(user.id, connector.source, [nowPlaying], refreshed);
           this.metrics.recordSuccess(`${user.id}:${connector.source}:now`);
         } catch (error) {
-          console.error('Failed now-playing sweep', { user: user.id, provider: account.provider, error });
+          console.error('Failed now-playing sweep', {
+            user: user.id,
+            provider: account.provider,
+            error,
+          });
           this.metrics.recordError(`${user.id}:${account.provider}:now`, error);
         }
       }
@@ -90,7 +94,11 @@ export class SyncCoordinator {
   }
 
   private registerConnectors(): void {
-    const connectors: ProviderConnector[] = [new SpotifyConnector(), new LastfmConnector(), new ListenbrainzConnector()];
+    const connectors: ProviderConnector[] = [
+      new SpotifyConnector(),
+      new LastfmConnector(this.client),
+      new ListenbrainzConnector(),
+    ];
     for (const connector of connectors) {
       this.connectors.set(connector.provider, connector);
     }

@@ -1,29 +1,47 @@
 """User and linked account endpoints."""
 
+from datetime import datetime
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from apps.api.db import get_db
 from apps.api.models import LinkedAccount, ProviderType, User
+from apps.api.models.listening import ListenEvent
+from apps.api.models.music import Track
 from apps.api.schemas import (
     LinkedAccountCreate,
     LinkedAccountRead,
     UserCreate,
     UserRead,
+    UserUpdate,
 )
+
+
+class RecentListenRead(BaseModel):
+    track_name: str
+    artist_name: str
+    album_name: str | None = None
+    listened_at: datetime
+    source: str | None = None
+
 
 router = APIRouter(prefix="/users", tags=["users"])
 
 
 @router.get("/", response_model=list[UserRead])
-async def list_users(db: Session = Depends(get_db)) -> list[UserRead]:
-    """Return all users in the system."""
+async def list_users(
+    db: Session = Depends(get_db),
+    limit: int = Query(50, ge=1, le=500, description="Maximum number of users to return."),
+    offset: int = Query(0, ge=0, description="Number of users to skip."),
+) -> list[UserRead]:
+    """Return users in the system."""
 
-    users = db.scalars(select(User)).all()
+    users = db.scalars(select(User).offset(offset).limit(limit)).all()
     return users
 
 
@@ -55,6 +73,37 @@ async def get_user(user_id: UUID, db: Session = Depends(get_db)) -> UserRead:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
     return user
+
+
+@router.patch("/{user_id}", response_model=UserRead)
+async def update_user(
+    user_id: UUID, payload: UserUpdate, db: Session = Depends(get_db)
+) -> UserRead:
+    """Update mutable user fields (display_name, handle)."""
+
+    user = _ensure_user_exists(db, user_id)
+    updates = payload.model_dump(exclude_unset=True)
+    for field, value in updates.items():
+        setattr(user, field, value)
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Handle already taken",
+        ) from exc
+    db.refresh(user)
+    return user
+
+
+@router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_user(user_id: UUID, db: Session = Depends(get_db)) -> None:
+    """Delete a user and cascade-remove all owned records."""
+
+    user = _ensure_user_exists(db, user_id)
+    db.delete(user)
+    db.commit()
 
 
 @router.get("/{user_id}/linked-accounts", response_model=list[LinkedAccountRead])
@@ -116,15 +165,15 @@ async def delete_linked_account(
     )
     account = db.scalars(stmt).first()
     if not account:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Linked account not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Linked account not found"
+        )
 
     db.delete(account)
     db.commit()
 
 
-@router.get(
-    "/lookup/by-provider/{provider}/{provider_user_id}", response_model=UserRead
-)
+@router.get("/lookup/by-provider/{provider}/{provider_user_id}", response_model=UserRead)
 async def lookup_user_by_provider(
     provider: ProviderType, provider_user_id: str, db: Session = Depends(get_db)
 ) -> UserRead:
@@ -136,9 +185,41 @@ async def lookup_user_by_provider(
     )
     account = db.scalars(stmt).first()
     if not account:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Linked account not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Linked account not found"
+        )
 
     return account.user
+
+
+@router.get("/{user_id}/listening/recent", response_model=list[RecentListenRead])
+async def list_user_recent_listens(
+    user_id: UUID,
+    limit: int = Query(50, ge=1, le=200, description="Page size."),
+    offset: int = Query(0, ge=0, description="Number of records to skip."),
+    db: Session = Depends(get_db),
+) -> list[RecentListenRead]:
+    """Return recent listen events for a user, joined with track metadata."""
+
+    _ensure_user_exists(db, user_id)
+    stmt = (
+        select(ListenEvent, Track)
+        .join(Track, ListenEvent.track_id == Track.id)
+        .where(ListenEvent.user_id == user_id)
+        .order_by(ListenEvent.played_at.desc())
+        .limit(limit)
+        .offset(offset)
+    )
+    rows = db.execute(stmt).all()
+    return [
+        RecentListenRead(
+            track_name=track.title,
+            artist_name=track.artist_name,
+            listened_at=listen.played_at,
+            source=listen.source.value if listen.source else None,
+        )
+        for listen, track in rows
+    ]
 
 
 def _ensure_user_exists(db: Session, user_id: UUID) -> User:

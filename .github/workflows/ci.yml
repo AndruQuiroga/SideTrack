@@ -10,17 +10,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@v4
         with:
           python-version: "3.11"
-      - name: Install tooling
+      - name: Install dependencies
+        run: uv sync --frozen --python 3.11 --extra api --extra dev
+      - name: Lint (ruff + mypy)
         run: |
-          python -m pip install --upgrade pip
-          pip install pip-tools nox
-      - name: Verify requirements lock
-        run: pip-compile requirements-dev.in --quiet && git diff --exit-code requirements-dev.txt
-      - name: Lint and unit tests (Python)
-        run: nox -s lint unit -p 3.11
+          uv run --frozen ruff check apps/api
+          uv run --frozen mypy apps/api --ignore-missing-imports
+      - name: Unit tests
+        run: uv run --frozen pytest -m unit --strict-markers -x
 
   node:
     runs-on: ubuntu-latest

@@ -2,49 +2,155 @@ import { LinkedAccountRead, ListenSource, ProviderType } from '@sidetrack/shared
 
 import { NormalizedListen, ProviderConnector } from './base';
 
-function fakePlayedAt(offsetMinutes: number): Date {
-  return new Date(Date.now() - offsetMinutes * 60 * 1000);
-}
+const SPOTIFY_TOKEN_URL = 'https://accounts.spotify.com/api/token';
+const SPOTIFY_RECENT_URL = 'https://api.spotify.com/v1/me/player/recently-played';
+const SPOTIFY_NOW_PLAYING_URL = 'https://api.spotify.com/v1/me/player/currently-playing';
 
 export class SpotifyConnector implements ProviderConnector {
   provider = ProviderType.SPOTIFY;
   source = ListenSource.SPOTIFY;
 
-  async refreshAccessToken(account: LinkedAccountRead): Promise<LinkedAccountRead> {
-    const refreshedAt = new Date();
-    const newExpiry = new Date(refreshedAt.getTime() + 55 * 60 * 1000);
+  private readonly clientId: string | undefined;
+  private readonly clientSecret: string | undefined;
 
-    return {
-      ...account,
-      access_token: account.access_token ?? 'refreshed-spotify-token',
-      token_expires_at: newExpiry.toISOString(),
-    };
+  constructor(
+    clientId = process.env.SPOTIFY_CLIENT_ID,
+    clientSecret = process.env.SPOTIFY_CLIENT_SECRET,
+  ) {
+    this.clientId = clientId;
+    this.clientSecret = clientSecret;
+  }
+
+  async refreshAccessToken(account: LinkedAccountRead): Promise<LinkedAccountRead> {
+    if (!this.clientId || !this.clientSecret || !account.refresh_token) {
+      return account;
+    }
+
+    try {
+      const credentials = Buffer.from(`${this.clientId}:${this.clientSecret}`).toString('base64');
+      const res = await fetch(SPOTIFY_TOKEN_URL, {
+        method: 'POST',
+        headers: {
+          Authorization: `Basic ${credentials}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          grant_type: 'refresh_token',
+          refresh_token: account.refresh_token,
+        }),
+      });
+
+      if (!res.ok) return account;
+
+      const data = (await res.json()) as {
+        access_token: string;
+        expires_in: number;
+        refresh_token?: string;
+      };
+
+      return {
+        ...account,
+        access_token: data.access_token,
+        token_expires_at: new Date(Date.now() + data.expires_in * 1000).toISOString(),
+        ...(data.refresh_token ? { refresh_token: data.refresh_token } : {}),
+      };
+    } catch {
+      return account;
+    }
   }
 
   async fetchRecent(account: LinkedAccountRead, since?: Date): Promise<NormalizedListen[]> {
-    const baseListens: NormalizedListen[] = [
-      {
-        trackExternalId: `${account.provider_user_id}-spotify-track-1`,
-        playedAt: fakePlayedAt(5),
-        metadata: { context: 'recently played', provider: 'spotify' },
-      },
-      {
-        trackExternalId: `${account.provider_user_id}-spotify-track-2`,
-        playedAt: fakePlayedAt(25),
-        metadata: { context: 'recently played', provider: 'spotify' },
-      },
-    ];
+    if (!account.access_token) return [];
 
-    if (!since) return baseListens;
-    return baseListens.filter((listen) => listen.playedAt.getTime() > since.getTime());
+    try {
+      const params = new URLSearchParams({ limit: '50' });
+      if (since) params.set('after', String(since.getTime()));
+
+      const res = await fetch(`${SPOTIFY_RECENT_URL}?${params}`, {
+        headers: { Authorization: `Bearer ${account.access_token}` },
+      });
+
+      if (!res.ok) return [];
+
+      const data = (await res.json()) as {
+        items: Array<{
+          track: {
+            id: string;
+            name: string;
+            artists: Array<{ name: string }>;
+            album: { name: string };
+          };
+          played_at: string;
+        }>;
+      };
+
+      return (data.items ?? []).map((item) => ({
+        trackExternalId: item.track.id,
+        playedAt: new Date(item.played_at),
+        metadata: {
+          track_name: item.track.name,
+          artist_name: item.track.artists[0]?.name,
+          album_name: item.track.album?.name,
+          provider: 'spotify',
+        },
+      }));
+    } catch {
+      return [];
+    }
   }
 
   async fetchNowPlaying(account: LinkedAccountRead): Promise<NormalizedListen | null> {
-    const now = new Date();
-    return {
-      trackExternalId: `${account.provider_user_id}-spotify-now`,
-      playedAt: now,
-      metadata: { live: true, provider: 'spotify' },
-    };
+    if (!account.access_token) return null;
+
+    try {
+      const res = await fetch(SPOTIFY_NOW_PLAYING_URL, {
+        headers: { Authorization: `Bearer ${account.access_token}` },
+      });
+
+      if (!res.ok || res.status === 204) return null;
+
+      const data = (await res.json()) as {
+        is_playing: boolean;
+        item: { id: string; name: string; artists: Array<{ name: string }> } | null;
+      };
+
+      if (!data.is_playing || !data.item) return null;
+
+      return {
+        trackExternalId: data.item.id,
+        playedAt: new Date(),
+        metadata: {
+          track_name: data.item.name,
+          artist_name: data.item.artists[0]?.name,
+          live: true,
+          provider: 'spotify',
+        },
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  /** Obtain a client credentials token for non-user Spotify API calls (e.g. audio features). */
+  async getClientToken(): Promise<string | null> {
+    if (!this.clientId || !this.clientSecret) return null;
+
+    try {
+      const credentials = Buffer.from(`${this.clientId}:${this.clientSecret}`).toString('base64');
+      const res = await fetch(SPOTIFY_TOKEN_URL, {
+        method: 'POST',
+        headers: {
+          Authorization: `Basic ${credentials}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({ grant_type: 'client_credentials' }),
+      });
+
+      if (!res.ok) return null;
+      const data = (await res.json()) as { access_token: string };
+      return data.access_token;
+    } catch {
+      return null;
+    }
   }
 }

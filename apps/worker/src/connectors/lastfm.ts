@@ -1,4 +1,9 @@
-import { LinkedAccountRead, ListenSource, ProviderType } from '@sidetrack/shared';
+import {
+  LinkedAccountRead,
+  ListenSource,
+  ProviderType,
+  SidetrackApiClient,
+} from '@sidetrack/shared';
 
 import { NormalizedListen, ProviderConnector } from './base';
 
@@ -6,37 +11,43 @@ export class LastfmConnector implements ProviderConnector {
   provider = ProviderType.LASTFM;
   source = ListenSource.LASTFM;
 
+  constructor(private readonly client: SidetrackApiClient) {}
+
   async refreshAccessToken(account: LinkedAccountRead): Promise<LinkedAccountRead> {
-    return {
-      ...account,
-      access_token: account.access_token ?? 'lastfm-session-key',
-      token_expires_at: account.token_expires_at ?? null,
-    };
+    // Last.fm uses session keys (non-expiring) — no token refresh needed.
+    return account;
   }
 
+  /**
+   * Delegates to the API's POST /ingest/lastfm endpoint which fetches and
+   * stores scrobbles server-side. Returns an empty list because the API
+   * already handled persistence; the worker's store.upsert call becomes a
+   * no-op.
+   */
   async fetchRecent(account: LinkedAccountRead, since?: Date): Promise<NormalizedListen[]> {
-    const listens: NormalizedListen[] = [
-      {
-        trackExternalId: `${account.provider_user_id}-lastfm-track-a`,
-        playedAt: new Date(Date.now() - 10 * 60 * 1000),
-        metadata: { source: 'scrobble' },
-      },
-      {
-        trackExternalId: `${account.provider_user_id}-lastfm-track-b`,
-        playedAt: new Date(Date.now() - 65 * 60 * 1000),
-        metadata: { source: 'scrobble' },
-      },
-    ];
-
-    if (!since) return listens;
-    return listens.filter((listen) => listen.playedAt.getTime() > since.getTime());
+    const sinceTs = since ? Math.floor(since.getTime() / 1000) : undefined;
+    try {
+      const result = await this.client.ingestLastfm(
+        account.user_id,
+        account.provider_user_id,
+        sinceTs,
+      );
+      console.info(
+        `[lastfm] Ingested ${result.inserted} listens for user ${account.user_id} (last_ts=${result.last_ts})`,
+      );
+    } catch (error) {
+      console.error('[lastfm] Ingest failed', {
+        user_id: account.user_id,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+    // API handled persistence; return empty so store.upsert is a no-op.
+    return [];
   }
 
   async fetchNowPlaying(account: LinkedAccountRead): Promise<NormalizedListen | null> {
-    return {
-      trackExternalId: `${account.provider_user_id}-lastfm-now`,
-      playedAt: new Date(),
-      metadata: { nowPlaying: true, service: 'lastfm' },
-    };
+    // Last.fm now-playing is handled via the API's /users/{id}/listening/now-playing
+    // endpoint which reads from the DB. Return null to avoid double-counting.
+    return null;
   }
 }

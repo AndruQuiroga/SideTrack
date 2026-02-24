@@ -6,8 +6,8 @@ bot can share consistent contracts while the persistence layer is wired up.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 import re
+from datetime import UTC, datetime
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -38,6 +38,11 @@ class UserRead(UserBase):
     updated_at: datetime
 
 
+class UserUpdate(OrmSchema):
+    display_name: str | None = None
+    handle: str | None = None
+
+
 class LinkedAccountBase(OrmSchema):
     user_id: UUID
     provider: ProviderType
@@ -48,7 +53,7 @@ class LinkedAccountBase(OrmSchema):
     token_expires_at: datetime | None = None
 
     @model_validator(mode="after")
-    def validate_provider_specific(self) -> "LinkedAccountBase":
+    def validate_provider_specific(self) -> LinkedAccountBase:
         """Apply provider-specific validation rules."""
 
         if self.provider == ProviderType.DISCORD:
@@ -62,9 +67,9 @@ class LinkedAccountBase(OrmSchema):
                 expires_at = (
                     self.token_expires_at
                     if self.token_expires_at.tzinfo
-                    else self.token_expires_at.replace(tzinfo=timezone.utc)
+                    else self.token_expires_at.replace(tzinfo=UTC)
                 )
-                if expires_at <= datetime.now(timezone.utc):
+                if expires_at <= datetime.now(UTC):
                     raise ValueError("Spotify token_expires_at must be in the future")
 
         return self
@@ -87,10 +92,10 @@ class WeekBase(OrmSchema):
     nominations_close_at: datetime | None = None
     poll_close_at: datetime | None = None
     winner_album_id: UUID | None = None
-    nominations_thread_id: int | None = None
-    poll_thread_id: int | None = None
-    winner_thread_id: int | None = None
-    ratings_thread_id: int | None = None
+    nominations_thread_id: str | None = None
+    poll_thread_id: str | None = None
+    winner_thread_id: str | None = None
+    ratings_thread_id: str | None = None
 
 
 class WeekCreate(WeekBase):
@@ -104,10 +109,10 @@ class WeekUpdate(OrmSchema):
     nominations_close_at: datetime | None = None
     poll_close_at: datetime | None = None
     winner_album_id: UUID | None = None
-    nominations_thread_id: int | None = None
-    poll_thread_id: int | None = None
-    winner_thread_id: int | None = None
-    ratings_thread_id: int | None = None
+    nominations_thread_id: str | None = None
+    poll_thread_id: str | None = None
+    winner_thread_id: str | None = None
+    ratings_thread_id: str | None = None
 
 
 class WeekRead(WeekBase):
@@ -198,9 +203,7 @@ class RatingBase(OrmSchema):
     favorite_track: str | None = None
     review: str | None = None
     created_at: datetime | None = None
-    metadata_: dict | None = Field(
-        default=None, alias="metadata", serialization_alias="metadata"
-    )
+    metadata_: dict | None = Field(default=None, alias="metadata", serialization_alias="metadata")
 
 
 class RatingCreate(RatingBase):
@@ -246,15 +249,28 @@ class TrackRead(TrackBase):
     id: UUID
 
 
+class TrackFeatureCreate(OrmSchema):
+    energy: float | None = None
+    valence: float | None = None
+    danceability: float | None = None
+    tempo: float | None = None
+    acousticness: float | None = None
+    instrumentalness: float | None = None
+    genres: list[str] | None = None
+
+
+class TrackFeatureRead(TrackFeatureCreate):
+    track_id: UUID
+    created_at: datetime
+
+
 # Listening data
 class ListenEventBase(OrmSchema):
     user_id: UUID
     track_id: UUID
     played_at: datetime
     source: ListenSource
-    metadata_: dict | None = Field(
-        default=None, alias="metadata", serialization_alias="metadata"
-    )
+    metadata_: dict | None = Field(default=None, alias="metadata", serialization_alias="metadata")
     ingested_at: datetime | None = None
 
 
@@ -281,8 +297,7 @@ class TasteProfileSummary(OrmSchema):
 
 
 class TasteProfileRead(OrmSchema):
-    id: UUID
     user_id: UUID
     scope: str
     summary: TasteProfileSummary | None = None
-    updated_at: datetime
+    last_computed_at: datetime | None = None

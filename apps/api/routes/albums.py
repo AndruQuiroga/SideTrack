@@ -3,7 +3,7 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import and_, func, select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -45,6 +45,16 @@ async def search_albums(
 
     albums = db.scalars(query.limit(limit)).all()
     return albums
+
+
+@router.get("/{album_id}", response_model=AlbumRead)
+async def get_album(album_id: UUID, db: Session = Depends(get_db)) -> AlbumRead:
+    """Return a single album by ID."""
+
+    album = db.get(Album, album_id)
+    if not album:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Album not found.")
+    return album
 
 
 @router.post("/", response_model=AlbumRead, status_code=status.HTTP_201_CREATED)

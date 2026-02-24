@@ -88,6 +88,11 @@ export interface UserCreate {
   handle?: string | null;
 }
 
+export interface UserUpdate {
+  display_name?: string | null;
+  handle?: string | null;
+}
+
 export interface LinkedAccountBase {
   user_id: UUID;
   provider: ProviderType;
@@ -112,10 +117,10 @@ export interface WeekBase {
   nominations_close_at?: IsoDateString | null;
   poll_close_at?: IsoDateString | null;
   winner_album_id?: UUID | null;
-  nominations_thread_id?: number | null;
-  poll_thread_id?: number | null;
-  winner_thread_id?: number | null;
-  ratings_thread_id?: number | null;
+  nominations_thread_id?: string | null;
+  poll_thread_id?: string | null;
+  winner_thread_id?: string | null;
+  ratings_thread_id?: string | null;
 }
 
 export interface WeekCreate extends WeekBase {}
@@ -127,10 +132,10 @@ export interface WeekUpdate {
   nominations_close_at?: IsoDateString | null;
   poll_close_at?: IsoDateString | null;
   winner_album_id?: UUID | null;
-  nominations_thread_id?: number | null;
-  poll_thread_id?: number | null;
-  winner_thread_id?: number | null;
-  ratings_thread_id?: number | null;
+  nominations_thread_id?: string | null;
+  poll_thread_id?: string | null;
+  winner_thread_id?: string | null;
+  ratings_thread_id?: string | null;
 }
 
 export interface WeekRead extends WeekBase {
@@ -239,6 +244,31 @@ export interface AlbumCreate extends AlbumBase {}
 
 export interface AlbumRead extends AlbumBase {
   id: UUID;
+}
+
+export interface TrackRead {
+  id: UUID;
+  album_id: UUID;
+  title: string;
+  artist_name: string;
+  duration_ms?: number | null;
+  musicbrainz_id?: string | null;
+  spotify_id?: string | null;
+}
+
+export interface TrackFeatureCreate {
+  energy?: number | null;
+  valence?: number | null;
+  danceability?: number | null;
+  tempo?: number | null;
+  acousticness?: number | null;
+  instrumentalness?: number | null;
+  genres?: string[] | null;
+}
+
+export interface TrackFeatureRead extends TrackFeatureCreate {
+  track_id: UUID;
+  created_at: IsoDateString;
 }
 
 export interface ListenEventBase {

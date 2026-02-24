@@ -26,6 +26,7 @@ export default function LastFmCallbackPage() {
 
   useEffect(() => {
     const token = searchParams.get('token');
+    const userId = searchParams.get('user_id');
 
     if (!token) {
       setState('error');
@@ -36,8 +37,10 @@ export default function LastFmCallbackPage() {
     async function completeAuth(authToken: string) {
       try {
         const baseUrl = getApiBaseUrl();
-        // TODO: Pass user_id when we have auth context
-        const res = await fetch(`${baseUrl}/integrations/lastfm/callback?token=${encodeURIComponent(authToken)}`);
+        const userParam = userId ? `&user_id=${encodeURIComponent(userId)}` : '';
+        const res = await fetch(
+          `${baseUrl}/integrations/lastfm/callback?token=${encodeURIComponent(authToken)}${userParam}`,
+        );
 
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
@@ -72,9 +75,7 @@ export default function LastFmCallbackPage() {
           <div className="flex items-center justify-center py-8">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700 border-t-emerald-400" />
           </div>
-          <p className="text-center text-sm text-slate-400">
-            Completing Last.fm authentication...
-          </p>
+          <p className="text-center text-sm text-slate-400">Completing Last.fm authentication...</p>
         </Card>
       </PageShell>
     );
@@ -121,13 +122,9 @@ export default function LastFmCallbackPage() {
           <p className="text-sm text-emerald-200">
             Welcome, <span className="font-semibold">{result?.username}</span>!
           </p>
-          <p className="mt-1 text-xs text-slate-400">
-            {result?.message}
-          </p>
+          <p className="mt-1 text-xs text-slate-400">{result?.message}</p>
         </div>
-        <p className="text-sm text-slate-400">
-          Redirecting you to settings in a moment...
-        </p>
+        <p className="text-sm text-slate-400">Redirecting you to settings in a moment...</p>
         <Link
           href="/settings"
           className="inline-block rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-emerald-400"

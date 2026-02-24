@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from collections import Counter, defaultdict
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from typing import Iterable, Mapping
+from datetime import UTC, datetime
 from uuid import UUID
 
 from sqlalchemy import select
@@ -128,9 +128,7 @@ def compute_profile_summary(
     }
 
 
-def compute_user_taste_profile(
-    db: Session, user_id: UUID, scope: str = "all_time"
-) -> TasteProfile:
+def compute_user_taste_profile(db: Session, user_id: UUID, scope: str = "all_time") -> TasteProfile:
     """Compute and upsert a taste profile for the given user."""
 
     listens = db.scalars(select(ListenEvent).where(ListenEvent.user_id == user_id)).all()
@@ -152,11 +150,18 @@ def compute_user_taste_profile(
     ).first()
 
     if existing:
-        existing.summary = summary
-        existing.updated_at = datetime.now(timezone.utc)
+        existing.genre_histogram = summary["genre_histogram"]
+        existing.feature_means = summary["feature_means"]
+        existing.last_computed_at = datetime.now(UTC)
         profile = existing
     else:
-        profile = TasteProfile(user_id=user_id, scope=scope, summary=summary)
+        profile = TasteProfile(
+            user_id=user_id,
+            scope=scope,
+            genre_histogram=summary["genre_histogram"],
+            feature_means=summary["feature_means"],
+            last_computed_at=datetime.now(UTC),
+        )
         db.add(profile)
 
     db.commit()

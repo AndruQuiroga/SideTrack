@@ -34,6 +34,7 @@ export class ClubSyncService {
     private readonly config: BotConfig,
     private readonly logger: Logger,
     private readonly nominationsThreadMap: Map<string, WeekDetail> = new Map(),
+    private readonly ratingsThreadMap: Map<string, WeekDetail> = new Map(),
   ) {}
 
   /** Get the underlying API client for direct access. */
@@ -49,6 +50,9 @@ export class ClubSyncService {
     weeks.forEach((week) => {
       if (week.nominations_thread_id) {
         this.nominationsThreadMap.set(String(week.nominations_thread_id), week);
+      }
+      if (week.ratings_thread_id) {
+        this.ratingsThreadMap.set(String(week.ratings_thread_id), week);
       }
     });
     return weeks;
@@ -175,7 +179,10 @@ export class ClubSyncService {
           this.logger.warn('Vote already recorded; returning existing vote.', loggerMeta);
           const votes = await this.client.listVotes();
           const voteMatch = votes.find(
-            (entry) => entry.week_id === weekId && entry.user_id === vote.user_id && entry.rank === vote.rank,
+            (entry) =>
+              entry.week_id === weekId &&
+              entry.user_id === vote.user_id &&
+              entry.rank === vote.rank,
           );
           if (voteMatch) return voteMatch;
         }
@@ -194,7 +201,10 @@ export class ClubSyncService {
         return await this.client.upsertRating(weekId, rating);
       } catch (error) {
         if (error instanceof ApiError && error.status === 409) {
-          this.logger.warn('Rating already exists; returning previously stored rating.', loggerMeta);
+          this.logger.warn(
+            'Rating already exists; returning previously stored rating.',
+            loggerMeta,
+          );
           const ratings = await this.client.listRatings();
           const existing = ratings.find(
             (entry) => entry.week_id === weekId && entry.user_id === rating.user_id,
@@ -207,16 +217,27 @@ export class ClubSyncService {
   }
 
   async attachNominationsThread(weekId: UUID, threadId: string): Promise<WeekDetail> {
-    const parsedThreadId = Number(threadId);
     const updated = await this.withRetry('attach-nominations-thread', () =>
-      this.client.updateWeek(weekId, { nominations_thread_id: parsedThreadId }),
+      this.client.updateWeek(weekId, { nominations_thread_id: threadId }),
     );
-    this.nominationsThreadMap.set(String(parsedThreadId), updated);
+    this.nominationsThreadMap.set(threadId, updated);
     return updated;
   }
 
   getWeekForNominationsThread(threadId: string): WeekDetail | undefined {
     return this.nominationsThreadMap.get(threadId);
+  }
+
+  async attachRatingsThread(weekId: UUID, threadId: string): Promise<WeekDetail> {
+    const updated = await this.withRetry('attach-ratings-thread', () =>
+      this.client.updateWeek(weekId, { ratings_thread_id: threadId }),
+    );
+    this.ratingsThreadMap.set(threadId, updated);
+    return updated;
+  }
+
+  getWeekForRatingsThread(threadId: string): WeekDetail | undefined {
+    return this.ratingsThreadMap.get(threadId);
   }
 
   private async withRetry<T>(operation: string, fn: () => Promise<T>): Promise<T> {
@@ -230,10 +251,11 @@ export class ClubSyncService {
         attempt += 1;
         const isFinal = attempt >= attempts;
         const delayMs = baseDelayMs * attempt;
-        this.logger.warn(
-          `${operation} failed${isFinal ? '' : ', retrying...'}`,
-          { attempt, attempts, error: error instanceof Error ? error.message : String(error) },
-        );
+        this.logger.warn(`${operation} failed${isFinal ? '' : ', retrying...'}`, {
+          attempt,
+          attempts,
+          error: error instanceof Error ? error.message : String(error),
+        });
         if (isFinal) {
           throw error;
         }

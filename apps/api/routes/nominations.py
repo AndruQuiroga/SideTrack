@@ -1,54 +1,48 @@
-"""Nomination endpoints with static responses."""
+"""Nomination endpoints backed by the SQLAlchemy models."""
 
-from datetime import datetime, timezone
-from uuid import UUID, uuid4
+from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from apps.api.db import get_db
+from apps.api.models.club import Nomination
 from apps.api.schemas import NominationRead
 
 router = APIRouter(prefix="/nominations", tags=["nominations"])
 
 
 @router.get("/", response_model=list[NominationRead])
-async def list_nominations(db: Session = Depends(get_db)) -> list[NominationRead]:
-    """Return placeholder nominations."""
+async def list_nominations(
+    db: Session = Depends(get_db),
+    week_id: UUID | None = Query(None),
+    user_id: UUID | None = Query(None),
+    album_id: UUID | None = Query(None),
+    limit: int = Query(50, ge=1, le=500, description="Maximum number of nominations to return."),
+    offset: int = Query(0, ge=0, description="Number of nominations to skip."),
+) -> list[NominationRead]:
+    """Return nominations, optionally filtered by week, user, or album."""
 
-    _ = db
-    return [
-        NominationRead(
-            id=uuid4(),
-            week_id=uuid4(),
-            user_id=uuid4(),
-            album_id=uuid4(),
-            pitch="A classic electronic record everyone should revisit",
-            pitch_track_url="https://open.spotify.com/track/example",
-            genre="electronic",
-            decade="2000s",
-            country="France",
-            submitted_at=datetime(2024, 6, 30, 12, 0, tzinfo=timezone.utc),
-        )
-    ]
+    query = select(Nomination)
+    if week_id is not None:
+        query = query.where(Nomination.week_id == week_id)
+    if user_id is not None:
+        query = query.where(Nomination.user_id == user_id)
+    if album_id is not None:
+        query = query.where(Nomination.album_id == album_id)
+
+    nominations = db.execute(query.offset(offset).limit(limit)).scalars().all()
+    return [NominationRead.model_validate(n) for n in nominations]
 
 
 @router.get("/{nomination_id}", response_model=NominationRead)
-async def get_nomination(
-    nomination_id: UUID, db: Session = Depends(get_db)
-) -> NominationRead:
-    """Return a single nomination placeholder."""
+async def get_nomination(nomination_id: UUID, db: Session = Depends(get_db)) -> NominationRead:
+    """Return a single nomination by ID."""
 
-    _ = db
-    return NominationRead(
-        id=nomination_id,
-        week_id=uuid4(),
-        user_id=uuid4(),
-        album_id=uuid4(),
-        pitch="A shimmering slice of nu-disco",
-        pitch_track_url="https://open.spotify.com/track/another-example",
-        genre="disco",
-        decade="2010s",
-        country="UK",
-        submitted_at=datetime(2024, 6, 30, 13, 0, tzinfo=timezone.utc),
-    )
+    nomination = db.get(Nomination, nomination_id)
+    if not nomination:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Nomination not found.")
+    return NominationRead.model_validate(nomination)

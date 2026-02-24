@@ -10,6 +10,9 @@ class Settings(BaseSettings):
 
     database_url: str = "sqlite:///./sidetrack.db"
     app_name: str = "Sidetrack API"
+    # Auth
+    sidetrack_api_token: str | None = None
+    cors_origins: list[str] = ["http://localhost:3000", "http://localhost:3001"]
     # External APIs
     sidetrack_musicbrainz_app_name: str | None = None
     lastfm_api_key: str | None = None

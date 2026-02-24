@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from collections import Counter
-from datetime import datetime, timezone
-from decimal import Decimal, ROUND_FLOOR
+from datetime import UTC, datetime
+from decimal import ROUND_FLOOR, Decimal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
@@ -93,8 +93,19 @@ def _bucket_value(value: float, bin_size: float) -> float:
 
 
 @router.get("/ratings", response_model=list[RatingRead])
-async def list_ratings(db: Session = Depends(get_db)) -> list[RatingRead]:
-    ratings = db.execute(select(Rating)).scalars().all()
+async def list_ratings(
+    db: Session = Depends(get_db),
+    week_id: UUID | None = Query(None, description="Filter ratings by week ID."),
+    user_id: UUID | None = Query(None, description="Filter ratings by user ID."),
+    limit: int = Query(50, ge=1, le=500, description="Maximum number of ratings to return."),
+    offset: int = Query(0, ge=0, description="Number of ratings to skip."),
+) -> list[RatingRead]:
+    query = select(Rating)
+    if week_id is not None:
+        query = query.where(Rating.week_id == week_id)
+    if user_id is not None:
+        query = query.where(Rating.user_id == user_id)
+    ratings = db.execute(query.offset(offset).limit(limit)).scalars().all()
     return [RatingRead.model_validate(rating) for rating in ratings]
 
 
@@ -157,7 +168,7 @@ async def create_week_rating(
         value=payload.value,
         favorite_track=payload.favorite_track,
         review=payload.review,
-        created_at=payload.created_at or datetime.now(timezone.utc),
+        created_at=payload.created_at or datetime.now(UTC),
         metadata=payload.metadata,
     )
 
@@ -188,18 +199,14 @@ async def get_week_rating_summary(
     _require_week(db, week_id)
 
     stats = db.execute(
-        select(func.avg(Rating.value), func.count(Rating.id)).where(
-            Rating.week_id == week_id
-        )
+        select(func.avg(Rating.value), func.count(Rating.id)).where(Rating.week_id == week_id)
     ).one()
     average = float(stats[0]) if stats[0] is not None else None
     count = int(stats[1] or 0)
 
     histogram: list[RatingHistogramBin] | None = None
     if include_histogram and count:
-        values = db.execute(
-            select(Rating.value).where(Rating.week_id == week_id)
-        ).scalars().all()
+        values = db.execute(select(Rating.value).where(Rating.week_id == week_id)).scalars().all()
         counter: Counter[float] = Counter()
         for value in values:
             counter[_bucket_value(value, bin_size)] += 1
