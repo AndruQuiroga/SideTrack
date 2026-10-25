@@ -1,273 +1,52 @@
-# Sidetrack — Agents Overview
+# Sidetrack: agent instructions
 
-Welcome, agent. This repo defines the **Sidetrack** project: a unified system that:
+Shared by Codex, Claude Code and any other agent. Keep this file short; details live in the linked docs.
 
-1. Runs a weekly **Discord album club** (Sidetrack Club) end‑to‑end with a bot.
-2. Publishes a **public web archive** of all weeks, winners, nominations, ratings, and discussion highlights.
-3. Acts as a **social music tracking platform** with Spotify/Last.fm integration, mood/taste analysis, and friend/follow features.
+## Read first
 
-This file gives you shared context and explains how the pieces fit together. Individual task documents for each subsystem live under `agents/` and contain concrete work items.
+1. `docs/STATUS.md`: what actually works today. Trust it over any other prose.
+2. `docs/decisions/`: architecture decisions (ADRs). Don't re-propose a decision without a new ADR.
+3. `openspec/specs/`: the behaviour the system must have. `openspec/changes/`: work in flight.
 
----
+## How work happens
 
-## 1. What Sidetrack Is
+All non-trivial work goes through OpenSpec:
 
-Sidetrack combines two things:
+- Claude Code: `/opsx:propose`, `/opsx:apply`, `/opsx:archive`
+- Codex: `$openspec-propose`, `$openspec-apply-change`, `$openspec-archive-change`
 
-- A **Discord-based music club** where, each week:
-  - Members nominate one album.
-  - The group runs a **ranked vote** (1st and 2nd choice).
-  - The winning album becomes “Album of the Week”.
-  - Everyone listens, joins a scheduled discussion, and posts **ratings + short reviews**.
+A bug found mid-task becomes its own change (or a GitHub issue that names the spec it violates), not a silent drive-by fix.
 
-- A **web platform & tracker** where:
-  - Anyone can **browse past club weeks**: winners, full nominee lists, tags, ratings, and comments.
-  - Users can **connect Spotify / Last.fm** to import their listening history.
-  - The system performs **taste/mood/genre analysis** and exposes social features:
-    - Profiles, ratings, reviews.
-    - Follow/friend relationships.
-    - “Taste match” / compatibility comparisons.
-    - Auto playlists and recommendations.
+## Hard rules
 
-Think “Last.fm + AniList + Discord club automation” under one roof.
+- **No fakes in production code.** Nothing under `services/`, `apps/` or `packages/` may return placeholder, random or mock data. Unimplemented behaviour raises `NotImplementedError` or reports itself as unavailable. Test doubles live under `tests/` only.
+- **No secrets** in code, specs, logs, fixtures or API responses. Config comes from env vars or Docker secrets.
+- **No new infrastructure** (Redis, Celery, extra services) without an ADR. Postgres is the only stateful service.
+- **Spotify is metadata-only.** Audio features and recommendations are unavailable to this app.
+- **yt-dlp is opt-in and personal-only.** Never schedule it and never serve audio over HTTP.
 
----
+## Layout (current; the target is ADR 0001)
 
-## 2. Core Goals
+| Path | What |
+| --- | --- |
+| `services/api` | FastAPI app, SQLAlchemy models, routes |
+| `services/worker` | Legacy sync worker, due for replacement (ADR 0002) |
+| `services/extraction` | Stub only; the audio lab replaces it |
+| `apps/bot` | discord.js club bot |
+| `apps/web` | Next.js site |
+| `packages/api-client` | Generated TS client for bot and web |
+| `migrations/` | Alembic |
+| `deploy/` | Swarm stack for Stache-Rack (ADR 0006) |
 
-### 2.1 Club Automation Goals
+## Commands
 
-- Automate the **full weekly club loop**:
-  - Create nominations thread with a pinned mini‑form.
-  - Close nominations at a deadline; open 1st/2nd choice polls.
-  - Tally ranked votes and announce the winner.
-  - Schedule & remind for the listening/discussion session.
-  - Open and monitor a ratings thread, validating 1.0–5.0 scores and summarizing them.
+```bash
+uv sync --python 3.11 --extra api --extra worker --extra dev   # Python deps
+make lint                                                       # ruff + mypy
+make test.unit                                                  # fast tests
+uv run --frozen --extra api alembic upgrade head                # migrations
+pnpm install && pnpm lint && pnpm build                         # TypeScript
+pnpm exec openspec list                                         # changes in flight
+```
 
-- Store **all club data** in a central backend so the website can:
-  - Show a gallery of weekly winners.
-  - Show detailed pages per week with nominees, poll results, and ratings.
-  - Compute stats over time (top nominators, genre trends, etc.).
-
-### 2.2 Web Archive & Social Site Goals
-
-- Build a **public site** (no login required to browse) with:
-  - A **winners gallery**: one card per week (cover, title, artist, tags).
-  - **Week detail pages**: album, nominator & pitch, nominees, poll results, ratings summary, and review excerpts.
-  - **Filters/search** by genre, decade, country, nominator, artist, etc.
-
-- Add **social music tracking**:
-  - User profiles showing:
-    - Top artists/albums/genres, temporal stats (this week / month / all‑time).
-    - Ratings of albums (club picks and others).
-    - Mood/taste visualizations derived from track features.
-  - Friend/follow system:
-    - See friends’ recent listens, ratings, and reviews.
-    - “Taste match” score and overlap visualization between two users.
-  - Optional **real-time flavor**:
-    - “Now playing” display for connected Spotify users.
-    - Light “listen along” affordances (e.g. quick link to open friend’s track on Spotify).
-
-### 2.3 Analysis & Recommendations Goals
-
-- Integrate **Spotify & Last.fm (and optionally ListenBrainz)**:
-  - Import listening history (scrobbles / recently played).
-  - Fetch audio features (energy, valence, tempo, danceability, etc.) from Spotify.
-- Compute per‑user **taste fingerprints**:
-  - E.g. axes like Energy, Happiness, Aggression, Acousticness, Danceability.
-  - Histograms over genres, moods, and time of day.
-- Use those fingerprints to:
-  - Visualize users’ tastes on profile pages.
-  - Compute user–user similarity (compatibility).
-  - Suggest albums or tracks to explore (simple recommendation rules first; ML later).
-  - Power friend‑blend playlists and mood‑based playlist generators.
-
----
-
-## 3. High‑Level Architecture
-
-The system is broken into several cooperative services:
-
-- **`apps/bot` – Discord Bot**
-  - Runs in the Sidetrack Club server.
-  - Orchestrates the weekly album cycle (threads, polls, reminders, ratings).
-  - Syncs all structured data (nominations, votes, ratings, schedule) to the backend API.
-
-- **`services/api` – Backend API**
-  - Authoritative source of truth (PostgreSQL).
-  - Manages users, linked accounts (Discord, Spotify, Last.fm), albums, tracks, listens, and taste profiles.
-  - Exposes endpoints used by:
-    - The Discord bot (club operations).
-    - The web frontend (archive, profiles, social views).
-    - Background workers (sync jobs, analysis orchestration).
-
-- **`apps/web` – Web Frontend**
-  - Next.js (App Router) + React + TailwindCSS.
-    - Public club archive.
-    - Authenticated social/music‑tracking experience.
-  - Uses `app/` directory (App Router); utilities in `app/lib/`, components in `app/components/`.
-  - Talks only to `services/api` (no direct DB/external API access).
-
-- **`services/worker` – Background Jobs**
-  - Python-based worker using APScheduler for periodic tasks and RQ for async jobs.
-  - Periodically syncs listening data from Spotify/Last.fm.
-  - Runs batch computations for stats, taste profiles, and recommendations.
-  - Writes directly to the shared PostgreSQL database (same models as the API).
-
-- **`packages/api-client` – Typed API Client**
-  - Codegen'd TypeScript types from OpenAPI spec (`openapi-typescript`).
-  - Typed API client shared by bot and web via `@sidetrack/api-client`.
-
-- **`services/extraction` – Audio Feature Extraction**
-  - Standalone Python/FastAPI service for GPU-heavy audio analysis (librosa, openl3).
-  - Has its own `pyproject.toml` and `uv.lock` (not a uv workspace member).
-  - Communicates with the API over HTTP; deploys independently.
-
-- **External Systems**
-  - **Discord API** – events, messages, threads, user IDs.
-  - **Spotify API** – OAuth, playback state, audio features, playlist creation.
-  - **Last.fm / ListenBrainz APIs** – scrobbles & charts.
-  - **MusicBrainz (local or remote)** – canonical music metadata and search.
-
----
-
-## 4. Core User Flows
-
-### 4.1 Weekly Club Flow (Discord → API → Web)
-
-1. **Nominations Phase**
-   - Bot creates a **forum thread**: `WEEK 003 [2025‑11‑24] – NOMINATIONS`.
-   - Posts a pinned mini‑form:
-     - `album_name — artist_name (year)`
-     - mini “Why?” pitch
-     - one “pitch track” link
-     - tags (Genre / Decade / Country)
-   - Users reply with filled forms.
-   - Bot parses replies, validates fields, and stores nominations via the API.
-
-2. **Poll Phase**
-   - At the nomination deadline, the bot:
-     - Closes nominations (or simply stops accepting new ones).
-     - Creates a **Poll thread** with two polls, or a 2‑slot voting interaction:
-       - Poll 1: first‑choice vote.
-       - Poll 2: second‑choice vote.
-   - Scoring:
-     - 1st place: 2 points.
-     - 2nd place: 1 point.
-     - Tie‑breaker: most 1st‑place votes.
-   - Bot records each user’s selection and posts results to the API.
-
-3. **Winner & Discussion**
-   - Bot announces the winning album in a **Winner thread**, showing:
-     - Album, artist, year, cover art.
-     - Poll results and points.
-     - Spotify link (and maybe other links).
-   - Bot schedules and reminds for the listening/discussion session (date/time).
-
-4. **Ratings Phase**
-   - Bot opens a **Ratings thread** for the winning album with a pinned mini‑form.
-   - Users post:
-     - A score in the range 1.0–5.0 (half‑stars allowed).
-     - Optional “favorite track” and final thoughts.
-   - Bot parses ratings, validates the numeric value, and stores them via the API.
-   - At the end, the bot posts an **aggregate summary**:
-     - Average score, number of ratings, maybe a histogram.
-   - Web archive surfaces all of this in a readable, attractive format.
-
-### 4.2 Everyday Social & Tracking Flow (Spotify/Last.fm → Worker → API → Web)
-
-1. **Account Setup**
-   - User signs into the web app (email or OAuth).
-   - Links external accounts (Spotify, Last.fm, Discord).
-   - Grants permission for reading listening history and audio features.
-
-2. **Passive Tracking**
-   - Workers periodically fetch new scrobbles / recently played tracks.
-   - Each listen is stored with time, track ID, and source.
-
-3. **Taste Analysis**
-   - For each new track (or periodically in batches):
-     - Fetch audio features from Spotify or compute custom ones.
-     - Update the user’s aggregate taste profile (e.g. mood vectors, genre distribution).
-   - Store derived data (e.g. a “taste embedding” per user).
-
-4. **Social Features**
-   - Web shows:
-     - Recent listens, top artists, top albums, genre breakdowns.
-     - Friend feed: what friends recently played or rated.
-     - “Taste match” between two users using similarity of taste embeddings and overlaps.
-   - Recommendations and auto playlists use this data:
-     - Friend‑blend playlists.
-     - Mood‑based mixes.
-     - “You and X both love Y, try Z next”.
-
----
-
-## 5. Tech & Conventions (Assumptions)
-
-These assumptions are here to align agents; they can be adjusted if needed, but stay consistent within a pass:
-
-- **Language choices**
-  - Backend/API: Python with FastAPI + SQLAlchemy.
-  - Bot: TypeScript with `discord.js`.
-  - Frontend: Next.js + React + TailwindCSS.
-  - Workers: Python with APScheduler (periodic tasks) + RQ (async jobs).
-
-- **Data storage**
-  - Primary DB: PostgreSQL.
-  - Caching / queues: Redis.
-  - Optional: separate DB instance or schema for MusicBrainz if mirrored.
-
-- **Infra**
-  - Docker for all services.
-  - Local dev via `docker-compose` or similar.
-  - Environment variables for secrets (no secrets in code).
-
-- **Style**
-  - Clear, typed interfaces for all API contracts.
-  - Prefer small, focused modules and pure functions where possible.
-  - Document new endpoints and data models as you add them.
-
----
-
-## 6. Task Documents in `agents/`
-
-Each subsystem has its own task document tailored for agents:
-
-- `agents/core.md` — monorepo, env config, Docker, CI.
-- `agents/api.md` — data models and API endpoints.
-- `agents/bot.md` — Discord bot orchestration & sync.
-- `agents/web.md` — Next.js frontend (archive + social UI).
-- `agents/worker.md` — background jobs for sync and analysis.
-- `agents/analysis.md` — taste profiling, similarity, recommendations.
-- `agents/data-model.md` — canonical schema and migration tasks.
-- `agents/refactor-tracker.md` — Architecture refactor roadmap and progress tracker.
-  Contains phased work items from the 2026-02 audit. Agents should check this file
-  before starting work to avoid conflicts and understand current priorities.
-
-Each file contains:
-
-- A short **purpose & context** summary.
-- A list of **tasks with IDs** (e.g. `api/club-weeks`, `bot/ratings-parser`).
-- For each task:
-  - Goal.
-  - Inputs/context.
-  - Steps or implementation hints.
-  - Acceptance criteria.
-
-Use the IDs when referring to tasks in commits or further prompts.
-
----
-
-## 7. How Agents Should Use This Repo
-
-1. **Start here** to understand the big picture (this file).
-2. Jump into the relevant `agents/*.md` file for concrete tasks.
-3. When completing a task:
-   - Keep the described architecture and flows in mind.
-   - Maintain alignment with shared types and API contracts.
-4. If a task reveals missing context:
-   - Update the corresponding `agents/*.md` with clarifications.
-   - Make sure new endpoints or models are documented.
-
-Your job as an agent is to move the system toward the goals in Sections 2–4 while keeping the codebase coherent and well‑documented. Focus on one task at a time, and treat the task docs as living specs you can refine as you go.
+Python: uv only (never pip). TypeScript: pnpm only. Python 3.11. Ruff line length 100.
