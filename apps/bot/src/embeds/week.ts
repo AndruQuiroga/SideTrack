@@ -1,49 +1,56 @@
 import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
-import { WeekDetail } from '@sidetrack/api-client';
+import { WeekDetail, NominationRead, AlbumRead } from '@sidetrack/api-client';
 import { createBaseEmbed, BRAND_COLORS, formatWeekLabel, formatDiscordTimestamp } from './common';
 
 export interface WeekOverviewOptions {
   week: WeekDetail;
   showNominateButton?: boolean;
+  botAvatarUrl?: string;
+  /** Pre-fetched album data keyed by album_id for displaying nomination list */
+  albumsById?: Map<string, AlbumRead>;
 }
 
 /**
- * Build a Week Overview embed showing week status and key dates.
+ * Build a modern Week Overview embed showing week status, dates, and a live
+ * nominations list.
  */
 export function buildWeekOverviewEmbed(options: WeekOverviewOptions): EmbedBuilder {
-  const { week } = options;
-  const weekLabel = formatWeekLabel(week.label, week.week_number);
+  const { week, botAvatarUrl, albumsById } = options;
 
-  const embed = createBaseEmbed()
-    .setColor(BRAND_COLORS.primary)
-    .setTitle(`📅 ${weekLabel}`)
-    .setDescription('Welcome to a new week of Sidetrack Club! Nominate your album picks below.');
+  const weekLabel = week.week_number
+    ? `WEEK ${String(week.week_number).padStart(3, '0')}`
+    : week.label;
 
+  const embed = createBaseEmbed().setColor(BRAND_COLORS.nomination).setTitle(weekLabel);
+
+  if (botAvatarUrl) {
+    embed.setAuthor({ name: 'Sidetrack Club', iconURL: botAvatarUrl });
+  }
+
+  // Description: instructions + deadline
+  const descParts: string[] = [
+    'Nominate one album for the club to listen to this week.',
+    'Use the **Nominate** button below or paste the mini-form as a message.',
+  ];
+  if (week.nominations_close_at) {
+    descParts.push('');
+    descParts.push(`Deadline: ${formatDiscordTimestamp(week.nominations_close_at, 'F')}`);
+  }
+  embed.setDescription(descParts.join('\n'));
+
+  // --- Status fields ---
+  const nominationCount = week.aggregates?.nomination_count ?? week.nominations?.length ?? 0;
   const fields: { name: string; value: string; inline: boolean }[] = [];
 
-  // Status
-  const nominationCount = week.aggregates?.nomination_count ?? week.nominations?.length ?? 0;
   fields.push({
-    name: '📋 Status',
-    value: `${nominationCount} nomination${nominationCount !== 1 ? 's' : ''} so far`,
+    name: 'Nominations',
+    value: `**${nominationCount}** so far`,
     inline: true,
   });
 
-  // Phase info
-  if (week.winner_album_id) {
-    fields.push({ name: '🏆 Phase', value: 'Winner Announced', inline: true });
-  } else if (week.nominations_close_at && new Date(week.nominations_close_at) > new Date()) {
-    fields.push({ name: '📝 Phase', value: 'Nominations Open', inline: true });
-  } else if (week.poll_close_at && new Date(week.poll_close_at) > new Date()) {
-    fields.push({ name: '🗳️ Phase', value: 'Voting Open', inline: true });
-  } else {
-    fields.push({ name: '📊 Phase', value: 'In Progress', inline: true });
-  }
-
-  // Key dates
   if (week.nominations_close_at) {
     fields.push({
-      name: '⏰ Nominations Close',
+      name: 'Closes',
       value: formatDiscordTimestamp(week.nominations_close_at, 'R'),
       inline: true,
     });
@@ -51,7 +58,7 @@ export function buildWeekOverviewEmbed(options: WeekOverviewOptions): EmbedBuild
 
   if (week.poll_close_at) {
     fields.push({
-      name: '🗳️ Voting Ends',
+      name: 'Poll Ends',
       value: formatDiscordTimestamp(week.poll_close_at, 'R'),
       inline: true,
     });
@@ -59,32 +66,77 @@ export function buildWeekOverviewEmbed(options: WeekOverviewOptions): EmbedBuild
 
   if (week.discussion_at) {
     fields.push({
-      name: '🎧 Discussion',
-      value: formatDiscordTimestamp(week.discussion_at, 'f'),
-      inline: true,
+      name: 'Discussion',
+      value: formatDiscordTimestamp(week.discussion_at, 'F'),
+      inline: false,
+    });
+  }
+
+  // --- Live nominations list ---
+  const nominations = week.nominations ?? [];
+  if (nominations.length > 0) {
+    const lines: string[] = [];
+    for (let i = 0; i < nominations.length; i++) {
+      const nom = nominations[i] as NominationRead;
+      const album = albumsById?.get(nom.album_id);
+      const title = album?.title ?? 'Unknown';
+      const artist = album?.artist_name ?? 'Unknown';
+      lines.push(`\`${i + 1}.\` **${title}** \u2014 ${artist}`);
+    }
+    // Discord field value limit is 1024 chars; truncate if needed
+    let listText = lines.join('\n');
+    if (listText.length > 1000) {
+      const shown = lines.slice(0, 10).join('\n');
+      listText = `${shown}\n*\u2026and ${nominations.length - 10} more*`;
+    }
+    fields.push({
+      name: '\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500',
+      value: listText,
+      inline: false,
     });
   }
 
   embed.addFields(fields);
-  embed.setFooter({ text: `Week ID: ${week.id.slice(0, 8)}` });
+
+  embed.setFooter({
+    text: `${formatWeekLabel(week.label, week.week_number)} \u2022 One album per person \u2022 Sidetrack Club`,
+  });
 
   return embed;
 }
 
 /**
- * Build action row with Nominate button for week overview.
+ * Build action row with Nominate + Refresh buttons for week overview.
  */
 export function buildWeekOverviewButtons(weekId: string): ActionRowBuilder<ButtonBuilder> {
   return new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
       .setCustomId(`week:nominate:${weekId}`)
-      .setLabel('🎵 Nominate an Album')
+      .setLabel('Nominate an Album')
+      .setEmoji('\u{1F3B5}')
       .setStyle(ButtonStyle.Primary),
     new ButtonBuilder()
       .setCustomId(`week:refresh:${weekId}`)
-      .setLabel('🔄 Refresh')
+      .setLabel('Refresh')
+      .setEmoji('\u{1F504}')
       .setStyle(ButtonStyle.Secondary),
   );
+}
+
+/**
+ * Return the pinned mini-form message content (plain text).
+ * Simplified — tags and year are now auto-filled by the bot.
+ */
+export function buildMiniFormText(): string {
+  return [
+    '**Mini-form** \u2014 copy, paste, fill in, and post:',
+    '',
+    '```',
+    'Album \u2014 Artist',
+    'Why?: <your pitch>',
+    'Pitch track: <Spotify or YouTube link>',
+    '```',
+  ].join('\n');
 }
 
 /**
@@ -98,6 +150,6 @@ export function buildWeekCompactEmbed(week: WeekDetail): EmbedBuilder {
     .setColor(week.winner_album_id ? BRAND_COLORS.winner : BRAND_COLORS.primary)
     .setTitle(weekLabel)
     .setDescription(
-      week.winner_album_id ? '🏆 Winner announced' : `${nominationCount} nominations`,
+      week.winner_album_id ? '\u{1F3C6} Winner announced' : `${nominationCount} nominations`,
     );
 }

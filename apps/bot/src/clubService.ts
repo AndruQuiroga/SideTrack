@@ -29,6 +29,8 @@ function sleep(ms: number): Promise<void> {
 }
 
 export class ClubSyncService {
+  private readonly starterMessageIds: Map<string, string> = new Map();
+
   constructor(
     private readonly client: SidetrackApiClient,
     private readonly config: BotConfig,
@@ -214,6 +216,14 @@ export class ClubSyncService {
         throw error;
       }
     });
+  }
+
+  setStarterMessageId(threadId: string, messageId: string): void {
+    this.starterMessageIds.set(threadId, messageId);
+  }
+
+  getStarterMessageId(threadId: string): string | undefined {
+    return this.starterMessageIds.get(threadId);
   }
 
   async attachNominationsThread(weekId: UUID, threadId: string): Promise<WeekDetail> {

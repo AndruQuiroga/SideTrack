@@ -161,6 +161,15 @@ class NominationRead(NominationBase):
     id: UUID
 
 
+class NominationUpdate(OrmSchema):
+    pitch: str | None = None
+    pitch_track_url: str | None = None
+    genre: str | None = None
+    decade: str | None = None
+    country: str | None = None
+    album_id: UUID | None = None
+
+
 class NominationWithStats(NominationRead):
     vote_summary: VoteAggregate
     rating_summary: RatingAggregate
@@ -222,10 +231,23 @@ class AlbumBase(OrmSchema):
     musicbrainz_id: str | None = None
     spotify_id: str | None = None
     cover_url: str | None = None
+    spotify_url: str | None = None
+    genres: list[str] | None = None
 
 
 class AlbumCreate(AlbumBase):
     pass
+
+
+class AlbumUpdate(OrmSchema):
+    title: str | None = None
+    artist_name: str | None = None
+    release_year: int | None = None
+    musicbrainz_id: str | None = None
+    spotify_id: str | None = None
+    cover_url: str | None = None
+    spotify_url: str | None = None
+    genres: list[str] | None = None
 
 
 class AlbumRead(AlbumBase):

@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     sidetrack_musicbrainz_app_name: str | None = None
     lastfm_api_key: str | None = None
     lastfm_api_secret: str | None = None
+    spotify_client_id: str | None = None
+    spotify_client_secret: str | None = None
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

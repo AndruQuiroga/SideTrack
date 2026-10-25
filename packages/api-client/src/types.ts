@@ -182,6 +182,15 @@ export interface NominationRead extends NominationBase {
   id: UUID;
 }
 
+export interface NominationUpdate {
+  pitch?: string | null;
+  pitch_track_url?: string | null;
+  genre?: string | null;
+  decade?: string | null;
+  country?: string | null;
+  album_id?: UUID | null;
+}
+
 export interface NominationWithStats extends NominationRead {
   vote_summary: VoteAggregate;
   rating_summary: RatingAggregate;
@@ -238,12 +247,31 @@ export interface AlbumBase {
   musicbrainz_id?: string | null;
   spotify_id?: string | null;
   cover_url?: string | null;
+  spotify_url?: string | null;
+  genres?: string[] | null;
 }
 
 export interface AlbumCreate extends AlbumBase {}
 
+export interface AlbumUpdate {
+  title?: string | null;
+  artist_name?: string | null;
+  release_year?: number | null;
+  musicbrainz_id?: string | null;
+  spotify_id?: string | null;
+  cover_url?: string | null;
+  spotify_url?: string | null;
+  genres?: string[] | null;
+}
+
 export interface AlbumRead extends AlbumBase {
   id: UUID;
+}
+
+export interface AlbumResolveRequest {
+  title: string;
+  artist: string;
+  year?: number | null;
 }
 
 export interface TrackRead {

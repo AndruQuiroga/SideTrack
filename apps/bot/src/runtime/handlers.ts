@@ -1,5 +1,6 @@
 import {
   APIInteractionGuildMember,
+  AnyThreadChannel,
   ButtonInteraction,
   ChannelType,
   ChatInputCommandInteraction,
@@ -19,6 +20,7 @@ import {
   WeekCreate,
   WeekUpdate,
   NominationCreate,
+  NominationUpdate,
   VoteCreate,
   RatingCreate,
   AlbumRead,
@@ -37,8 +39,11 @@ import { ReminderScheduler } from '../scheduler';
 import {
   buildWeekOverviewEmbed,
   buildWeekOverviewButtons,
+  buildMiniFormText,
   buildNominationEmbed,
+  buildNominationButtons,
   buildNominationConfirmEmbed,
+  buildWithdrawnNominationEmbed,
   buildPollOverviewEmbed,
   buildPollOpenBallotButton,
   buildBallotSelectMenus,
@@ -53,7 +58,13 @@ import {
   createBaseEmbed,
   BRAND_COLORS,
 } from '../embeds';
-import { buildNominationModal, buildRatingModal } from '../interactions/modals';
+import {
+  buildNominationModal,
+  buildNominationEditModal,
+  buildAlbumChangeModal,
+  buildRatingModal,
+} from '../interactions/modals';
+import { extractDominantColor } from '../utils/color';
 
 /** Session state for ballot voting */
 interface BallotSession {
@@ -737,6 +748,16 @@ async function handleButtonInteraction(
       }
       break;
 
+    case 'nomination':
+      if (action === 'edit') {
+        await handleNominationEditButton(interaction, service, id, logger);
+      } else if (action === 'change-album') {
+        await handleNominationChangeAlbumButton(interaction, service, id, logger);
+      } else if (action === 'withdraw') {
+        await handleNominationWithdraw(interaction, service, id, logger);
+      }
+      break;
+
     case 'ratings':
       if (action === 'open') {
         await handleRatingsOpenButton(interaction, service, config, id, logger);
@@ -764,6 +785,34 @@ async function handleWeekRefresh(
     await interaction.editReply({ embeds: [embed], components: [buttons] });
   } catch (error) {
     logger.error('Failed to refresh week.', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
+
+/**
+ * Silently update the nominations count in the thread's starter embed.
+ * Fetches fresh week data from the API so the count is always accurate.
+ */
+export async function updateNominationsEmbed(
+  thread: AnyThreadChannel,
+  weekId: string,
+  service: ClubSyncService,
+  logger: Logger,
+): Promise<void> {
+  const starterMsgId = service.getStarterMessageId(thread.id);
+  if (!starterMsgId) return;
+
+  try {
+    const [week, msg] = await Promise.all([
+      service.getClient().getWeek(weekId),
+      thread.messages.fetch(starterMsgId),
+    ]);
+    const embed = buildWeekOverviewEmbed({ week });
+    const buttons = buildWeekOverviewButtons(week.id);
+    await msg.edit({ embeds: [embed], components: [buttons] });
+  } catch (error) {
+    logger.warn('Failed to update nominations embed.', {
       error: error instanceof Error ? error.message : String(error),
     });
   }
@@ -988,6 +1037,10 @@ async function handleModalSubmit(
     case 'nomination':
       if (action === 'submit') {
         await handleNominationSubmit(interaction, service, id, logger);
+      } else if (action === 'edit-submit') {
+        await handleNominationEditSubmit(interaction, service, id, logger);
+      } else if (action === 'change-album-submit') {
+        await handleNominationChangeAlbumSubmit(interaction, service, id, logger);
       }
       break;
 
@@ -998,6 +1051,352 @@ async function handleModalSubmit(
       break;
   }
 }
+
+// ============ PITCH TRACK HELPER ============
+
+/**
+ * Resolves pitch track info (name + artist) from a Spotify track URL.
+ * Returns null if the URL isn't a Spotify link or if resolution fails.
+ */
+async function resolvePitchTrackInfo(
+  trackUrl: string | undefined,
+  logger: Logger,
+): Promise<{ name: string; artist: string } | null> {
+  if (!trackUrl) return null;
+
+  // Only resolve Spotify track URLs
+  const spotifyTrackMatch = trackUrl.match(
+    /(?:open\.spotify\.com\/track\/|spotify:track:)([a-zA-Z0-9]+)/,
+  );
+  if (!spotifyTrackMatch) return null;
+
+  try {
+    // Use the API's Spotify client through the resolve endpoint
+    // For now, extract from the URL — the track name will be resolved by the embed builder
+    // if the API gets a track resolution endpoint. For MVP, return null and let
+    // the embed show the URL link instead.
+    //
+    // TODO: Add GET /tracks/resolve?spotify_url=... endpoint to API for track metadata
+    return null;
+  } catch (error) {
+    logger.warn('Failed to resolve pitch track info from Spotify.', {
+      url: trackUrl,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return null;
+  }
+}
+
+// ============ NOMINATION BUTTON HANDLERS ============
+
+async function handleNominationEditButton(
+  interaction: ButtonInteraction,
+  service: ClubSyncService,
+  nominationId: string,
+  logger: Logger,
+): Promise<void> {
+  try {
+    const nomination = await service.getClient().getNomination(nominationId);
+
+    // Only the nominator can edit
+    const user = await service.ensureDiscordUser(
+      interaction.user.id,
+      interaction.user.displayName || interaction.user.username,
+    );
+    if (user.id !== nomination.user_id) {
+      await interaction.reply({
+        content: '❌ Only the person who nominated this album can edit it.',
+        ephemeral: true,
+      });
+      return;
+    }
+
+    const modal = buildNominationEditModal(
+      nominationId,
+      nomination.pitch ?? undefined,
+      nomination.pitch_track_url ?? undefined,
+    );
+    await interaction.showModal(modal);
+  } catch (error) {
+    logger.error('Failed to open nomination edit modal.', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    await interaction.reply({
+      content: '❌ Failed to open edit form. Please try again.',
+      ephemeral: true,
+    });
+  }
+}
+
+async function handleNominationChangeAlbumButton(
+  interaction: ButtonInteraction,
+  service: ClubSyncService,
+  nominationId: string,
+  logger: Logger,
+): Promise<void> {
+  try {
+    const nomination = await service.getClient().getNomination(nominationId);
+
+    // Only the nominator can change album
+    const user = await service.ensureDiscordUser(
+      interaction.user.id,
+      interaction.user.displayName || interaction.user.username,
+    );
+    if (user.id !== nomination.user_id) {
+      await interaction.reply({
+        content: '❌ Only the person who nominated this album can change it.',
+        ephemeral: true,
+      });
+      return;
+    }
+
+    // Fetch current album for pre-filling
+    let currentAlbumTitle: string | undefined;
+    let currentArtist: string | undefined;
+    try {
+      const album = await service.getClient().getAlbum(nomination.album_id);
+      currentAlbumTitle = album.title;
+      currentArtist = album.artist_name;
+    } catch {
+      // Pre-fill will be empty if album fetch fails
+    }
+
+    const modal = buildAlbumChangeModal(
+      nominationId,
+      currentAlbumTitle,
+      currentArtist,
+      nomination.pitch ?? undefined,
+    );
+    await interaction.showModal(modal);
+  } catch (error) {
+    logger.error('Failed to open album change modal.', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    await interaction.reply({
+      content: '❌ Failed to open album change form. Please try again.',
+      ephemeral: true,
+    });
+  }
+}
+
+async function handleNominationWithdraw(
+  interaction: ButtonInteraction,
+  service: ClubSyncService,
+  nominationId: string,
+  logger: Logger,
+): Promise<void> {
+  await interaction.deferUpdate();
+
+  try {
+    const nomination = await service.getClient().getNomination(nominationId);
+
+    // Only the nominator can withdraw
+    const user = await service.ensureDiscordUser(
+      interaction.user.id,
+      interaction.user.displayName || interaction.user.username,
+    );
+    if (user.id !== nomination.user_id) {
+      await interaction.followUp({
+        content: '❌ Only the person who nominated this album can withdraw it.',
+        ephemeral: true,
+      });
+      return;
+    }
+
+    // Fetch album info for the withdrawn embed
+    let albumTitle = 'Unknown Album';
+    let artistName = 'Unknown Artist';
+    try {
+      const album = await service.getClient().getAlbum(nomination.album_id);
+      albumTitle = album.title;
+      artistName = album.artist_name;
+    } catch {
+      // Use defaults
+    }
+
+    // Delete the nomination via API
+    await service.getClient().deleteNomination(nominationId);
+
+    // Replace the embed with a withdrawn notice
+    const nominatorName = interaction.user.displayName || interaction.user.username;
+    const withdrawnEmbed = buildWithdrawnNominationEmbed(albumTitle, artistName, nominatorName);
+    await interaction.editReply({ embeds: [withdrawnEmbed], components: [] });
+
+    // Update nominations count in the starter embed
+    if (interaction.channel && interaction.channel.isThread()) {
+      // We need the weekId — extract from nomination data
+      const weekId = nomination.week_id;
+      await updateNominationsEmbed(interaction.channel, weekId, service, logger);
+    }
+
+    logger.info('Nomination withdrawn.', { nomination_id: nominationId });
+  } catch (error) {
+    logger.error('Failed to withdraw nomination.', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    await interaction.followUp({
+      content: '❌ Failed to withdraw nomination. Please try again.',
+      ephemeral: true,
+    });
+  }
+}
+
+// ============ NOMINATION EDIT/CHANGE MODAL HANDLERS ============
+
+async function handleNominationEditSubmit(
+  interaction: ModalSubmitInteraction,
+  service: ClubSyncService,
+  nominationId: string,
+  logger: Logger,
+): Promise<void> {
+  await interaction.deferReply({ ephemeral: true });
+
+  try {
+    const pitch = interaction.fields.getTextInputValue('pitch');
+    const pitchTrackUrl = interaction.fields.getTextInputValue('pitch_track');
+
+    // Update nomination via API
+    const update: NominationUpdate = {
+      pitch,
+      pitch_track_url: pitchTrackUrl,
+    };
+    const updated = await service.getClient().updateNomination(nominationId, update);
+
+    // Fetch album for the updated embed
+    const album = await service
+      .getClient()
+      .getAlbum(updated.album_id)
+      .catch(() => undefined);
+
+    // Extract accent color
+    let accentColor = BRAND_COLORS.nomination;
+    if (album?.cover_url) {
+      try {
+        accentColor = await extractDominantColor(album.cover_url);
+      } catch {
+        // Fall back silently
+      }
+    }
+
+    // Resolve pitch track info
+    const pitchTrackInfo = await resolvePitchTrackInfo(pitchTrackUrl, logger);
+
+    // Rebuild the embed
+    const nominationEmbed = buildNominationEmbed({
+      nomination: updated,
+      album,
+      nominatorName: interaction.user.displayName || interaction.user.username,
+      nominatorAvatarURL: interaction.user.avatarURL() ?? undefined,
+      accentColor,
+      pitchTrackInfo: pitchTrackInfo ?? undefined,
+    });
+    const buttons = buildNominationButtons(nominationId);
+
+    // Update the original message with the new embed
+    if (interaction.message) {
+      await interaction.message.edit({ embeds: [nominationEmbed], components: [buttons] });
+    }
+
+    await interaction.editReply('✅ Nomination updated successfully.');
+    logger.info('Nomination edited.', { nomination_id: nominationId });
+  } catch (error) {
+    logger.error('Failed to edit nomination.', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    await interaction.editReply('❌ Failed to update nomination. Please try again.');
+  }
+}
+
+async function handleNominationChangeAlbumSubmit(
+  interaction: ModalSubmitInteraction,
+  service: ClubSyncService,
+  nominationId: string,
+  logger: Logger,
+): Promise<void> {
+  await interaction.deferReply({ ephemeral: true });
+
+  try {
+    const albumTitle = interaction.fields.getTextInputValue('album');
+    const artistName = interaction.fields.getTextInputValue('artist');
+    const pitch = interaction.fields.getTextInputValue('pitch');
+    const pitchTrackUrl = interaction.fields.getTextInputValue('pitch_track');
+
+    // Resolve the new album via enrichment pipeline
+    let album: AlbumRead;
+    try {
+      album = await service.getClient().resolveAlbum({
+        title: albumTitle,
+        artist: artistName,
+      });
+    } catch (resolveError) {
+      logger.warn('Album enrichment failed during change, falling back to basic creation.', {
+        error: resolveError instanceof Error ? resolveError.message : String(resolveError),
+      });
+      album = await service.ensureAlbumFromForm({
+        title: albumTitle,
+        artist_name: artistName,
+      });
+    }
+
+    // Update nomination with new album and pitch
+    const update: NominationUpdate = {
+      album_id: album.id,
+      pitch,
+      pitch_track_url: pitchTrackUrl,
+    };
+    const updated = await service.getClient().updateNomination(nominationId, update);
+
+    // Extract accent color
+    let accentColor = BRAND_COLORS.nomination;
+    if (album.cover_url) {
+      try {
+        accentColor = await extractDominantColor(album.cover_url);
+      } catch {
+        // Fall back silently
+      }
+    }
+
+    // Resolve pitch track info
+    const pitchTrackInfo = await resolvePitchTrackInfo(pitchTrackUrl, logger);
+
+    // Rebuild the embed
+    const nominationEmbed = buildNominationEmbed({
+      nomination: updated,
+      album,
+      nominatorName: interaction.user.displayName || interaction.user.username,
+      nominatorAvatarURL: interaction.user.avatarURL() ?? undefined,
+      accentColor,
+      pitchTrackInfo: pitchTrackInfo ?? undefined,
+    });
+    const buttons = buildNominationButtons(nominationId);
+
+    // Update the original message with the new embed
+    if (interaction.message) {
+      await interaction.message.edit({ embeds: [nominationEmbed], components: [buttons] });
+    }
+
+    // Update the week overview embed as well (album name may have changed)
+    if (interaction.channel && interaction.channel.isThread()) {
+      const weekId = updated.week_id;
+      await updateNominationsEmbed(interaction.channel, weekId, service, logger);
+    }
+
+    await interaction.editReply(
+      `✅ Album changed to **${album.title}** by **${album.artist_name}**.`,
+    );
+    logger.info('Nomination album changed.', {
+      nomination_id: nominationId,
+      new_album_id: album.id,
+    });
+  } catch (error) {
+    logger.error('Failed to change nomination album.', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    await interaction.editReply('❌ Failed to change album. Please try again.');
+  }
+}
+
+// ============ NOMINATION MODAL HANDLER ============
 
 async function handleNominationSubmit(
   interaction: ModalSubmitInteraction,
@@ -1011,14 +1410,7 @@ async function handleNominationSubmit(
     const albumTitle = interaction.fields.getTextInputValue('album');
     const artistName = interaction.fields.getTextInputValue('artist');
     const pitch = interaction.fields.getTextInputValue('pitch');
-    const link = interaction.fields.getTextInputValue('link') || undefined;
-    const tagsRaw = interaction.fields.getTextInputValue('tags') || '';
-
-    // Parse tags
-    const tagParts = tagsRaw.split('/').map((t) => t.trim());
-    const genre = tagParts[0] || undefined;
-    const decade = tagParts[1] || undefined;
-    const country = tagParts[2] || undefined;
+    const pitchTrackUrl = interaction.fields.getTextInputValue('pitch_track');
 
     // Ensure user exists
     const user = await service.ensureDiscordUser(
@@ -1026,11 +1418,38 @@ async function handleNominationSubmit(
       interaction.user.displayName || interaction.user.username,
     );
 
-    // Create or find album
-    const album = await service.ensureAlbumFromForm({
-      title: albumTitle,
-      artist_name: artistName,
-    });
+    // Resolve album via enrichment pipeline (MusicBrainz → Cover Art → Spotify)
+    let album: AlbumRead;
+    try {
+      album = await service.getClient().resolveAlbum({
+        title: albumTitle,
+        artist: artistName,
+      });
+    } catch (resolveError) {
+      logger.warn('Album enrichment failed, falling back to basic creation.', {
+        error: resolveError instanceof Error ? resolveError.message : String(resolveError),
+      });
+      album = await service.ensureAlbumFromForm({
+        title: albumTitle,
+        artist_name: artistName,
+      });
+    }
+
+    // Extract dominant color from cover art (non-blocking fallback)
+    let accentColor = BRAND_COLORS.nomination;
+    if (album.cover_url) {
+      try {
+        accentColor = await extractDominantColor(album.cover_url);
+      } catch {
+        // Fall back to brand color silently
+      }
+    }
+
+    // Resolve pitch track info from Spotify URL
+    const pitchTrackInfo = await resolvePitchTrackInfo(pitchTrackUrl, logger);
+
+    // Auto-populate genre from enrichment data
+    const genre = album.genres?.length ? album.genres[0] : undefined;
 
     // Create nomination
     const nomination: NominationCreate = {
@@ -1038,32 +1457,48 @@ async function handleNominationSubmit(
       user_id: user.id,
       album_id: album.id,
       pitch,
-      pitch_track_url: link,
+      pitch_track_url: pitchTrackUrl,
       genre,
-      decade,
-      country,
     };
 
     const created = await service.recordNomination(weekId, nomination);
 
-    // Send confirmation
-    const confirmEmbed = buildNominationConfirmEmbed(albumTitle, artistName);
+    // Send ephemeral confirmation
+    const confirmEmbed = buildNominationConfirmEmbed(
+      album.title,
+      album.artist_name,
+      album.cover_url ?? undefined,
+    );
     await interaction.editReply({ embeds: [confirmEmbed] });
 
-    // Post nomination card in the thread if possible
+    // Post nomination card in the thread and update the nominations count
     if (interaction.channel && interaction.channel.isThread()) {
+      const thread = interaction.channel;
+
+      // Count existing nominations to determine index
+      const week = await service.getClient().getWeek(weekId);
+      const nominationIndex = week.nominations.findIndex((n) => n.id === created.id) + 1;
+
       const nominationEmbed = buildNominationEmbed({
         nomination: created,
         album,
         nominatorName: interaction.user.displayName || interaction.user.username,
+        nominatorAvatarURL: interaction.user.avatarURL() ?? undefined,
+        nominationIndex: nominationIndex || undefined,
+        accentColor,
+        pitchTrackInfo: pitchTrackInfo ?? undefined,
       });
-      await interaction.channel.send({ embeds: [nominationEmbed] });
+      const buttons = buildNominationButtons(created.id);
+
+      await thread.send({ embeds: [nominationEmbed], components: [buttons] });
+      await updateNominationsEmbed(thread, weekId, service, logger);
     }
 
     logger.info('Nomination submitted via modal.', {
       nomination_id: created.id,
       week_id: weekId,
-      album: albumTitle,
+      album: album.title,
+      enriched: !!album.musicbrainz_id || !!album.spotify_id,
     });
   } catch (error) {
     logger.error('Failed to submit nomination.', {
@@ -1231,25 +1666,35 @@ async function handleWeekStart(
       return;
     }
 
-    // Create thread with overview embed
-    const overviewEmbed = buildWeekOverviewEmbed({ week });
+    // Create thread with overview embed (no plain text — embed only)
+    const botAvatarUrl = interaction.client.user?.displayAvatarURL() ?? undefined;
+    const overviewEmbed = buildWeekOverviewEmbed({ week, botAvatarUrl });
     const overviewButtons = buildWeekOverviewButtons(week.id);
 
     const thread = await forum.threads.create({
       name: buildNominationsThreadName(week.label, week.week_number),
       message: {
-        content: buildNominationsPrompt(week.label),
         embeds: [overviewEmbed],
         components: [overviewButtons],
       },
     });
 
+    // Pin Message 1 (embed) and store its ID for live count updates
     const starterMessage = await thread.fetchStarterMessage().catch(() => null);
-    if (starterMessage && !starterMessage.pinned) {
-      await starterMessage
-        .pin()
-        .catch((error) => logger.warn('Failed to pin nominations prompt.', { error }));
+    if (starterMessage) {
+      if (!starterMessage.pinned) {
+        await starterMessage
+          .pin()
+          .catch((error) => logger.warn('Failed to pin nominations embed.', { error }));
+      }
+      service.setStarterMessageId(thread.id, starterMessage.id);
     }
+
+    // Post Message 2 — pinned mini-form block
+    const miniFormMsg = await thread.send({ content: buildMiniFormText() });
+    await miniFormMsg
+      .pin()
+      .catch((error) => logger.warn('Failed to pin mini-form message.', { error }));
 
     await service.attachNominationsThread(week.id, thread.id);
 
@@ -1323,20 +1768,4 @@ function buildNominationsThreadName(label: string, weekNumber?: number | null): 
     return `WEEK ${String(weekNumber).padStart(3, '0')} — NOMINATIONS`;
   }
   return `${label} — NOMINATIONS`;
-}
-
-function buildNominationsPrompt(label: string): string {
-  return [
-    `**${label} — Nominations**`,
-    '',
-    '🎵 Click the **Nominate an Album** button below to submit your pick!',
-    '',
-    'Or paste this mini-form as a message:',
-    '```',
-    'Album — Artist (Year)',
-    'Why?: <your pitch>',
-    'Pitch track: <Spotify/YouTube link>',
-    'Tags: <genre / decade / country>',
-    '```',
-  ].join('\n');
 }
