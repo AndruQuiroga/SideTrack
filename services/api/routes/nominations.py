@@ -71,7 +71,7 @@ async def update_nomination(
     return NominationRead.model_validate(nomination)
 
 
-@router.delete("/{nomination_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{nomination_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None)
 async def delete_nomination(
     nomination_id: UUID,
     db: Session = Depends(get_db),
