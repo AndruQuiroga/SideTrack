@@ -217,7 +217,11 @@ export interface paths {
     delete?: never;
     options?: never;
     head?: never;
-    patch?: never;
+    /**
+     * Update Album
+     * @description Update an album's metadata fields.
+     */
+    patch: operations['update_album_albums__album_id__patch'];
     trace?: never;
   };
   '/albums/': {
@@ -234,6 +238,50 @@ export interface paths {
      * @description Create an album; reuse an existing record if it matches title/artist/year.
      */
     post: operations['create_album_albums__post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/albums/resolve': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Resolve Album Endpoint
+     * @description Find or create an album, enriching it with MusicBrainz, Cover Art Archive,
+     *     and Spotify metadata.
+     *
+     *     This is the primary endpoint for the nomination flow. It returns a fully-populated
+     *     album with cover art, genres, release year, and external IDs.
+     */
+    post: operations['resolve_album_endpoint_albums_resolve_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/albums/{album_id}/enrich': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Enrich Album Endpoint
+     * @description Re-run enrichment on an existing album to fill missing metadata.
+     */
+    post: operations['enrich_album_endpoint_albums__album_id__enrich_post'];
     delete?: never;
     options?: never;
     head?: never;
@@ -382,10 +430,20 @@ export interface paths {
     get: operations['get_nomination_nominations__nomination_id__get'];
     put?: never;
     post?: never;
-    delete?: never;
+    /**
+     * Delete Nomination
+     * @description Withdraw (delete) a nomination. Cascades to associated votes.
+     */
+    delete: operations['delete_nomination_nominations__nomination_id__delete'];
     options?: never;
     head?: never;
-    patch?: never;
+    /**
+     * Update Nomination
+     * @description Update a nomination's pitch, pitch track, tags, or album.
+     *
+     *     Only fields included in the request body are updated.
+     */
+    patch: operations['update_nomination_nominations__nomination_id__patch'];
     trace?: never;
   };
   '/votes': {
@@ -532,7 +590,9 @@ export interface paths {
     put?: never;
     /**
      * Upsert Listen Events
-     * @description Upsert listen events; duplicates (user, track, played_at) are returned without creating new rows.
+     * @description Upsert listen events.
+     *
+     *     Duplicates (user, track, played_at) are returned without creating new rows.
      */
     post: operations['upsert_listen_events_listen_events__post'];
     delete?: never;
@@ -648,9 +708,7 @@ export interface paths {
     put?: never;
     /**
      * Connect Integration
-     * @description Initiate an OAuth connection flow for the specified provider.
-     *
-     *     Returns a URL to redirect the user to for authorization.
+     * @description Return the authorization URL that starts linking ``provider`` for ``body.user_id``.
      */
     post: operations['connect_integration_integrations__provider__connect_post'];
     delete?: never;
@@ -666,16 +724,13 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
+    get?: never;
+    put?: never;
     /**
      * Lastfm Callback
-     * @description Handle Last.fm OAuth callback and exchange token for session key.
-     *
-     *     The token is provided by Last.fm after user authorization and is used to
-     *     obtain a session key via the auth.getSession API method.
+     * @description Exchange a Last.fm token for a session key and link it to the user named in ``state``.
      */
-    get: operations['lastfm_callback_integrations_lastfm_callback_get'];
-    put?: never;
-    post?: never;
+    post: operations['lastfm_callback_integrations_lastfm_callback_post'];
     delete?: never;
     options?: never;
     head?: never;
@@ -886,6 +941,10 @@ export interface components {
       spotify_id?: string | null;
       /** Cover Url */
       cover_url?: string | null;
+      /** Spotify Url */
+      spotify_url?: string | null;
+      /** Genres */
+      genres?: string[] | null;
     };
     /** AlbumRead */
     AlbumRead: {
@@ -901,6 +960,10 @@ export interface components {
       spotify_id?: string | null;
       /** Cover Url */
       cover_url?: string | null;
+      /** Spotify Url */
+      spotify_url?: string | null;
+      /** Genres */
+      genres?: string[] | null;
       /**
        * Id
        * Format: uuid
@@ -908,9 +971,37 @@ export interface components {
       id: string;
     };
     /**
-     * CallbackResponse
-     * @description Response after successfully completing OAuth callback.
+     * AlbumResolveRequest
+     * @description Request body for the /albums/resolve endpoint.
      */
+    AlbumResolveRequest: {
+      /** Title */
+      title: string;
+      /** Artist */
+      artist: string;
+      /** Year */
+      year?: number | null;
+    };
+    /** AlbumUpdate */
+    AlbumUpdate: {
+      /** Title */
+      title?: string | null;
+      /** Artist Name */
+      artist_name?: string | null;
+      /** Release Year */
+      release_year?: number | null;
+      /** Musicbrainz Id */
+      musicbrainz_id?: string | null;
+      /** Spotify Id */
+      spotify_id?: string | null;
+      /** Cover Url */
+      cover_url?: string | null;
+      /** Spotify Url */
+      spotify_url?: string | null;
+      /** Genres */
+      genres?: string[] | null;
+    };
+    /** CallbackResponse */
     CallbackResponse: {
       /** Status */
       status: string;
@@ -923,16 +1014,18 @@ export interface components {
     };
     /**
      * ConnectRequest
-     * @description Request body for initiating an OAuth connection flow.
+     * @description Start linking an external account for a user.
      */
     ConnectRequest: {
+      /**
+       * User Id
+       * Format: uuid
+       */
+      user_id: string;
       /** Callback Url */
-      callback_url?: string | null;
+      callback_url: string;
     };
-    /**
-     * ConnectResponse
-     * @description Response with the OAuth redirect URL.
-     */
+    /** ConnectResponse */
     ConnectResponse: {
       /** Status */
       status: string;
@@ -1003,6 +1096,16 @@ export interface components {
       /** Error */
       error?: string | null;
     };
+    /**
+     * LastfmCallbackRequest
+     * @description Complete a Last.fm link. Any extra field, such as ``user_id``, is ignored.
+     */
+    LastfmCallbackRequest: {
+      /** Token */
+      token: string;
+      /** State */
+      state: string;
+    };
     /** LastfmIngestRequest */
     LastfmIngestRequest: {
       /**
@@ -1015,7 +1118,10 @@ export interface components {
       /** Since Ts */
       since_ts?: number | null;
     };
-    /** LinkedAccountCreate */
+    /**
+     * LinkedAccountCreate
+     * @description Write schema: the only place credentials are accepted.
+     */
     LinkedAccountCreate: {
       /**
        * User Id
@@ -1027,14 +1133,17 @@ export interface components {
       provider_user_id: string;
       /** Display Name */
       display_name?: string | null;
+      /** Token Expires At */
+      token_expires_at?: string | null;
       /** Access Token */
       access_token?: string | null;
       /** Refresh Token */
       refresh_token?: string | null;
-      /** Token Expires At */
-      token_expires_at?: string | null;
     };
-    /** LinkedAccountRead */
+    /**
+     * LinkedAccountRead
+     * @description Read schema: reports whether credentials exist, never their values.
+     */
     LinkedAccountRead: {
       /**
        * User Id
@@ -1046,10 +1155,6 @@ export interface components {
       provider_user_id: string;
       /** Display Name */
       display_name?: string | null;
-      /** Access Token */
-      access_token?: string | null;
-      /** Refresh Token */
-      refresh_token?: string | null;
       /** Token Expires At */
       token_expires_at?: string | null;
       /**
@@ -1062,6 +1167,11 @@ export interface components {
        * Format: date-time
        */
       created_at: string;
+      /**
+       * Has Credentials
+       * @default false
+       */
+      has_credentials: boolean;
     };
     /** ListenEventCreate */
     ListenEventCreate: {
@@ -1191,6 +1301,21 @@ export interface components {
        * Format: uuid
        */
       id: string;
+    };
+    /** NominationUpdate */
+    NominationUpdate: {
+      /** Pitch */
+      pitch?: string | null;
+      /** Pitch Track Url */
+      pitch_track_url?: string | null;
+      /** Genre */
+      genre?: string | null;
+      /** Decade */
+      decade?: string | null;
+      /** Country */
+      country?: string | null;
+      /** Album Id */
+      album_id?: string | null;
     };
     /** NominationWithStats */
     NominationWithStats: {
@@ -2156,6 +2281,41 @@ export interface operations {
       };
     };
   };
+  update_album_albums__album_id__patch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        album_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AlbumUpdate'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AlbumRead'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
   create_album_albums__post: {
     parameters: {
       query?: never;
@@ -2171,6 +2331,70 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AlbumRead'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  resolve_album_endpoint_albums_resolve_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AlbumResolveRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AlbumRead'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  enrich_album_endpoint_albums__album_id__enrich_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        album_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
         headers: {
           [name: string]: unknown;
         };
@@ -2482,6 +2706,70 @@ export interface operations {
       cookie?: never;
     };
     requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['NominationRead'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  delete_nomination_nominations__nomination_id__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        nomination_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  update_nomination_nominations__nomination_id__patch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        nomination_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['NominationUpdate'];
+      };
+    };
     responses: {
       /** @description Successful Response */
       200: {
@@ -2992,9 +3280,9 @@ export interface operations {
       };
       cookie?: never;
     };
-    requestBody?: {
+    requestBody: {
       content: {
-        'application/json': components['schemas']['ConnectRequest'] | null;
+        'application/json': components['schemas']['ConnectRequest'];
       };
     };
     responses: {
@@ -3018,19 +3306,18 @@ export interface operations {
       };
     };
   };
-  lastfm_callback_integrations_lastfm_callback_get: {
+  lastfm_callback_integrations_lastfm_callback_post: {
     parameters: {
-      query: {
-        /** @description Token from Last.fm after user authorization */
-        token: string;
-        /** @description Optional user ID to link the account to */
-        user_id?: string | null;
-      };
+      query?: never;
       header?: never;
       path?: never;
       cookie?: never;
     };
-    requestBody?: never;
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['LastfmCallbackRequest'];
+      };
+    };
     responses: {
       /** @description Successful Response */
       200: {

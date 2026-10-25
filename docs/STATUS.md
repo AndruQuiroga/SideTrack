@@ -19,7 +19,7 @@ Status values: **works** (implemented end to end), **partial** (implemented with
 
 | Capability | Status | Notes |
 | --- | --- | --- |
-| Last.fm account link | broken | Connect endpoint never returns its URL; callback links any user via query param |
+| Last.fm account link | partial | Signed-state flow implemented and tested (`harden-api-credentials`); not yet verified end to end against real Last.fm |
 | Last.fm scrobble import | partial | Newest 200 only, no backfill; scrobbles without an album are dropped |
 | Spotify listen sync | broken | Inserts listens for tracks that don't exist (FK failure); no Spotify OAuth |
 | ListenBrainz import | absent | |
@@ -38,7 +38,8 @@ Status values: **works** (implemented end to end), **partial** (implemented with
 
 | Capability | Status | Notes |
 | --- | --- | --- |
-| Auth | broken | One shared bearer token for all writes; GETs unauthenticated; linked-account tokens readable |
+| Auth | partial | Writes need the service token and the API fails closed without it; stored credentials are never returned. No per-user auth yet (Phase 3); GETs are public |
+| Web fallback data | broken | `apps/web/app/lib/api/{weeks,profile,feed}.ts` show sample weeks, profiles and feed items when the API fails, which violates the no-fakes rule |
 | Background jobs | partial | Redis + RQ (two consumers) + APScheduler; cursors in memory |
 | Tests | partial | 14 club API tests on SQLite; none for worker, bot, web |
 | Deployment to Stache-Rack | absent | Compose file only |

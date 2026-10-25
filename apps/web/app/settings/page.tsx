@@ -88,7 +88,7 @@ export default async function SettingsPage() {
     >
       <Card className="space-y-4">
         <SectionHeading eyebrow="Connections" title="Linked accounts" />
-        <ConnectionsGrid connections={connections} userId={session.user.id} />
+        <ConnectionsGrid connections={connections} />
         <p className="text-xs text-slate-400">
           Linking Spotify or Last.fm unlocks live presence, recommendations, and taste graphs on
           your profile. Discord is required for club participation.

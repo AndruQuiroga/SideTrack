@@ -98,16 +98,20 @@ export interface LinkedAccountBase {
   provider: ProviderType;
   provider_user_id: string;
   display_name?: string | null;
-  access_token?: string | null;
-  refresh_token?: string | null;
   token_expires_at?: IsoDateString | null;
 }
 
-export interface LinkedAccountCreate extends LinkedAccountBase {}
+/** Write shape: the only place credentials are sent. */
+export interface LinkedAccountCreate extends LinkedAccountBase {
+  access_token?: string | null;
+  refresh_token?: string | null;
+}
 
+/** Read shape: the API reports whether credentials exist, never their values. */
 export interface LinkedAccountRead extends LinkedAccountBase {
   id: UUID;
   created_at: IsoDateString;
+  has_credentials: boolean;
 }
 
 export interface WeekBase {

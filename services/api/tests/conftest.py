@@ -7,9 +7,26 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from services.api.config import get_settings
 from services.api.db import get_db
 from services.api.main import create_app
 from services.api.models.base import Base
+
+TEST_API_TOKEN = "test-api-token"
+TEST_LINK_SECRET = "test-link-secret"
+
+
+@pytest.fixture(autouse=True)
+def api_settings(monkeypatch):
+    """Pin settings so tests never depend on a developer's .env file."""
+    monkeypatch.setenv("SIDETRACK_ENV", "production")
+    monkeypatch.setenv("SIDETRACK_API_TOKEN", TEST_API_TOKEN)
+    monkeypatch.setenv("SIDETRACK_LINK_SECRET", TEST_LINK_SECRET)
+    monkeypatch.setenv("LASTFM_API_KEY", "test-lastfm-key")
+    monkeypatch.setenv("LASTFM_API_SECRET", "test-lastfm-secret")
+    get_settings.cache_clear()
+    yield
+    get_settings.cache_clear()
 
 
 @pytest.fixture(scope="session")
@@ -41,8 +58,8 @@ def db(engine):
 
 
 @pytest.fixture()
-def client(db):
-    """Return a TestClient with the DB session overridden to use the test DB."""
+def app(db):
+    """Return the API app with the DB session overridden to use the test DB."""
     app = create_app()
 
     def override_get_db():
@@ -52,5 +69,18 @@ def client(db):
             pass
 
     app.dependency_overrides[get_db] = override_get_db
-    with TestClient(app) as test_client:
+    return app
+
+
+@pytest.fixture()
+def client(app):
+    """Return a TestClient that sends the service token, like the bot and web server."""
+    with TestClient(app, headers={"Authorization": f"Bearer {TEST_API_TOKEN}"}) as test_client:
+        yield test_client
+
+
+@pytest.fixture()
+def anon_client(app):
+    """Return a TestClient without credentials, like a browser."""
+    with TestClient(app, raise_server_exceptions=False) as test_client:
         yield test_client

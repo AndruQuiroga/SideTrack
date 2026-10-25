@@ -10,7 +10,6 @@ type Provider = 'discord' | 'spotify' | 'lastfm';
 interface OAuthButtonProps {
   provider: Provider;
   label: string;
-  userId?: string;
   className?: string;
 }
 
@@ -20,7 +19,7 @@ const providerLabels: Record<Provider, string> = {
   lastfm: 'Last.fm',
 };
 
-export function OAuthButton({ provider, label, userId, className = '' }: OAuthButtonProps) {
+export function OAuthButton({ provider, label, className = '' }: OAuthButtonProps) {
   const [loading, setLoading] = useState(false);
 
   async function handleClick() {
@@ -31,7 +30,7 @@ export function OAuthButton({ provider, label, userId, className = '' }: OAuthBu
         await signIn('discord', { callbackUrl: '/' });
         return;
       }
-      const { url } = await requestIntegrationConnect(provider, userId);
+      const { url } = await requestIntegrationConnect(provider);
       if (url) {
         showToast(`Opening ${providerLabels[provider]} connect…`, 'success');
         window.location.href = url;
@@ -64,16 +63,15 @@ export function OAuthButton({ provider, label, userId, className = '' }: OAuthBu
 }
 
 interface OAuthButtonsProps {
-  userId?: string;
   className?: string;
 }
 
-export function OAuthButtons({ userId, className = '' }: OAuthButtonsProps) {
+export function OAuthButtons({ className = '' }: OAuthButtonsProps) {
   return (
     <div className={`grid gap-3 md:grid-cols-2 ${className}`}>
-      <OAuthButton provider="discord" label="Continue with Discord" userId={userId} />
-      <OAuthButton provider="spotify" label="Continue with Spotify" userId={userId} />
-      <OAuthButton provider="lastfm" label="Continue with Last.fm" userId={userId} />
+      <OAuthButton provider="discord" label="Continue with Discord" />
+      <OAuthButton provider="spotify" label="Continue with Spotify" />
+      <OAuthButton provider="lastfm" label="Continue with Last.fm" />
     </div>
   );
 }

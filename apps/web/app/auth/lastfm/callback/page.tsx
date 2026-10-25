@@ -26,21 +26,21 @@ export default function LastFmCallbackPage() {
 
   useEffect(() => {
     const token = searchParams.get('token');
-    const userId = searchParams.get('user_id');
+    const linkState = searchParams.get('state');
 
-    if (!token) {
+    if (!token || !linkState) {
       setState('error');
-      setError('No authorization token received from Last.fm');
+      setError('Missing Last.fm authorization details. Start linking again from Settings.');
       return;
     }
 
-    async function completeAuth(authToken: string) {
+    async function completeAuth(authToken: string, signedState: string) {
       try {
-        const baseUrl = getApiBaseUrl();
-        const userParam = userId ? `&user_id=${encodeURIComponent(userId)}` : '';
-        const res = await fetch(
-          `${baseUrl}/integrations/lastfm/callback?token=${encodeURIComponent(authToken)}${userParam}`,
-        );
+        const res = await fetch(`${getApiBaseUrl()}/integrations/lastfm/callback`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: authToken, state: signedState }),
+        });
 
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
@@ -61,7 +61,7 @@ export default function LastFmCallbackPage() {
       }
     }
 
-    completeAuth(token);
+    completeAuth(token, linkState);
   }, [searchParams, router]);
 
   if (state === 'loading') {

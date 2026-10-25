@@ -7,7 +7,9 @@ This repo uses a single `.env` at the repo root. Copy `.env.example` to `.env` a
 - `DATABASE_URL` — full SQLAlchemy/Postgres URL. In Compose this points at `db`.
 - `REDIS_URL` — Redis connection string (default `redis://redis:6379/0` in Compose).
 - `SIDETRACK_API_BASE_URL` — internal API address for bot/worker/web containers (e.g. `http://api:8000`).
-- `SIDETRACK_API_TOKEN` — shared bearer token for bot/worker → API calls.
+- `SIDETRACK_ENV` — `production` (default) or `development`. In production the API refuses to start without `SIDETRACK_API_TOKEN`; development allows unauthenticated writes and generates a per-process link secret.
+- `SIDETRACK_API_TOKEN` — shared bearer token for bot/worker/web server → API writes. Never expose it to the browser.
+- `SIDETRACK_LINK_SECRET` — signs the `state` value in account-linking flows (Last.fm). Required in production for linking; keep it API-only.
 
 ## Discord bot
 - `DISCORD_BOT_TOKEN` — bot token from the Discord developer portal.

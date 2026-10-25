@@ -36,34 +36,14 @@ export async function fetchRecommendations(userId: string): Promise<Recommendati
   return (await res.json()) as RecommendationItem[];
 }
 
-export async function requestIntegrationConnect(
-  provider: 'spotify' | 'lastfm' | 'discord',
-  userId?: string,
-) {
-  // Build the appropriate callback URL for the provider
-  let callbackUrl: string | undefined;
-  if (typeof window !== 'undefined') {
-    const origin = window.location.origin;
-    switch (provider) {
-      case 'lastfm': {
-        const params = userId ? `?user_id=${encodeURIComponent(userId)}` : '';
-        callbackUrl = `${origin}/auth/lastfm/callback${params}`;
-        break;
-      }
-      case 'spotify':
-        callbackUrl = `${origin}/auth/spotify/callback`;
-        break;
-      case 'discord':
-        callbackUrl = `${origin}/auth/discord/callback`;
-        break;
-    }
-  }
-
-  const res = await fetch(`${getApiBaseUrl()}/integrations/${provider}/connect`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ callback_url: callbackUrl }),
-  });
+/**
+ * Start linking an external account for the signed-in user.
+ *
+ * Goes through the web server's /api/link route, which identifies the user from the
+ * session and holds the API token; the browser never names a user ID.
+ */
+export async function requestIntegrationConnect(provider: 'spotify' | 'lastfm' | 'discord') {
+  const res = await fetch(`/api/link/${provider}`, { method: 'POST' });
   if (!res.ok) throw new Error(`Connect ${provider} failed with status ${res.status}`);
   return (await res.json()) as { status: string; url?: string };
 }
