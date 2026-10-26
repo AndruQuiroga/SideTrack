@@ -18,9 +18,12 @@ from sidetrack.queue_maintenance import recover_stalled
 from sidetrack.queue_models import BackgroundJob
 
 
-def start_worker(database_url):
+def start_worker(database_url, *, once=True):
+    command = [sys.executable, "-m", "sidetrack.worker"]
+    if once:
+        command.append("--once")
     return subprocess.Popen(
-        [sys.executable, "-m", "sidetrack.worker", "--once"],
+        command,
         env={**os.environ, "DATABASE_URL": database_url},
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
@@ -133,12 +136,13 @@ def test_crash_before_commit_recovers_and_attempts_are_bounded(engine, database_
 @pytest.mark.skipif(
     sys.platform == "win32", reason="SIGTERM semantics are verified in the Linux image"
 )
-def test_sigterm_finishes_claimed_work_before_shutdown(engine, database_url):
+@pytest.mark.parametrize("once", [True, False])
+def test_sigterm_finishes_claimed_work_before_shutdown(engine, database_url, once):
     with accepted_job(engine) as (job_id, user_id):
         with engine.connect() as barrier:
             transaction = barrier.begin()
             barrier.execute(text("LOCK TABLE taste_profiles IN ACCESS EXCLUSIVE MODE"))
-            process = start_worker(database_url)
+            process = start_worker(database_url, once=once)
             try:
                 await_status(engine, job_id, "started")
                 process.send_signal(signal.SIGTERM)

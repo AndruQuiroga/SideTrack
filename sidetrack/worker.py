@@ -10,6 +10,7 @@ import sys
 from uuid import UUID
 
 import procrastinate
+from procrastinate import signals
 from sqlalchemy.engine import make_url
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
@@ -133,12 +134,29 @@ async def run_worker(app, *, queues, once=False):
                 shutdown_graceful_timeout=30,
                 wait=not once,
                 fetch_job_polling_interval=1,
+                install_signal_handlers=False,
             )
         )
+        stop_requested = False
+
+        def stop():
+            nonlocal stop_requested
+            stop_requested = True
+            # Procrastinate shields execution and drains its current jobs when
+            # its run task is canceled, honoring shutdown_graceful_timeout.
+            worker.cancel()
+
         try:
-            done, _ = await asyncio.wait({worker, maintenance}, return_when=asyncio.FIRST_COMPLETED)
-            for task in done:
-                task.result()
+            # The library's --once signal scope ends before its drain wait.
+            # Own the scope here so SIGTERM stays graceful for the whole run.
+            with signals.on_stop(stop):
+                done, _ = await asyncio.wait(
+                    {worker, maintenance}, return_when=asyncio.FIRST_COMPLETED
+                )
+                for task in done:
+                    if task is worker and task.cancelled() and stop_requested:
+                        continue
+                    task.result()
         finally:
             maintenance.cancel()
             worker.cancel()

@@ -1,0 +1,19 @@
+# Worker SIGTERM handler ends before drain completes
+
+Filed with owner approval: https://github.com/AndruQuiroga/SideTrack/issues/288.
+
+PR #287 CI run 40281124360 fails in
+`tests/test_worker_recovery.py::test_sigterm_finishes_claimed_work_before_shutdown`:
+the Linux subprocess exits with -15 after its job reaches started.
+
+Violated spec: `platform/background-jobs`, requirement "Execution has bounded
+retries and recovery", in the `replace-rq-with-postgres-jobs` change. Graceful
+shutdown must stop claims and allow bounded completion.
+
+The library's signal context ends after fetching when wait=False (--once), before
+waiting for claimed work. Sidetrack must own a signal context covering the whole
+worker lifetime and disable the shorter library context. Keep the Linux
+subprocess regression; container PID 1 behavior must not mask default termination.
+
+The fix belongs to the Phase 2 CI repair on PR #287. This separate issue records
+the defect as required by AGENTS.md.

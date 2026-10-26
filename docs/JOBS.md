@@ -39,7 +39,10 @@ five-minute limit for other tasks. A child watchdog also bounds orphan execution
 Windows uses the selector event loop required by psycopg; subprocess waits run
 outside it. Credentials are runtime settings, never command-line arguments.
 Graceful shutdown stops claims and allows 30 seconds for current work; the stack
-allows 40 seconds. Interrupted/transient work retries with bounded exponential
+allows 40 seconds. Sidetrack owns the signal context through the complete worker
+lifetime, including the final drain in `--once` mode; the shorter library signal
+context is disabled. Linux subprocess regressions cover both continuous and
+drain modes (CI repair, issue #288). Interrupted/transient work retries with bounded exponential
 backoff and at most three total attempts. Permanent validation or unavailable
 operations stop immediately. A one-second maintenance loop recovers jobs whose
 worker heartbeat is missing or over 30 seconds old. Committed domain/result

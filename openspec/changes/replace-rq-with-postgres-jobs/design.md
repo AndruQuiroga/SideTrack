@@ -83,6 +83,11 @@ bounded recovery to stalled jobs using the library recovery mechanism, exercised
 by killing a worker subprocess. Ingest and recompute retain their current ten-
 and five-minute execution bounds. SIGTERM stops new claims and allows up to 30
 seconds for completion before exit; stalled recovery handles interrupted work.
+Sidetrack owns the outer signal context and disables the library's inner signal
+context, which ends before draining in `--once` mode. Canceling the library's run
+task requests its bounded graceful drain; intentional signal cancellation is
+treated as a successful process shutdown. Regressions cover continuous and
+`--once` workers as regular Linux subprocesses (issue #288).
 
 A small reconciler in the worker uses row locks and unique
 `(schedule_id, revision, due_at)` occurrences. It defers jobs and advances schedules

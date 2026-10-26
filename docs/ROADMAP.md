@@ -61,6 +61,10 @@ status generation and strict OpenSpec validation. The separate image rehearsal
 also passed, including rollback to the saved Phase 1 API and return to Phase 2
 with new job results retained. Its temporary containers/network were removed.
 
+CI follow-up #288 fixes SIGTERM during `--once` drain by retaining the signal
+handler through the full worker lifetime. The complete Linux CI test selection
+now passes 132 tests, including shutdown in both continuous and drain modes.
+
 The pre-existing user-deletion ORM cascade defect found during checkpoint testing
 is tracked separately in GitHub issue #286. Mypy retains 39 existing errors; the
 new modules add none. GPU analysis, import backfill and phase enforcement remain
