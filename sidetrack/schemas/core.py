@@ -22,6 +22,21 @@ class OrmSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
+class MetadataColumnSchema(OrmSchema):
+    """Schema whose ``metadata_`` field maps to an ORM ``metadata_`` column.
+
+    The public name ``metadata`` is the alias, but on an ORM row that attribute is
+    SQLAlchemy's declarative ``MetaData`` registry, so rows are read by field name.
+    """
+
+    @model_validator(mode="before")
+    @classmethod
+    def _read_metadata_column(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            return data
+        return {name: getattr(data, name) for name in cls.model_fields if hasattr(data, name)}
+
+
 # Users and accounts
 class UserBase(OrmSchema):
     display_name: str
@@ -231,7 +246,7 @@ class VoteRead(VoteBase):
     id: UUID
 
 
-class RatingBase(OrmSchema):
+class RatingBase(MetadataColumnSchema):
     week_id: UUID
     user_id: UUID
     album_id: UUID
@@ -312,7 +327,7 @@ class TrackFeatureRead(TrackFeatureCreate):
 
 
 # Listening data
-class ListenEventBase(OrmSchema):
+class ListenEventBase(MetadataColumnSchema):
     user_id: UUID
     track_id: UUID
     played_at: datetime

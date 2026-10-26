@@ -1,7 +1,5 @@
 # Rating creation and listen-event reads crash on the `metadata` alias
 
-Not yet filed on GitHub; it needs the owner's approval, like issues #286 and #288.
-
 Phase 3 authorization tests (`add-per-user-authorization`) reached two existing
 defects that are present on main at d0a5102:
 
@@ -23,3 +21,8 @@ Fix in a separate OpenSpec change with API regressions for both paths. The Phase
 change does not touch these code paths. Its tests check authorization outcomes
 that never serialize a listen event, and its omitted-`user_id` scenario uses a
 nomination.
+
+**Resolved** by the OpenSpec change `fix-user-deletion-and-metadata-alias`. Rating
+submission and listen-event responses now read the `metadata_` column, and the
+public field is still named `metadata`. Regressions:
+`services/api/tests/test_ratings.py` and `services/api/tests/test_listen_events.py`.

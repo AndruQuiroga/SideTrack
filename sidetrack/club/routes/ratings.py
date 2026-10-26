@@ -179,7 +179,7 @@ async def create_week_rating(
         favorite_track=payload.favorite_track,
         review=payload.review,
         created_at=payload.created_at or datetime.now(UTC),
-        metadata=payload.metadata,
+        metadata_=payload.metadata_,
     )
 
     db.add(rating)

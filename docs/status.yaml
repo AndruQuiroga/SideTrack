@@ -22,10 +22,10 @@ groups:
         evidence:
           - services/api/tests/test_votes.py
       - capability: Ratings and summary
-        status: broken
-        notes: "Submitting a rating returns 500 (payload.metadata alias bug, found by Phase 3 tests); summaries and member-only reads are tested"
+        status: works
+        notes: "Submission stores every field including metadata; reads, one rating per member per week, summaries and member-only access are tested (fix-user-deletion-and-metadata-alias)"
         evidence:
-          - docs/issues/metadata-alias-crashes.md
+          - services/api/tests/test_ratings.py
           - services/api/tests/test_club_access.py
       - capability: Reminders and phase transitions
         status: partial
@@ -61,9 +61,10 @@ groups:
           - services/api/tests/test_jobs.py
       - capability: Listen storage
         status: works
-        notes: "listen_events.source matches the database enum. Before 2026-10-25 every listen insert failed on Postgres"
+        notes: "listen_events.source matches the database enum, and the listen-event routes return stored rows with metadata. Before 2026-10-25 every listen insert failed on Postgres; before 2026-10-26 every listen-event response returned 500"
         evidence:
           - services/api/tests/test_migrations.py
+          - services/api/tests/test_listen_events.py
       - capability: Spotify listen sync
         status: absent
         notes: "Legacy sync worker retired in Phase 2; Spotify remains metadata-only (ADR 0003)"
@@ -140,10 +141,10 @@ groups:
           - tests/test_job_schedules.py
           - tests/test_jobs_end_to_end.py
       - capability: User deletion with listening history
-        status: broken
-        notes: "Pre-existing ORM cascade bug discovered by Phase 2 tests; tracked separately in GitHub issue #286. New checkpoint database cascade and deleted-job behavior are tested."
+        status: works
+        notes: "DELETE /users/{id} removes the user and every cascaded row (listens, checkpoints, club activity, follows, compatibility, membership); fixed for GitHub issue #286. Deleted-job behavior is tested separately."
         evidence:
-          - docs/issues/user-delete-cascades.md
+          - services/api/tests/test_account_deletion.py
           - tests/test_import_checkpoints.py
       - capability: Type checking
         status: broken

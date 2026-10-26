@@ -135,18 +135,15 @@ def test_shared_listening_hidden_from_non_members(client, make_user, db, track):
     )
 
 
-# Returning a listen event currently fails serialization (docs/issues/metadata-alias-crashes.md),
-# so these tests check only outcomes that return no listen-event rows.
-
-
 def test_unfiltered_listen_event_list_is_own(client, make_user, db, track):
     u = make_user("U", role=ClubRole.MEMBER)
     v = make_user("V", role=ClubRole.MEMBER)
+    own = _listen(db, u, track)
     _listen(db, v, track)
     _share(db, v)
     response = client.get("/listen-events/", headers=as_user(u))
     assert response.status_code == 200
-    assert response.json() == []
+    assert [e["id"] for e in response.json()] == [str(own.id)]
 
 
 def test_listen_event_list_for_private_user_is_404(client, make_user, db, track):

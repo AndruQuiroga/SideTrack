@@ -13,7 +13,7 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 | Create week and nominate | works | API + bot | `services/api/tests/test_weeks.py`, `services/api/tests/test_nominations.py` |
 | Edit/withdraw nomination | partial | Implemented (PATCH/DELETE /nominations/{id}); untested |  |
 | Ranked ballot (rank 1 and 2) | partial | The database rejects voting for the same nomination twice (uq_vote_nomination_user). No self-vote or voting-phase checks (routes/votes.py) | `services/api/tests/test_votes.py` |
-| Ratings and summary | broken | Submitting a rating returns 500 (payload.metadata alias bug, found by Phase 3 tests); summaries and member-only reads are tested | `docs/issues/metadata-alias-crashes.md`, `services/api/tests/test_club_access.py` |
+| Ratings and summary | works | Submission stores every field including metadata; reads, one rating per member per week, summaries and member-only access are tested (fix-user-deletion-and-metadata-alias) | `services/api/tests/test_ratings.py`, `services/api/tests/test_club_access.py` |
 | Reminders and phase transitions | partial | Deadlines and leased delivery persist in Postgres; restart and send/ack behavior tested. Notices do not enforce phases; real Discord delivery not verified. | `tests/test_club_schedules.py`, `services/api/tests/test_club_notifications.py`, `apps/bot/tests/notification-delivery.test.ts`, `tests/test_jobs_end_to_end.py` |
 | Album metadata from Spotify | partial | Client credentials, metadata only (external/spotify.py); untested |  |
 | Web archive (weeks, winners) | partial | Members only since Phase 3: anonymous visitors get a sign-in prompt, non-members a members-only notice; not verified with real Discord sign-in | `apps/web/app/no-fake-data.test.ts`, `apps/web/tests/authenticated-pages.test.cjs` |
@@ -24,7 +24,7 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 | --- | --- | --- | --- |
 | Last.fm account link | partial | Signed-state flow implemented and tested (harden-api-credentials); not yet verified end to end against real Last.fm | `services/api/tests/test_lastfm_link.py`, `services/api/tests/test_link_state.py` |
 | Last.fm scrobble import | partial | Durable per-account checkpoints and duplicate-safe retries; newest 200 only, no backfill; unresolved/album-less records can be dropped | `tests/test_import_checkpoints.py`, `services/api/tests/test_jobs.py` |
-| Listen storage | works | listen_events.source matches the database enum. Before 2026-10-25 every listen insert failed on Postgres | `services/api/tests/test_migrations.py` |
+| Listen storage | works | listen_events.source matches the database enum, and the listen-event routes return stored rows with metadata. Before 2026-10-25 every listen insert failed on Postgres; before 2026-10-26 every listen-event response returned 500 | `services/api/tests/test_migrations.py`, `services/api/tests/test_listen_events.py` |
 | Spotify listen sync | absent | Legacy sync worker retired in Phase 2; Spotify remains metadata-only (ADR 0003) |  |
 | ListenBrainz import | absent |  |  |
 | MusicBrainz resolution | partial | Per-scrobble web API calls inside imports; attempts share a global Postgres pacing lock, including HTTP retries |  |
@@ -54,7 +54,7 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 | Runtime secrets | works | API reads /run/secrets/&lt;name&gt;; web and bot read &lt;NAME&gt;_FILE | `services/api/tests/test_runtime_config.py`, `apps/web/app/lib/server-env.test.ts`, `apps/bot/src/secrets.test.ts` |
 | Schema migrations | works | Tests run on Postgres 16 + pgvector built by Alembic; model/migration drift fails CI | `services/api/tests/test_migrations.py` |
 | Background jobs | works | Procrastinate/Postgres; transactional submission, bounded retries, recovery, persisted schedules and results. API/worker/bot image rehearsal passed without Redis. | `tests/test_queue_transactions.py`, `tests/test_worker_recovery.py`, `tests/test_worker_queues.py`, `tests/test_job_schedules.py`, `tests/test_jobs_end_to_end.py` |
-| User deletion with listening history | broken | Pre-existing ORM cascade bug discovered by Phase 2 tests; tracked separately in GitHub issue #286. New checkpoint database cascade and deleted-job behavior are tested. | `docs/issues/user-delete-cascades.md`, `tests/test_import_checkpoints.py` |
+| User deletion with listening history | works | DELETE /users/{id} removes the user and every cascaded row (listens, checkpoints, club activity, follows, compatibility, membership); fixed for GitHub issue #286. Deleted-job behavior is tested separately. | `services/api/tests/test_account_deletion.py`, `tests/test_import_checkpoints.py` |
 | Type checking | broken | 39 existing mypy errors in the canonical sidetrack package; no errors in the new Phase 2 modules. CI remains non-blocking until the backlog is fixed. |  |
 | Python module boundaries | works | Canonical sidetrack package with five domain owners; import-linter enforced in CI; legacy imports share canonical objects | `tests/test_module_layout.py`, `tests/test_import_boundaries.py`, `tests/test_ingest_boundary.py` |
 | Status page | works | Generated from docs/status.yaml; CI fails if stale | `scripts/gen_status.py`, `services/api/tests/test_gen_status.py` |
@@ -66,6 +66,7 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 ### In-flight changes
 
 - `deploy-on-stache-rack`: 13/13 tasks
+- `fix-user-deletion-and-metadata-alias`: 9/9 tasks
 - `harden-api-credentials`: 10/11 tasks
 
 ### Specs
