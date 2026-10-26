@@ -88,7 +88,7 @@ PHASES: list[dict[str, Any]] = [
         "label": "Track",
         "summary": "Benchmark extractors before building analysis (separate track).",
         "adrs": ["0004", "0005", "0007"],
-        "changes": [],
+        "changes": ["add-audio-acquisition", "add-audio-lab-benchmark"],
     },
 ]
 
