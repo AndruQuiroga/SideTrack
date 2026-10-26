@@ -34,8 +34,8 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 | Capability | Status | Notes | Evidence |
 | --- | --- | --- | --- |
 | Audio acquisition | partial | Opt-in `python -m sidetrack.audio` (ADR 0007): YouTube Music full tracks and Deezer previews, content-addressed storage, AcoustID verification, manifest and prune; tested with source doubles. Real 5-seed smoke run on 2026-10-26 fetched and stored all 10 assets; AcoustID matching not yet run for real (no key), see docs/AUDIO.md | `tests/test_audio_assets.py`, `tests/test_audio_cli.py` |
-| Audio feature extraction | stub | services/extraction is an empty FastAPI app |  |
-| Embedding models (any) | absent | Pre-reboot adapters (CLAP, OpenL3, PANNs, MusicNN) returned fake numbers and were deleted |  |
+| Audio feature extraction | partial | services/audio-lab benchmark CLI (ADR 0004) embeds acquired audio into versioned Parquet runs with a neighbour report and verdict scoring; benchmark only, not integrated into Sidetrack. No model has passed the gate yet (docs/AUDIO-BENCHMARK.md) | `services/audio-lab/tests/test_runs.py`, `services/audio-lab/tests/test_neighbours.py`, `services/audio-lab/tests/test_report_and_score.py` |
+| Embedding models (any) | partial | MuQ, MuQ-MuLan, MERT-v1-95M and CLAP run on the owner's RTX 5070 (gpu-marked tests and a 10-asset smoke run, 2026-10-26). Quality is unjudged; the GTX 1070 Ti is unmeasured | `services/audio-lab/tests/test_adapters_gpu.py`, `docs/AUDIO-BENCHMARK.md` |
 | Spotify audio features | broken | Endpoint returns 403 for apps created after 2024-11-27 (ADR 0003) |  |
 | Taste profiles, compatibility, recommendations | stub | Tables exist; values derive from empty features |  |
 
@@ -67,7 +67,7 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 ### In-flight changes
 
 - `add-audio-acquisition`: 10/11 tasks
-- `add-audio-lab-benchmark`: 0/12 tasks
+- `add-audio-lab-benchmark`: 10/12 tasks
 - `deploy-on-stache-rack`: 13/13 tasks
 - `harden-api-credentials`: 10/11 tasks
 

@@ -6,7 +6,7 @@ requires-python = ">=3.11,<3.12"
 # NOTE: Heavy / GPU deps (tensorflow, librosa, openl3, etc.) must NOT go here.
 # They belong in standalone services under services/ with their own pyproject.toml
 # and uv.lock. uv resolves ALL extras in a single lockfile — adding heavy extras
-# here penalises every developer and CI run. See services/extraction/README.md.
+# here penalises every developer and CI run. See services/audio-lab/README.md.
 dependencies = [
     "pydantic==2.8.2",
     "pydantic-settings==2.3.4",
@@ -93,7 +93,8 @@ exclude = [
 ]
 
 [tool.pytest.ini_options]
-addopts = "-q -x --strict-markers --disable-warnings -m \"not contract\""
+# The audio lab is its own project with its own environment and CI job.
+addopts = "-q -x --strict-markers --disable-warnings -m \"not contract\" --ignore=services/audio-lab"
 markers = [
     "unit: fast-running tests that mock external services",
     "integration: tests that require external services",

@@ -107,7 +107,7 @@ def embed_run(
     """Embed every manifest asset with every adapter; write Parquet, failures and run.json."""
 
     assets = read_manifest(manifest_path)
-    commit = commit or git_commit(manifest_path.parent)
+    commit = commit or git_commit(Path(__file__).resolve().parent)
     run_id, path = new_run_dir(out_root, commit)
     run = Run(run_id, path)
     started = datetime.now(UTC)

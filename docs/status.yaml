@@ -83,11 +83,18 @@ groups:
           - tests/test_audio_assets.py
           - tests/test_audio_cli.py
       - capability: Audio feature extraction
-        status: stub
-        notes: services/extraction is an empty FastAPI app
+        status: partial
+        notes: "services/audio-lab benchmark CLI (ADR 0004) embeds acquired audio into versioned Parquet runs with a neighbour report and verdict scoring; benchmark only, not integrated into Sidetrack. No model has passed the gate yet (docs/AUDIO-BENCHMARK.md)"
+        evidence:
+          - services/audio-lab/tests/test_runs.py
+          - services/audio-lab/tests/test_neighbours.py
+          - services/audio-lab/tests/test_report_and_score.py
       - capability: Embedding models (any)
-        status: absent
-        notes: "Pre-reboot adapters (CLAP, OpenL3, PANNs, MusicNN) returned fake numbers and were deleted"
+        status: partial
+        notes: "MuQ, MuQ-MuLan, MERT-v1-95M and CLAP run on the owner's RTX 5070 (gpu-marked tests and a 10-asset smoke run, 2026-10-26). Quality is unjudged; the GTX 1070 Ti is unmeasured"
+        evidence:
+          - services/audio-lab/tests/test_adapters_gpu.py
+          - docs/AUDIO-BENCHMARK.md
       - capability: Spotify audio features
         status: broken
         notes: Endpoint returns 403 for apps created after 2024-11-27 (ADR 0003)

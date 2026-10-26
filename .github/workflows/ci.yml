@@ -56,6 +56,26 @@ jobs:
       - name: Status page is current
         run: uv run --frozen python scripts/gen_status.py --check
 
+  audio-lab:
+    # Core layer only: no PyTorch, no GPU, no model downloads (ADR 0004).
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/audio-lab
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: uv sync --frozen --python 3.11 --extra dev
+      - name: Ruff
+        run: |
+          uv run --frozen ruff check src tests
+          uv run --frozen ruff format --check src tests
+      - name: Tests
+        run: uv run --frozen pytest
+
   node:
     runs-on: ubuntu-latest
     steps:

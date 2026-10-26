@@ -32,7 +32,7 @@ A bug found mid-task becomes its own change (or a GitHub issue that names the sp
 | `sidetrack/`          | Canonical Python package; ownership and boundaries in docs/MODULES.md     |
 | `services/api`        | Compatibility imports, API tests and image/startup files                  |
 | `services/worker`     | Retired sync-worker entrypoint; use `python -m sidetrack.worker`         |
-| `services/extraction` | Stub only; the audio lab replaces it                                      |
+| `services/audio-lab`  | Audio model benchmark CLI (ADR 0004); own lock, PyTorch stays out of root |
 | `apps/bot`            | discord.js club bot                                                       |
 | `apps/web`            | Next.js site                                                              |
 | `packages/api-client` | Generated TS client for bot and web                                       |

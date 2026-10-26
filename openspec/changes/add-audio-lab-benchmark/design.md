@@ -35,12 +35,12 @@ services/audio-lab/
     adapters/      # base.py, muq.py, muq_mulan.py, mert.py, clap.py
     runs.py        # run dir, run.json, Parquet writing, perf capture
     neighbours.py  # cosine top-k per model, self-retrieval
-    report/        # template.html (inline CSS/JS), render.py
+    report/        # template.html (inline CSS/JS), __init__.py renders it
     score.py
   tests/           # core tests with generated WAVs and a test-double adapter
 ```
 
-PyTorch comes from the `pytorch-cu128` index via `[tool.uv.sources]`, so `uv sync --extra models` gets Blackwell wheels. The exact torch version is pinned at implementation time to the newest release that has cu128 wheels for Windows and Python 3.11. Decoding uses `soundfile`, which reads FLAC, WAV and OGG/Opus through libsndfile, with an `ffmpeg` subprocess as the fallback for m4a and webm from yt-dlp. Decoding is mono-mixed and resampled with `soxr` to each adapter's rate.
+PyTorch comes from the `pytorch-cu128` index via `[tool.uv.sources]`, so `uv sync --extra models` gets Blackwell wheels. The pins are torch and torchaudio 2.11.0+cu128. muq requires torchaudio, whose last release (2.11) pins torch 2.11, and newer torch builds moved to CUDA 13. transformers is pinned to 4.57.6, the last 4.x, because MERT's remote modelling code targets transformers 4. Decoding uses `soundfile`, which reads FLAC, WAV and OGG/Opus through libsndfile, with an `ffmpeg` subprocess as the fallback for m4a and webm from yt-dlp. Decoding is mono-mixed and resampled with `soxr` to each adapter's rate.
 
 Alternative considered: keeping the `services/extraction` name. Rejected, because it's tied to a planned HTTP microservice, while the lab is a CLI that serves nothing. The AGENTS.md layout table already says "the audio lab replaces it".
 
@@ -59,7 +59,7 @@ class Adapter(Protocol):
 - **MERT:** mean over time of the average of all hidden layers. This is the commonly reported best general-purpose choice, and it's recorded as the adapter's `pooling`.
 - **MuQ-MuLan and CLAP:** their audio projection embedding.
 - **Metadata:** `revision` is the Hugging Face commit hash resolved at load. The sample rate and dimension are read from the checkpoint's config and asserted.
-- **dtype:** bf16 on the 5070 where the model supports it, otherwise fp32. It's recorded per run.
+- **dtype:** fp32 for every model. The 12 GB card has room (peak 4.7 GB for MuQ), and it avoids reduced-precision differences between models. It's recorded per run.
 
 ### 3. Run directory
 
