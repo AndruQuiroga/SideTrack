@@ -55,14 +55,29 @@ def normalise(text: str) -> str:
     return " ".join(_NON_WORD.sub(" ", text).split())
 
 
+_CREDIT_SPLIT = re.compile(
+    r"\s*(?:,|&|\+|/|\bx\b|\bfeat\.?|\bft\.?|\bfeaturing\b|\bwith\b)\s*", re.I
+)
+
+
+def credited_artists(text: str) -> set[str]:
+    """Each credited name: "A & B feat. C" -> {"a", "b", "c"}. Services often list only one."""
+
+    return {n for part in _CREDIT_SPLIT.split(text) if (n := normalise(part))}
+
+
+def _same_artist(a: str, b: str) -> bool:
+    return a == b or SequenceMatcher(None, a, b).ratio() >= TITLE_SIMILARITY
+
+
 def matches_seed(match: Match, artist: str, title: str) -> bool:
-    seed_artist, seed_title = normalise(artist), normalise(title)
-    match_artist, match_title = normalise(match.artist), normalise(match.title)
-    artist_ok = bool(seed_artist) and (
-        seed_artist in match_artist
-        or SequenceMatcher(None, seed_artist, match_artist).ratio() >= TITLE_SIMILARITY
+    """Title must match; any credited artist of the seed must match any credited on the result."""
+
+    seed_credits, match_credits = credited_artists(artist), credited_artists(match.artist)
+    artist_ok = any(_same_artist(s, m) for s in seed_credits for m in match_credits)
+    title_ok = (
+        SequenceMatcher(None, normalise(title), normalise(match.title)).ratio() >= TITLE_SIMILARITY
     )
-    title_ok = SequenceMatcher(None, seed_title, match_title).ratio() >= TITLE_SIMILARITY
     return artist_ok and title_ok
 
 

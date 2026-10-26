@@ -309,3 +309,19 @@ def test_redacting_logger_drops_secret_lines(caplog):
         log.warning("ordinary message")
     assert secret not in caplog.text
     assert "ordinary message" in caplog.text
+
+
+@pytest.mark.parametrize(
+    ("seed_artist", "result_artist", "expected"),
+    [
+        ("ILLENIUM & WYLDE", "ILLENIUM", True),  # Deezer lists the primary artist only
+        ("Dabin, William Black & Audra Miller", "William Black", True),
+        ("Dabin feat Dia Frampton", "Dabin", True),
+        ("Trivecta & MitiS", "MitiS, Trivecta", True),
+        ("ILLENIUM & WYLDE", "Some Cover Band", False),
+    ],
+)
+def test_collaboration_credits_match(seed_artist, result_artist, expected):
+    assert matches_seed(Match(0.9, "m", result_artist, "Ur Alive"), seed_artist, "Ur Alive") is (
+        expected
+    )
