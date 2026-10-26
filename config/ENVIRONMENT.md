@@ -22,6 +22,17 @@ How secrets are read:
 | `SIDETRACK_MUSICBRAINZ_APP_NAME` | | `Sidetrack API/0.1` | User-Agent for MusicBrainz; include contact info |
 | `SIDETRACK_SECRETS_DIR` | | `/run/secrets` | Where secret files are read from |
 
+## Audio acquisition CLI (`python -m sidetrack.audio`, owner's machine only)
+
+Not used by any image or service (ADR 0007). See `docs/AUDIO.md`.
+
+| Variable | Secret | Default | Notes |
+| --- | --- | --- | --- |
+| `SIDETRACK_AUDIO_DIR` | | none | Where audio files are stored as `<sha256>.<ext>`; put it on the HDD |
+| `SIDETRACK_AUDIO_FETCH_ENABLED` | | `false` | Must be `true` for `fetch` to run |
+| `ACOUSTID_API_KEY` | **secret** | none | Application key from acoustid.org; without it assets are stored `unverified` |
+| `SIDETRACK_AUDIO_RETENTION_DAYS` | | none | Files older than this are deleted by `prune`; rows are kept |
+
 ## Bot (`apps/bot`)
 
 | Variable | Secret | Notes |

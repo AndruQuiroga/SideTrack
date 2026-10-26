@@ -36,6 +36,12 @@ worker = [
     "procrastinate==3.10.0",
 ]
 
+# Opt-in audio acquisition (ADR 0007): `python -m sidetrack.audio`. Not in any image.
+audio = [
+    "yt-dlp==2026.10.21",
+    "pyacoustid==1.3.1",
+]
+
 dev = [
     "numpy==1.26.4",
     "pytest==7.4.4",
@@ -138,6 +144,12 @@ protected_modules = ["sidetrack.analysis.models", "sidetrack.analysis.routes", "
 allowed_importers = ["sidetrack.analysis", "services.api.tests"]
 ignore_imports = ["sidetrack.api.routes -> sidetrack.analysis.routes.*"]
 unmatched_ignore_imports_alerting = "none"
+
+[[tool.importlinter.contracts]]
+name = "audio acquisition runs only from its CLI (ADR 0007)"
+type = "protected"
+protected_modules = ["sidetrack.analysis.audio"]
+allowed_importers = ["sidetrack.analysis.audio", "sidetrack.audio"]
 
 [[tool.importlinter.contracts]]
 name = "Domains do not depend on composition or legacy services"

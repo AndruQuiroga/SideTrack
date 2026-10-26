@@ -27,3 +27,23 @@ class ListeningVisibility(str, Enum):
 
     PRIVATE = "private"
     CLUB = "club"
+
+
+class AudioSource(str, Enum):
+    """Where an audio asset came from (ADR 0007)."""
+
+    YOUTUBE_MUSIC = "youtube_music"
+    DEEZER_PREVIEW = "deezer_preview"
+
+
+class AudioKind(str, Enum):
+    FULL = "full"
+    PREVIEW = "preview"
+
+
+class AudioVerification(str, Enum):
+    """Whether a Chromaprint/AcoustID match confirms the requested track."""
+
+    CONFIRMED = "confirmed"
+    MISMATCH = "mismatch"
+    UNVERIFIED = "unverified"

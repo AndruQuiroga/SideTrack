@@ -159,6 +159,7 @@ ARCHITECTURE: list[dict[str, Any]] = [
         "sub": "features, taste",
         "kind": "module",
         "caps": [
+            "Audio acquisition",
             "Audio feature extraction",
             "Embedding models (any)",
             "Spotify audio features",

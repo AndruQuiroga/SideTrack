@@ -36,3 +36,13 @@ def test_stack_services_and_worker_commands():
         assert "redis" not in services
         assert "rq-worker" not in services
         assert services["worker"]["command"] == ["python", "-m", "sidetrack.worker"]
+
+
+def test_images_do_not_install_audio_acquisition():
+    """yt-dlp and pyacoustid are for the owner's CLI only (ADR 0007)."""
+
+    for dockerfile in ROOT.rglob("Dockerfile"):
+        if "node_modules" in dockerfile.parts:
+            continue
+        text = dockerfile.read_text(encoding="utf-8")
+        assert "--extra audio" not in text and "yt-dlp" not in text, dockerfile

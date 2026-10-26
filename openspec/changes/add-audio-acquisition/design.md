@@ -25,13 +25,15 @@ See proposal.md for motivation, and the `analysis/audio-assets` spec for require
 
 ### 1. Composition CLI over a domain-public API
 
-`sidetrack/audio.py` (run as `python -m sidetrack.audio fetch|manifest|prune`) parses arguments and settings, then calls public functions exported from `sidetrack.analysis`: `fetch_seed`, `export_manifest` and `prune_assets`. This mirrors `sidetrack/club_admin.py`. The domain code lives in `sidetrack/analysis/audio/`:
+`sidetrack/audio.py` (run as `python -m sidetrack.audio fetch|manifest|prune`) parses arguments and settings, then calls the public functions of `sidetrack.analysis.audio`: `fetch_seed`, `export_manifest`, `prune_assets` and `read_seeds`. This mirrors `sidetrack/club_admin.py`. The package has four modules:
 - `sources.py`: the YouTube Music and Deezer fetchers behind one small protocol
 - `store.py`: hashing and writing files
 - `verify.py`: fpcalc and AcoustID
-- `assets.py`: rows and public functions
+- `assets.py`: rows and the public functions
 
-`sidetrack.analysis.audio` joins the analysis protected modules in the import contract.
+A protected import-linter contract allows only the package itself and `sidetrack.audio` to import `sidetrack.analysis.audio`, so the API, worker, job runner and queue modules can't reach the fetch code. The package isn't re-exported from `sidetrack.analysis`, which the job runner imports. yt-dlp and pyacoustid are imported lazily inside the source and verifier classes, so images without the `audio` extra still import the analysis package.
+
+Seed CSVs may carry an optional `album` column. Without it, `resolve_listen_track` can only link a track already in the catalog, because creating a track needs an album.
 
 Alternative considered: a Procrastinate task on the `gpu` or `default` queue. Rejected, because ADR 0007 forbids scheduling and a queue task invites it.
 
