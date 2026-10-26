@@ -6,7 +6,8 @@ Uses a module-level httpx.Client for connection pooling across requests.
 from __future__ import annotations
 
 import time
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
+from contextlib import AbstractContextManager, nullcontext
 from typing import Any
 
 import httpx
@@ -54,6 +55,7 @@ def request_json(
     headers: Mapping[str, str] | None = None,
     timeout: float = 15.0,
     max_attempts: int = 3,
+    request_guard: Callable[[], AbstractContextManager] | None = None,
 ) -> Any:
     h = dict(headers or {})
     delays = _retry_delays(max_attempts)
@@ -67,7 +69,8 @@ def request_json(
             # current thread — not the async event loop.
             time.sleep(delay)
         try:
-            resp = client.request(method, url, params=params, headers=h)
+            with request_guard() if request_guard else nullcontext():
+                resp = client.request(method, url, params=params, headers=h)
             if 200 <= resp.status_code < 300:
                 return resp.json()
             # Retry 429/5xx

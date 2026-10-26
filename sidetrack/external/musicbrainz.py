@@ -10,11 +10,10 @@ from multiple threads (e.g. RQ workers processing ingests concurrently).
 
 from __future__ import annotations
 
-import threading
-import time
 from typing import Any
 
 from sidetrack.config import get_settings
+from sidetrack.request_pacing import musicbrainz_request_slot
 
 from .http import request_json
 
@@ -22,20 +21,6 @@ MB_BASE = "https://musicbrainz.org/ws/2"
 
 # --- Rate limiter -----------------------------------------------------------
 # MusicBrainz requires max 1 request per second per application.
-_lock = threading.Lock()
-_last_request_time: float = 0.0
-_MIN_INTERVAL: float = 1.05  # 1s + small buffer
-
-
-def _throttle() -> None:
-    """Block until at least _MIN_INTERVAL seconds since the last MB request."""
-    global _last_request_time
-    with _lock:
-        now = time.monotonic()
-        wait = _MIN_INTERVAL - (now - _last_request_time)
-        if wait > 0:
-            time.sleep(wait)
-        _last_request_time = time.monotonic()
 
 
 # --- Helpers ----------------------------------------------------------------
@@ -52,13 +37,13 @@ def _common_headers() -> dict[str, str]:
 
 def _mb_request(method: str, path: str, *, params: dict[str, str] | None = None) -> Any:
     """Rate-limited request to MusicBrainz WS/2."""
-    _throttle()
     return request_json(
         "musicbrainz",
         method,
         f"{MB_BASE}/{path}",
         params=params,
         headers=_common_headers(),
+        request_guard=musicbrainz_request_slot,
     )
 
 

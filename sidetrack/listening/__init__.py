@@ -3,6 +3,6 @@
 from sidetrack.types import ListenSource
 
 from .ingest import ingest_lastfm
-from .models import ListenEvent
+from .models import ImportCheckpoint, ListenEvent
 
-__all__ = ["ListenEvent", "ListenSource", "ingest_lastfm"]
+__all__ = ["ListenEvent", "ImportCheckpoint", "ListenSource", "ingest_lastfm"]

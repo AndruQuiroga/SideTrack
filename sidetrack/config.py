@@ -30,8 +30,6 @@ class Settings(BaseSettings):
     # Signs Last.fm link state; never shared with clients.
     sidetrack_link_secret: SecretStr | None = None
     cors_origins: list[str] = ["http://localhost:3000", "http://localhost:3001"]
-    # Redis / job queue
-    redis_url: str = "redis://localhost:6379"
     # External APIs
     sidetrack_musicbrainz_app_name: str | None = None
     lastfm_api_key: str | None = None

@@ -4,7 +4,7 @@
 
 CI publishes images on every push to `main`:
 
-- `ghcr.io/andruquiroga/sidetrack-api:sha-<short>` (also the RQ worker)
+- `ghcr.io/andruquiroga/sidetrack-api:sha-<short>` (also the Postgres worker)
 - `ghcr.io/andruquiroga/sidetrack-web:sha-<short>`
 - `ghcr.io/andruquiroga/sidetrack-bot:sha-<short>`
 
@@ -71,9 +71,30 @@ Verify each step against live state first, as the stache-infra change rules requ
 
 Change `SIDETRACK_TAG` in Portainer and redeploy. The API runs Alembic migrations on start, so it stays at one replica.
 
+For the Phase 2 queue cutover, pause API producers and bot reminders, drain all
+accepted work with the previous RQ image, then stop that worker. Apply Alembic
+before starting the new worker, then deploy matching API/worker/bot images and
+remove Redis. The new worker runs `python -m sidetrack.worker` with a 30-second
+shutdown grace period (40 seconds allowed by the stack). Initial migration seeds
+only future club deadlines. Detailed recovery and rollback steps are in
+[JOBS.md](../docs/JOBS.md). Do not discard accepted jobs during a tag change.
+
 ## Rollback
 
 Redeploy the previous `sha-` tag. Postgres data stays in `/srv/sidetrack/postgres`. If a migration was applied, take a dump first and check that the old code tolerates the newer schema; there are no down-migration guarantees yet.
+
+After Phase 2 accepts Postgres jobs, pause producers and drain/reconcile those
+jobs with the new worker before reverting to an RQ image. An old image cannot
+consume them. Before acceptance resumes, the additive migration can remain unused
+while restoring the previous Redis stack. Never drop durable queue/outbox state
+as part of an image rollback.
+
+The previous API image must temporarily override its migration-running startup
+command with `uvicorn sidetrack.api.main:create_app --factory --host 0.0.0.0 --port 8000`:
+its older Alembic code cannot recognize a newer revision ID. Verify schema
+compatibility first, retain the new tables, and restore the old Redis stack
+before resuming old producers. New job IDs remain stored but need the new API
+for polling. This command is covered by the local previous-image rehearsal.
 
 ## Backups
 

@@ -31,7 +31,7 @@ A bug found mid-task becomes its own change (or a GitHub issue that names the sp
 | --------------------- | ------------------------------------------------------------------------- |
 | `sidetrack/`          | Canonical Python package; ownership and boundaries in docs/MODULES.md     |
 | `services/api`        | Compatibility imports, API tests and image/startup files                  |
-| `services/worker`     | Legacy sync worker: not built or deployed, due for replacement (ADR 0002) |
+| `services/worker`     | Retired sync-worker entrypoint; use `python -m sidetrack.worker`         |
 | `services/extraction` | Stub only; the audio lab replaces it                                      |
 | `apps/bot`            | discord.js club bot                                                       |
 | `apps/web`            | Next.js site                                                              |

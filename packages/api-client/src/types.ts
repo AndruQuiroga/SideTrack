@@ -1,4 +1,5 @@
 export type UUID = string;
+export type DeliveryEvent = import('./api-types').components['schemas']['DeliveryEvent'];
 export type IsoDateString = string;
 
 export enum ProviderType {

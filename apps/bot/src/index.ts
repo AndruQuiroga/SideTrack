@@ -23,6 +23,7 @@ export async function startBot(): Promise<void> {
 
   const discordClient = createDiscordClient(config.discord.token, logger);
   const scheduler = new ReminderScheduler(discordClient, service, logger);
+  discordClient.once('ready', () => scheduler.start());
   registerInteractionHandlers(discordClient, service, scheduler, config, logger);
   registerMessageHandlers(discordClient, service, config, logger);
 
@@ -49,7 +50,7 @@ export async function startBot(): Promise<void> {
 
   const shutdown = async (signal: string): Promise<void> => {
     logger.info('Shutting down bot.', { signal });
-    scheduler.cancelAll();
+    await scheduler.cancelAll();
     await discordClient.destroy();
     process.exit(0);
   };
@@ -57,11 +58,7 @@ export async function startBot(): Promise<void> {
   process.on('SIGTERM', () => void shutdown('SIGTERM'));
   process.on('SIGINT', () => void shutdown('SIGINT'));
 
-  discordClient.once('ready', () => {
-    scheduler.scheduleWeeks(openWeeks);
-  });
-
-  logger.info('Bot service initialized and scheduling reminders.', {
+  logger.info('Bot service initialized with durable notification delivery.', {
     discordTokenLoaded: Boolean(config.discord.token),
     openWeeks: openWeeks.length,
   });

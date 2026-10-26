@@ -396,6 +396,57 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/club/notifications/claim': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Claim */
+    post: operations['claim_club_notifications_claim_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/club/notifications/{event_id}/ack': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Acknowledge */
+    post: operations['acknowledge_club_notifications__event_id__ack_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/club/notifications/{event_id}/fail': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Fail */
+    post: operations['fail_club_notifications__event_id__fail_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/nominations/': {
     parameters: {
       query?: never;
@@ -912,7 +963,7 @@ export interface paths {
     };
     /**
      * Health
-     * @description Simple health endpoint with database connectivity probe.
+     * @description Report database reachability: 200 when it answers, 503 otherwise.
      */
     get: operations['health_health_get'];
     put?: never;
@@ -1031,6 +1082,51 @@ export interface components {
       status: string;
       /** Url */
       url: string;
+    };
+    /** DeliveryAck */
+    DeliveryAck: {
+      /**
+       * Lease Token
+       * Format: uuid
+       */
+      lease_token: string;
+      /** Message Id */
+      message_id: string;
+    };
+    /** DeliveryEvent */
+    DeliveryEvent: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /**
+       * Lease Token
+       * Format: uuid
+       */
+      lease_token: string;
+      /** Thread Id */
+      thread_id: string;
+      /** Message */
+      message: string;
+    };
+    /** DeliveryFailure */
+    DeliveryFailure: {
+      /**
+       * Lease Token
+       * Format: uuid
+       */
+      lease_token: string;
+      /**
+       * Permanent
+       * @default false
+       */
+      permanent: boolean;
+      /**
+       * Retry After
+       * @default 0
+       */
+      retry_after: number;
     };
     /**
      * FeedEventType
@@ -2659,6 +2755,103 @@ export interface operations {
       };
     };
   };
+  claim_club_notifications_claim_post: {
+    parameters: {
+      query?: {
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DeliveryEvent'][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  acknowledge_club_notifications__event_id__ack_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        event_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['DeliveryAck'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  fail_club_notifications__event_id__fail_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        event_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['DeliveryFailure'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
   list_nominations_nominations__get: {
     parameters: {
       query?: {
@@ -3632,7 +3825,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': Record<string, never>;
+          'application/json': unknown;
         };
       };
     };

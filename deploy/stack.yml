@@ -43,27 +43,10 @@ services:
           - node.labels.sidetrack.db == true
       restart_policy: *restart
 
-  # Ephemeral queue for the Last.fm ingest job until Phase 2 replaces RQ (ADR 0002).
-  redis:
-    image: redis:7-alpine
-    command: ["redis-server", "--save", "", "--appendonly", "no"]
-    networks:
-      - backend
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    logging: *logging
-    deploy:
-      replicas: 1
-      restart_policy: *restart
-
   api:
     image: ghcr.io/andruquiroga/sidetrack-api:${SIDETRACK_TAG:?set SIDETRACK_TAG to an image tag}
     environment:
       SIDETRACK_ENV: production
-      REDIS_URL: redis://redis:6379/0
       CORS_ORIGINS: '["https://sidetrack.network","http://sidetrack.stache.lan"]'
       LASTFM_API_KEY: ${LASTFM_API_KEY:-}
       SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID:-}
@@ -107,12 +90,12 @@ services:
         - traefik.http.routers.sidetrack-api.entrypoints=web
         - traefik.http.services.sidetrack-api.loadbalancer.server.port=8000
 
-  rq-worker:
+  worker:
     image: ghcr.io/andruquiroga/sidetrack-api:${SIDETRACK_TAG:?set SIDETRACK_TAG to an image tag}
-    command: ["python", "-m", "sidetrack.rq_worker"]
+    command: ["python", "-m", "sidetrack.worker"]
+    stop_grace_period: 40s
     environment:
       SIDETRACK_ENV: production
-      REDIS_URL: redis://redis:6379/0
       LASTFM_API_KEY: ${LASTFM_API_KEY:-}
       SIDETRACK_MUSICBRAINZ_APP_NAME: ${SIDETRACK_MUSICBRAINZ_APP_NAME:-Sidetrack/0.1}
     secrets: *api_secrets

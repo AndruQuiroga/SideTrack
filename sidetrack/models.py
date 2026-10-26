@@ -6,12 +6,17 @@ from sidetrack.club import Nomination, Rating, Vote, Week
 from sidetrack.db import Base
 from sidetrack.identity import Follow, LinkedAccount, User
 from sidetrack.listening import ListenEvent
+from sidetrack.queue_models import BackgroundJob, JobSchedule, RequestPacing, ScheduleOccurrence
 from sidetrack.types import ListenSource, ProviderType
 
 metadata = Base.metadata
 all_metadata = [metadata]
 
 __all__ = [
+    "BackgroundJob",
+    "JobSchedule",
+    "ScheduleOccurrence",
+    "RequestPacing",
     "User",
     "LinkedAccount",
     "Follow",

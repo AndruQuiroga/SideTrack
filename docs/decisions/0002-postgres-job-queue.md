@@ -9,9 +9,13 @@ Background work ran on Redis + RQ (consumed by two processes) plus APScheduler, 
 
 ## Decision
 
-Use a Postgres-backed queue (Procrastinate or PgQueuer; pick in the Phase 2 change) for all background and scheduled work. Cursors, schedules and outbox rows live in Postgres. Queues: `default`, `musicbrainz` (concurrency 1, rate-limited), `gpu` (consumed only on the GPU node).
+Use Procrastinate (selected in Phase 2, version 3.10.0) for background work.
+Submission shares the caller's transaction through its psycopg connection.
+Cursors, schedules and outbox rows live in Postgres. Queues: `default`,
+`musicbrainz` (global execution lock and request pacing), `gpu` (dedicated worker).
+The library schema is vendored and installed by Alembic; see docs/JOBS.md.
 
 ## Consequences
 
-- Redis, RQ and APScheduler are removed in Phase 2.
+- Redis, RQ and APScheduler are removed; accepted RQ work must drain at cutover.
 - Enqueueing can share a transaction with the data it acts on.

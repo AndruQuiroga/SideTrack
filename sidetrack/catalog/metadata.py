@@ -42,7 +42,12 @@ def _select_preferred_release(releases: Iterable[dict[str, Any]]) -> dict[str, A
 
 
 def upsert_album_from_release_group(
-    db: Session, *, artist_name: str | None, album_title: str, year: int | None = None
+    db: Session,
+    *,
+    artist_name: str | None,
+    album_title: str,
+    year: int | None = None,
+    commit: bool = True,
 ) -> Album | None:
     """Resolve an album via MB release-group and upsert Album/Track rows.
 
@@ -108,7 +113,7 @@ def upsert_album_from_release_group(
                     musicbrainz_id=rec_id,
                 )
                 db.add(t)
-    db.commit()
+    db.commit() if commit else db.flush()
     db.refresh(album)
     return album
 
@@ -320,7 +325,7 @@ def resolve_listen_track(
     if album_name and artist_name:
         try:
             album = upsert_album_from_release_group(
-                db, artist_name=artist_name, album_title=album_name
+                db, artist_name=artist_name, album_title=album_name, commit=False
             )
         except Exception:
             album = None
@@ -342,6 +347,16 @@ def resolve_listen_track(
             db.flush()
 
     # If still no track row but we have an album, create a minimal track (unresolved)
+    if track_row is None and album is not None:
+        track_row = db.scalar(
+            select(Track)
+            .where(
+                Track.album_id == album.id,
+                func.lower(Track.title) == track_name.lower(),
+                func.lower(Track.artist_name) == artist_name.lower(),
+            )
+            .limit(1)
+        )
     if track_row is None and album is not None:
         track_row = Track(
             album_id=album.id,

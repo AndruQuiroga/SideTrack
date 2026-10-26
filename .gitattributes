@@ -1,2 +1,4 @@
 # Ensure all shell scripts are LF in the repo
 *.sh text eol=lf
+# Preserve audited upstream bytes and their checksum on Windows checkouts.
+migrations/vendor/** -text

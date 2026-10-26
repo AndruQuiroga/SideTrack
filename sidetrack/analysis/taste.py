@@ -122,7 +122,9 @@ def compute_profile_summary(
     }
 
 
-def compute_user_taste_profile(db: Session, user_id: UUID, scope: str = "all_time") -> TasteProfile:
+def compute_user_taste_profile(
+    db: Session, user_id: UUID, scope: str = "all_time", *, commit: bool = True
+) -> TasteProfile:
     """Compute and upsert a taste profile for the given user."""
 
     listens = list(db.scalars(select(ListenEvent).where(ListenEvent.user_id == user_id)).all())
@@ -164,6 +166,6 @@ def compute_user_taste_profile(db: Session, user_id: UUID, scope: str = "all_tim
         )
         db.add(profile)
 
-    db.commit()
+    db.commit() if commit else db.flush()
     db.refresh(profile)
     return profile

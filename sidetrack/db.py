@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from collections.abc import Generator
+from datetime import datetime
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
@@ -56,3 +57,11 @@ def get_engine() -> Engine:
 
 class Base(DeclarativeBase):
     """Single declarative registry shared by all domain-owned tables."""
+
+
+def database_now(db: Session) -> datetime:
+    """Use Postgres wall-clock time for leases, deadlines and worker state."""
+    value = db.execute(text("SELECT clock_timestamp()")).scalar_one()
+    if not isinstance(value, datetime):
+        raise RuntimeError("Database clock unavailable")
+    return value
