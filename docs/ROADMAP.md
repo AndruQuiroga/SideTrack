@@ -70,7 +70,8 @@ now passes 133 tests, including shutdown in both continuous and drain modes,
 and synchronized queue-isolation checks with one and two slots per worker.
 
 The pre-existing user-deletion ORM cascade defect found during checkpoint testing
-is tracked separately in GitHub issue #286. Mypy retains 39 existing errors; the
+(GitHub issue #286) was fixed by `fix-user-deletion-and-metadata-alias` (PR #291).
+Mypy retained 39 existing errors (38 after #291); the
 new modules add none. GPU analysis, import backfill and phase enforcement remain
 later work. Real OAuth verification and first rack deployment remain deferred.
 
@@ -100,6 +101,12 @@ Still open:
 
 - The change hasn't been deployed; the first rack rollout covers Phases 1–3.
 - Real Discord sign-in hasn't been verified.
-- Two crashes found on main are recorded in `docs/issues/metadata-alias-crashes.md`
-  for a separate change.
 - Encrypting stored provider tokens at rest is separate Phase 3 work.
+
+## Pre-rollout fixes
+
+`fix-user-deletion-and-metadata-alias` merged in PR #291 and was archived on
+2026-10-26. It fixes two defects that predate the refactor. Rating submission and
+every rating or listen-event response returned 500, because of the `metadata`
+alias (`docs/issues/metadata-alias-crashes.md`). User deletion failed whenever the
+user had dependent rows (#286). Postgres-backed regressions cover both.
