@@ -24,8 +24,8 @@
 
 ## 5. CI and repo settings
 
-- [ ] 5.1 Restructure `.github/workflows/ci.yml` into `python` (ruff, mypy, all non-slow tests), `node` (lint, build, test), `specs` (`pnpm exec openspec validate --all --strict`) and `images` (build all three; push to GHCR on `main` with `sha-<short>` and `main` tags; `permissions: packages: write`). Verify a PR run passes without pushing, and a `main` run lists the three packages under the repo's GHCR packages.
-- [ ] 5.2 Enable branch protection on `main` requiring the `python`, `node`, `specs` and `images` checks, and confirm the GHCR packages are private, using `gh api`. Verify with `gh api repos/AndruQuiroga/SideTrack/branches/main/protection`. (Changes GitHub settings: confirm with the owner before running.)
+- [x] 5.1 Restructure `.github/workflows/ci.yml` into `python` (ruff, mypy, all non-slow tests), `node` (lint, build, test), `specs` (`pnpm exec openspec validate --all --strict`) and `images` (build all three; push to GHCR on `main` with `sha-<short>` and `main` tags; `permissions: packages: write`). Verify a PR run passes without pushing, and a `main` run lists the three packages under the repo's GHCR packages.
+- [ ] 5.2 Enable branch protection on `main` requiring the `python`, `node`, `specs` and `images` checks, and confirm the GHCR packages are private, using `gh api`. Verify with `gh api repos/AndruQuiroga/SideTrack/branches/main/protection`. (Changes GitHub settings: confirm with the owner before running.) Status 2026-10-25: protection applied and verified (six required checks, no force-push or deletion, admins exempt). Packages are still public, inherited from the public repo; the owner switches them to private in each package's settings, since the API can't.
 
 ## 6. Status and docs
 
