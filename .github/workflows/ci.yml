@@ -41,12 +41,14 @@ jobs:
         run: uv sync --frozen --python 3.11 --extra api --extra worker --extra dev
       - name: Ruff
         run: |
-          uv run --frozen ruff check services/api services/worker scripts
-          uv run --frozen ruff format --check services/api scripts
+          uv run --frozen ruff check sidetrack services/api services/worker scripts tests
+          uv run --frozen ruff format --check sidetrack services/api scripts tests
+      - name: Module boundaries
+        run: uv run --frozen lint-imports
       - name: Mypy (known errors, tracked in docs/STATUS.md)
-        # 44 pre-existing errors as of 2026-10-25. Remove continue-on-error once they're fixed.
+        # 40 errors in canonical sidetrack as of 2026-10-25; see docs/STATUS.md.
         continue-on-error: true
-        run: uv run --frozen mypy services/api
+        run: uv run --frozen mypy sidetrack
       - name: Tests
         run: uv run --frozen pytest -m "not slow and not gpu"
       - name: Deploy docs cover the stack

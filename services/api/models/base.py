@@ -1,9 +1,6 @@
-"""Declarative base for the rebooted Sidetrack API models."""
+"""Compatibility alias for sidetrack.db."""
 
-from sqlalchemy.orm import DeclarativeBase
+import importlib
+import sys
 
-
-class Base(DeclarativeBase):
-    """Base class for all new SQLAlchemy models in the API service."""
-
-    pass
+sys.modules[__name__] = importlib.import_module("sidetrack.db")

@@ -19,6 +19,19 @@
 - [x] 3.3 Convert the callback to `POST {token, state}`, link to the user in `state`, ignore any `user_id`, and check for conflicts before writing. Mock Last.fm `auth.getSession` with respx. Verify with `::test_callback_links_state_user`, `::test_callback_rejects_tampered_state`, `::test_callback_rejects_expired_state`, `::test_callback_ignores_user_id_param`, `::test_conflict_leaves_existing_credential`, `::test_relink_same_user_replaces_credential`.
 - [ ] 3.4 Update the web connect flow (`apps/web/app/lib/api/discover.ts`, settings page) to start linking server-side for the session user, and make the callback page POST `{token, state}`. Verify `pnpm --filter @sidetrack/web build` passes, then manually link a Last.fm account in `docker compose up`.
 
+  Verification reviewed 2026-10-25: the existing web route derives the user from the
+  server session, the connect helper calls that route, and the callback POSTs
+  `{token, state}`. The web production build, web lint, all 7 web tests, all 33
+  targeted API tests (`test_api_access.py`, `test_linked_accounts.py`,
+  `test_link_state.py`, `test_lastfm_link.py`), and strict validation of this
+  change passed. The owner explicitly deferred the live account test. Task 3.4
+  remains unchecked until that test passes; Last.fm linking remains partial in
+  `docs/STATUS.md`. To resume, configure Discord OAuth credentials locally and
+  register `http://localhost:3000/api/auth/callback/discord`, align the local
+  environment with `.env.example`, start the Compose stack, sign in, and link
+  Last.fm from Settings. Verify the account appears linked to the signed-in user
+  after returning from Last.fm.
+
 ## 4. Status and docs
 
 - [x] 4.1 Update `docs/STATUS.md` (Last.fm account link → works; Auth → partial, with per-user auth still pending) and add `SIDETRACK_ENV` and `SIDETRACK_LINK_SECRET` to `config/ENVIRONMENT.md`. Verify `pnpm exec openspec validate harden-api-credentials --strict` passes.

@@ -52,10 +52,10 @@ def api_routes() -> list[str]:
     os.environ["SIDETRACK_ENV"] = "development"
     if str(ROOT) not in sys.path:
         sys.path.insert(0, str(ROOT))
-    from services.api.main import create_app
+    from sidetrack.api.main import create_app
 
     # Only the route table is needed; the dev-mode auth warning is noise here.
-    logger = logging.getLogger("services.api.main")
+    logger = logging.getLogger("sidetrack.api.main")
     previous_level = logger.level
     logger.setLevel(logging.ERROR)
     try:

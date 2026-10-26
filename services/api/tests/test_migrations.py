@@ -9,7 +9,11 @@ from alembic.autogenerate import compare_metadata
 from alembic.migration import MigrationContext
 from sqlalchemy import Column, Integer, MetaData, select
 
-from services.api.models import Album, ListenEvent, ListenSource, Track, User, all_metadata
+from sidetrack.catalog import Album, Track
+from sidetrack.identity import User
+from sidetrack.listening import ListenEvent
+from sidetrack.models import all_metadata
+from sidetrack.types import ListenSource
 
 pytestmark = pytest.mark.unit
 

@@ -7,8 +7,8 @@ import logging
 import pytest
 from fastapi.testclient import TestClient
 
-from services.api.config import get_settings
-from services.api.main import create_app
+from sidetrack.api.main import create_app
+from sidetrack.config import get_settings
 
 from .conftest import TEST_API_TOKEN
 
@@ -44,7 +44,7 @@ def test_startup_allows_missing_token_in_development(monkeypatch, caplog, db):
         app = create_app()
     assert "writes are unauthenticated" in caplog.text
 
-    from services.api.db import get_db
+    from sidetrack.db import get_db
 
     app.dependency_overrides[get_db] = lambda: db
     with TestClient(app) as client:

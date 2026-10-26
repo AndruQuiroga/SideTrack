@@ -42,7 +42,7 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 
 | Capability | Status | Notes | Evidence |
 | --- | --- | --- | --- |
-| Data honesty | works | No sample, demo or random data; pages show an 'unavailable' state on API failure | `apps/web/app/no-fake-data.test.ts` |
+| Data honesty | works | No sample, demo or random data; pages show an 'unavailable' state on API failure | `apps/web/app/no-fake-data.test.ts`, `apps/web/tests/connections.test.cjs` |
 | Profile pages | absent | The web app calls /users/{id}/profile, timeline and now-playing endpoints the API doesn't implement, so /u/&lt;id&gt; is a 404 |  |
 
 ## Platform
@@ -54,7 +54,8 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 | Runtime secrets | works | API reads /run/secrets/&lt;name&gt;; web and bot read &lt;NAME&gt;_FILE | `services/api/tests/test_runtime_config.py`, `apps/web/app/lib/server-env.test.ts`, `apps/bot/src/secrets.test.ts` |
 | Schema migrations | works | Tests run on Postgres 16 + pgvector built by Alembic; model/migration drift fails CI | `services/api/tests/test_migrations.py` |
 | Background jobs | partial | Redis (ephemeral) + one RQ consumer for Last.fm ingest; Phase 2 replaces RQ (ADR 0002) |  |
-| Type checking | broken | 44 pre-existing mypy errors; CI runs mypy as non-blocking until fixed |  |
+| Type checking | broken | 40 mypy errors in the canonical sidetrack package; CI runs mypy as non-blocking until fixed |  |
+| Python module boundaries | works | Canonical sidetrack package with five domain owners; import-linter enforced in CI; legacy imports share canonical objects | `tests/test_module_layout.py`, `tests/test_import_boundaries.py`, `tests/test_ingest_boundary.py` |
 | Status page | works | Generated from docs/status.yaml; CI fails if stale | `scripts/gen_status.py`, `services/api/tests/test_gen_status.py` |
 | CI | works | Lint, tests, OpenSpec validation, status check and image builds; main pushes ghcr.io/andruquiroga/sidetrack-{api,web,bot}; required for merging | `.github/workflows/ci.yml` |
 | Deployment to Stache-Rack | partial | deploy/stack.yml and runbook ready; never deployed. Local compose verified healthy | `deploy/stack.yml`, `deploy/README.md` |
@@ -65,6 +66,8 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 
 - `deploy-on-stache-rack`: 13/13 tasks
 - `harden-api-credentials`: 10/11 tasks
+- `modularize-python-package`: 5/5 tasks
+- `remove-fabricated-connection-status`: 2/2 tasks
 
 ### Specs
 

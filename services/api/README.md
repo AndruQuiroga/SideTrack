@@ -1,6 +1,8 @@
 # API Service
 
-This directory scaffolds the Sidetrack API service, which exposes the backend data models and endpoints for the bot, web app, and worker processes.
+The implementation lives in the canonical `sidetrack` package. This directory
+retains compatibility imports, API tests, and Docker/startup files. See
+[module boundaries](../../docs/MODULES.md) for ownership and runtime commands.
 
 ## Canonical schema snapshot
 

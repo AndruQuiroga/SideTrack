@@ -18,9 +18,9 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
-from services.api.config import get_settings
-from services.api.db import get_db
-from services.api.main import create_app
+from sidetrack.api.main import create_app
+from sidetrack.config import get_settings
+from sidetrack.db import get_db
 
 ROOT = Path(__file__).resolve().parents[3]
 TEST_DB_IMAGE = "pgvector/pgvector:pg16"

@@ -6,7 +6,7 @@ import uuid
 
 import pytest
 
-from services.api.link_state import (
+from sidetrack.identity.link_state import (
     STATE_TTL_SECONDS,
     InvalidLinkState,
     sign_link_state,

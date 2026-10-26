@@ -1,10 +1,6 @@
-"""Shared constants used across analysis modules."""
+"""Compatibility alias for sidetrack.analysis.constants."""
 
-FEATURE_FIELDS: list[str] = [
-    "energy",
-    "valence",
-    "danceability",
-    "tempo",
-    "acousticness",
-    "instrumentalness",
-]
+import importlib
+import sys
+
+sys.modules[__name__] = importlib.import_module("sidetrack.analysis.constants")

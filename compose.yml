@@ -54,7 +54,7 @@ services:
 
   rq-worker:
     image: sidetrack/api:dev
-    command: ['python', '-m', 'services.api.rq_worker']
+    command: ['python', '-m', 'sidetrack.rq_worker']
     env_file: ${SIDETRACK_ENV_FILE:-.env}
     environment:
       SIDETRACK_ENV: ${SIDETRACK_ENV:-development}

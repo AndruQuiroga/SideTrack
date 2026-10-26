@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from services.api.models import LinkedAccount, ProviderType, User
+from sidetrack.identity import LinkedAccount, User
+from sidetrack.types import ProviderType
 
 pytestmark = pytest.mark.unit
 
