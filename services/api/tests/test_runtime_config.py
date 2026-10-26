@@ -6,8 +6,8 @@ import logging
 
 import pytest
 
-from services.api.config import get_settings
-from services.api.main import create_app
+from sidetrack.api.main import create_app
+from sidetrack.config import get_settings
 
 pytestmark = pytest.mark.unit
 
@@ -58,7 +58,7 @@ def test_secrets_are_masked_in_repr():
 
 
 def test_startup_log_redacts_password(monkeypatch, caplog):
-    import services.api.db as db_module
+    import sidetrack.db as db_module
 
     monkeypatch.setenv(
         "DATABASE_URL", "postgresql+psycopg://sidetrack:hunter2@db.internal:5432/club"
@@ -67,7 +67,7 @@ def test_startup_log_redacts_password(monkeypatch, caplog):
     monkeypatch.setattr(db_module, "_SessionLocal", None)
     get_settings.cache_clear()
 
-    with caplog.at_level(logging.INFO, logger="services.api.main"):
+    with caplog.at_level(logging.INFO, logger="sidetrack.api.main"):
         create_app()
 
     assert "db.internal:5432/club" in caplog.text

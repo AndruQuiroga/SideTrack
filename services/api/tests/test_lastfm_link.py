@@ -10,9 +10,10 @@ import pytest
 import respx
 from sqlalchemy import select
 
-from services.api.external import lastfm
-from services.api.link_state import STATE_TTL_SECONDS, sign_link_state
-from services.api.models import LinkedAccount, ProviderType, User
+from sidetrack.external import lastfm
+from sidetrack.identity import LinkedAccount, User
+from sidetrack.identity.link_state import STATE_TTL_SECONDS, sign_link_state
+from sidetrack.types import ProviderType
 
 from .conftest import TEST_LINK_SECRET
 

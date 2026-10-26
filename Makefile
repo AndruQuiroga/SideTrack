@@ -3,11 +3,12 @@
 UV_RUN=uv run --frozen --python 3.11 --extra api --extra worker --extra dev
 
 lint:
-	$(UV_RUN) ruff check services/api services/worker
-	$(UV_RUN) mypy services/api services/worker
+	$(UV_RUN) lint-imports
+	$(UV_RUN) ruff check sidetrack services/api services/worker scripts
+	$(UV_RUN) mypy sidetrack services/worker
 
 format.python:
-	$(UV_RUN) ruff format services/api services/worker
+	$(UV_RUN) ruff format sidetrack services/api services/worker scripts
 
 lint.js:
 	pnpm lint
@@ -38,5 +39,5 @@ test-ui:
 
 # OpenAPI type generation — dumps spec from FastAPI then generates TS types
 openapi:
-	SIDETRACK_ENV=development $(UV_RUN) python -c "import json; from services.api.main import create_app; from fastapi.openapi.utils import get_openapi; app = create_app(); print(json.dumps(get_openapi(title=app.title, version=app.version, routes=app.routes), indent=2))" > openapi.json
+	SIDETRACK_ENV=development $(UV_RUN) python -c "import json; from sidetrack.api.main import create_app; from fastapi.openapi.utils import get_openapi; app = create_app(); print(json.dumps(get_openapi(title=app.title, version=app.version, routes=app.routes), indent=2))" > openapi.json
 	cd packages/api-client && pnpm generate

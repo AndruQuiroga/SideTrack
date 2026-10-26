@@ -1,1 +1,1 @@
-"""External HTTP API clients (MusicBrainz, Last.fm, ListenBrainz)."""
+"""Compatibility exports; canonical implementation is in sidetrack."""

@@ -6,7 +6,7 @@ import time
 
 import pytest
 
-import services.api.main as main_module
+import sidetrack.api.main as main_module
 
 pytestmark = pytest.mark.unit
 

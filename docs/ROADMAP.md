@@ -29,6 +29,10 @@ Implement ADR 0001: a canonical `sidetrack` Python package with `identity`,
 cross-module writes go through public functions. Enforce boundaries with
 import-linter in CI and preserve existing API and database contracts.
 
+The implementation is tracked by `modularize-python-package`; ownership details
+are in MODULES.md. Checks compare the API with a Phase 0 snapshot, verify migrated
+Postgres metadata, and reject illegal module imports.
+
 Do not implement the later phases while moving code. Postgres-backed background
 jobs are Phase 2 (ADR 0002); per-user API authorization is Phase 3. Audio analysis
 starts with the separate benchmark described by ADR 0004.

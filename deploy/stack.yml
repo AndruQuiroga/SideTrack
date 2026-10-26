@@ -109,7 +109,7 @@ services:
 
   rq-worker:
     image: ghcr.io/andruquiroga/sidetrack-api:${SIDETRACK_TAG:?set SIDETRACK_TAG to an image tag}
-    command: ["python", "-m", "services.api.rq_worker"]
+    command: ["python", "-m", "sidetrack.rq_worker"]
     environment:
       SIDETRACK_ENV: production
       REDIS_URL: redis://redis:6379/0

@@ -118,7 +118,14 @@ groups:
         notes: "Redis (ephemeral) + one RQ consumer for Last.fm ingest; Phase 2 replaces RQ (ADR 0002)"
       - capability: Type checking
         status: broken
-        notes: 44 pre-existing mypy errors; CI runs mypy as non-blocking until fixed
+        notes: 40 mypy errors in the canonical sidetrack package; CI runs mypy as non-blocking until fixed
+      - capability: Python module boundaries
+        status: works
+        notes: Canonical sidetrack package with five domain owners; import-linter enforced in CI; legacy imports share canonical objects
+        evidence:
+          - tests/test_module_layout.py
+          - tests/test_import_boundaries.py
+          - tests/test_ingest_boundary.py
       - capability: Status page
         status: works
         notes: Generated from docs/status.yaml; CI fails if stale

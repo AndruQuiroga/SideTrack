@@ -1,0 +1,5876 @@
+{
+  "components": {
+    "schemas": {
+      "AlbumCreate": {
+        "properties": {
+          "artist_name": {
+            "title": "Artist Name",
+            "type": "string"
+          },
+          "cover_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Url"
+          },
+          "genres": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Genres"
+          },
+          "musicbrainz_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Musicbrainz Id"
+          },
+          "release_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Release Year"
+          },
+          "spotify_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spotify Id"
+          },
+          "spotify_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spotify Url"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "artist_name"
+        ],
+        "title": "AlbumCreate",
+        "type": "object"
+      },
+      "AlbumRead": {
+        "properties": {
+          "artist_name": {
+            "title": "Artist Name",
+            "type": "string"
+          },
+          "cover_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Url"
+          },
+          "genres": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Genres"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "musicbrainz_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Musicbrainz Id"
+          },
+          "release_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Release Year"
+          },
+          "spotify_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spotify Id"
+          },
+          "spotify_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spotify Url"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "artist_name",
+          "id"
+        ],
+        "title": "AlbumRead",
+        "type": "object"
+      },
+      "AlbumResolveRequest": {
+        "description": "Request body for the /albums/resolve endpoint.",
+        "properties": {
+          "artist": {
+            "title": "Artist",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year"
+          }
+        },
+        "required": [
+          "title",
+          "artist"
+        ],
+        "title": "AlbumResolveRequest",
+        "type": "object"
+      },
+      "AlbumUpdate": {
+        "properties": {
+          "artist_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Artist Name"
+          },
+          "cover_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Url"
+          },
+          "genres": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Genres"
+          },
+          "musicbrainz_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Musicbrainz Id"
+          },
+          "release_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Release Year"
+          },
+          "spotify_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spotify Id"
+          },
+          "spotify_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spotify Url"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "title": "AlbumUpdate",
+        "type": "object"
+      },
+      "CallbackResponse": {
+        "properties": {
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "provider",
+          "username",
+          "message"
+        ],
+        "title": "CallbackResponse",
+        "type": "object"
+      },
+      "ConnectRequest": {
+        "description": "Start linking an external account for a user.",
+        "properties": {
+          "callback_url": {
+            "title": "Callback Url",
+            "type": "string"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "callback_url"
+        ],
+        "title": "ConnectRequest",
+        "type": "object"
+      },
+      "ConnectResponse": {
+        "properties": {
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "url"
+        ],
+        "title": "ConnectResponse",
+        "type": "object"
+      },
+      "FeedEventType": {
+        "enum": [
+          "rating",
+          "listen",
+          "club",
+          "follow"
+        ],
+        "title": "FeedEventType",
+        "type": "string"
+      },
+      "FeedItem": {
+        "description": "An activity item shown in the feed.",
+        "properties": {
+          "action": {
+            "title": "Action",
+            "type": "string"
+          },
+          "actor": {
+            "title": "Actor",
+            "type": "string"
+          },
+          "actor_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Id"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target"
+          },
+          "target_link": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Link"
+          },
+          "timestamp": {
+            "format": "date-time",
+            "title": "Timestamp",
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/FeedEventType"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "actor",
+          "action",
+          "timestamp"
+        ],
+        "title": "FeedItem",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "JobAccepted": {
+        "properties": {
+          "detail": {
+            "default": "Job enqueued for background processing.",
+            "title": "Detail",
+            "type": "string"
+          },
+          "job_id": {
+            "title": "Job Id",
+            "type": "string"
+          },
+          "status": {
+            "default": "queued",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "job_id"
+        ],
+        "title": "JobAccepted",
+        "type": "object"
+      },
+      "JobStatus": {
+        "properties": {
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "job_id": {
+            "title": "Job Id",
+            "type": "string"
+          },
+          "result": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "job_id",
+          "status"
+        ],
+        "title": "JobStatus",
+        "type": "object"
+      },
+      "LastfmCallbackRequest": {
+        "description": "Complete a Last.fm link. Any extra field, such as ``user_id``, is ignored.",
+        "properties": {
+          "state": {
+            "title": "State",
+            "type": "string"
+          },
+          "token": {
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "state"
+        ],
+        "title": "LastfmCallbackRequest",
+        "type": "object"
+      },
+      "LastfmIngestRequest": {
+        "properties": {
+          "lastfm_username": {
+            "title": "Lastfm Username",
+            "type": "string"
+          },
+          "since_ts": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Since Ts"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "lastfm_username"
+        ],
+        "title": "LastfmIngestRequest",
+        "type": "object"
+      },
+      "LinkedAccountCreate": {
+        "description": "Write schema: the only place credentials are accepted.",
+        "properties": {
+          "access_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Access Token"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "provider": {
+            "$ref": "#/components/schemas/ProviderType"
+          },
+          "provider_user_id": {
+            "title": "Provider User Id",
+            "type": "string"
+          },
+          "refresh_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refresh Token"
+          },
+          "token_expires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Token Expires At"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "provider",
+          "provider_user_id"
+        ],
+        "title": "LinkedAccountCreate",
+        "type": "object"
+      },
+      "LinkedAccountRead": {
+        "description": "Read schema: reports whether credentials exist, never their values.",
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "has_credentials": {
+            "default": false,
+            "title": "Has Credentials",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "provider": {
+            "$ref": "#/components/schemas/ProviderType"
+          },
+          "provider_user_id": {
+            "title": "Provider User Id",
+            "type": "string"
+          },
+          "token_expires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Token Expires At"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "provider",
+          "provider_user_id",
+          "id",
+          "created_at"
+        ],
+        "title": "LinkedAccountRead",
+        "type": "object"
+      },
+      "ListenEventCreate": {
+        "properties": {
+          "ingested_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ingested At"
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata"
+          },
+          "played_at": {
+            "format": "date-time",
+            "title": "Played At",
+            "type": "string"
+          },
+          "source": {
+            "$ref": "#/components/schemas/ListenSource"
+          },
+          "track_id": {
+            "format": "uuid",
+            "title": "Track Id",
+            "type": "string"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "track_id",
+          "played_at",
+          "source"
+        ],
+        "title": "ListenEventCreate",
+        "type": "object"
+      },
+      "ListenEventRead": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "ingested_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ingested At"
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata"
+          },
+          "played_at": {
+            "format": "date-time",
+            "title": "Played At",
+            "type": "string"
+          },
+          "source": {
+            "$ref": "#/components/schemas/ListenSource"
+          },
+          "track_id": {
+            "format": "uuid",
+            "title": "Track Id",
+            "type": "string"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "track_id",
+          "played_at",
+          "source",
+          "id"
+        ],
+        "title": "ListenEventRead",
+        "type": "object"
+      },
+      "ListenEventsPayload": {
+        "properties": {
+          "listens": {
+            "description": "Listen events to upsert.",
+            "items": {
+              "$ref": "#/components/schemas/ListenEventCreate"
+            },
+            "title": "Listens",
+            "type": "array"
+          }
+        },
+        "required": [
+          "listens"
+        ],
+        "title": "ListenEventsPayload",
+        "type": "object"
+      },
+      "ListenSource": {
+        "enum": [
+          "spotify",
+          "lastfm",
+          "listenbrainz",
+          "manual"
+        ],
+        "title": "ListenSource",
+        "type": "string"
+      },
+      "NominationCreate": {
+        "properties": {
+          "album_id": {
+            "format": "uuid",
+            "title": "Album Id",
+            "type": "string"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
+          "decade": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decade"
+          },
+          "genre": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Genre"
+          },
+          "pitch": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pitch"
+          },
+          "pitch_track_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pitch Track Url"
+          },
+          "submitted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted At"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          },
+          "week_id": {
+            "format": "uuid",
+            "title": "Week Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "week_id",
+          "user_id",
+          "album_id"
+        ],
+        "title": "NominationCreate",
+        "type": "object"
+      },
+      "NominationRead": {
+        "properties": {
+          "album_id": {
+            "format": "uuid",
+            "title": "Album Id",
+            "type": "string"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
+          "decade": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decade"
+          },
+          "genre": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Genre"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "pitch": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pitch"
+          },
+          "pitch_track_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pitch Track Url"
+          },
+          "submitted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted At"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          },
+          "week_id": {
+            "format": "uuid",
+            "title": "Week Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "week_id",
+          "user_id",
+          "album_id",
+          "id"
+        ],
+        "title": "NominationRead",
+        "type": "object"
+      },
+      "NominationUpdate": {
+        "properties": {
+          "album_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Album Id"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
+          "decade": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decade"
+          },
+          "genre": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Genre"
+          },
+          "pitch": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pitch"
+          },
+          "pitch_track_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pitch Track Url"
+          }
+        },
+        "title": "NominationUpdate",
+        "type": "object"
+      },
+      "NominationWithStats": {
+        "properties": {
+          "album_id": {
+            "format": "uuid",
+            "title": "Album Id",
+            "type": "string"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
+          "decade": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decade"
+          },
+          "genre": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Genre"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "pitch": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pitch"
+          },
+          "pitch_track_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pitch Track Url"
+          },
+          "rating_summary": {
+            "$ref": "#/components/schemas/RatingAggregate"
+          },
+          "submitted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted At"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          },
+          "vote_summary": {
+            "$ref": "#/components/schemas/VoteAggregate"
+          },
+          "week_id": {
+            "format": "uuid",
+            "title": "Week Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "week_id",
+          "user_id",
+          "album_id",
+          "id",
+          "vote_summary",
+          "rating_summary"
+        ],
+        "title": "NominationWithStats",
+        "type": "object"
+      },
+      "OverrideWinnerPayload": {
+        "properties": {
+          "album_id": {
+            "format": "uuid",
+            "title": "Album Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "album_id"
+        ],
+        "title": "OverrideWinnerPayload",
+        "type": "object"
+      },
+      "ProviderType": {
+        "enum": [
+          "discord",
+          "spotify",
+          "lastfm",
+          "listenbrainz"
+        ],
+        "title": "ProviderType",
+        "type": "string"
+      },
+      "RatingAggregate": {
+        "properties": {
+          "average": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "average",
+          "count"
+        ],
+        "title": "RatingAggregate",
+        "type": "object"
+      },
+      "RatingCreate": {
+        "properties": {
+          "album_id": {
+            "format": "uuid",
+            "title": "Album Id",
+            "type": "string"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "favorite_track": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Favorite Track"
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata"
+          },
+          "nomination_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nomination Id"
+          },
+          "review": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Review"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "number"
+          },
+          "week_id": {
+            "format": "uuid",
+            "title": "Week Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "week_id",
+          "user_id",
+          "album_id",
+          "value"
+        ],
+        "title": "RatingCreate",
+        "type": "object"
+      },
+      "RatingHistogramBin": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "value": {
+            "title": "Value",
+            "type": "number"
+          }
+        },
+        "required": [
+          "value",
+          "count"
+        ],
+        "title": "RatingHistogramBin",
+        "type": "object"
+      },
+      "RatingRead": {
+        "properties": {
+          "album_id": {
+            "format": "uuid",
+            "title": "Album Id",
+            "type": "string"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "favorite_track": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Favorite Track"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata"
+          },
+          "nomination_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nomination Id"
+          },
+          "review": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Review"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "number"
+          },
+          "week_id": {
+            "format": "uuid",
+            "title": "Week Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "week_id",
+          "user_id",
+          "album_id",
+          "value",
+          "id"
+        ],
+        "title": "RatingRead",
+        "type": "object"
+      },
+      "RatingSummary": {
+        "properties": {
+          "average": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "histogram": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/RatingHistogramBin"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Histogram"
+          }
+        },
+        "required": [
+          "average",
+          "count"
+        ],
+        "title": "RatingSummary",
+        "type": "object"
+      },
+      "RecentListenRead": {
+        "properties": {
+          "album_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Album Name"
+          },
+          "artist_name": {
+            "title": "Artist Name",
+            "type": "string"
+          },
+          "listened_at": {
+            "format": "date-time",
+            "title": "Listened At",
+            "type": "string"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "track_name": {
+            "title": "Track Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "track_name",
+          "artist_name",
+          "listened_at"
+        ],
+        "title": "RecentListenRead",
+        "type": "object"
+      },
+      "RecomputeAccepted": {
+        "properties": {
+          "detail": {
+            "default": "Taste profile recomputation enqueued.",
+            "title": "Detail",
+            "type": "string"
+          },
+          "job_id": {
+            "title": "Job Id",
+            "type": "string"
+          },
+          "status": {
+            "default": "queued",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "job_id"
+        ],
+        "title": "RecomputeAccepted",
+        "type": "object"
+      },
+      "TasteProfileRead": {
+        "properties": {
+          "feature_means": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Feature Means"
+          },
+          "genre_histogram": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "number"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Genre Histogram"
+          },
+          "last_computed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Computed At"
+          },
+          "scope": {
+            "title": "Scope",
+            "type": "string"
+          },
+          "time_of_day_histogram": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "number"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Of Day Histogram"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "scope"
+        ],
+        "title": "TasteProfileRead",
+        "type": "object"
+      },
+      "TrackFeatureCreate": {
+        "properties": {
+          "acousticness": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acousticness"
+          },
+          "danceability": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Danceability"
+          },
+          "energy": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Energy"
+          },
+          "genres": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Genres"
+          },
+          "instrumentalness": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Instrumentalness"
+          },
+          "tempo": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tempo"
+          },
+          "valence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valence"
+          }
+        },
+        "title": "TrackFeatureCreate",
+        "type": "object"
+      },
+      "TrackFeatureRead": {
+        "properties": {
+          "acousticness": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acousticness"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "danceability": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Danceability"
+          },
+          "energy": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Energy"
+          },
+          "genres": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Genres"
+          },
+          "instrumentalness": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Instrumentalness"
+          },
+          "tempo": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tempo"
+          },
+          "track_id": {
+            "format": "uuid",
+            "title": "Track Id",
+            "type": "string"
+          },
+          "valence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valence"
+          }
+        },
+        "required": [
+          "track_id",
+          "created_at"
+        ],
+        "title": "TrackFeatureRead",
+        "type": "object"
+      },
+      "TrackRead": {
+        "properties": {
+          "album_id": {
+            "format": "uuid",
+            "title": "Album Id",
+            "type": "string"
+          },
+          "artist_name": {
+            "title": "Artist Name",
+            "type": "string"
+          },
+          "duration_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Ms"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "musicbrainz_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Musicbrainz Id"
+          },
+          "spotify_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spotify Id"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "album_id",
+          "title",
+          "artist_name",
+          "id"
+        ],
+        "title": "TrackRead",
+        "type": "object"
+      },
+      "UserCreate": {
+        "properties": {
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "handle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Handle"
+          }
+        },
+        "required": [
+          "display_name"
+        ],
+        "title": "UserCreate",
+        "type": "object"
+      },
+      "UserRead": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "handle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Handle"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "display_name",
+          "id",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "UserRead",
+        "type": "object"
+      },
+      "UserUpdate": {
+        "properties": {
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "handle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Handle"
+          }
+        },
+        "title": "UserUpdate",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      },
+      "VoteAggregate": {
+        "properties": {
+          "first_place": {
+            "title": "First Place",
+            "type": "integer"
+          },
+          "points": {
+            "title": "Points",
+            "type": "integer"
+          },
+          "second_place": {
+            "title": "Second Place",
+            "type": "integer"
+          },
+          "total_votes": {
+            "title": "Total Votes",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "points",
+          "first_place",
+          "second_place",
+          "total_votes"
+        ],
+        "title": "VoteAggregate",
+        "type": "object"
+      },
+      "VoteCreate": {
+        "properties": {
+          "nomination_id": {
+            "format": "uuid",
+            "title": "Nomination Id",
+            "type": "string"
+          },
+          "rank": {
+            "title": "Rank",
+            "type": "integer"
+          },
+          "submitted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted At"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          },
+          "week_id": {
+            "format": "uuid",
+            "title": "Week Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "week_id",
+          "nomination_id",
+          "user_id",
+          "rank"
+        ],
+        "title": "VoteCreate",
+        "type": "object"
+      },
+      "VoteRead": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "nomination_id": {
+            "format": "uuid",
+            "title": "Nomination Id",
+            "type": "string"
+          },
+          "rank": {
+            "title": "Rank",
+            "type": "integer"
+          },
+          "submitted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted At"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          },
+          "week_id": {
+            "format": "uuid",
+            "title": "Week Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "week_id",
+          "nomination_id",
+          "user_id",
+          "rank",
+          "id"
+        ],
+        "title": "VoteRead",
+        "type": "object"
+      },
+      "WeekAggregates": {
+        "properties": {
+          "nomination_count": {
+            "title": "Nomination Count",
+            "type": "integer"
+          },
+          "rating_average": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating Average"
+          },
+          "rating_count": {
+            "title": "Rating Count",
+            "type": "integer"
+          },
+          "vote_count": {
+            "title": "Vote Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "nomination_count",
+          "vote_count",
+          "rating_count",
+          "rating_average"
+        ],
+        "title": "WeekAggregates",
+        "type": "object"
+      },
+      "WeekCreate": {
+        "properties": {
+          "discussion_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discussion At"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "nominations_close_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nominations Close At"
+          },
+          "nominations_thread_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nominations Thread Id"
+          },
+          "poll_close_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Poll Close At"
+          },
+          "poll_thread_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Poll Thread Id"
+          },
+          "ratings_thread_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ratings Thread Id"
+          },
+          "week_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Week Number"
+          },
+          "winner_album_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Winner Album Id"
+          },
+          "winner_thread_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Winner Thread Id"
+          }
+        },
+        "required": [
+          "label"
+        ],
+        "title": "WeekCreate",
+        "type": "object"
+      },
+      "WeekDetail": {
+        "properties": {
+          "aggregates": {
+            "$ref": "#/components/schemas/WeekAggregates"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "discussion_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discussion At"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "nominations": {
+            "items": {
+              "$ref": "#/components/schemas/NominationWithStats"
+            },
+            "title": "Nominations",
+            "type": "array"
+          },
+          "nominations_close_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nominations Close At"
+          },
+          "nominations_thread_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nominations Thread Id"
+          },
+          "poll_close_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Poll Close At"
+          },
+          "poll_thread_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Poll Thread Id"
+          },
+          "ratings_thread_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ratings Thread Id"
+          },
+          "week_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Week Number"
+          },
+          "winner_album_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Winner Album Id"
+          },
+          "winner_thread_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Winner Thread Id"
+          }
+        },
+        "required": [
+          "label",
+          "id",
+          "created_at",
+          "nominations",
+          "aggregates"
+        ],
+        "title": "WeekDetail",
+        "type": "object"
+      },
+      "WeekRead": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "discussion_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discussion At"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "nominations_close_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nominations Close At"
+          },
+          "nominations_thread_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nominations Thread Id"
+          },
+          "poll_close_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Poll Close At"
+          },
+          "poll_thread_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Poll Thread Id"
+          },
+          "ratings_thread_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ratings Thread Id"
+          },
+          "week_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Week Number"
+          },
+          "winner_album_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Winner Album Id"
+          },
+          "winner_thread_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Winner Thread Id"
+          }
+        },
+        "required": [
+          "label",
+          "id",
+          "created_at"
+        ],
+        "title": "WeekRead",
+        "type": "object"
+      },
+      "WeekUpdate": {
+        "properties": {
+          "discussion_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discussion At"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "nominations_close_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nominations Close At"
+          },
+          "nominations_thread_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nominations Thread Id"
+          },
+          "poll_close_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Poll Close At"
+          },
+          "poll_thread_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Poll Thread Id"
+          },
+          "ratings_thread_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ratings Thread Id"
+          },
+          "week_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Week Number"
+          },
+          "winner_album_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Winner Album Id"
+          },
+          "winner_thread_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Winner Thread Id"
+          }
+        },
+        "title": "WeekUpdate",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "Sidetrack API",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/admin/ratings/{rating_id}": {
+      "delete": {
+        "description": "Hard-delete a rating (moderator action).",
+        "operationId": "delete_rating_admin_ratings__rating_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "rating_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Rating Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Rating",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/weeks/{week_id}/override-winner": {
+      "post": {
+        "description": "Manually set the winner album for a week, bypassing the poll result.",
+        "operationId": "override_winner_admin_weeks__week_id__override_winner_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "week_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Week Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OverrideWinnerPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WeekRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Override Winner",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/albums/": {
+      "post": {
+        "description": "Create an album; reuse an existing record if it matches title/artist/year.",
+        "operationId": "create_album_albums__post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlbumCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlbumRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Album",
+        "tags": [
+          "albums"
+        ]
+      }
+    },
+    "/albums/resolve": {
+      "post": {
+        "description": "Find or create an album, enriching it with MusicBrainz, Cover Art Archive,\nand Spotify metadata.\n\nThis is the primary endpoint for the nomination flow. It returns a fully-populated\nalbum with cover art, genres, release year, and external IDs.",
+        "operationId": "resolve_album_endpoint_albums_resolve_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlbumResolveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlbumRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Resolve Album Endpoint",
+        "tags": [
+          "albums"
+        ]
+      }
+    },
+    "/albums/search": {
+      "get": {
+        "description": "Search albums by identifiers or fuzzy title/artist/year.",
+        "operationId": "search_albums_albums_search_get",
+        "parameters": [
+          {
+            "description": "Case-insensitive match on album title.",
+            "in": "query",
+            "name": "title",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Case-insensitive match on album title.",
+              "title": "Title"
+            }
+          },
+          {
+            "description": "Case-insensitive match on artist name.",
+            "in": "query",
+            "name": "artist_name",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Case-insensitive match on artist name.",
+              "title": "Artist Name"
+            }
+          },
+          {
+            "description": "Release year to match.",
+            "in": "query",
+            "name": "release_year",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Release year to match.",
+              "title": "Release Year"
+            }
+          },
+          {
+            "description": "Exact match on MusicBrainz ID.",
+            "in": "query",
+            "name": "musicbrainz_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Exact match on MusicBrainz ID.",
+              "title": "Musicbrainz Id"
+            }
+          },
+          {
+            "description": "Exact match on Spotify album ID.",
+            "in": "query",
+            "name": "spotify_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Exact match on Spotify album ID.",
+              "title": "Spotify Id"
+            }
+          },
+          {
+            "description": "Maximum number of albums to return.",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "description": "Maximum number of albums to return.",
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AlbumRead"
+                  },
+                  "title": "Response Search Albums Albums Search Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Search Albums",
+        "tags": [
+          "albums"
+        ]
+      }
+    },
+    "/albums/{album_id}": {
+      "get": {
+        "description": "Return a single album by ID.",
+        "operationId": "get_album_albums__album_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "album_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Album Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlbumRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Album",
+        "tags": [
+          "albums"
+        ]
+      },
+      "patch": {
+        "description": "Update an album's metadata fields.",
+        "operationId": "update_album_albums__album_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "album_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Album Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlbumUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlbumRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Album",
+        "tags": [
+          "albums"
+        ]
+      }
+    },
+    "/albums/{album_id}/enrich": {
+      "post": {
+        "description": "Re-run enrichment on an existing album to fill missing metadata.",
+        "operationId": "enrich_album_endpoint_albums__album_id__enrich_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "album_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Album Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlbumRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Enrich Album Endpoint",
+        "tags": [
+          "albums"
+        ]
+      }
+    },
+    "/feed": {
+      "get": {
+        "description": "Return recent activity feed combining ratings, listens, and club events.",
+        "operationId": "get_feed_feed_get",
+        "parameters": [
+          {
+            "description": "User ID for personalized feed",
+            "in": "query",
+            "name": "user_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "User ID for personalized feed",
+              "title": "User Id"
+            }
+          },
+          {
+            "description": "Number of feed items to return",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "description": "Number of feed items to return",
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/FeedItem"
+                  },
+                  "title": "Response Get Feed Feed Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Feed",
+        "tags": [
+          "feed"
+        ]
+      }
+    },
+    "/health": {
+      "get": {
+        "description": "Report database reachability: 200 when it answers, 503 otherwise.",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Health"
+      }
+    },
+    "/ingest/lastfm": {
+      "post": {
+        "description": "Enqueue a Last.fm scrobble ingest for the given user.",
+        "operationId": "trigger_lastfm_ingest_ingest_lastfm_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LastfmIngestRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobAccepted"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Trigger Lastfm Ingest",
+        "tags": [
+          "ingest"
+        ]
+      }
+    },
+    "/integrations/lastfm/callback": {
+      "post": {
+        "description": "Exchange a Last.fm token for a session key and link it to the user named in ``state``.",
+        "operationId": "lastfm_callback_integrations_lastfm_callback_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LastfmCallbackRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CallbackResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Lastfm Callback",
+        "tags": [
+          "integrations"
+        ]
+      }
+    },
+    "/integrations/{provider}/connect": {
+      "post": {
+        "description": "Return the authorization URL that starts linking ``provider`` for ``body.user_id``.",
+        "operationId": "connect_integration_integrations__provider__connect_post",
+        "parameters": [
+          {
+            "description": "Integration provider",
+            "in": "path",
+            "name": "provider",
+            "required": true,
+            "schema": {
+              "description": "Integration provider",
+              "pattern": "^(spotify|lastfm|discord)$",
+              "title": "Provider",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConnectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Connect Integration",
+        "tags": [
+          "integrations"
+        ]
+      }
+    },
+    "/jobs/{job_id}/status": {
+      "get": {
+        "description": "Poll the status of a background job.\n\nPossible status values: queued, started, finished, failed, deferred, canceled.",
+        "operationId": "get_job_status_jobs__job_id__status_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Job Status",
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
+    "/listen-events/": {
+      "get": {
+        "description": "Return persisted listen events, newest first.",
+        "operationId": "list_listen_events_listen_events__get",
+        "parameters": [
+          {
+            "description": "Filter listen events by user.",
+            "in": "query",
+            "name": "user_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter listen events by user.",
+              "title": "User Id"
+            }
+          },
+          {
+            "description": "Filter by listen source.",
+            "in": "query",
+            "name": "source",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ListenSource"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by listen source.",
+              "title": "Source"
+            }
+          },
+          {
+            "description": "Return listens played at/after this time.",
+            "in": "query",
+            "name": "played_after",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Return listens played at/after this time.",
+              "title": "Played After"
+            }
+          },
+          {
+            "description": "Return listens played at/before this time.",
+            "in": "query",
+            "name": "played_before",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Return listens played at/before this time.",
+              "title": "Played Before"
+            }
+          },
+          {
+            "description": "Maximum number of events to return.",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "description": "Maximum number of events to return.",
+              "maximum": 500,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ListenEventRead"
+                  },
+                  "title": "Response List Listen Events Listen Events  Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Listen Events",
+        "tags": [
+          "listen-events"
+        ]
+      },
+      "post": {
+        "description": "Upsert listen events.\n\nDuplicates (user, track, played_at) are returned without creating new rows.",
+        "operationId": "upsert_listen_events_listen_events__post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ListenEventsPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ListenEventRead"
+                  },
+                  "title": "Response Upsert Listen Events Listen Events  Post",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upsert Listen Events",
+        "tags": [
+          "listen-events"
+        ]
+      }
+    },
+    "/listen-events/{listen_event_id}": {
+      "get": {
+        "description": "Return a single listen event.",
+        "operationId": "get_listen_event_listen_events__listen_event_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "listen_event_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Listen Event Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListenEventRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Listen Event",
+        "tags": [
+          "listen-events"
+        ]
+      }
+    },
+    "/nominations/": {
+      "get": {
+        "description": "Return nominations, optionally filtered by week, user, or album.",
+        "operationId": "list_nominations_nominations__get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "week_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Week Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "user_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "album_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Album Id"
+            }
+          },
+          {
+            "description": "Maximum number of nominations to return.",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "description": "Maximum number of nominations to return.",
+              "maximum": 500,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Number of nominations to skip.",
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "description": "Number of nominations to skip.",
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/NominationRead"
+                  },
+                  "title": "Response List Nominations Nominations  Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Nominations",
+        "tags": [
+          "nominations"
+        ]
+      }
+    },
+    "/nominations/{nomination_id}": {
+      "delete": {
+        "description": "Withdraw (delete) a nomination. Cascades to associated votes.",
+        "operationId": "delete_nomination_nominations__nomination_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "nomination_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Nomination Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Nomination",
+        "tags": [
+          "nominations"
+        ]
+      },
+      "get": {
+        "description": "Return a single nomination by ID.",
+        "operationId": "get_nomination_nominations__nomination_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "nomination_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Nomination Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NominationRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Nomination",
+        "tags": [
+          "nominations"
+        ]
+      },
+      "patch": {
+        "description": "Update a nomination's pitch, pitch track, tags, or album.\n\nOnly fields included in the request body are updated.",
+        "operationId": "update_nomination_nominations__nomination_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "nomination_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Nomination Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NominationUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NominationRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Nomination",
+        "tags": [
+          "nominations"
+        ]
+      }
+    },
+    "/ratings": {
+      "get": {
+        "operationId": "list_ratings_ratings_get",
+        "parameters": [
+          {
+            "description": "Filter ratings by week ID.",
+            "in": "query",
+            "name": "week_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter ratings by week ID.",
+              "title": "Week Id"
+            }
+          },
+          {
+            "description": "Filter ratings by user ID.",
+            "in": "query",
+            "name": "user_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter ratings by user ID.",
+              "title": "User Id"
+            }
+          },
+          {
+            "description": "Maximum number of ratings to return.",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "description": "Maximum number of ratings to return.",
+              "maximum": 500,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Number of ratings to skip.",
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "description": "Number of ratings to skip.",
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RatingRead"
+                  },
+                  "title": "Response List Ratings Ratings Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Ratings",
+        "tags": [
+          "ratings"
+        ]
+      }
+    },
+    "/ratings/{rating_id}": {
+      "get": {
+        "operationId": "get_rating_ratings__rating_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "rating_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Rating Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RatingRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Rating",
+        "tags": [
+          "ratings"
+        ]
+      }
+    },
+    "/recommendations": {
+      "get": {
+        "operationId": "get_recommendations_recommendations_get",
+        "parameters": [
+          {
+            "description": "User ID for whom to fetch recommendations",
+            "in": "query",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "description": "User ID for whom to fetch recommendations",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "type": "object"
+                  },
+                  "title": "Response Get Recommendations Recommendations Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Recommendations",
+        "tags": [
+          "recommendations"
+        ]
+      }
+    },
+    "/search": {
+      "get": {
+        "operationId": "search_search_get",
+        "parameters": [
+          {
+            "description": "Free text search query",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "description": "Free text search query",
+              "title": "Q",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "items": {
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "title": "Response Search Search Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Search",
+        "tags": [
+          "search"
+        ]
+      }
+    },
+    "/tracks/pending-features": {
+      "get": {
+        "description": "Return tracks that have a spotify_id but no audio feature data yet.",
+        "operationId": "list_tracks_pending_features_tracks_pending_features_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 500,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TrackRead"
+                  },
+                  "title": "Response List Tracks Pending Features Tracks Pending Features Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Tracks Pending Features",
+        "tags": [
+          "tracks"
+        ]
+      }
+    },
+    "/tracks/{track_id}/features": {
+      "post": {
+        "description": "Upsert Spotify audio features for a track.",
+        "operationId": "upsert_track_features_tracks__track_id__features_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "track_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Track Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrackFeatureCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrackFeatureRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upsert Track Features",
+        "tags": [
+          "tracks"
+        ]
+      }
+    },
+    "/trending": {
+      "get": {
+        "operationId": "get_trending_trending_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "type": "object"
+                  },
+                  "title": "Response Get Trending Trending Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Trending",
+        "tags": [
+          "trending"
+        ]
+      }
+    },
+    "/users/": {
+      "get": {
+        "description": "Return users in the system.",
+        "operationId": "list_users_users__get",
+        "parameters": [
+          {
+            "description": "Maximum number of users to return.",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "description": "Maximum number of users to return.",
+              "maximum": 500,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Number of users to skip.",
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "description": "Number of users to skip.",
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/UserRead"
+                  },
+                  "title": "Response List Users Users  Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Users",
+        "tags": [
+          "users"
+        ]
+      },
+      "post": {
+        "description": "Create a user record (api/schema-core).",
+        "operationId": "create_user_users__post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create User",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/users/lookup/by-provider/{provider}/{provider_user_id}": {
+      "get": {
+        "description": "Resolve a user via a provider-specific identifier.",
+        "operationId": "lookup_user_by_provider_users_lookup_by_provider__provider___provider_user_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "provider",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProviderType"
+            }
+          },
+          {
+            "in": "path",
+            "name": "provider_user_id",
+            "required": true,
+            "schema": {
+              "title": "Provider User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Lookup User By Provider",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/users/{user_a}/compatibility/{user_b}": {
+      "get": {
+        "description": "Return a compatibility score (0-100) between two users.\n\nUses cosine similarity of audio-feature taste profiles when available,\nfalls back to genre histogram overlap.",
+        "operationId": "get_compatibility_users__user_a__compatibility__user_b__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_a",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User A",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "user_b",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User B",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Get Compatibility Users  User A  Compatibility  User B  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Compatibility",
+        "tags": [
+          "compatibility"
+        ]
+      }
+    },
+    "/users/{user_id}": {
+      "delete": {
+        "description": "Delete a user and cascade-remove all owned records.",
+        "operationId": "delete_user_users__user_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete User",
+        "tags": [
+          "users"
+        ]
+      },
+      "get": {
+        "description": "Return a user by ID, or raise 404 if missing.",
+        "operationId": "get_user_users__user_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get User",
+        "tags": [
+          "users"
+        ]
+      },
+      "patch": {
+        "description": "Update mutable user fields (display_name, handle).",
+        "operationId": "update_user_users__user_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update User",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/users/{user_id}/follow/{target_id}": {
+      "delete": {
+        "description": "Remove a follow relationship from user_id \u2192 target_id.",
+        "operationId": "unfollow_user_users__user_id__follow__target_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "target_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Target Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Unfollow User",
+        "tags": [
+          "social"
+        ]
+      },
+      "post": {
+        "description": "Create a follow relationship from user_id \u2192 target_id.",
+        "operationId": "follow_user_users__user_id__follow__target_id__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "target_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Target Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Follow User Users  User Id  Follow  Target Id  Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Follow User",
+        "tags": [
+          "social"
+        ]
+      }
+    },
+    "/users/{user_id}/followers": {
+      "get": {
+        "description": "Return users who follow user_id.",
+        "operationId": "list_followers_users__user_id__followers_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/UserRead"
+                  },
+                  "title": "Response List Followers Users  User Id  Followers Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Followers",
+        "tags": [
+          "social"
+        ]
+      }
+    },
+    "/users/{user_id}/following": {
+      "get": {
+        "description": "Return users that user_id follows.",
+        "operationId": "list_following_users__user_id__following_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/UserRead"
+                  },
+                  "title": "Response List Following Users  User Id  Following Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Following",
+        "tags": [
+          "social"
+        ]
+      }
+    },
+    "/users/{user_id}/linked-accounts": {
+      "get": {
+        "description": "List linked accounts for a specific user.",
+        "operationId": "list_linked_accounts_users__user_id__linked_accounts_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/LinkedAccountRead"
+                  },
+                  "title": "Response List Linked Accounts Users  User Id  Linked Accounts Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Linked Accounts",
+        "tags": [
+          "users"
+        ]
+      },
+      "post": {
+        "description": "Create a linked account for a user with provider-specific validation.",
+        "operationId": "create_linked_account_users__user_id__linked_accounts_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkedAccountCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkedAccountRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Linked Account",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/users/{user_id}/linked-accounts/{provider}/{provider_user_id}": {
+      "delete": {
+        "description": "Delete a linked account identified by provider and external ID.",
+        "operationId": "delete_linked_account_users__user_id__linked_accounts__provider___provider_user_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "provider",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProviderType"
+            }
+          },
+          {
+            "in": "path",
+            "name": "provider_user_id",
+            "required": true,
+            "schema": {
+              "title": "Provider User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Linked Account",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/users/{user_id}/listening/recent": {
+      "get": {
+        "description": "Return recent listen events for a user, joined with track metadata.",
+        "operationId": "list_user_recent_listens_users__user_id__listening_recent_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page size.",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "description": "Page size.",
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Number of records to skip.",
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "description": "Number of records to skip.",
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RecentListenRead"
+                  },
+                  "title": "Response List User Recent Listens Users  User Id  Listening Recent Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List User Recent Listens",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/users/{user_id}/taste-profiles/": {
+      "get": {
+        "description": "Return stored taste profiles for a user.",
+        "operationId": "list_taste_profiles_users__user_id__taste_profiles__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TasteProfileRead"
+                  },
+                  "title": "Response List Taste Profiles Users  User Id  Taste Profiles  Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Taste Profiles",
+        "tags": [
+          "taste-profiles"
+        ]
+      }
+    },
+    "/users/{user_id}/taste-profiles/recompute": {
+      "post": {
+        "description": "Enqueue a taste profile recomputation for the user.\n\nReturns 202 with a job_id. Poll GET /jobs/{job_id}/status for progress.",
+        "operationId": "recompute_taste_profile_users__user_id__taste_profiles_recompute_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "scope",
+            "required": false,
+            "schema": {
+              "default": "all_time",
+              "title": "Scope",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecomputeAccepted"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Recompute Taste Profile",
+        "tags": [
+          "taste-profiles"
+        ]
+      }
+    },
+    "/votes": {
+      "get": {
+        "description": "Return votes, optionally filtered by week, user, or rank.",
+        "operationId": "list_votes_votes_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "week_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Week Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "user_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "rank",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rank"
+            }
+          },
+          {
+            "description": "Maximum number of votes to return.",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "description": "Maximum number of votes to return.",
+              "maximum": 500,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Number of votes to skip.",
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "description": "Number of votes to skip.",
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/VoteRead"
+                  },
+                  "title": "Response List Votes Votes Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Votes",
+        "tags": [
+          "votes"
+        ]
+      }
+    },
+    "/votes/{vote_id}": {
+      "get": {
+        "description": "Return a single vote by ID.",
+        "operationId": "get_vote_votes__vote_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "vote_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Vote Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoteRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Vote",
+        "tags": [
+          "votes"
+        ]
+      }
+    },
+    "/weeks/": {
+      "get": {
+        "description": "Return club weeks with nomination, vote, and rating aggregates.",
+        "operationId": "list_weeks_weeks__get",
+        "parameters": [
+          {
+            "description": "Filter weeks with discussion on/after this timestamp.",
+            "in": "query",
+            "name": "discussion_start",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter weeks with discussion on/after this timestamp.",
+              "title": "Discussion Start"
+            }
+          },
+          {
+            "description": "Filter weeks with discussion on/before this timestamp.",
+            "in": "query",
+            "name": "discussion_end",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter weeks with discussion on/before this timestamp.",
+              "title": "Discussion End"
+            }
+          },
+          {
+            "description": "Filter by whether a week has a winner album set.",
+            "in": "query",
+            "name": "has_winner",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by whether a week has a winner album set.",
+              "title": "Has Winner"
+            }
+          },
+          {
+            "description": "Case-insensitive substring match on week label.",
+            "in": "query",
+            "name": "label",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Case-insensitive substring match on week label.",
+              "title": "Label"
+            }
+          },
+          {
+            "description": "Filter weeks that have a nomination with this genre.",
+            "in": "query",
+            "name": "genre",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter weeks that have a nomination with this genre.",
+              "title": "Genre"
+            }
+          },
+          {
+            "description": "Filter weeks that have a nomination with this decade.",
+            "in": "query",
+            "name": "decade",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter weeks that have a nomination with this decade.",
+              "title": "Decade"
+            }
+          },
+          {
+            "description": "Filter weeks that have a nomination from this country.",
+            "in": "query",
+            "name": "country",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter weeks that have a nomination from this country.",
+              "title": "Country"
+            }
+          },
+          {
+            "description": "Filter weeks that have a nomination from this user.",
+            "in": "query",
+            "name": "nominator_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter weeks that have a nomination from this user.",
+              "title": "Nominator Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/WeekDetail"
+                  },
+                  "title": "Response List Weeks Weeks  Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Weeks",
+        "tags": [
+          "weeks"
+        ]
+      },
+      "post": {
+        "description": "Create or update a week using idempotent matching fields.",
+        "operationId": "create_week_weeks__post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WeekCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WeekDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Week",
+        "tags": [
+          "weeks"
+        ]
+      }
+    },
+    "/weeks/{week_id}": {
+      "get": {
+        "description": "Return a single week with nested aggregates.",
+        "operationId": "get_week_weeks__week_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "week_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Week Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WeekDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Week",
+        "tags": [
+          "weeks"
+        ]
+      },
+      "patch": {
+        "description": "Apply partial updates to a week while validating the timeline.",
+        "operationId": "update_week_weeks__week_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "week_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Week Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WeekUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WeekDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Week",
+        "tags": [
+          "weeks"
+        ]
+      }
+    },
+    "/weeks/{week_id}/nominations": {
+      "post": {
+        "description": "Create a nomination for a week; enforce uniqueness per (user, album, week).",
+        "operationId": "create_week_nomination_weeks__week_id__nominations_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "week_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Week Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NominationCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NominationRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Week Nomination",
+        "tags": [
+          "weeks"
+        ]
+      }
+    },
+    "/weeks/{week_id}/ratings": {
+      "post": {
+        "operationId": "create_week_rating_weeks__week_id__ratings_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "week_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Week Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RatingCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RatingRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Week Rating",
+        "tags": [
+          "ratings"
+        ]
+      }
+    },
+    "/weeks/{week_id}/ratings/summary": {
+      "get": {
+        "operationId": "get_week_rating_summary_weeks__week_id__ratings_summary_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "week_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Week Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Return histogram bins.",
+            "in": "query",
+            "name": "include_histogram",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "Return histogram bins.",
+              "title": "Include Histogram",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Histogram bin size.",
+            "in": "query",
+            "name": "bin_size",
+            "required": false,
+            "schema": {
+              "default": 0.5,
+              "description": "Histogram bin size.",
+              "exclusiveMinimum": 0.0,
+              "title": "Bin Size",
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RatingSummary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Week Rating Summary",
+        "tags": [
+          "ratings"
+        ]
+      }
+    },
+    "/weeks/{week_id}/votes": {
+      "post": {
+        "description": "Submit a vote for a nomination in a week. Returns 409 if the user has already\nvoted with the same rank for this week.",
+        "operationId": "create_week_vote_weeks__week_id__votes_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "week_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Week Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VoteCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoteRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Week Vote",
+        "tags": [
+          "votes"
+        ]
+      }
+    }
+  }
+}

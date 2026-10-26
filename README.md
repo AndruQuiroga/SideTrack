@@ -12,6 +12,8 @@ The project is mid-refactor. **What works today is in [docs/STATUS.md](docs/STAT
 
 - [Status](docs/STATUS.md): what actually works
 - [Decisions](docs/decisions/): architecture decisions
+- [Module boundaries](docs/MODULES.md): Python ownership, imports and startup
+- [Refactor progress](docs/ROADMAP.md): phases and deferred operational checks
 - [Specs](openspec/specs/) and [changes in flight](openspec/changes/)
 - [AGENTS.md](AGENTS.md): working rules and commands, for agents and humans alike
 - [Bot user guide](apps/bot/USER_GUIDE.md)

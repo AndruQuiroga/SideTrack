@@ -55,10 +55,11 @@ dev = [
     "respx==0.20.2",
     "ruff==0.6.9",
     "mypy==1.11.2",
+    "import-linter>=2.0,<3",
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["services"]
+packages = ["sidetrack", "services"]
 
 [tool.ruff]
 line-length = 100
@@ -97,3 +98,54 @@ markers = [
     "gpu: tests requiring GPU hardware",
     "e2e: end-to-end tests",
 ]
+
+[tool.importlinter]
+root_packages = ["sidetrack", "services"]
+exclude_type_checking_imports = true
+
+[[tool.importlinter.contracts]]
+name = "identity internals have one owner"
+type = "protected"
+protected_modules = ["sidetrack.identity.models", "sidetrack.identity.routes", "sidetrack.identity.link_state"]
+allowed_importers = ["sidetrack.identity", "services.api.tests"]
+ignore_imports = ["sidetrack.api.routes -> sidetrack.identity.routes.*"]
+unmatched_ignore_imports_alerting = "none"
+
+[[tool.importlinter.contracts]]
+name = "catalog internals have one owner"
+type = "protected"
+protected_modules = ["sidetrack.catalog.models", "sidetrack.catalog.routes", "sidetrack.catalog.metadata"]
+allowed_importers = ["sidetrack.catalog", "services.api.tests"]
+ignore_imports = ["sidetrack.api.routes -> sidetrack.catalog.routes.*"]
+unmatched_ignore_imports_alerting = "none"
+
+[[tool.importlinter.contracts]]
+name = "listening internals have one owner"
+type = "protected"
+protected_modules = ["sidetrack.listening.models", "sidetrack.listening.routes", "sidetrack.listening.ingest"]
+allowed_importers = ["sidetrack.listening", "services.api.tests"]
+ignore_imports = ["sidetrack.api.routes -> sidetrack.listening.routes.*"]
+unmatched_ignore_imports_alerting = "none"
+
+[[tool.importlinter.contracts]]
+name = "club internals have one owner"
+type = "protected"
+protected_modules = ["sidetrack.club.models", "sidetrack.club.routes"]
+allowed_importers = ["sidetrack.club", "services.api.tests"]
+ignore_imports = ["sidetrack.api.routes -> sidetrack.club.routes.*"]
+unmatched_ignore_imports_alerting = "none"
+
+[[tool.importlinter.contracts]]
+name = "analysis internals have one owner"
+type = "protected"
+protected_modules = ["sidetrack.analysis.models", "sidetrack.analysis.routes", "sidetrack.analysis.taste", "sidetrack.analysis.compatibility", "sidetrack.analysis.constants"]
+allowed_importers = ["sidetrack.analysis", "services.api.tests"]
+ignore_imports = ["sidetrack.api.routes -> sidetrack.analysis.routes.*"]
+unmatched_ignore_imports_alerting = "none"
+
+[[tool.importlinter.contracts]]
+name = "Domains do not depend on composition or legacy services"
+type = "forbidden"
+source_modules = ["sidetrack.identity", "sidetrack.catalog", "sidetrack.listening", "sidetrack.club", "sidetrack.analysis"]
+forbidden_modules = ["sidetrack.api", "sidetrack.models", "services"]
+allow_indirect_imports = true

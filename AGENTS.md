@@ -27,16 +27,17 @@ A bug found mid-task becomes its own change (or a GitHub issue that names the sp
 
 ## Layout (current; the target is ADR 0001)
 
-| Path | What |
-| --- | --- |
-| `services/api` | FastAPI app, SQLAlchemy models, routes |
-| `services/worker` | Legacy sync worker: not built or deployed, due for replacement (ADR 0002) |
-| `services/extraction` | Stub only; the audio lab replaces it |
-| `apps/bot` | discord.js club bot |
-| `apps/web` | Next.js site |
-| `packages/api-client` | Generated TS client for bot and web |
-| `migrations/` | Alembic |
-| `deploy/` | Swarm stack for Stache-Rack (ADR 0006) |
+| Path                  | What                                                                      |
+| --------------------- | ------------------------------------------------------------------------- |
+| `sidetrack/`          | Canonical Python package; ownership and boundaries in docs/MODULES.md     |
+| `services/api`        | Compatibility imports, API tests and image/startup files                  |
+| `services/worker`     | Legacy sync worker: not built or deployed, due for replacement (ADR 0002) |
+| `services/extraction` | Stub only; the audio lab replaces it                                      |
+| `apps/bot`            | discord.js club bot                                                       |
+| `apps/web`            | Next.js site                                                              |
+| `packages/api-client` | Generated TS client for bot and web                                       |
+| `migrations/`         | Alembic                                                                   |
+| `deploy/`             | Swarm stack for Stache-Rack (ADR 0006)                                    |
 
 ## Commands
 
@@ -50,5 +51,10 @@ pnpm exec openspec list                                         # changes in fli
 ```
 
 Python: uv only (never pip). TypeScript: pnpm only. Python 3.11. Ruff line length 100.
+
+Run `uv run --frozen --extra api --extra dev lint-imports` after Python changes.
+Domain packages expose public operations and read models; never write another
+domain's tables or import its private modules. Legacy adapters must share canonical
+objects, especially DB dependencies and queued jobs.
 
 API tests run on Postgres 16 + pgvector: have Docker running (testcontainers starts one), or set `SIDETRACK_TEST_DATABASE_URL` to a throwaway database. A model change needs a migration, or `test_migrations.py` fails.
