@@ -54,6 +54,10 @@ Each asset SHALL be fingerprinted with Chromaprint and looked up on AcoustID. Th
 - **WHEN** the AcoustID lookup fails or no API key is configured
 - **THEN** the asset is stored with verification `unverified`, and the run summary says how many assets were not checked
 
+#### Scenario: Re-verifying later
+- **WHEN** the operator runs the verify command after configuring AcoustID, and an `unverified` asset's file now gets a confident match for its seed
+- **THEN** that asset becomes `confirmed` with the matched recording MBID, without fetching again, and the command reports how many assets changed
+
 ### Requirement: Assets link to the catalog when possible
 The fetch command SHALL resolve each seed to a catalog track through the catalog's public interface and link its assets to it. A seed that can't be resolved SHALL still be fetched, and its assets keep the requested artist and title with no track link.
 

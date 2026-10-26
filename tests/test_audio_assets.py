@@ -128,21 +128,37 @@ def _deezer(handler) -> DeezerPreviewSource:
     return source
 
 
-def test_deezer_search_takes_first_result_with_preview(tmp_path):
+def _deezer_track(track_id, artist, title, preview="https://cdn.test/p.mp3"):
+    return {"id": track_id, "artist": {"name": artist}, "title": title, "preview": preview}
+
+
+def test_deezer_search_takes_first_matching_result_with_preview(tmp_path):
     seen = []
 
     def handler(request):
-        seen.append(request.url.path)
+        seen.append((request.url.path, request.url.params.get("q")))
         if request.url.path == "/search":
-            data = [{"id": 1, "preview": ""}, {"id": 2, "preview": "https://cdn.test/p.mp3"}]
+            data = [
+                _deezer_track(1, "Broadcast", "Come On Let's Go", preview=""),
+                _deezer_track(2, "A Tribute Band", "Come On Let's Go"),
+                _deezer_track(3, "Broadcast", "Come On Let's Go (Remastered)"),
+            ]
             return httpx.Response(200, json={"data": data})
         return httpx.Response(200, content=b"mp3-bytes")
 
     download = _deezer(handler).fetch(SEED, tmp_path)
 
-    assert download is not None and download.source_ref == "2"
+    assert download is not None and download.source_ref == "3"
     assert download.path.read_bytes() == b"mp3-bytes"
-    assert seen == ["/search", "/p.mp3"]
+    assert seen == [("/search", "Broadcast Come On Let's Go"), ("/p.mp3", None)]
+
+
+def test_deezer_search_without_matching_artist_is_no_result(tmp_path):
+    def handler(request):
+        data = [_deezer_track(9, "Someone Else", "Come On Let's Go")]
+        return httpx.Response(200, json={"data": data})
+
+    assert _deezer(handler).fetch(SEED, tmp_path) is None
 
 
 def test_deezer_explicit_id_and_no_preview(tmp_path):

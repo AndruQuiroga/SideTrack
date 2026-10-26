@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import logging
+from collections import Counter
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
@@ -194,6 +195,30 @@ def export_manifest(db: Session, audio_dir: Path, out: IO[str]) -> int:
         )
         rows += 1
     return rows
+
+
+def reverify_assets(db: Session, audio_dir: Path, verifier: AcoustIdClient | None) -> Counter:
+    """Re-check ``unverified`` assets whose file exists; return the new verification counts."""
+
+    counts: Counter = Counter()
+    assets = db.scalars(
+        select(AudioAsset).where(
+            AudioAsset.verification == AudioVerification.UNVERIFIED,
+            AudioAsset.file_deleted_at.is_(None),
+        )
+    ).all()
+    for asset in assets:
+        path = audio_dir / asset.path
+        if not path.is_file():
+            continue
+        check = verify(verifier, path, asset.seed_artist, asset.seed_title)
+        asset.verification = check.status
+        asset.acoustid_score = check.score
+        asset.recording_mbid = check.recording_mbid
+        asset.duration_s = check.duration_s or asset.duration_s
+        counts[check.status] += 1
+    db.flush()
+    return counts
 
 
 def prune_assets(

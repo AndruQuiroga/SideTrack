@@ -40,7 +40,8 @@ Alternative considered: a Procrastinate task on the `gpu` or `default` queue. Re
 ### 2. Sources
 
 - **YouTube Music:** yt-dlp's Python API with `format=bestaudio`, no postprocessors, downloading to a temporary file in the audio directory. It searches `https://music.youtube.com/search?q=<artist> <title>#songs` and takes the first song result, unless the seed gives a video ID. `cookiefile` comes from `--cookies PATH` and is never echoed. yt-dlp's logger goes through a filter that drops lines containing the cookie path.
-- **Deezer:** `GET https://api.deezer.com/search?q=artist:"<artist>" track:"<title>"` using the existing `httpx`. It takes the first result with a `preview` URL, unless the seed gives a Deezer ID (`GET /track/<id>`), and downloads the MP3 straight away.
+- **Deezer:** `GET https://api.deezer.com/search?q=<artist> <title>` using the existing `httpx`. It takes the first result with a `preview` URL whose artist and title match the seed under the verification rules, unless the seed gives a Deezer ID (`GET /track/<id>`). It downloads the MP3 straight away. The smoke run on 2026-10-26 found that Deezer's advanced `artist:"…" track:"…"` syntax now returns no results.
+- **YouTube's JS challenges:** yt-dlp needs a JavaScript runtime (deno, installed by the operator) and the official `yt-dlp-ejs` solver scripts. Those are pinned in the `audio` extra, so nothing is downloaded at runtime.
 - **Rate:** one request per second per source. After a full download, each source waits a short delay before the next seed.
 
 ### 3. Storage
@@ -55,6 +56,10 @@ The file is streamed to `<dir>/.partial-<uuid>` while hashing. On completion it'
 - **`unverified`** otherwise, or when there's no key or the lookup fails
 
 Previews often fingerprint poorly. Their Deezer ID was chosen by metadata, so `unverified` previews are expected and reported separately in the summary.
+
+### 4a. Re-verifying
+
+`python -m sidetrack.audio verify` re-checks `unverified` assets whose file still exists, so adding an AcoustID key or recovering from an outage doesn't mean refetching.
 
 ### 5. Table
 

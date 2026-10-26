@@ -2,6 +2,7 @@
 
     python -m sidetrack.audio fetch --seeds seeds.csv [--cookies PATH] [--only full|preview]
     python -m sidetrack.audio manifest --out manifest.csv
+    python -m sidetrack.audio verify
     python -m sidetrack.audio prune
 
 Fetching runs only with SIDETRACK_AUDIO_FETCH_ENABLED=true. Files go to
@@ -34,6 +35,7 @@ from sidetrack.analysis.audio import (
     fetch_seed,
     prune_assets,
     read_seeds,
+    reverify_assets,
 )
 from sidetrack.config import Settings, get_settings
 from sidetrack.db import get_engine, init_engine
@@ -69,6 +71,7 @@ def _parser() -> argparse.ArgumentParser:
     fetch.add_argument("--only", choices=[k.value for k in AudioKind])
     manifest = commands.add_parser("manifest", help="Export stored assets as CSV.")
     manifest.add_argument("--out", type=Path, required=True)
+    commands.add_parser("verify", help="Re-check unverified assets with AcoustID.")
     commands.add_parser("prune", help="Delete files past SIDETRACK_AUDIO_RETENTION_DAYS.")
     return parser
 
@@ -176,6 +179,15 @@ def main(
             with args.out.open("w", encoding="utf-8", newline="") as handle:
                 rows = export_manifest(db, audio_dir, handle)
             print(f"Wrote {rows} assets to {args.out}", file=out)
+            return 0
+        if args.command == "verify":
+            verifier_factory = fetch_options.get("verifier_factory", build_verifier)
+            counts = reverify_assets(db, audio_dir, verifier_factory(settings))
+            db.commit()
+            print(
+                "Re-verified: " + ", ".join(f"{counts[v]} {v.value}" for v in AudioVerification),
+                file=out,
+            )
             return 0
         assert settings.sidetrack_audio_retention_days is not None
         pruned = prune_assets(db, audio_dir, settings.sidetrack_audio_retention_days)

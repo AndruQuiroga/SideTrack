@@ -39,6 +39,8 @@ worker = [
 # Opt-in audio acquisition (ADR 0007): `python -m sidetrack.audio`. Not in any image.
 audio = [
     "yt-dlp==2026.10.21",
+    # Official JS challenge solver for YouTube (used with the deno runtime).
+    "yt-dlp-ejs==0.8.0",
     "pyacoustid==1.3.1",
 ]
 
