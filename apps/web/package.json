@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint app",
-    "test": "node --experimental-strip-types --no-warnings --test \"app/**/*.test.ts\"",
+    "test": "node --experimental-strip-types --no-warnings --test \"app/**/*.test.ts\" \"tests/*.test.cjs\"",
     "format": "prettier --write \"app/**/*.{ts,tsx}\""
   },
   "dependencies": {

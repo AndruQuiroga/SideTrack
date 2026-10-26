@@ -83,6 +83,7 @@ groups:
         notes: "No sample, demo or random data; pages show an 'unavailable' state on API failure"
         evidence:
           - apps/web/app/no-fake-data.test.ts
+          - apps/web/tests/connections.test.cjs
       - capability: Profile pages
         status: absent
         notes: "The web app calls /users/{id}/profile, timeline and now-playing endpoints the API doesn't implement, so /u/<id> is a 404"

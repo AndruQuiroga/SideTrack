@@ -11,31 +11,11 @@ type Connection = {
   cta: string;
 };
 
-const defaultConnections: Connection[] = [
-  {
-    name: 'Discord',
-    key: 'discord',
-    status: 'Required for club identity',
-    linked: false,
-    cta: 'Link Discord',
-  },
-  {
-    name: 'Spotify',
-    key: 'spotify',
-    status: 'Enables now playing + taste metrics',
-    linked: false,
-    cta: 'Connect Spotify',
-  },
-  {
-    name: 'Last.fm',
-    key: 'lastfm',
-    status: 'Pulls scrobbles + history',
-    linked: true,
-    cta: 'Reconnect',
-  },
-];
+export function ConnectionsGrid({ connections }: { connections: Connection[] | null }) {
+  if (!connections) {
+    return <p role="status">Linked accounts are unavailable. Please try again later.</p>;
+  }
 
-export function ConnectionsGrid({ connections = defaultConnections }: { connections?: Connection[] }) {
   async function onConnect(key: Connection['key']) {
     try {
       const { url } = await requestIntegrationConnect(key);

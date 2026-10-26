@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { getServerSession } from 'next-auth/next';
 
 import { authOptions } from '../lib/auth';
-import { serverApiBaseUrl, serverApiHeaders } from '../lib/server-env';
+import { fetchLinkedAccounts } from '../lib/api/linked-accounts';
 import { PageShell } from '../components/page-shell';
 import { Card, SectionHeading } from '../components/ui';
 import { ConnectionsGrid } from '../components/connections-grid';
@@ -13,21 +13,6 @@ export const metadata = {
   description: 'Manage linked accounts and privacy.',
 };
 
-type LinkedAccount = { provider: string; username?: string; display_name?: string };
-
-async function fetchLinkedAccounts(userId: string): Promise<LinkedAccount[]> {
-  try {
-    const res = await fetch(`${serverApiBaseUrl()}/users/${userId}/linked-accounts`, {
-      headers: serverApiHeaders(),
-      cache: 'no-store',
-    });
-    if (!res.ok) return [];
-    return (await res.json()) as LinkedAccount[];
-  } catch {
-    return [];
-  }
-}
-
 export default async function SettingsPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -35,7 +20,8 @@ export default async function SettingsPage() {
   }
 
   const linkedAccounts = await fetchLinkedAccounts(session.user.id);
-  const isLinked = (provider: string) => linkedAccounts.some((a) => a.provider === provider);
+  const isLinked = (provider: string) =>
+    linkedAccounts?.some((a) => a.provider === provider) ?? false;
 
   const connections = [
     {
@@ -58,7 +44,7 @@ export default async function SettingsPage() {
       name: 'Last.fm' as const,
       key: 'lastfm' as const,
       status: isLinked('lastfm')
-        ? `Connected as ${linkedAccounts.find((a) => a.provider === 'lastfm')?.display_name ?? 'unknown'}`
+        ? `Connected as ${linkedAccounts?.find((a) => a.provider === 'lastfm')?.display_name ?? 'unknown'}`
         : 'Pulls scrobbles + history',
       linked: isLinked('lastfm'),
       cta: isLinked('lastfm') ? 'Reconnect' : 'Connect Last.fm',
@@ -81,7 +67,7 @@ export default async function SettingsPage() {
     >
       <Card className="space-y-4">
         <SectionHeading eyebrow="Connections" title="Linked accounts" />
-        <ConnectionsGrid connections={connections} />
+        <ConnectionsGrid connections={linkedAccounts === null ? null : connections} />
         <p className="text-xs text-slate-400">
           Linking Spotify or Last.fm unlocks live presence, recommendations, and taste graphs on
           your profile. Discord is required for club participation.

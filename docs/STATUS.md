@@ -42,7 +42,7 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 
 | Capability | Status | Notes | Evidence |
 | --- | --- | --- | --- |
-| Data honesty | works | No sample, demo or random data; pages show an 'unavailable' state on API failure | `apps/web/app/no-fake-data.test.ts` |
+| Data honesty | works | No sample, demo or random data; pages show an 'unavailable' state on API failure | `apps/web/app/no-fake-data.test.ts`, `apps/web/tests/connections.test.cjs` |
 | Profile pages | absent | The web app calls /users/{id}/profile, timeline and now-playing endpoints the API doesn't implement, so /u/&lt;id&gt; is a 404 |  |
 
 ## Platform
@@ -65,6 +65,7 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 
 - `deploy-on-stache-rack`: 13/13 tasks
 - `harden-api-credentials`: 10/11 tasks
+- `remove-fabricated-connection-status`: 2/2 tasks
 
 ### Specs
 
