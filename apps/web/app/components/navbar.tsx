@@ -14,11 +14,7 @@ type NavLink = { href: Route | { pathname: Route; query?: Record<string, string>
 const links: NavLink[] = [
   { href: '/discover', label: 'Discover' },
   { href: '/feed', label: 'Feed' },
-  { href: { pathname: '/u/[id]' as Route, query: { id: 'demo' } }, label: 'Demo Profile' },
-  {
-    href: { pathname: '/compare' as Route, query: { userA: 'demo', userB: 'demo2' } },
-    label: 'Compatibility',
-  },
+  { href: '/compare', label: 'Compatibility' },
   { href: '/club', label: 'Club Archive' },
 ];
 

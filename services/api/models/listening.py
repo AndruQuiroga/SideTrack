@@ -34,7 +34,7 @@ class ListenEvent(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
     track_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("tracks.id", ondelete="CASCADE"), nullable=False
@@ -42,7 +42,11 @@ class ListenEvent(Base):
     played_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC), index=True
     )
-    source: Mapped[ListenSource] = mapped_column(SAEnum(ListenSource), nullable=False)
+    # Stored by value ('lastfm'), matching the listen_source enum created in migration 0001.
+    source: Mapped[ListenSource] = mapped_column(
+        SAEnum(ListenSource, name="listen_source", values_callable=lambda e: [m.value for m in e]),
+        nullable=False,
+    )
     metadata_: Mapped[dict | None] = mapped_column("metadata", JSON)
     ingested_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC)

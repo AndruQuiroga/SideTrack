@@ -15,6 +15,23 @@ concurrency:
 jobs:
   python:
     runs-on: ubuntu-latest
+    services:
+      # Same image as deploy/stack.yml; tests migrate it with Alembic.
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: sidetrack
+          POSTGRES_PASSWORD: sidetrack
+          POSTGRES_DB: sidetrack_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U sidetrack -d sidetrack_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      SIDETRACK_TEST_DATABASE_URL: postgresql+psycopg://sidetrack:sidetrack@localhost:5432/sidetrack_test
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
@@ -34,6 +51,8 @@ jobs:
         run: uv run --frozen pytest -m "not slow and not gpu"
       - name: Deploy docs cover the stack
         run: uv run --frozen python scripts/check_stack_docs.py
+      - name: Status page is current
+        run: uv run --frozen python scripts/gen_status.py --check
 
   node:
     runs-on: ubuntu-latest

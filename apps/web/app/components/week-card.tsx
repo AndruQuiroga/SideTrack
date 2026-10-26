@@ -72,11 +72,6 @@ export function WeekCard({ week }: WeekCardProps) {
               <span className="h-1.5 w-1.5 rounded-full bg-sky-400" />
               {week.aggregates.nomination_count} nominations
             </span>
-            {week.source === 'fallback' && (
-              <span className="rounded-full bg-amber-500/20 px-2.5 py-1 text-[0.7rem] font-semibold text-amber-200">
-                Demo data
-              </span>
-            )}
             {tags.slice(0, 3).map((tag) => (
               <span key={tag} className="rounded-full bg-slate-900/70 px-2.5 py-1 text-slate-400">
                 {tag}

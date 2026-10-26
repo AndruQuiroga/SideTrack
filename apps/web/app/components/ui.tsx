@@ -6,7 +6,7 @@ export function Card({ children, className }: { children: ReactNode; className?:
     <div
       className={clsx(
         'relative overflow-hidden rounded-3xl border border-slate-800/80 bg-sidetrack-soft/70 p-5 shadow-soft backdrop-blur-sm',
-        className
+        className,
       )}
     >
       <div className="pointer-events-none absolute inset-x-0 -top-24 h-32 bg-gradient-to-b from-purple-500/10 via-sky-400/5 to-transparent" />
@@ -20,7 +20,7 @@ export function Pill({ children, className }: { children: ReactNode; className?:
     <span
       className={clsx(
         'inline-flex items-center gap-2 rounded-full border border-slate-700/60 bg-slate-900/80 px-3 py-1 text-[0.7rem] font-semibold uppercase tracking-wide text-slate-200',
-        className
+        className,
       )}
     >
       {children}
@@ -28,7 +28,30 @@ export function Pill({ children, className }: { children: ReactNode; className?:
   );
 }
 
-export function SectionHeading({ eyebrow, title, aside }: { eyebrow?: string; title: string; aside?: ReactNode }) {
+/**
+ * Shown when the API can't provide what a page needs. Never replace this with sample
+ * data (spec: web/data-honesty).
+ */
+export function Unavailable({ what, className }: { what: string; className?: string }) {
+  return (
+    <Card className={clsx('text-center', className)}>
+      <p className="text-sm font-semibold text-white">The {what} is unavailable right now.</p>
+      <p className="mt-1 text-xs text-slate-400">
+        Sidetrack couldn&apos;t reach its API. Try again in a few minutes.
+      </p>
+    </Card>
+  );
+}
+
+export function SectionHeading({
+  eyebrow,
+  title,
+  aside,
+}: {
+  eyebrow?: string;
+  title: string;
+  aside?: ReactNode;
+}) {
   return (
     <div className="flex items-start justify-between gap-3">
       <div>

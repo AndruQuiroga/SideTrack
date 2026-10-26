@@ -4,7 +4,7 @@ Shared by Codex, Claude Code and any other agent. Keep this file short; details 
 
 ## Read first
 
-1. `docs/STATUS.md`: what actually works today. Trust it over any other prose.
+1. `docs/STATUS.md`: what actually works today. Trust it over any other prose. It's generated: edit `docs/status.yaml`, then run `python scripts/gen_status.py` (CI fails if it's stale). Marking something **works** requires an evidence path, preferably a test.
 2. `docs/decisions/`: architecture decisions (ADRs). Don't re-propose a decision without a new ADR.
 3. `openspec/specs/`: the behaviour the system must have. `openspec/changes/`: work in flight.
 
@@ -50,3 +50,5 @@ pnpm exec openspec list                                         # changes in fli
 ```
 
 Python: uv only (never pip). TypeScript: pnpm only. Python 3.11. Ruff line length 100.
+
+API tests run on Postgres 16 + pgvector: have Docker running (testcontainers starts one), or set `SIDETRACK_TEST_DATABASE_URL` to a throwaway database. A model change needs a migration, or `test_migrations.py` fails.

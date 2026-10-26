@@ -1,0 +1,137 @@
+# Source for docs/STATUS.md. Edit this file, then run: python scripts/gen_status.py
+# Statuses: works | partial | broken | stub | absent.
+# "works" needs at least one evidence path (a test, preferably) that exists in the repo.
+
+reviewed: 2026-10-25
+
+groups:
+  - name: Club (Discord album club)
+    items:
+      - capability: Create week and nominate
+        status: works
+        notes: API + bot
+        evidence:
+          - services/api/tests/test_weeks.py
+          - services/api/tests/test_nominations.py
+      - capability: Edit/withdraw nomination
+        status: partial
+        notes: "Implemented (PATCH/DELETE /nominations/{id}); untested"
+      - capability: Ranked ballot (rank 1 and 2)
+        status: partial
+        notes: "The database rejects voting for the same nomination twice (uq_vote_nomination_user). No self-vote or voting-phase checks (routes/votes.py)"
+        evidence:
+          - services/api/tests/test_votes.py
+      - capability: Ratings and summary
+        status: partial
+        notes: Implemented; untested
+      - capability: Reminders and phase transitions
+        status: partial
+        notes: "In-memory setTimeout in the bot; lost on restart; transitions only post messages"
+      - capability: Album metadata from Spotify
+        status: partial
+        notes: "Client credentials, metadata only (external/spotify.py); untested"
+      - capability: Web archive (weeks, winners)
+        status: partial
+        notes: "Renders API data with an honest unavailable state; no page tests"
+        evidence:
+          - apps/web/app/no-fake-data.test.ts
+
+  - name: Listening
+    items:
+      - capability: Last.fm account link
+        status: partial
+        notes: "Signed-state flow implemented and tested (harden-api-credentials); not yet verified end to end against real Last.fm"
+        evidence:
+          - services/api/tests/test_lastfm_link.py
+          - services/api/tests/test_link_state.py
+      - capability: Last.fm scrobble import
+        status: partial
+        notes: "Newest 200 only, no backfill; scrobbles without an album are dropped"
+      - capability: Listen storage
+        status: works
+        notes: "listen_events.source matches the database enum. Before 2026-10-25 every listen insert failed on Postgres"
+        evidence:
+          - services/api/tests/test_migrations.py
+      - capability: Spotify listen sync
+        status: broken
+        notes: "Inserts listens for tracks that don't exist (FK failure); no Spotify OAuth. Not built or deployed"
+      - capability: ListenBrainz import
+        status: absent
+      - capability: MusicBrainz resolution
+        status: partial
+        notes: Per-scrobble web API calls inside the import job
+
+  - name: Analysis
+    items:
+      - capability: Audio feature extraction
+        status: stub
+        notes: services/extraction is an empty FastAPI app
+      - capability: Embedding models (any)
+        status: absent
+        notes: "Pre-reboot adapters (CLAP, OpenL3, PANNs, MusicNN) returned fake numbers and were deleted"
+      - capability: Spotify audio features
+        status: broken
+        notes: Endpoint returns 403 for apps created after 2024-11-27 (ADR 0003)
+      - capability: Taste profiles, compatibility, recommendations
+        status: stub
+        notes: Tables exist; values derive from empty features
+
+  - name: Web
+    items:
+      - capability: Data honesty
+        status: works
+        notes: "No sample, demo or random data; pages show an 'unavailable' state on API failure"
+        evidence:
+          - apps/web/app/no-fake-data.test.ts
+      - capability: Profile pages
+        status: absent
+        notes: "The web app calls /users/{id}/profile, timeline and now-playing endpoints the API doesn't implement, so /u/<id> is a 404"
+
+  - name: Platform
+    items:
+      - capability: Auth
+        status: partial
+        notes: "Writes need the service token and the API fails closed without it; stored credentials are never returned. No per-user auth yet (Phase 3); GETs are public"
+        evidence:
+          - services/api/tests/test_api_access.py
+          - services/api/tests/test_linked_accounts.py
+      - capability: Health checks
+        status: works
+        notes: /health returns 503 within 2 s when the DB is unreachable (also verified live, 2026-10-25)
+        evidence:
+          - services/api/tests/test_health.py
+      - capability: Runtime secrets
+        status: works
+        notes: "API reads /run/secrets/<name>; web and bot read <NAME>_FILE"
+        evidence:
+          - services/api/tests/test_runtime_config.py
+          - apps/web/app/lib/server-env.test.ts
+          - apps/bot/src/secrets.test.ts
+      - capability: Schema migrations
+        status: works
+        notes: Tests run on Postgres 16 + pgvector built by Alembic; model/migration drift fails CI
+        evidence:
+          - services/api/tests/test_migrations.py
+      - capability: Background jobs
+        status: partial
+        notes: "Redis (ephemeral) + one RQ consumer for Last.fm ingest; Phase 2 replaces RQ (ADR 0002)"
+      - capability: Type checking
+        status: broken
+        notes: 44 pre-existing mypy errors; CI runs mypy as non-blocking until fixed
+      - capability: Status page
+        status: works
+        notes: Generated from docs/status.yaml; CI fails if stale
+        evidence:
+          - scripts/gen_status.py
+          - services/api/tests/test_gen_status.py
+      - capability: CI
+        status: works
+        notes: "Lint, tests, OpenSpec validation, status check and image builds; main pushes ghcr.io/andruquiroga/sidetrack-{api,web,bot}; required for merging"
+        evidence:
+          - .github/workflows/ci.yml
+      - capability: Deployment to Stache-Rack
+        status: partial
+        notes: deploy/stack.yml and runbook ready; never deployed. Local compose verified healthy
+        evidence:
+          - deploy/stack.yml
+          - deploy/README.md
