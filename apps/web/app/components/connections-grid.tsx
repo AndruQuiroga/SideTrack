@@ -1,6 +1,6 @@
 'use client';
 
-import { requestIntegrationConnect } from '../lib/api/discover';
+import { requestIntegrationConnect } from '../lib/browser-api';
 import { showToast } from './toast';
 
 type Connection = {

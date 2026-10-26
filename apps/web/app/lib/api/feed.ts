@@ -1,4 +1,5 @@
-import { getApiBaseUrl } from '../config';
+/** Server-only club activity feed for the session user. */
+import { apiRequest } from '../server-api';
 
 export type FeedEventType = 'rating' | 'listen' | 'club' | 'follow';
 
@@ -15,14 +16,6 @@ export interface FeedItem {
   metadata?: Record<string, unknown> | null;
 }
 
-export async function fetchFeed(userId?: string, limit: number = 20): Promise<FeedItem[]> {
-  const params = new URLSearchParams();
-  if (userId) params.set('user_id', userId);
-  params.set('limit', String(limit));
-
-  const res = await fetch(`${getApiBaseUrl()}/feed?${params.toString()}`, {
-    cache: 'no-store',
-  });
-  if (!res.ok) throw new Error(`Feed failed with status ${res.status}`);
-  return (await res.json()) as FeedItem[];
+export async function fetchFeed(sessionUserId: string, limit: number = 20): Promise<FeedItem[]> {
+  return apiRequest<FeedItem[]>(sessionUserId, `/feed?limit=${limit}`);
 }

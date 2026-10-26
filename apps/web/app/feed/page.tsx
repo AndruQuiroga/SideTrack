@@ -2,8 +2,10 @@ import Link from 'next/link';
 import type { Route } from 'next';
 
 import { fetchFeed, type FeedItem } from '../lib/api/feed';
+import { loadAs } from '../lib/server-api';
+import { sessionUserId } from '../lib/session';
 import { PageShell } from '../components/page-shell';
-import { Card, SectionHeading, Unavailable } from '../components/ui';
+import { AccessNotice, Card, SectionHeading } from '../components/ui';
 import { RatingBadge } from '../components/rating-badge';
 
 export const metadata = {
@@ -80,12 +82,8 @@ function FeedItemCard({ item }: { item: FeedItem }) {
 }
 
 export default async function FeedPage() {
-  let feed: FeedItem[] | null = null;
-  try {
-    feed = await fetchFeed();
-  } catch (error) {
-    console.error('Feed unavailable', error);
-  }
+  const result = await loadAs(await sessionUserId(), (_api, userId) => fetchFeed(userId));
+  const feed = result.state === 'ok' ? result.data : null;
 
   return (
     <PageShell
@@ -94,7 +92,12 @@ export default async function FeedPage() {
       accent="Live"
     >
       {feed === null ? (
-        <Unavailable what="activity feed" />
+        <AccessNotice
+          state={
+            result.state === 'ok' || result.state === 'not-found' ? 'unavailable' : result.state
+          }
+          what="activity feed"
+        />
       ) : (
         <Card className="space-y-5">
           <SectionHeading eyebrow="Recent activity" title="Club + friends" />

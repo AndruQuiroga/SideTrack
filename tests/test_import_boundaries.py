@@ -33,6 +33,8 @@ def test_real_package_keeps_import_contracts():
     [
         "from sidetrack.catalog.models import Track",
         "from sidetrack.api.main import create_app",
+        # Authorization reads membership only through club's public package.
+        "from sidetrack.club.membership import is_member",
     ],
 )
 def test_guard_rejects_private_or_transport_import(tmp_path, illegal_import):
@@ -49,3 +51,11 @@ def test_guard_rejects_private_or_transport_import(tmp_path, illegal_import):
     assert result.returncode != 0, result.stdout
     assert "BROKEN" in result.stdout, result.stdout + result.stderr
     assert "sidetrack.listening._illegal" in result.stdout
+
+
+def test_identity_reads_club_membership_publicly():
+    """identity.auth → club is allowed only through the public package (ADR 0009)."""
+    source = (ROOT / "sidetrack/identity/auth.py").read_text(encoding="utf-8")
+    assert "from sidetrack.club import is_member, member_role" in source
+    assert "sidetrack.club.membership" not in source
+    assert "sidetrack.club.models" not in source

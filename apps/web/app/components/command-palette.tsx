@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { webSearch, SearchResult } from '../lib/api/discover';
+import type { SearchResult } from '../lib/api/discover';
+import { searchSidetrack } from '../lib/browser-api';
 import { showToast } from './toast';
 
 interface CommandPaletteProps {
@@ -36,7 +37,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
       }
       setLoading(true);
       try {
-        const r = await webSearch(query.trim());
+        const r = await searchSidetrack(query.trim());
         setResults(r);
       } catch {
         showToast('Search failed. Please try again.', 'error');

@@ -7,30 +7,23 @@ import {
   UUID,
 } from '@sidetrack/api-client';
 
-import { createWebApiClient } from './client';
-
 export interface ProfilePageData extends ProfileOverview {
   fetched_at: string;
   private_data_allowed: boolean;
 }
 
 export interface ProfileFetchOptions {
-  authToken?: string;
-  getAuthToken?: () => string | undefined;
   range?: ListeningRange;
   timelineBucket?: TimelineParams['bucket'];
   allowPrivateData?: boolean;
   workerSyncReady?: boolean;
 }
 
-const createClient = (options?: ProfileFetchOptions): SidetrackApiClient =>
-  createWebApiClient({ authToken: options?.authToken, getAuthToken: options?.getAuthToken });
-
 async function fetchProfileFromApi(
+  client: SidetrackApiClient,
   userId: UUID,
   options?: ProfileFetchOptions,
 ): Promise<ProfilePageData> {
-  const client = createClient(options);
   const listeningParams: ListeningStatsParams = { range: options?.range, limit: 10 };
   const timelineParams: TimelineParams = {
     range: options?.range,
@@ -60,16 +53,11 @@ async function fetchProfileFromApi(
 }
 
 /** A user's profile. Throws ApiError (status 404 when the user doesn't exist). */
+/** `client` acts for the session user, who may differ from the profile's `userId`. */
 export async function fetchProfileForServer(
+  client: SidetrackApiClient,
   userId: UUID,
   options?: ProfileFetchOptions,
 ): Promise<ProfilePageData> {
-  return fetchProfileFromApi(userId, options);
-}
-
-export async function fetchProfileForClient(
-  userId: UUID,
-  options?: ProfileFetchOptions,
-): Promise<ProfilePageData> {
-  return fetchProfileForServer(userId, options);
+  return fetchProfileFromApi(client, userId, options);
 }

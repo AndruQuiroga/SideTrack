@@ -126,7 +126,7 @@ unmatched_ignore_imports_alerting = "none"
 [[tool.importlinter.contracts]]
 name = "club internals have one owner"
 type = "protected"
-protected_modules = ["sidetrack.club.models", "sidetrack.club.routes", "sidetrack.club.notifications"]
+protected_modules = ["sidetrack.club.models", "sidetrack.club.routes", "sidetrack.club.notifications", "sidetrack.club.membership"]
 allowed_importers = ["sidetrack.club", "services.api.tests"]
 ignore_imports = ["sidetrack.api.routes -> sidetrack.club.routes.*"]
 unmatched_ignore_imports_alerting = "none"

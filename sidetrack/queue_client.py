@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import procrastinate
 from procrastinate.jobs import Job
@@ -20,8 +20,12 @@ def enqueue(
     *,
     queue: str = "default",
     schedule_at: datetime | None = None,
+    requested_by: UUID | None = None,
 ) -> BackgroundJob:
-    """Insert both records without committing, opening a pool or closing the session."""
+    """Insert both records without committing, opening a pool or closing the session.
+
+    ``requested_by`` is the user who may poll the job's status.
+    """
     if queue not in {"default", "musicbrainz", "gpu"}:
         raise ValueError("Unknown queue")
     public_id = uuid4()
@@ -50,6 +54,7 @@ def enqueue(
         queue_job_id=deferred.id,
         task=task,
         status="deferred" if schedule_at else "queued",
+        requested_by_user_id=requested_by,
     )
     db.add(row)
     db.flush()

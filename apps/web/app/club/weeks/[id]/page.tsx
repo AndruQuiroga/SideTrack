@@ -1,30 +1,26 @@
 import { notFound } from 'next/navigation';
-import { ApiError } from '@sidetrack/api-client';
 
-import { fetchWeekDetail, type WeekDetailWithRatings } from '../../../lib/api/weeks';
+import { fetchWeekDetail } from '../../../lib/api/weeks';
+import { loadAs } from '../../../lib/server-api';
+import { sessionUserId } from '../../../lib/session';
 import { WeekDetailPanel } from '../../../components/week-detail';
 import { PageShell } from '../../../components/page-shell';
-import { Unavailable } from '../../../components/ui';
+import { AccessNotice } from '../../../components/ui';
 
 interface WeekDetailPageProps {
   params: { id: string };
 }
 
 export default async function WeekDetailPage({ params }: WeekDetailPageProps) {
-  let week: WeekDetailWithRatings;
-  try {
-    week = await fetchWeekDetail(params.id);
-  } catch (error) {
-    if (error instanceof ApiError && (error.status === 404 || error.status === 422)) {
-      notFound();
-    }
-    console.error('Week detail unavailable', error);
+  const week = await loadAs(await sessionUserId(), (api) => fetchWeekDetail(api, params.id));
+  if (week.state === 'not-found') notFound();
+  if (week.state !== 'ok') {
     return (
       <PageShell title="Club week" accent="Club archive">
-        <Unavailable what="club week" />
+        <AccessNotice state={week.state} what="club week" />
       </PageShell>
     );
   }
 
-  return <WeekDetailPanel week={week} />;
+  return <WeekDetailPanel week={week.data} />;
 }

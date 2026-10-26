@@ -2,6 +2,7 @@ import { readSecret } from './secrets';
 
 export interface ApiConfig {
   baseUrl: string;
+  /** The bot's own API token (SIDETRACK_BOT_API_TOKEN); never shared with the web app. */
   token?: string;
 }
 
@@ -9,6 +10,8 @@ export interface DiscordConfig {
   token: string;
   clientId?: string;
   guildId?: string;
+  /** Privileged Server Members intent, needed to hear members leave the guild. */
+  membersIntent: boolean;
 }
 
 export interface RetryConfig {
@@ -54,12 +57,13 @@ export function loadBotConfig(env: NodeJS.ProcessEnv = process.env): BotConfig {
   return {
     api: {
       baseUrl,
-      token: readSecret('SIDETRACK_API_TOKEN', env),
+      token: readSecret('SIDETRACK_BOT_API_TOKEN', env),
     },
     discord: {
       token: discordToken,
       clientId: env.DISCORD_CLIENT_ID,
       guildId: env.DISCORD_GUILD_ID,
+      membersIntent: env.DISCORD_MEMBERS_INTENT === 'true',
     },
     retry: {
       attempts: Number.isFinite(retryAttempts) ? retryAttempts : DEFAULT_RETRY.attempts,

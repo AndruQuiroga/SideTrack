@@ -9,12 +9,17 @@ from sqlalchemy.orm import Session
 from sidetrack.catalog import Album
 from sidetrack.club import Rating
 from sidetrack.db import get_db
+from sidetrack.identity import Principal, auth, policy
 
 router = APIRouter(tags=["trending"])
 
 
 @router.get("/trending")
-async def get_trending(db: Session = Depends(get_db)) -> list[dict[str, object]]:
+async def get_trending(
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(policy(auth.CLUB_READ)),
+) -> list[dict[str, object]]:
+    auth.require_member(db, principal)
     # Aggregate ratings by album
     stmt = (
         select(

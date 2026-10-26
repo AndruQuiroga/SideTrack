@@ -8,7 +8,7 @@ processes share this code; the Next.js app and Discord bot call the HTTP API.
 | `identity`  | users, linked_accounts, follows                                     |
 | `catalog`   | albums, tracks                                                      |
 | `listening` | listen_events, import_checkpoints                                   |
-| `club`      | weeks, nominations, votes, ratings, club_notification_outbox        |
+| `club`      | weeks, nominations, votes, ratings, club_notification_outbox, club_members |
 | `analysis`  | track_features, taste_profiles, compatibility, user_recommendations |
 
 Import another domain's public package for operations or exported **read models**.
@@ -56,5 +56,15 @@ Shared infrastructure owns background_jobs, job_schedules, job_schedule_occurren
 and job_request_pacing. The library owns its separate job_queue schema.
 
 Deploy API and worker together from the same image, with a matching bot. Real
-audio analysis and per-user authorization remain later work. `services/extraction`
+audio analysis remains later work.
+
+## Authorization
+
+`identity.auth` resolves the calling client and acting user, and gives every
+route its policy dependency (ADR 0009; see AUTHORIZATION.md). Domains call its
+checks (`require_member`, `require_admin`, `resolve_owner`, `can_view_personal`).
+It reads membership through `club`'s public package. `club.membership` must not
+import identity, which keeps imports acyclic. `sidetrack.club_admin` is the
+operator's first-admin command; it sits outside the domains because it composes
+identity and club. `services/extraction`
 remains a stub. ROADMAP.md records deferred live OAuth and first rack deployment.

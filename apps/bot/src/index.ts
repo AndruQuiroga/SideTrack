@@ -21,7 +21,18 @@ export async function startBot(): Promise<void> {
   const service = new ClubSyncService(client, config, logger);
   const openWeeks = await service.bootstrap();
 
-  const discordClient = createDiscordClient(config.discord.token, logger);
+  const discordClient = createDiscordClient(config.discord.token, logger, {
+    membersIntent: config.discord.membersIntent,
+  });
+  if (config.discord.membersIntent) {
+    discordClient.on('guildMemberRemove', (member) => {
+      service.recordDeparture(member.id).catch((error) =>
+        logger.warn('Could not record a member leaving.', {
+          error: error instanceof Error ? error.message : String(error),
+        }),
+      );
+    });
+  }
   const scheduler = new ReminderScheduler(discordClient, service, logger);
   discordClient.once('ready', () => scheduler.start());
   registerInteractionHandlers(discordClient, service, scheduler, config, logger);

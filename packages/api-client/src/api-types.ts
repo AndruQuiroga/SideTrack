@@ -15,7 +15,7 @@ export interface paths {
     put?: never;
     /**
      * Override Winner
-     * @description Manually set the winner album for a week, bypassing the poll result.
+     * @description Manually set the winner album for a week, bypassing the poll result. Admins only.
      */
     post: operations['override_winner_admin_weeks__week_id__override_winner_post'];
     delete?: never;
@@ -36,7 +36,7 @@ export interface paths {
     post?: never;
     /**
      * Delete Rating
-     * @description Hard-delete a rating (moderator action).
+     * @description Hard-delete a rating (moderator action). Admins only.
      */
     delete: operations['delete_rating_admin_ratings__rating_id__delete'];
     options?: never;
@@ -53,13 +53,13 @@ export interface paths {
     };
     /**
      * List Users
-     * @description Return users in the system.
+     * @description Return current club members; only members may list them.
      */
     get: operations['list_users_users__get'];
     put?: never;
     /**
      * Create User
-     * @description Create a user record (api/schema-core).
+     * @description Create a user record (provisioning by the web or bot client acting as itself).
      */
     post: operations['create_user_users__post'];
     delete?: never;
@@ -77,21 +77,21 @@ export interface paths {
     };
     /**
      * Get User
-     * @description Return a user by ID, or raise 404 if missing.
+     * @description Return a user to themselves, or a club member to another member; otherwise 404.
      */
     get: operations['get_user_users__user_id__get'];
     put?: never;
     post?: never;
     /**
      * Delete User
-     * @description Delete a user and cascade-remove all owned records.
+     * @description Delete the acting user and cascade-remove all owned records.
      */
     delete: operations['delete_user_users__user_id__delete'];
     options?: never;
     head?: never;
     /**
      * Update User
-     * @description Update mutable user fields (display_name, handle).
+     * @description Update the acting user's own fields (display_name, handle, listening_visibility).
      */
     patch: operations['update_user_users__user_id__patch'];
     trace?: never;
@@ -105,13 +105,16 @@ export interface paths {
     };
     /**
      * List Linked Accounts
-     * @description List linked accounts for a specific user.
+     * @description List the acting user's own linked accounts; anyone else's are not found.
      */
     get: operations['list_linked_accounts_users__user_id__linked_accounts_get'];
     put?: never;
     /**
      * Create Linked Account
-     * @description Create a linked account for a user with provider-specific validation.
+     * @description Link an account to the acting user, with provider-specific validation.
+     *
+     *     Provisioning clients acting as themselves may only attach a Discord account to a
+     *     user who has none yet (sign-up from the website or the bot).
      */
     post: operations['create_linked_account_users__user_id__linked_accounts_post'];
     delete?: never;
@@ -132,7 +135,7 @@ export interface paths {
     post?: never;
     /**
      * Delete Linked Account
-     * @description Delete a linked account identified by provider and external ID.
+     * @description Delete one of the acting user's linked accounts by provider and external ID.
      */
     delete: operations['delete_linked_account_users__user_id__linked_accounts__provider___provider_user_id__delete'];
     options?: never;
@@ -170,6 +173,8 @@ export interface paths {
     /**
      * List User Recent Listens
      * @description Return recent listen events for a user, joined with track metadata.
+     *
+     *     Visible to the owner, and to club members when the owner shares with the club.
      */
     get: operations['list_user_recent_listens_users__user_id__listening_recent_get'];
     put?: never;
@@ -219,7 +224,7 @@ export interface paths {
     head?: never;
     /**
      * Update Album
-     * @description Update an album's metadata fields.
+     * @description Update an album's metadata fields. Club admins only.
      */
     patch: operations['update_album_albums__album_id__patch'];
     trace?: never;
@@ -235,7 +240,7 @@ export interface paths {
     put?: never;
     /**
      * Create Album
-     * @description Create an album; reuse an existing record if it matches title/artist/year.
+     * @description Create an album; reuse an existing record if it matches title/artist/year. Members only.
      */
     post: operations['create_album_albums__post'];
     delete?: never;
@@ -259,7 +264,7 @@ export interface paths {
      *     and Spotify metadata.
      *
      *     This is the primary endpoint for the nomination flow. It returns a fully-populated
-     *     album with cover art, genres, release year, and external IDs.
+     *     album with cover art, genres, release year, and external IDs. Members only.
      */
     post: operations['resolve_album_endpoint_albums_resolve_post'];
     delete?: never;
@@ -279,7 +284,7 @@ export interface paths {
     put?: never;
     /**
      * Enrich Album Endpoint
-     * @description Re-run enrichment on an existing album to fill missing metadata.
+     * @description Re-run enrichment on an existing album to fill missing metadata. Members only.
      */
     post: operations['enrich_album_endpoint_albums__album_id__enrich_post'];
     delete?: never;
@@ -343,7 +348,7 @@ export interface paths {
     put?: never;
     /**
      * Create Week
-     * @description Create or update a week using idempotent matching fields.
+     * @description Create or update a week using idempotent matching fields. Club admins only.
      */
     post: operations['create_week_weeks__post'];
     delete?: never;
@@ -372,6 +377,8 @@ export interface paths {
     /**
      * Update Week
      * @description Apply partial updates to a week while validating the timeline.
+     *
+     *     Club admins may change any field; the bot acting as itself only thread IDs.
      */
     patch: operations['update_week_weeks__week_id__patch'];
     trace?: never;
@@ -387,7 +394,7 @@ export interface paths {
     put?: never;
     /**
      * Create Week Nomination
-     * @description Create a nomination for a week; enforce uniqueness per (user, album, week).
+     * @description Create a nomination for the acting member; unique per (user, album, week).
      */
     post: operations['create_week_nomination_weeks__week_id__nominations_post'];
     delete?: never;
@@ -447,6 +454,30 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/club/members/discord/{discord_id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Put Member
+     * @description Record the Discord user as a current member with ``role``; idempotent.
+     */
+    put: operations['put_member_club_members_discord__discord_id__put'];
+    post?: never;
+    /**
+     * Remove Member
+     * @description Mark the Discord user as having left; their club history is kept.
+     */
+    delete: operations['remove_member_club_members_discord__discord_id__delete'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/nominations/': {
     parameters: {
       query?: never;
@@ -483,7 +514,7 @@ export interface paths {
     post?: never;
     /**
      * Delete Nomination
-     * @description Withdraw (delete) a nomination. Cascades to associated votes.
+     * @description Withdraw (delete) a nomination. Cascades to associated votes. Nominator or admin only.
      */
     delete: operations['delete_nomination_nominations__nomination_id__delete'];
     options?: never;
@@ -492,7 +523,7 @@ export interface paths {
      * Update Nomination
      * @description Update a nomination's pitch, pitch track, tags, or album.
      *
-     *     Only fields included in the request body are updated.
+     *     Only fields included in the request body are updated. Nominator or admin only.
      */
     patch: operations['update_nomination_nominations__nomination_id__patch'];
     trace?: never;
@@ -506,7 +537,7 @@ export interface paths {
     };
     /**
      * List Votes
-     * @description Return votes, optionally filtered by week, user, or rank.
+     * @description Return the acting member's own votes; ballots are private to the voter.
      */
     get: operations['list_votes_votes_get'];
     put?: never;
@@ -526,7 +557,7 @@ export interface paths {
     };
     /**
      * Get Vote
-     * @description Return a single vote by ID.
+     * @description Return one of the acting member's own votes; anyone else's is not found.
      */
     get: operations['get_vote_votes__vote_id__get'];
     put?: never;
@@ -548,8 +579,8 @@ export interface paths {
     put?: never;
     /**
      * Create Week Vote
-     * @description Submit a vote for a nomination in a week. Returns 409 if the user has already
-     *     voted with the same rank for this week.
+     * @description Submit the acting member's vote for a nomination in a week. Returns 409 if they
+     *     have already voted with the same rank for this week.
      */
     post: operations['create_week_vote_weeks__week_id__votes_post'];
     delete?: never;
@@ -635,13 +666,15 @@ export interface paths {
     };
     /**
      * List Listen Events
-     * @description Return persisted listen events, newest first.
+     * @description Return one user's listen events, newest first: the acting user's by default.
+     *
+     *     Another user's listens are visible only when that user shares with the club.
      */
     get: operations['list_listen_events_listen_events__get'];
     put?: never;
     /**
      * Upsert Listen Events
-     * @description Upsert listen events.
+     * @description Upsert the acting user's listen events.
      *
      *     Duplicates (user, track, played_at) are returned without creating new rows.
      */
@@ -661,7 +694,7 @@ export interface paths {
     };
     /**
      * Get Listen Event
-     * @description Return a single listen event.
+     * @description Return a single listen event, if its owner's visibility allows.
      */
     get: operations['get_listen_event_listen_events__listen_event_id__get'];
     put?: never;
@@ -681,7 +714,7 @@ export interface paths {
     };
     /**
      * List Taste Profiles
-     * @description Return stored taste profiles for a user.
+     * @description Return stored taste profiles for a user, if their visibility allows.
      */
     get: operations['list_taste_profiles_users__user_id__taste_profiles__get'];
     put?: never;
@@ -706,6 +739,7 @@ export interface paths {
      * @description Enqueue a taste profile recomputation for the user.
      *
      *     Returns 202 with a job_id. Poll GET /jobs/{job_id}/status for progress.
+     *     Only the user themselves may recompute.
      */
     post: operations['recompute_taste_profile_users__user_id__taste_profiles_recompute_post'];
     delete?: never;
@@ -759,7 +793,7 @@ export interface paths {
     put?: never;
     /**
      * Connect Integration
-     * @description Return the authorization URL that starts linking ``provider`` for ``body.user_id``.
+     * @description Return the authorization URL that starts linking ``provider`` for the acting user.
      */
     post: operations['connect_integration_integrations__provider__connect_post'];
     delete?: never;
@@ -818,6 +852,9 @@ export interface paths {
      *
      *     Uses cosine similarity of audio-feature taste profiles when available,
      *     falls back to genre histogram overlap.
+     *
+     *     Only user A or user B may ask; both must be club members, and the other user must
+     *     share listening with the club. Anything else is not found.
      */
     get: operations['get_compatibility_users__user_a__compatibility__user_b__get'];
     put?: never;
@@ -839,7 +876,7 @@ export interface paths {
     put?: never;
     /**
      * Trigger Lastfm Ingest
-     * @description Enqueue a Last.fm scrobble ingest for the given user.
+     * @description Enqueue a Last.fm scrobble ingest for the acting user.
      */
     post: operations['trigger_lastfm_ingest_ingest_lastfm_post'];
     delete?: never;
@@ -879,7 +916,7 @@ export interface paths {
     };
     /**
      * Get Feed
-     * @description Return recent activity feed combining ratings, listens, and club events.
+     * @description Return recent club activity (ratings and winners) for an acting club member.
      */
     get: operations['get_feed_feed_get'];
     put?: never;
@@ -901,12 +938,12 @@ export interface paths {
     put?: never;
     /**
      * Follow User
-     * @description Create a follow relationship from user_id → target_id.
+     * @description Create a follow relationship from the acting user (user_id) → target_id.
      */
     post: operations['follow_user_users__user_id__follow__target_id__post'];
     /**
      * Unfollow User
-     * @description Remove a follow relationship from user_id → target_id.
+     * @description Remove a follow relationship from the acting user (user_id) → target_id.
      */
     delete: operations['unfollow_user_users__user_id__follow__target_id__delete'];
     options?: never;
@@ -923,7 +960,7 @@ export interface paths {
     };
     /**
      * List Followers
-     * @description Return users who follow user_id.
+     * @description Return users who follow user_id. Club members only.
      */
     get: operations['list_followers_users__user_id__followers_get'];
     put?: never;
@@ -943,7 +980,7 @@ export interface paths {
     };
     /**
      * List Following
-     * @description Return users that user_id follows.
+     * @description Return users that user_id follows. Club members only.
      */
     get: operations['list_following_users__user_id__following_get'];
     put?: never;
@@ -1064,15 +1101,17 @@ export interface components {
       message: string;
     };
     /**
+     * ClubRole
+     * @enum {string}
+     */
+    ClubRole: 'member' | 'admin';
+    /**
      * ConnectRequest
-     * @description Start linking an external account for a user.
+     * @description Start linking an external account for the acting user.
      */
     ConnectRequest: {
-      /**
-       * User Id
-       * Format: uuid
-       */
-      user_id: string;
+      /** User Id */
+      user_id?: string | null;
       /** Callback Url */
       callback_url: string;
     };
@@ -1204,11 +1243,8 @@ export interface components {
     };
     /** LastfmIngestRequest */
     LastfmIngestRequest: {
-      /**
-       * User Id
-       * Format: uuid
-       */
-      user_id: string;
+      /** User Id */
+      user_id?: string | null;
       /** Lastfm Username */
       lastfm_username: string;
       /** Since Ts */
@@ -1219,11 +1255,8 @@ export interface components {
      * @description Write schema: the only place credentials are accepted.
      */
     LinkedAccountCreate: {
-      /**
-       * User Id
-       * Format: uuid
-       */
-      user_id: string;
+      /** User Id */
+      user_id?: string | null;
       provider: components['schemas']['ProviderType'];
       /** Provider User Id */
       provider_user_id: string;
@@ -1271,11 +1304,8 @@ export interface components {
     };
     /** ListenEventCreate */
     ListenEventCreate: {
-      /**
-       * User Id
-       * Format: uuid
-       */
-      user_id: string;
+      /** User Id */
+      user_id?: string | null;
       /**
        * Track Id
        * Format: uuid
@@ -1333,6 +1363,22 @@ export interface components {
      * @enum {string}
      */
     ListenSource: 'spotify' | 'lastfm' | 'listenbrainz' | 'manual';
+    /**
+     * ListeningVisibility
+     * @description Who besides the owner may see a user's listening data (ADR 0009).
+     * @enum {string}
+     */
+    ListeningVisibility: 'private' | 'club';
+    /** MembershipRead */
+    MembershipRead: {
+      /** User Id */
+      user_id: string;
+      role: components['schemas']['ClubRole'];
+    };
+    /** MembershipUpdate */
+    MembershipUpdate: {
+      role: components['schemas']['ClubRole'];
+    };
     /** NominationCreate */
     NominationCreate: {
       /**
@@ -1340,11 +1386,8 @@ export interface components {
        * Format: uuid
        */
       week_id: string;
-      /**
-       * User Id
-       * Format: uuid
-       */
-      user_id: string;
+      /** User Id */
+      user_id?: string | null;
       /**
        * Album Id
        * Format: uuid
@@ -1477,11 +1520,8 @@ export interface components {
        * Format: uuid
        */
       week_id: string;
-      /**
-       * User Id
-       * Format: uuid
-       */
-      user_id: string;
+      /** User Id */
+      user_id?: string | null;
       /**
        * Album Id
        * Format: uuid
@@ -1691,6 +1731,8 @@ export interface components {
        * Format: uuid
        */
       id: string;
+      /** @default private */
+      listening_visibility: components['schemas']['ListeningVisibility'];
       /**
        * Created At
        * Format: date-time
@@ -1708,6 +1750,7 @@ export interface components {
       display_name?: string | null;
       /** Handle */
       handle?: string | null;
+      listening_visibility?: components['schemas']['ListeningVisibility'] | null;
     };
     /** ValidationError */
     ValidationError: {
@@ -1741,11 +1784,8 @@ export interface components {
        * Format: uuid
        */
       nomination_id: string;
-      /**
-       * User Id
-       * Format: uuid
-       */
-      user_id: string;
+      /** User Id */
+      user_id?: string | null;
       /** Rank */
       rank: number;
       /** Submitted At */
@@ -2852,6 +2892,70 @@ export interface operations {
       };
     };
   };
+  put_member_club_members_discord__discord_id__put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        discord_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MembershipUpdate'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MembershipRead'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  remove_member_club_members_discord__discord_id__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        discord_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
   list_nominations_nominations__get: {
     parameters: {
       query?: {
@@ -3431,9 +3535,9 @@ export interface operations {
   };
   get_recommendations_recommendations_get: {
     parameters: {
-      query: {
-        /** @description User ID for whom to fetch recommendations */
-        user_id: string;
+      query?: {
+        /** @description Must be the acting user when given. */
+        user_id?: string | null;
       };
       header?: never;
       path?: never;
@@ -3651,7 +3755,7 @@ export interface operations {
   get_feed_feed_get: {
     parameters: {
       query?: {
-        /** @description User ID for personalized feed */
+        /** @description Must be the acting user when given. */
         user_id?: string | null;
         /** @description Number of feed items to return */
         limit?: number;

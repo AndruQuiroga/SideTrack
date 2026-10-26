@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from sidetrack.club.models import Nomination, Vote, Week
 from sidetrack.db import get_db
-from sidetrack.identity import User
+from sidetrack.identity import Principal, User, auth, policy
 from sidetrack.schemas import VoteCreate, VoteRead
 
 router = APIRouter(tags=["votes"])
@@ -21,19 +21,20 @@ router = APIRouter(tags=["votes"])
 @router.get("/votes", response_model=list[VoteRead])
 async def list_votes(
     db: Session = Depends(get_db),
+    principal: Principal = Depends(policy(auth.CLUB_WRITE)),
     week_id: UUID | None = Query(None),
     user_id: UUID | None = Query(None),
     rank: int | None = Query(None),
     limit: int = Query(50, ge=1, le=500, description="Maximum number of votes to return."),
     offset: int = Query(0, ge=0, description="Number of votes to skip."),
 ) -> list[VoteRead]:
-    """Return votes, optionally filtered by week, user, or rank."""
+    """Return the acting member's own votes; ballots are private to the voter."""
 
-    query = select(Vote)
+    actor = auth.resolve_owner(principal, user_id)
+    auth.require_member(db, principal)
+    query = select(Vote).where(Vote.user_id == actor)
     if week_id is not None:
         query = query.where(Vote.week_id == week_id)
-    if user_id is not None:
-        query = query.where(Vote.user_id == user_id)
     if rank is not None:
         query = query.where(Vote.rank == rank)
 
@@ -42,11 +43,16 @@ async def list_votes(
 
 
 @router.get("/votes/{vote_id}", response_model=VoteRead)
-async def get_vote(vote_id: UUID, db: Session = Depends(get_db)) -> VoteRead:
-    """Return a single vote by ID."""
+async def get_vote(
+    vote_id: UUID,
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(policy(auth.CLUB_WRITE)),
+) -> VoteRead:
+    """Return one of the acting member's own votes; anyone else's is not found."""
 
+    actor = principal.require_actor()
     vote = db.get(Vote, vote_id)
-    if not vote:
+    if not vote or vote.user_id != actor:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vote not found.")
     return VoteRead.model_validate(vote)
 
@@ -60,15 +66,19 @@ async def create_week_vote(
     week_id: UUID,
     payload: VoteCreate,
     db: Session = Depends(get_db),
+    principal: Principal = Depends(policy(auth.CLUB_WRITE)),
 ) -> VoteRead:
-    """Submit a vote for a nomination in a week. Returns 409 if the user has already
-    voted with the same rank for this week."""
+    """Submit the acting member's vote for a nomination in a week. Returns 409 if they
+    have already voted with the same rank for this week."""
+
+    user_id = auth.resolve_owner(principal, payload.user_id)
+    auth.require_member(db, principal)
 
     week = db.get(Week, week_id)
     if not week:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Week not found.")
 
-    if not db.get(User, payload.user_id):
+    if not db.get(User, user_id):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found.")
 
     nomination = db.get(Nomination, payload.nomination_id)
@@ -89,7 +99,7 @@ async def create_week_vote(
     existing = db.execute(
         select(Vote).where(
             Vote.week_id == week_id,
-            Vote.user_id == payload.user_id,
+            Vote.user_id == user_id,
             Vote.rank == payload.rank,
         )
     ).scalar_one_or_none()
@@ -102,7 +112,7 @@ async def create_week_vote(
     vote = Vote(
         week_id=week_id,
         nomination_id=payload.nomination_id,
-        user_id=payload.user_id,
+        user_id=user_id,
         rank=payload.rank,
         submitted_at=payload.submitted_at or datetime.now(UTC),
     )

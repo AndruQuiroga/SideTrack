@@ -26,8 +26,27 @@ def pending_event(db):
     return db.scalar(select(Notification))
 
 
+@pytest.fixture
+def client(bot_client):
+    """Delivery belongs to the bot acting as itself (club/membership-access)."""
+    return bot_client
+
+
 def test_requires_service_auth(anon_client, pending_event):
     assert anon_client.post("/club/notifications/claim").status_code == 401
+
+
+def test_web_cannot_claim(app, db, pending_event):
+    from fastapi.testclient import TestClient
+
+    from .conftest import WEB
+
+    with TestClient(app, headers=WEB) as web:
+        response = web.post("/club/notifications/claim")
+    assert response.status_code == 403
+    assert response.json()["error"] == "forbidden"
+    db.refresh(pending_event)
+    assert pending_event.token is None
 
 
 def test_claim_ack_and_stale_token(client, db, pending_event):

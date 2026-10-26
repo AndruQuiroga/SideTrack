@@ -74,8 +74,8 @@ For writes made on behalf of a user, the API SHALL record the acting user as the
 - **THEN** the API responds 403 and no vote is stored
 
 #### Scenario: Omitted user_id
-- **WHEN** the web client acts for user U and posts a rating with no `user_id`
-- **THEN** the rating is stored for user U
+- **WHEN** the web client acts for user U and posts a nomination with no `user_id`
+- **THEN** the nomination is stored for user U
 
 ### Requirement: Every route declares an access policy
 The API SHALL deny any route that has no declared access policy, and it SHALL NOT start when a registered route other than the public routes has no policy.

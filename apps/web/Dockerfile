@@ -17,11 +17,10 @@ COPY packages/api-client/package.json packages/api-client/package.json
 RUN pnpm install --ignore-scripts --frozen-lockfile
 
 FROM deps AS build
-# Inlined into the browser bundle at build time: the public API origin.
-ARG NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+# No API URL is built in: browsers never call the API (ADR 0009). The server reads
+# SIDETRACK_API_BASE_URL at runtime.
 ENV NODE_ENV=production \
-    NEXT_TELEMETRY_DISABLED=1 \
-    NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
+    NEXT_TELEMETRY_DISABLED=1
 COPY . .
 RUN pnpm --filter @sidetrack/web... run build \
   && pnpm prune --prod

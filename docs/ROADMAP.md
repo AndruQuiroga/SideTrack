@@ -73,12 +73,30 @@ later work. Real OAuth verification and first rack deployment remain deferred.
 
 ## Phase 3: per-user API authorization
 
-ADR 0009 (proposed) decides the model: the web server holds user sessions; the API
-trusts per-client tokens (web, bot) that name the acting user with
-`X-Sidetrack-Act-As`. GETs stop being public; club data is visible to club members,
-personal listening data to its owner unless they share it with the club, and ballots
-to the voter only. `add-per-user-authorization` holds the proposal, four behavior
-specs, design and tasks; it passes strict OpenSpec validation. Implementation has
-not started and waits for Phase 2 to merge, because both edit the same routes, the
-generated client and the Alembic chain; its migration is `0008_per_user_authorization`.
-Encrypting stored provider tokens at rest is separate Phase 3 work.
+ADR 0009 (accepted) sets the model. The web server holds user sessions, and the
+API trusts per-client tokens (web, bot) that name the acting user with
+`X-Sidetrack-Act-As`. GETs are no longer public. Club data is visible to club
+members, personal listening data to its owner unless they share it with the club,
+and ballots only to the voter.
+
+`add-per-user-authorization` is implemented on `codex/phase-3-per-user-auth`
+(19/19 tasks):
+
+- Migration `0008_per_user_authorization` adds `club_members`,
+  `users.listening_visibility` and job submitters.
+- Every route declares a policy, listed in AUTHORIZATION.md, and routes without
+  one are refused at startup.
+- The bot acts for each interaction's Discord user and records membership as
+  itself.
+- The website calls the API only from server code, for the session user.
+
+Verification on 2026-10-26: the Python suite on migrated Postgres, 15 HTTP checks
+against a live API, and the TypeScript lint, build and test runs.
+
+Still open:
+
+- The owner hasn't merged or deployed the change.
+- Real Discord sign-in hasn't been verified.
+- Two crashes found on main are recorded in `docs/issues/metadata-alias-crashes.md`
+  for a separate change.
+- Encrypting stored provider tokens at rest is separate Phase 3 work.

@@ -32,6 +32,10 @@ class BackgroundJob(Base):
     attempts: Mapped[int] = mapped_column(Integer, default=0)
     result: Mapped[dict[str, Any] | None] = mapped_column(JSON)
     error: Mapped[str | None] = mapped_column(String(64))
+    # Only this user may poll the job (ADR 0009); null for jobs no user submitted.
+    requested_by_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 

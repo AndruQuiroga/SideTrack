@@ -7,6 +7,8 @@ import pytest
 from sidetrack.identity import LinkedAccount, User
 from sidetrack.types import ProviderType
 
+from .conftest import as_user
+
 pytestmark = pytest.mark.unit
 
 SESSION_KEY = "lastfm-session-key-4f1c9a"
@@ -32,7 +34,7 @@ def test_list_omits_credentials(client, db, user):
     )
     db.flush()
 
-    response = client.get(f"/users/{user.id}/linked-accounts")
+    response = client.get(f"/users/{user.id}/linked-accounts", headers=as_user(user))
 
     assert response.status_code == 200
     assert SESSION_KEY not in response.text
@@ -55,7 +57,7 @@ def test_list_reports_missing_credentials(client, db, user):
     )
     db.flush()
 
-    [item] = client.get(f"/users/{user.id}/linked-accounts").json()
+    [item] = client.get(f"/users/{user.id}/linked-accounts", headers=as_user(user)).json()
 
     assert item["has_credentials"] is False
 
@@ -70,6 +72,7 @@ def test_create_response_omits_credentials(client, user):
             "access_token": SESSION_KEY,
             "refresh_token": "refresh-secret-77",
         },
+        headers=as_user(user),
     )
 
     assert response.status_code == 201

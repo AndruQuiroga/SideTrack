@@ -1,7 +1,7 @@
 import { RatingRead } from '@sidetrack/api-client';
 
 import { getDiscordGuildId } from '../lib/config';
-import { WeekDetailWithRatings } from '../lib/api/weeks';
+import type { WeekDetailWithRatings } from '../lib/api/weeks';
 import { Card, Pill, SectionHeading } from './ui';
 import { PageShell } from './page-shell';
 import { RatingBadge } from './rating-badge';

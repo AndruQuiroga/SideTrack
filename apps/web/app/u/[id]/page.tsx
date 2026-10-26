@@ -1,9 +1,11 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ApiError, ListeningTimelinePoint } from '@sidetrack/api-client';
+import { ListeningTimelinePoint } from '@sidetrack/api-client';
 
-import { fetchProfileForServer, type ProfilePageData } from '../../lib/api/profile';
-import { Card, Pill, SectionHeading, Unavailable } from '../../components/ui';
+import { fetchProfileForServer } from '../../lib/api/profile';
+import { loadAs } from '../../lib/server-api';
+import { sessionUserId } from '../../lib/session';
+import { AccessNotice, Card, Pill, SectionHeading } from '../../components/ui';
 import { TasteRadar } from '../../components/taste-radar';
 import { PageShell } from '../../components/page-shell';
 
@@ -37,20 +39,19 @@ function formatListenTime(input?: string) {
 }
 
 export default async function ProfilePage({ params }: ProfilePageProps) {
-  let profile: ProfilePageData;
-  try {
-    profile = await fetchProfileForServer(params.id);
-  } catch (error) {
-    if (error instanceof ApiError && (error.status === 404 || error.status === 422)) {
-      notFound();
-    }
-    console.error('Profile unavailable', error);
+  // The API call acts for the session user, never for the user named in the URL.
+  const result = await loadAs(await sessionUserId(), (api) =>
+    fetchProfileForServer(api, params.id),
+  );
+  if (result.state === 'not-found') notFound();
+  if (result.state !== 'ok') {
     return (
       <PageShell title="Profile" accent="Profile">
-        <Unavailable what="profile" />
+        <AccessNotice state={result.state} what="profile" audience="its owner and club members" />
       </PageShell>
     );
   }
+  const profile = result.data;
 
   return (
     <PageShell

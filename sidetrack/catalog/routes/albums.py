@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from sidetrack.catalog.metadata import enrich_album, resolve_album
 from sidetrack.catalog.models import Album
 from sidetrack.db import get_db
+from sidetrack.identity import Principal, auth, policy
 from sidetrack.schemas import AlbumCreate, AlbumRead, AlbumUpdate
 
 router = APIRouter(prefix="/albums", tags=["albums"])
@@ -24,6 +25,11 @@ class AlbumResolveRequest(BaseModel):
     year: int | None = None
 
 
+def _require_member_actor(db: Session, principal: Principal) -> None:
+    principal.require_actor()
+    auth.require_member(db, principal)
+
+
 def _normalize(text: str | None) -> str | None:
     return text.lower().strip() if text else None
 
@@ -31,6 +37,7 @@ def _normalize(text: str | None) -> str | None:
 @router.get("/search", response_model=list[AlbumRead])
 async def search_albums(
     db: Session = Depends(get_db),
+    _: Principal = Depends(policy(auth.CATALOG_READ)),
     title: str | None = Query(None, description="Case-insensitive match on album title."),
     artist_name: str | None = Query(None, description="Case-insensitive match on artist name."),
     release_year: int | None = Query(None, description="Release year to match."),
@@ -58,7 +65,11 @@ async def search_albums(
 
 
 @router.get("/{album_id}", response_model=AlbumRead)
-async def get_album(album_id: UUID, db: Session = Depends(get_db)) -> AlbumRead:
+async def get_album(
+    album_id: UUID,
+    db: Session = Depends(get_db),
+    _: Principal = Depends(policy(auth.CATALOG_READ)),
+) -> AlbumRead:
     """Return a single album by ID."""
 
     album = db.get(Album, album_id)
@@ -68,8 +79,14 @@ async def get_album(album_id: UUID, db: Session = Depends(get_db)) -> AlbumRead:
 
 
 @router.post("/", response_model=AlbumRead, status_code=status.HTTP_201_CREATED)
-async def create_album(payload: AlbumCreate, db: Session = Depends(get_db)) -> AlbumRead:
-    """Create an album; reuse an existing record if it matches title/artist/year."""
+async def create_album(
+    payload: AlbumCreate,
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(policy(auth.CATALOG_WRITE)),
+) -> AlbumRead:
+    """Create an album; reuse an existing record if it matches title/artist/year. Members only."""
+
+    _require_member_actor(db, principal)
 
     normalized_title = _normalize(payload.title)
     normalized_artist = _normalize(payload.artist_name)
@@ -103,13 +120,15 @@ async def create_album(payload: AlbumCreate, db: Session = Depends(get_db)) -> A
 async def resolve_album_endpoint(
     payload: AlbumResolveRequest,
     db: Session = Depends(get_db),
+    principal: Principal = Depends(policy(auth.CATALOG_WRITE)),
 ) -> AlbumRead:
     """Find or create an album, enriching it with MusicBrainz, Cover Art Archive,
     and Spotify metadata.
 
     This is the primary endpoint for the nomination flow. It returns a fully-populated
-    album with cover art, genres, release year, and external IDs.
+    album with cover art, genres, release year, and external IDs. Members only.
     """
+    _require_member_actor(db, principal)
     album = resolve_album(
         db,
         title=payload.title,
@@ -124,8 +143,11 @@ async def update_album(
     album_id: UUID,
     payload: AlbumUpdate,
     db: Session = Depends(get_db),
+    principal: Principal = Depends(policy(auth.CATALOG_WRITE)),
 ) -> AlbumRead:
-    """Update an album's metadata fields."""
+    """Update an album's metadata fields. Club admins only."""
+
+    auth.require_admin(db, principal)
 
     album = db.get(Album, album_id)
     if not album:
@@ -152,8 +174,11 @@ async def update_album(
 async def enrich_album_endpoint(
     album_id: UUID,
     db: Session = Depends(get_db),
+    principal: Principal = Depends(policy(auth.CATALOG_WRITE)),
 ) -> AlbumRead:
-    """Re-run enrichment on an existing album to fill missing metadata."""
+    """Re-run enrichment on an existing album to fill missing metadata. Members only."""
+
+    _require_member_actor(db, principal)
 
     album = db.get(Album, album_id)
     if not album:

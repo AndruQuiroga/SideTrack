@@ -5,7 +5,6 @@ Run with ``uvicorn sidetrack.api.main:create_app --factory``.
 
 from __future__ import annotations
 
-import hmac
 import logging
 import re
 import time
@@ -13,27 +12,23 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor
 
 from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
 from sidetrack.api.routes import register_routes
 from sidetrack.config import get_settings
 from sidetrack.db import get_engine, init_engine
+from sidetrack.identity.auth import (
+    PUBLIC_ROUTES,
+    AuthzError,
+    check_route_policies,
+    identify_client,
+    validate_client_tokens,
+)
 
 logger = logging.getLogger(__name__)
 
-_MUTATING_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
-# Writes that carry their own authorization instead of the service token.
-# The Last.fm callback is protected by its signed state value.
-PUBLIC_WRITE_PATHS = frozenset({"/integrations/lastfm/callback"})
 _REQUEST_ID_PATTERN = re.compile(r"^[A-Za-z0-9-]{1,64}$")
-
-
-def _token_matches(header: str, token: str) -> bool:
-    if not header.startswith("Bearer "):
-        return False
-    return hmac.compare_digest(header[7:].encode(), token.encode())
 
 
 def create_app() -> FastAPI:
@@ -46,37 +41,26 @@ def create_app() -> FastAPI:
         settings.sidetrack_env,
         settings.redacted_database(),
     )
-    token = settings.api_token
-    if not token:
-        if not settings.is_development:
-            raise RuntimeError(
-                "SIDETRACK_API_TOKEN is required. Set it, or set SIDETRACK_ENV=development "
-                "for local work."
-            )
-        logger.warning("SIDETRACK_API_TOKEN is not set: API writes are unauthenticated.")
+    tokens = settings.client_tokens()
+    unconfigured = validate_client_tokens(tokens, development=settings.is_development)
+    if unconfigured:
+        logger.warning("No API token for client(s) %s: they cannot call the API.", unconfigured)
 
     init_engine(settings.database_url)
 
+    # No CORS middleware: browsers never call the API directly (ADR 0009).
     app = FastAPI(title=settings.app_name, version="0.1.0")
-
-    # CORS â€” must be added before routes
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.cors_origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
 
     @app.middleware("http")
     async def auth_middleware(request: Request, call_next):
-        """Require the service bearer token on writes when a token is configured."""
-        if (
-            token
-            and request.method in _MUTATING_METHODS
-            and request.url.path not in PUBLIC_WRITE_PATHS
-            and not _token_matches(request.headers.get("Authorization", ""), token)
-        ):
+        """Identify the client by its bearer token; only public routes skip this."""
+        request.state.client = identify_client(request.headers.get("Authorization", ""), tokens)
+        request.state.actor = None
+        if request.state.client is None and (request.method, request.url.path) not in PUBLIC_ROUTES:
+            logger.info(
+                "authz denied client=- reason=unauthorized request_id=%s",
+                request.state.request_id,
+            )
             return JSONResponse(
                 status_code=401,
                 content={"error": "unauthorized", "detail": "Invalid or missing bearer token."},
@@ -89,11 +73,13 @@ def create_app() -> FastAPI:
         response = await call_next(request)
         duration_ms = int((time.monotonic() - start) * 1000)
         logger.info(
-            "%s %s %s %dms request_id=%s",
+            "%s %s %s %dms client=%s actor=%s request_id=%s",
             request.method,
             request.url.path,
             response.status_code,
             duration_ms,
+            getattr(request.state, "client", None) or "-",
+            getattr(request.state, "actor", None) or "-",
             request.state.request_id,
         )
         return response
@@ -107,6 +93,19 @@ def create_app() -> FastAPI:
         response = await call_next(request)
         response.headers["X-Request-ID"] = request_id
         return response
+
+    @app.exception_handler(AuthzError)
+    async def authz_error_handler(request: Request, exc: AuthzError):
+        logger.info(
+            "authz denied client=%s actor=%s reason=%s request_id=%s",
+            getattr(request.state, "client", None) or "-",
+            getattr(request.state, "actor", None) or "-",
+            exc.error,
+            getattr(request.state, "request_id", "-"),
+        )
+        return JSONResponse(
+            status_code=exc.status_code, content={"error": exc.error, "detail": exc.detail}
+        )
 
     @app.exception_handler(Exception)
     async def unhandled_exception_handler(request: Request, exc: Exception):
@@ -144,6 +143,7 @@ def create_app() -> FastAPI:
             content={"status": "ok" if ok else "degraded", "details": {"database": database}},
         )
 
+    check_route_policies(app)
     return app
 
 

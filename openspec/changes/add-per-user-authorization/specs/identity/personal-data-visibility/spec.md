@@ -18,11 +18,15 @@ Every user SHALL have a `listening_visibility` of `private` or `club`, defaultin
 - **THEN** the API responds 403 and V's setting is unchanged
 
 ### Requirement: Linked accounts are visible only to their owner
-Linked accounts SHALL be listed, created or removed only by the user they belong to, whatever their visibility setting. Creating users and looking users up by provider ID SHALL require the provisioning scope held by the web and bot clients acting as themselves.
+Linked accounts SHALL be listed, created or removed only by the user they belong to, whatever their visibility setting. Creating users, looking users up by provider ID, and attaching a first Discord account to a user who has none SHALL require the provisioning scope held by the web and bot clients acting as themselves.
 
 #### Scenario: Another member reads linked accounts
 - **WHEN** member U requests `GET /users/V/linked-accounts`
 - **THEN** the API responds 404
+
+#### Scenario: Provisioning attaches only a first Discord account
+- **WHEN** the bot client, acting as itself, links a second Discord account to a user who already has one
+- **THEN** the API responds 403 and nothing is linked
 
 #### Scenario: Provider lookup without the provisioning scope
 - **WHEN** the web client acting for a user calls `GET /users/lookup/by-provider/discord/{id}`

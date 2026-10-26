@@ -1,7 +1,7 @@
 """Integration endpoints for linking external accounts.
 
-Last.fm linking: a trusted client (the web server, holding the service token)
-calls ``POST /integrations/lastfm/connect`` for a user and receives a Last.fm
+Last.fm linking: the web server, acting for the signed-in user (ADR 0009),
+calls ``POST /integrations/lastfm/connect`` and receives a Last.fm
 authorization URL. Its callback carries a signed ``state`` naming that user.
 The browser then posts Last.fm's ``token`` with that ``state`` to
 ``POST /integrations/lastfm/callback``, which is public: ``state`` is its
@@ -25,6 +25,8 @@ from sqlalchemy.orm import Session
 from sidetrack.config import get_settings
 from sidetrack.db import get_db
 from sidetrack.external import lastfm
+from sidetrack.identity import auth
+from sidetrack.identity.auth import Principal, policy
 from sidetrack.identity.link_state import InvalidLinkState, sign_link_state, verify_link_state
 from sidetrack.identity.models import LinkedAccount, User
 from sidetrack.types import ProviderType
@@ -39,9 +41,10 @@ LASTFM_AUTH_URL = "https://www.last.fm/api/auth/"
 
 
 class ConnectRequest(BaseModel):
-    """Start linking an external account for a user."""
+    """Start linking an external account for the acting user."""
 
-    user_id: UUID
+    # Deprecated: the user is the acting user; a different value is refused.
+    user_id: UUID | None = None
     callback_url: str
 
 
@@ -90,8 +93,11 @@ def connect_integration(
     ],
     body: ConnectRequest,
     db: Session = Depends(get_db),
+    principal: Principal = Depends(policy(auth.SELF)),
 ) -> ConnectResponse:
-    """Return the authorization URL that starts linking ``provider`` for ``body.user_id``."""
+    """Return the authorization URL that starts linking ``provider`` for the acting user."""
+
+    user_id = auth.resolve_owner(principal, body.user_id)
 
     if provider != "lastfm":
         raise HTTPException(
@@ -112,10 +118,10 @@ def connect_integration(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="callback_url must be an http(s) URL",
         )
-    if not db.get(User, body.user_id):
+    if not db.get(User, user_id):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
-    state = sign_link_state(body.user_id, secret)
+    state = sign_link_state(user_id, secret)
     callback = _with_query_param(body.callback_url, "state", state)
     params = urllib.parse.urlencode({"api_key": settings.lastfm_api_key, "cb": callback})
     return ConnectResponse(status="ok", url=f"{LASTFM_AUTH_URL}?{params}")

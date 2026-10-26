@@ -1,4 +1,4 @@
-"""Service-authenticated delivery operations; all mutations require the API token."""
+"""Bot-only delivery operations: the bot client acting as itself (ADR 0009)."""
 
 from uuid import UUID
 
@@ -8,8 +8,13 @@ from sqlalchemy.orm import Session
 
 from sidetrack.club.notifications import claim_notifications, finish_notification
 from sidetrack.db import get_db
+from sidetrack.identity import auth, policy
 
-router = APIRouter(prefix="/club/notifications", tags=["club-notifications"])
+router = APIRouter(
+    prefix="/club/notifications",
+    tags=["club-notifications"],
+    dependencies=[Depends(policy(auth.CLUB_NOTIFICATIONS))],
+)
 
 
 class DeliveryEvent(BaseModel):

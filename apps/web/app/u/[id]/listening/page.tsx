@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import type { RecentListen } from '@sidetrack/api-client';
 
-import { createWebApiClient } from '../../../lib/api/client';
+import { loadAs } from '../../../lib/server-api';
+import { sessionUserId } from '../../../lib/session';
 import { PageShell } from '../../../components/page-shell';
-import { Card, SectionHeading } from '../../../components/ui';
+import { AccessNotice, Card, SectionHeading } from '../../../components/ui';
 
 export const metadata = { title: 'Listening History — Sidetrack' };
 
@@ -42,18 +43,6 @@ function groupByDay(listens: RecentListen[]): { date: string; items: RecentListe
   return Array.from(map.entries()).map(([date, items]) => ({ date, items }));
 }
 
-async function fetchListens(userId: string, page: number): Promise<RecentListen[]> {
-  const client = createWebApiClient();
-  try {
-    return await client.getUserRecentListens(userId, {
-      limit: PAGE_SIZE,
-      offset: page * PAGE_SIZE,
-    });
-  } catch {
-    return [];
-  }
-}
-
 interface Props {
   params: { id: string };
   searchParams: { page?: string };
@@ -61,11 +50,22 @@ interface Props {
 
 export default async function ListeningHistoryPage({ params, searchParams }: Props) {
   const page = Math.max(0, parseInt(searchParams.page ?? '0', 10) || 0);
-  const listens = await fetchListens(params.id, page);
-
-  if (page === 0 && listens.length === 0) {
-    // Check if user exists at all — if API errored, still show empty state
+  // Acts for the session user; the API decides whether they may see this history.
+  const result = await loadAs(await sessionUserId(), (api) =>
+    api.getUserRecentListens(params.id, { limit: PAGE_SIZE, offset: page * PAGE_SIZE }),
+  );
+  if (result.state !== 'ok') {
+    return (
+      <PageShell title="Listening History" accent="History">
+        <AccessNotice
+          state={result.state === 'not-found' ? 'forbidden' : result.state}
+          what="listening history"
+          audience="its owner, or club members when the owner shares it"
+        />
+      </PageShell>
+    );
   }
+  const listens: RecentListen[] = result.data;
 
   const groups = groupByDay(listens);
   const hasPrev = page > 0;

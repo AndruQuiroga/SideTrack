@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from sidetrack.catalog import Track
 from sidetrack.db import get_db
-from sidetrack.identity import User
+from sidetrack.identity import Principal, User, auth, policy
 from sidetrack.listening.models import ListenEvent
 from sidetrack.schemas import ListenEventCreate, ListenEventRead
 from sidetrack.types import ListenSource
@@ -43,6 +43,7 @@ def _ensure_user_and_track(db: Session, user_id: UUID, track_id: UUID) -> None:
 @router.get("/", response_model=list[ListenEventRead])
 async def list_listen_events(
     db: Session = Depends(get_db),
+    principal: Principal = Depends(policy(auth.PERSONAL_READ)),
     user_id: UUID | None = Query(None, description="Filter listen events by user."),
     source: ListenSource | None = Query(None, description="Filter by listen source."),
     played_after: datetime | None = Query(
@@ -53,11 +54,14 @@ async def list_listen_events(
     ),
     limit: int = Query(100, ge=1, le=500, description="Maximum number of events to return."),
 ) -> list[ListenEventRead]:
-    """Return persisted listen events, newest first."""
+    """Return one user's listen events, newest first: the acting user's by default.
 
-    query = select(ListenEvent)
-    if user_id:
-        query = query.where(ListenEvent.user_id == user_id)
+    Another user's listens are visible only when that user shares with the club.
+    """
+
+    owner = user_id or principal.require_actor()
+    auth.require_personal_view(db, principal, owner)
+    query = select(ListenEvent).where(ListenEvent.user_id == owner)
     if source:
         query = query.where(ListenEvent.source == source)
     if played_after:
@@ -70,20 +74,26 @@ async def list_listen_events(
 
 
 @router.get("/{listen_event_id}", response_model=ListenEventRead)
-async def get_listen_event(listen_event_id: UUID, db: Session = Depends(get_db)) -> ListenEventRead:
-    """Return a single listen event."""
+async def get_listen_event(
+    listen_event_id: UUID,
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(policy(auth.PERSONAL_READ)),
+) -> ListenEventRead:
+    """Return a single listen event, if its owner's visibility allows."""
 
     listen = db.get(ListenEvent, listen_event_id)
-    if not listen:
+    if not listen or not auth.can_view_personal(db, principal, listen.user_id):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Listen event not found")
     return listen
 
 
 @router.post("/", response_model=list[ListenEventRead], status_code=status.HTTP_201_CREATED)
 async def upsert_listen_events(
-    payload: ListenEventsPayload, db: Session = Depends(get_db)
+    payload: ListenEventsPayload,
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(policy(auth.PERSONAL_WRITE)),
 ) -> list[ListenEventRead]:
-    """Upsert listen events.
+    """Upsert the acting user's listen events.
 
     Duplicates (user, track, played_at) are returned without creating new rows.
     """
@@ -91,9 +101,10 @@ async def upsert_listen_events(
     ingested_at = datetime.now(UTC)
     stored: list[ListenEvent] = []
 
-    for listen in payload.listens:
-        _ensure_user_and_track(db, listen.user_id, listen.track_id)
-        existing = _find_existing(db, listen.user_id, listen.track_id, listen.played_at)
+    owners = [auth.resolve_owner(principal, listen.user_id) for listen in payload.listens]
+    for listen, owner in zip(payload.listens, owners, strict=True):
+        _ensure_user_and_track(db, owner, listen.track_id)
+        existing = _find_existing(db, owner, listen.track_id, listen.played_at)
         if existing:
             stored.append(existing)
             continue
@@ -101,6 +112,7 @@ async def upsert_listen_events(
         listen_data = listen.model_dump()
         listen_data["metadata_"] = listen_data.pop("metadata", listen_data.pop("metadata_", None))
         listen_data["ingested_at"] = ingested_at
+        listen_data["user_id"] = owner
         record = ListenEvent(**listen_data)
         db.add(record)
         stored.append(record)

@@ -13,7 +13,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from sidetrack.types import ListenSource, ProviderType
+from sidetrack.types import ListeningVisibility, ListenSource, ProviderType
 
 
 class OrmSchema(BaseModel):
@@ -34,6 +34,7 @@ class UserCreate(UserBase):
 
 class UserRead(UserBase):
     id: UUID
+    listening_visibility: ListeningVisibility = ListeningVisibility.PRIVATE
     created_at: datetime
     updated_at: datetime
 
@@ -41,6 +42,7 @@ class UserRead(UserBase):
 class UserUpdate(OrmSchema):
     display_name: str | None = None
     handle: str | None = None
+    listening_visibility: ListeningVisibility | None = None
 
 
 class LinkedAccountBase(OrmSchema):
@@ -56,6 +58,8 @@ class LinkedAccountBase(OrmSchema):
 class LinkedAccountCreate(LinkedAccountBase):
     """Write schema: the only place credentials are accepted."""
 
+    # The user comes from the request path; a body value is ignored.
+    user_id: UUID | None = None  # type: ignore[assignment]
     access_token: str | None = None
     refresh_token: str | None = None
 
@@ -176,7 +180,8 @@ class NominationBase(OrmSchema):
 
 
 class NominationCreate(NominationBase):
-    pass
+    # Deprecated: the owner is the acting user; a different value is refused (ADR 0009).
+    user_id: UUID | None = None  # type: ignore[assignment]
 
 
 class NominationRead(NominationBase):
@@ -218,7 +223,8 @@ class VoteBase(OrmSchema):
 
 
 class VoteCreate(VoteBase):
-    pass
+    # Deprecated: the owner is the acting user; a different value is refused (ADR 0009).
+    user_id: UUID | None = None  # type: ignore[assignment]
 
 
 class VoteRead(VoteBase):
@@ -238,7 +244,8 @@ class RatingBase(OrmSchema):
 
 
 class RatingCreate(RatingBase):
-    pass
+    # Deprecated: the owner is the acting user; a different value is refused (ADR 0009).
+    user_id: UUID | None = None  # type: ignore[assignment]
 
 
 class RatingRead(RatingBase):
@@ -315,7 +322,8 @@ class ListenEventBase(OrmSchema):
 
 
 class ListenEventCreate(ListenEventBase):
-    pass
+    # Deprecated: the owner is the acting user; a different value is refused (ADR 0009).
+    user_id: UUID | None = None  # type: ignore[assignment]
 
 
 class ListenEventRead(ListenEventBase):

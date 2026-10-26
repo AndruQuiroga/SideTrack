@@ -1,4 +1,5 @@
-import { getApiBaseUrl } from '../config';
+/** Server-only discovery data, fetched for the session user. */
+import { apiRequest } from '../server-api';
 
 export type SearchResult = {
   users: Array<{ id: string; display_name: string; handle?: string }>;
@@ -6,12 +7,8 @@ export type SearchResult = {
   tracks: Array<{ id: string; title: string; artist_name: string; album_title?: string }>;
 };
 
-export async function webSearch(query: string): Promise<SearchResult> {
-  const res = await fetch(`${getApiBaseUrl()}/search?q=${encodeURIComponent(query)}`, {
-    cache: 'no-store',
-  });
-  if (!res.ok) throw new Error(`Search failed with status ${res.status}`);
-  return (await res.json()) as SearchResult;
+export async function webSearch(sessionUserId: string, query: string): Promise<SearchResult> {
+  return apiRequest<SearchResult>(sessionUserId, `/search?q=${encodeURIComponent(query)}`);
 }
 
 export type RecommendationItem =
@@ -25,27 +22,9 @@ export type RecommendationItem =
       reason?: string;
     };
 
-export async function fetchRecommendations(userId: string): Promise<RecommendationItem[]> {
-  const res = await fetch(
-    `${getApiBaseUrl()}/recommendations?user_id=${encodeURIComponent(userId)}`,
-    {
-      cache: 'no-store',
-    },
-  );
-  if (!res.ok) throw new Error(`Recommendations failed with status ${res.status}`);
-  return (await res.json()) as RecommendationItem[];
-}
-
-/**
- * Start linking an external account for the signed-in user.
- *
- * Goes through the web server's /api/link route, which identifies the user from the
- * session and holds the API token; the browser never names a user ID.
- */
-export async function requestIntegrationConnect(provider: 'spotify' | 'lastfm' | 'discord') {
-  const res = await fetch(`/api/link/${provider}`, { method: 'POST' });
-  if (!res.ok) throw new Error(`Connect ${provider} failed with status ${res.status}`);
-  return (await res.json()) as { status: string; url?: string };
+/** The session user's own recommendations; the API derives the user from the actor. */
+export async function fetchRecommendations(sessionUserId: string): Promise<RecommendationItem[]> {
+  return apiRequest<RecommendationItem[]>(sessionUserId, '/recommendations');
 }
 
 export type TrendingItem = {
@@ -57,8 +36,6 @@ export type TrendingItem = {
   count?: number;
 };
 
-export async function fetchTrending(): Promise<TrendingItem[]> {
-  const res = await fetch(`${getApiBaseUrl()}/trending`, { cache: 'no-store' });
-  if (!res.ok) throw new Error(`Trending failed with status ${res.status}`);
-  return (await res.json()) as TrendingItem[];
+export async function fetchTrending(sessionUserId: string): Promise<TrendingItem[]> {
+  return apiRequest<TrendingItem[]>(sessionUserId, '/trending');
 }

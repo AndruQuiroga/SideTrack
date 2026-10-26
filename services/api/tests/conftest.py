@@ -9,6 +9,7 @@ testcontainers instance is started for the session.
 from __future__ import annotations
 
 import os
+import uuid
 from pathlib import Path
 
 import pytest
@@ -19,12 +20,19 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from sidetrack.api.main import create_app
+from sidetrack.club import upsert_member
 from sidetrack.config import get_settings
 from sidetrack.db import get_db
+from sidetrack.identity import LinkedAccount, User
+from sidetrack.identity.auth import ACT_AS_HEADER
+from sidetrack.types import ClubRole, ProviderType
 
 ROOT = Path(__file__).resolve().parents[3]
 TEST_DB_IMAGE = "pgvector/pgvector:pg16"
-TEST_API_TOKEN = "test-api-token"
+TEST_WEB_TOKEN = "test-web-token"
+TEST_BOT_TOKEN = "test-bot-token"
+WEB = {"Authorization": f"Bearer {TEST_WEB_TOKEN}"}
+BOT = {"Authorization": f"Bearer {TEST_BOT_TOKEN}"}
 TEST_LINK_SECRET = "test-link-secret"
 
 
@@ -32,7 +40,9 @@ TEST_LINK_SECRET = "test-link-secret"
 def api_settings(monkeypatch):
     """Pin settings so tests never depend on a developer's .env file."""
     monkeypatch.setenv("SIDETRACK_ENV", "production")
-    monkeypatch.setenv("SIDETRACK_API_TOKEN", TEST_API_TOKEN)
+    monkeypatch.setenv("SIDETRACK_WEB_API_TOKEN", TEST_WEB_TOKEN)
+    monkeypatch.setenv("SIDETRACK_BOT_API_TOKEN", TEST_BOT_TOKEN)
+    monkeypatch.delenv("SIDETRACK_API_TOKEN", raising=False)
     monkeypatch.setenv("SIDETRACK_LINK_SECRET", TEST_LINK_SECRET)
     monkeypatch.setenv("LASTFM_API_KEY", "test-lastfm-key")
     monkeypatch.setenv("LASTFM_API_SECRET", "test-lastfm-secret")
@@ -126,11 +136,65 @@ def app(db):
     return app
 
 
+def as_user(user) -> dict[str, str]:
+    """Headers for the web client acting for ``user`` (a User or its ID)."""
+    user_id = getattr(user, "id", user)
+    return {ACT_AS_HEADER: f"user:{user_id}"}
+
+
+def as_discord(discord_id: str) -> dict[str, str]:
+    """Headers for the bot client acting for a Discord user."""
+    return {ACT_AS_HEADER: f"discord:{discord_id}"}
+
+
 @pytest.fixture()
 def client(app):
-    """Return a TestClient that sends the service token, like the bot and web server."""
-    with TestClient(app, headers={"Authorization": f"Bearer {TEST_API_TOKEN}"}) as test_client:
+    """The web server's client, acting as itself unless a request adds ``as_user``."""
+    with TestClient(app, headers=WEB) as test_client:
         yield test_client
+
+
+@pytest.fixture()
+def bot_client(app):
+    """The Discord bot's client, acting as itself unless a request adds ``as_discord``."""
+    with TestClient(app, headers=BOT) as test_client:
+        yield test_client
+
+
+@pytest.fixture()
+def make_user(db):
+    """Create a user directly; ``role`` makes them a club member, ``discord_id`` links Discord."""
+
+    def factory(name="User", *, role: ClubRole | None = None, discord_id: str | None = None):
+        user = User(display_name=name)
+        db.add(user)
+        db.flush()
+        if discord_id is not None:
+            db.add(
+                LinkedAccount(
+                    user_id=user.id, provider=ProviderType.DISCORD, provider_user_id=discord_id
+                )
+            )
+        if role is not None:
+            upsert_member(db, user.id, role)
+        db.flush()
+        return user
+
+    return factory
+
+
+@pytest.fixture()
+def member(make_user):
+    return make_user("Member", role=ClubRole.MEMBER)
+
+
+@pytest.fixture()
+def admin(make_user):
+    return make_user("Admin", role=ClubRole.ADMIN)
+
+
+def snowflake() -> str:
+    return str(10**17 + uuid.uuid4().int % 10**17)
 
 
 @pytest.fixture()

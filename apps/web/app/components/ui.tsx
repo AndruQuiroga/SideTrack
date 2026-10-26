@@ -67,3 +67,45 @@ export function SectionHeading({
     </div>
   );
 }
+
+/**
+ * Shown instead of data the visitor may not see (spec: web/authenticated-pages).
+ * `signed-out` asks them to sign in; `forbidden` says the data is for club members or
+ * its owner, which is a refusal, not an outage.
+ */
+export function AccessNotice({
+  state,
+  what,
+  audience = 'club members',
+  className,
+}: {
+  state: 'signed-out' | 'forbidden' | 'unavailable';
+  what: string;
+  audience?: string;
+  className?: string;
+}) {
+  if (state === 'unavailable') return <Unavailable what={what} className={className} />;
+  if (state === 'signed-out') {
+    return (
+      <Card className={clsx('text-center', className)}>
+        <p className="text-sm font-semibold text-white">Sign in to see the {what}.</p>
+        <p className="mt-1 text-xs text-slate-400">
+          <a href="/login" className="text-emerald-300 hover:text-white">
+            Sign in with Discord
+          </a>{' '}
+          to continue.
+        </p>
+      </Card>
+    );
+  }
+  return (
+    <Card className={clsx('text-center', className)}>
+      <p className="text-sm font-semibold text-white">
+        The {what} is for {audience}.
+      </p>
+      <p className="mt-1 text-xs text-slate-400">
+        Your account doesn&apos;t have access. Join the club on Discord to take part.
+      </p>
+    </Card>
+  );
+}

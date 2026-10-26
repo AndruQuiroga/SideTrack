@@ -15,7 +15,7 @@ from sidetrack.identity import LinkedAccount, User
 from sidetrack.identity.link_state import STATE_TTL_SECONDS, sign_link_state
 from sidetrack.types import ProviderType
 
-from .conftest import TEST_LINK_SECRET
+from .conftest import TEST_LINK_SECRET, as_user
 
 pytestmark = pytest.mark.unit
 
@@ -65,7 +65,8 @@ def test_connect_returns_url_with_state(client, users):
     a, _ = users
     response = client.post(
         "/integrations/lastfm/connect",
-        json={"user_id": str(a.id), "callback_url": CALLBACK_URL},
+        json={"callback_url": CALLBACK_URL},
+        headers=as_user(a),
     )
 
     assert response.status_code == 200
@@ -76,6 +77,16 @@ def test_connect_returns_url_with_state(client, users):
     callback = urllib.parse.urlsplit(query["cb"])
     assert f"{callback.scheme}://{callback.netloc}{callback.path}" == CALLBACK_URL
     assert dict(urllib.parse.parse_qsl(callback.query))["state"]
+
+
+def test_connect_refuses_another_user(client, users):
+    a, b = users
+    response = client.post(
+        "/integrations/lastfm/connect",
+        json={"user_id": str(b.id), "callback_url": CALLBACK_URL},
+        headers=as_user(a),
+    )
+    assert response.status_code == 403
 
 
 def test_connect_requires_service_token(anon_client, users):
@@ -91,7 +102,8 @@ def test_full_flow_links_initiating_user(client, anon_client, db, users, lastfm_
     a, _ = users
     url = client.post(
         "/integrations/lastfm/connect",
-        json={"user_id": str(a.id), "callback_url": CALLBACK_URL},
+        json={"callback_url": CALLBACK_URL},
+        headers=as_user(a),
     ).json()["url"]
     cb = dict(urllib.parse.parse_qsl(urllib.parse.urlsplit(url).query))["cb"]
     state = dict(urllib.parse.parse_qsl(urllib.parse.urlsplit(cb).query))["state"]
@@ -187,6 +199,8 @@ def test_relink_same_user_replaces_credential(anon_client, db, users, lastfm_ses
     assert account.access_token == "new-session-key"
 
 
-def test_callback_get_is_gone(anon_client):
-    response = anon_client.get(f"/integrations/lastfm/callback?token={LASTFM_TOKEN}")
-    assert response.status_code == 405
+def test_callback_get_is_gone(client, anon_client):
+    url = f"/integrations/lastfm/callback?token={LASTFM_TOKEN}"
+    assert client.get(url).status_code == 405
+    # Only the POST callback is public.
+    assert anon_client.get(url).status_code == 401

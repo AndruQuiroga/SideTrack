@@ -1,10 +1,13 @@
 /**
  * Server-only configuration. Never import this from a client component: it reads files
- * and returns the API service token.
+ * and returns the web app's API token.
  */
 import { readFileSync } from 'node:fs';
 
 type Env = Record<string, string | undefined>;
+
+/** Header naming the user an API call acts for (ADR 0009). */
+export const ACT_AS_HEADER = 'X-Sidetrack-Act-As';
 
 /**
  * Read `name` from the environment, or from the file named by `${name}_FILE`
@@ -22,15 +25,22 @@ export function readSecret(
   return readFile(file).replace(/\r?\n$/, '');
 }
 
-/** API base URL for server-side calls: the internal address when one is configured. */
+/** API base URL. Only the web server calls the API; browsers never do (ADR 0009). */
 export function serverApiBaseUrl(env: Env = process.env): string {
-  return env.SIDETRACK_API_BASE_URL || env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+  return env.SIDETRACK_API_BASE_URL || 'http://localhost:8000';
 }
 
-/** JSON headers carrying the service token, for server-side API calls only. */
-export function serverApiHeaders(env: Env = process.env): Record<string, string> {
+/**
+ * JSON headers carrying the web app's own token, for server-side API calls only.
+ * `actingUserId` must come from the server session, never from a request.
+ */
+export function serverApiHeaders(
+  env: Env = process.env,
+  actingUserId?: string,
+): Record<string, string> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  const token = readSecret('SIDETRACK_API_TOKEN', env);
+  const token = readSecret('SIDETRACK_WEB_API_TOKEN', env);
   if (token) headers['Authorization'] = `Bearer ${token}`;
+  if (actingUserId) headers[ACT_AS_HEADER] = `user:${actingUserId}`;
   return headers;
 }

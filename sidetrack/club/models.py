@@ -7,10 +7,12 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from sidetrack.db import Base
+from sidetrack.types import ClubRole
 
 if TYPE_CHECKING:
     from sidetrack.catalog.models import Album
@@ -163,3 +165,21 @@ class Rating(Base):
     week: Mapped[Week] = relationship(back_populates="ratings")
     album: Mapped[Album] = relationship(back_populates="ratings")
     nomination: Mapped[Nomination | None] = relationship(back_populates="ratings")
+
+
+class ClubMember(Base):
+    """Club membership; written only by the bot and the operator's admin command."""
+
+    __tablename__ = "club_members"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    role: Mapped[ClubRole] = mapped_column(
+        SAEnum(ClubRole, name="club_role", values_callable=lambda e: [m.value for m in e]),
+        nullable=False,
+    )
+    joined_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+    )
+    left_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

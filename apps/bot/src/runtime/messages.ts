@@ -1,7 +1,7 @@
 import { Message, ChannelType, Client } from 'discord.js';
 import { NominationCreate, RatingCreate, AlbumRead, WeekDetail } from '@sidetrack/api-client';
 
-import { ClubSyncService } from '../clubService';
+import { ClubSyncService, runAsDiscordUser } from '../clubService';
 import { BotConfig } from '../config';
 import { Logger } from '../logger';
 import {
@@ -11,7 +11,7 @@ import {
   BRAND_COLORS,
 } from '../embeds';
 import { extractDominantColor } from '../utils/color';
-import { updateNominationsEmbed } from './handlers';
+import { isAdmin, updateNominationsEmbed } from './handlers';
 
 export function registerMessageHandlers(
   client: Client,
@@ -31,11 +31,28 @@ export function registerMessageHandlers(
 
     if (!nominationWeek && !ratingWeek) return;
 
-    if (nominationWeek) {
-      await handleNominationMessage(message, nominationWeek, service, logger);
-    } else if (ratingWeek) {
-      await handleRatingMessage(message, ratingWeek, service, logger);
-    }
+    // API calls for this message act for its author (ADR 0009).
+    await runAsDiscordUser(message.author.id, async () => {
+      try {
+        await service.recordMember(
+          message.author.id,
+          message.author.displayName || message.author.username,
+          isAdmin(
+            { memberPermissions: message.member?.permissions ?? null, member: message.member },
+            config,
+          ),
+        );
+        if (nominationWeek) {
+          await handleNominationMessage(message, nominationWeek, service, logger);
+        } else if (ratingWeek) {
+          await handleRatingMessage(message, ratingWeek, service, logger);
+        }
+      } catch (error) {
+        logger.error('Unhandled message error.', {
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    });
   });
 }
 

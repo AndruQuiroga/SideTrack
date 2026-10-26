@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from sidetrack.catalog import Album
 from sidetrack.club.models import Rating, Week
 from sidetrack.db import get_db
+from sidetrack.identity import Principal, auth, policy
 from sidetrack.schemas import WeekRead
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -26,8 +27,11 @@ async def override_winner(
     week_id: UUID,
     payload: OverrideWinnerPayload,
     db: Session = Depends(get_db),
+    principal: Principal = Depends(policy(auth.CLUB_WRITE)),
 ) -> WeekRead:
-    """Manually set the winner album for a week, bypassing the poll result."""
+    """Manually set the winner album for a week, bypassing the poll result. Admins only."""
+
+    auth.require_admin(db, principal)
 
     week = db.get(Week, week_id)
     if not week:
@@ -51,8 +55,11 @@ async def override_winner(
 async def delete_rating(
     rating_id: UUID,
     db: Session = Depends(get_db),
+    principal: Principal = Depends(policy(auth.CLUB_WRITE)),
 ) -> Response:
-    """Hard-delete a rating (moderator action)."""
+    """Hard-delete a rating (moderator action). Admins only."""
+
+    auth.require_admin(db, principal)
 
     rating = db.get(Rating, rating_id)
     if not rating:

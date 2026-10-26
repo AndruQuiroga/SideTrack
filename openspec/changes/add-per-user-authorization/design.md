@@ -58,13 +58,15 @@ unknown bearer token into 401, before routing, which keeps 401 separate from the
 
 **Domain-local checks through public read models.**
 
-- `club` exposes `is_member(db, user_id)`, `member_role(db, user_id)` and the
-  `require_member` and `require_admin` dependencies.
-- `identity` exposes `listening_visibility(db, user_id)` and `can_view_personal(db, viewer,
-  owner)`. The latter calls `club.is_member` for the `club` case.
-- `listening` and `analysis` call these functions. `identity` → `club` is a new public import,
-  so the protected contracts are adjusted to allow it explicitly, and `tests/test_import_boundaries.py`
-  gains a case for it.
+- `club` exposes `is_member(db, user_id)`, `member_role(db, user_id)`, `upsert_member` and
+  `mark_left` (`club.membership`, a protected internal module).
+- `identity.auth` holds the checks every domain calls: `require_member`, `require_admin`,
+  `resolve_owner`, `require_self` and `can_view_personal(db, principal, owner)`. The last uses
+  `users.listening_visibility` and `club.is_member`.
+- `identity.auth` → `club` is a public-package import, which the existing contracts already
+  allow. `club.membership` must not import `identity`, which keeps the packages free of import
+  cycles. `tests/test_import_boundaries.py` rejects private membership imports and checks that
+  `identity.auth` uses the public package.
 
 **Body `user_id` handling.** The create schemas make `user_id` optional. A helper
 `resolve_owner(principal, supplied)` returns the actor, or raises 403 when the supplied value
@@ -77,9 +79,17 @@ scope `club:membership`.
 
 - The bot calls PUT, idempotently, in its existing `ensureDiscordUser` path, with the role from
   `isAdmin`. It calls DELETE from a `guildMemberRemove` handler.
-- The bot does not need the privileged members intent: membership is recorded on interaction.
-- The first admin comes from `python -m sidetrack.club.admin grant-admin --discord-id <id>`,
-  which writes directly through club's public function, using the operator's database access.
+- Membership is recorded on interaction, which needs no privileged intent. Discord delivers
+  `guildMemberRemove` only with the privileged Server Members intent, so the bot requests that
+  intent only when `DISCORD_MEMBERS_INTENT=true`. Without it, a departed member stays recorded
+  until an admin removes them.
+- The first admin comes from `python -m sidetrack.club_admin grant-admin --discord-id <id>`.
+  It writes through club's public function, using the operator's database access. The module
+  sits beside the domains because it composes identity and club, which domains may not import
+  through `sidetrack.models`.
+- Provisioning (`identity:provision`, the web or bot client acting as itself) may also attach
+  a first Discord account to a user who has none. Sign-up from either client needs this before
+  the new user can act.
 
 **Visibility of 403 versus 404.** Club gates return 403 `not_a_club_member`, because
 membership is not secret to the person asking. Personal resources return 404, matching how a
@@ -136,6 +146,18 @@ are regenerated with `make openapi`.
    grant the first admin.
 4. Rollback: roll the three images back, run `alembic downgrade 0007_club_notifications`, and
    restore the old secret.
+
+## Implementation notes
+
+- Task 0.1 (2026-10-26): `replace-rq-with-postgres-jobs` merged in #287 (main at d0a5102). The
+  Alembic head was `0007_club_notifications`. No route added since this plan was left
+  unclassified. The membership routes are new in this change. The route policy table is in
+  `docs/AUTHORIZATION.md`.
+- Two existing crashes were found on main and left unfixed: rating creation and listen-event
+  serialization (`docs/issues/metadata-alias-crashes.md`). The omitted-`user_id` scenario uses
+  a nomination instead of a rating.
+- The OpenAPI contract is frozen anew at `tests/fixtures/phase3-openapi.json`. The Phase 0
+  routes must all remain, with only the documented additions.
 
 ## Open Questions
 

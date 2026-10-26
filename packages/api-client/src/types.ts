@@ -76,10 +76,14 @@ export enum ListenSource {
   MANUAL = 'manual',
 }
 
+/** Who besides the owner may see a user's listening data. */
+export type ListeningVisibility = 'private' | 'club';
+
 export interface UserRead {
   id: UUID;
   display_name: string;
   handle?: string | null;
+  listening_visibility?: ListeningVisibility;
   created_at: IsoDateString;
   updated_at: IsoDateString;
 }
@@ -92,6 +96,7 @@ export interface UserCreate {
 export interface UserUpdate {
   display_name?: string | null;
   handle?: string | null;
+  listening_visibility?: ListeningVisibility | null;
 }
 
 export interface LinkedAccountBase {
@@ -103,7 +108,9 @@ export interface LinkedAccountBase {
 }
 
 /** Write shape: the only place credentials are sent. */
-export interface LinkedAccountCreate extends LinkedAccountBase {
+export interface LinkedAccountCreate extends Omit<LinkedAccountBase, 'user_id'> {
+  /** Ignored: the user comes from the request path. */
+  user_id?: UUID;
   access_token?: string | null;
   refresh_token?: string | null;
 }
@@ -181,7 +188,10 @@ export interface NominationBase {
   submitted_at?: IsoDateString | null;
 }
 
-export interface NominationCreate extends NominationBase {}
+export interface NominationCreate extends Omit<NominationBase, 'user_id'> {
+  /** Deprecated: the API takes the owner from the acting user (ADR 0009). */
+  user_id?: UUID;
+}
 
 export interface NominationRead extends NominationBase {
   id: UUID;
@@ -221,7 +231,10 @@ export interface VoteBase {
   submitted_at?: IsoDateString | null;
 }
 
-export interface VoteCreate extends VoteBase {}
+export interface VoteCreate extends Omit<VoteBase, 'user_id'> {
+  /** Deprecated: the API takes the owner from the acting user (ADR 0009). */
+  user_id?: UUID;
+}
 
 export interface VoteRead extends VoteBase {
   id: UUID;
@@ -239,7 +252,10 @@ export interface RatingBase {
   metadata?: Record<string, unknown> | null;
 }
 
-export interface RatingCreate extends RatingBase {}
+export interface RatingCreate extends Omit<RatingBase, 'user_id'> {
+  /** Deprecated: the API takes the owner from the acting user (ADR 0009). */
+  user_id?: UUID;
+}
 
 export interface RatingRead extends RatingBase {
   id: UUID;
@@ -313,7 +329,10 @@ export interface ListenEventBase {
   ingested_at?: IsoDateString | null;
 }
 
-export interface ListenEventCreate extends ListenEventBase {}
+export interface ListenEventCreate extends Omit<ListenEventBase, 'user_id'> {
+  /** Deprecated: the API takes the owner from the acting user (ADR 0009). */
+  user_id?: UUID;
+}
 
 export interface ListenEventRead extends ListenEventBase {
   id: UUID;
