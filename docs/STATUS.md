@@ -66,15 +66,17 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 ### In-flight changes
 
 - `deploy-on-stache-rack`: 13/13 tasks
-- `fix-user-deletion-and-metadata-alias`: 9/9 tasks
 - `harden-api-credentials`: 10/11 tasks
 
 ### Specs
 
 - `club/durable-notifications`
 - `club/membership-access`
+- `club/ratings`
+- `identity/account-deletion`
 - `identity/personal-data-visibility`
 - `listening/import-checkpoints`
+- `listening/listen-events`
 - `platform/api-authorization`
 - `platform/background-jobs`
 - `platform/schema-migrations`
