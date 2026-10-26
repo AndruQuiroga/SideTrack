@@ -31,3 +31,6 @@ dist/
 
 # Generated artifacts
 openapi.json
+
+# Generated progress page (scripts/gen_progress.py)
+build/

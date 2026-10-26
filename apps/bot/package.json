@@ -7,7 +7,7 @@
   "scripts": {
     "build": "tsc -b tsconfig.json",
     "lint": "eslint src",
-    "test": "node --experimental-strip-types --no-warnings --test \"src/**/*.test.ts\"",
+    "test": "node --experimental-strip-types --no-warnings --test \"src/**/*.test.ts\" \"tests/*.test.ts\"",
     "format": "prettier --write \"src/**/*.{ts,tsx}\""
   },
   "dependencies": {

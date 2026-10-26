@@ -31,6 +31,7 @@ COPY alembic.ini ./
 COPY migrations ./migrations
 COPY services/__init__.py ./services/__init__.py
 COPY services/api ./services/api
+COPY services/worker ./services/worker
 COPY sidetrack ./sidetrack
 COPY services/api/entrypoint.sh ./entrypoint.sh
 

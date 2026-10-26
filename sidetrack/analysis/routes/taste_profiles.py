@@ -1,14 +1,16 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from procrastinate.exceptions import ProcrastinateException
 from pydantic import BaseModel
 from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from sidetrack.analysis.models import TasteProfile
 from sidetrack.db import get_db
 from sidetrack.identity import User
-from sidetrack.queue import get_queue
+from sidetrack.queue_client import enqueue
 from sidetrack.schemas import TasteProfileRead
 
 router = APIRouter(prefix="/users/{user_id}/taste-profiles", tags=["taste-profiles"])
@@ -51,14 +53,19 @@ async def recompute_taste_profile(
     Returns 202 with a job_id. Poll GET /jobs/{job_id}/status for progress.
     """
 
-    _ensure_user(db, user_id)
-
-    queue = get_queue()
-    job = queue.enqueue(
-        "services.api.jobs.job_recompute_taste_profile",
-        str(user_id),
-        scope,
-        job_timeout="5m",
-    )
-
-    return RecomputeAccepted(job_id=job.id)
+    try:
+        _ensure_user(db, user_id)
+        job = enqueue(
+            db,
+            "analysis.recompute_taste_profile",
+            {
+                "user_id": str(user_id),
+                "scope": scope,
+            },
+        )
+        public_id = str(job.id)
+        db.commit()
+    except (SQLAlchemyError, ProcrastinateException):
+        db.rollback()
+        raise HTTPException(status_code=503, detail="Job queue unavailable") from None
+    return RecomputeAccepted(job_id=public_id)

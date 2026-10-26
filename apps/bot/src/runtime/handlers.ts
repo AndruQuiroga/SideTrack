@@ -1705,7 +1705,7 @@ async function handleWeekStart(
       ].join('\n'),
     );
 
-    scheduler.scheduleForWeek(week);
+
     logger.info('Week started.', { week_id: week.id, thread_id: thread.id });
   } catch (error) {
     logger.error('Failed to start week.', {

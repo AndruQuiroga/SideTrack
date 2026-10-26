@@ -1,14 +1,14 @@
 # Python module boundaries
 
-ADR 0001 is implemented in the canonical `sidetrack` package. API and RQ worker
+ADR 0001 is implemented in the canonical `sidetrack` package. API and Postgres worker
 processes share this code; the Next.js app and Discord bot call the HTTP API.
 
 | Module      | Owned tables                                                        |
 | ----------- | ------------------------------------------------------------------- |
 | `identity`  | users, linked_accounts, follows                                     |
 | `catalog`   | albums, tracks                                                      |
-| `listening` | listen_events                                                       |
-| `club`      | weeks, nominations, votes, ratings                                  |
+| `listening` | listen_events, import_checkpoints                                   |
+| `club`      | weeks, nominations, votes, ratings, club_notification_outbox        |
 | `analysis`  | track_features, taste_profiles, compatibility, user_recommendations |
 
 Import another domain's public package for operations or exported **read models**.
@@ -21,7 +21,8 @@ Domain route packages own their existing HTTP operations and persistence.
 trending). Search's metadata fallback calls the public catalog function. This
 preserves HTTP behavior; it does not introduce new API behavior or authorization.
 
-`config`, `db`, `types`, `schemas`, `external`, `queue` and `jobs` are shared
+`config`, `db`, `types`, `schemas`, `external`, `queue_client`, `queue_models`,
+`queue_maintenance` and request pacing are shared
 infrastructure. Shared enums and one Base registry avoid duplicate types.
 `sidetrack.models` composes mappings for Alembic and mapper initialization; domain
 code must not import that registry or HTTP composition.
@@ -43,16 +44,17 @@ migrated Postgres. Existing migration tests reject metadata drift.
 ## Startup and compatibility
 
 - API: `uvicorn sidetrack.api.main:create_app --factory`
-- Worker: `python -m sidetrack.rq_worker`
-- Alembic imports `sidetrack.models.all_metadata`; this move requires no migration.
+- Worker: `python -m sidetrack.worker` (CPU); see JOBS.md for queue isolation.
+- Alembic imports `sidetrack.models.all_metadata`; Phase 2 adds migrations 0005–0007.
 
-Old `services.api` paths forward to the same canonical objects, including serialized
-`services.api.jobs.*` jobs. New jobs keep those serialized names too, so a rollback
-to the previous image can still consume them. Old worker startup remains valid. Keep adapters during
-rollout; removal needs a later change. Deploy API and worker together with the same
-image. Rollback uses the previous image and the unchanged database schema.
+Old `services.api` imports still forward to canonical objects, including job
+function aliases. Old RQ entrypoints forward to the Postgres worker; serialized
+RQ jobs must be drained before cutover. The retired `services.worker` entrypoint
+exits with migration instructions and never starts Spotify work. See JOBS.md for
+transaction ownership, retries, schedule revisions, outbox delivery and rollback.
+Shared infrastructure owns background_jobs, job_schedules, job_schedule_occurrences
+and job_request_pacing. The library owns its separate job_queue schema.
 
-`services/worker` is dormant and undeployed; Phase 2 owns its replacement/removal.
-`services/extraction` remains a stub. Queue replacement, real audio analysis and
-per-user API authorization are outside Phase 1. ROADMAP.md records deferred live
-OAuth verification and first rack deployment; neither is claimed complete.
+Deploy API and worker together from the same image, with a matching bot. Real
+audio analysis and per-user authorization remain later work. `services/extraction`
+remains a stub. ROADMAP.md records deferred live OAuth and first rack deployment.

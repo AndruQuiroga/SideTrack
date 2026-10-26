@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from sidetrack.catalog import Album
 from sidetrack.club.models import Nomination, Rating, Vote, Week
+from sidetrack.club.notifications import reconcile_week
 from sidetrack.db import get_db
 from sidetrack.identity import User
 from sidetrack.schemas import (
@@ -313,14 +314,19 @@ async def create_week(payload: WeekCreate, db: Session = Depends(get_db)) -> Wee
 
     existing = _find_existing_week(db, payload)
     if existing:
+        existing = db.get(Week, existing.id, with_for_update=True, populate_existing=True)
+        if existing is None:
+            raise HTTPException(status_code=404, detail="Week not found")
         for field, value in payload.model_dump().items():
             setattr(existing, field, value)
+        reconcile_week(db, existing)
         db.commit()
         db.refresh(existing)
         target = existing
     else:
         target = Week(**payload.model_dump())
         db.add(target)
+        reconcile_week(db, target)
         db.commit()
         db.refresh(target)
 
@@ -333,7 +339,7 @@ async def update_week(
 ) -> WeekDetail:
     """Apply partial updates to a week while validating the timeline."""
 
-    week = db.get(Week, week_id)
+    week = db.get(Week, week_id, with_for_update=True)
     if not week:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Week not found")
 
@@ -346,6 +352,7 @@ async def update_week(
     for field, value in updates.items():
         setattr(week, field, value)
 
+    reconcile_week(db, week)
     db.commit()
     db.refresh(week)
     return _build_week_details(db, [week])[0]

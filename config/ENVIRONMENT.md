@@ -6,7 +6,7 @@ How secrets are read:
 - **API (Python):** env var first, then a file of the same lowercase name in `SIDETRACK_SECRETS_DIR` (default `/run/secrets`), e.g. `/run/secrets/sidetrack_api_token`.
 - **Web and bot (Node):** env var first, then the file named by `<NAME>_FILE`, e.g. `DISCORD_BOT_TOKEN_FILE=/run/secrets/sidetrack_discord_bot_token`.
 
-## API (`services/api`, also the RQ worker and Alembic)
+## API (`sidetrack.api`, also the Postgres worker and Alembic)
 
 | Variable | Secret | Default | Notes |
 | --- | --- | --- | --- |
@@ -15,7 +15,6 @@ How secrets are read:
 | `SIDETRACK_API_TOKEN` | **secret** | none | Required in production; shared with bot and web server |
 | `SIDETRACK_LINK_SECRET` | **secret** | random in development | Signs account-linking state; API only |
 | `CORS_ORIGINS` | | `["http://localhost:3000","http://localhost:3001"]` | JSON list of browser origins |
-| `REDIS_URL` | | `redis://localhost:6379` | Until Phase 2 removes RQ |
 | `LASTFM_API_KEY` | | none | |
 | `LASTFM_API_SECRET` | **secret** | none | |
 | `SPOTIFY_CLIENT_ID` | | none | Metadata only (ADR 0003) |

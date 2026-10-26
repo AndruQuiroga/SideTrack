@@ -15,16 +15,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # Ephemeral queue for the Last.fm ingest job until Phase 2 replaces RQ (ADR 0002).
-  redis:
-    image: redis:7-alpine
-    command: ['redis-server', '--save', '', '--appendonly', 'no']
-    healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   api:
     build:
       context: .
@@ -35,8 +25,6 @@ services:
       SIDETRACK_ENV: ${SIDETRACK_ENV:-development}
     depends_on:
       db:
-        condition: service_healthy
-      redis:
         condition: service_healthy
     ports:
       - '8000:8000'
@@ -52,9 +40,10 @@ services:
       timeout: 5s
       retries: 5
 
-  rq-worker:
+  worker:
     image: sidetrack/api:dev
-    command: ['python', '-m', 'sidetrack.rq_worker']
+    command: ['python', '-m', 'sidetrack.worker']
+    stop_grace_period: 40s
     env_file: ${SIDETRACK_ENV_FILE:-.env}
     environment:
       SIDETRACK_ENV: ${SIDETRACK_ENV:-development}

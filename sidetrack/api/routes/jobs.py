@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 from typing import Any
+from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from rq.job import Job
+from sqlalchemy import text
+from sqlalchemy.orm import Session
 
-from sidetrack.queue import get_redis_connection
+from sidetrack.db import get_db
+from sidetrack.queue_models import BackgroundJob
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
@@ -21,32 +24,38 @@ class JobStatus(BaseModel):
 
 
 @router.get("/{job_id}/status", response_model=JobStatus)
-def get_job_status(job_id: str) -> JobStatus:
+def get_job_status(job_id: str, db: Session = Depends(get_db)) -> JobStatus:
     """Poll the status of a background job.
 
     Possible status values: queued, started, finished, failed, deferred, canceled.
     """
-    conn = get_redis_connection()
-    job = Job.fetch(job_id, connection=conn)
-
+    try:
+        uid = UUID(job_id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Job not found") from None
+    job = db.get(BackgroundJob, uid)
     if job is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Job {job_id} not found",
-        )
-
-    job_status = job.get_status()
-
-    result = None
-    error = None
-    if job_status == "finished":
-        result = job.result
-    elif job_status == "failed":
-        error = str(job.exc_info) if job.exc_info else "Unknown error"
-
+        raise HTTPException(status_code=404, detail="Job not found")
+    queue_status = db.execute(
+        text(
+            "SELECT status::text, scheduled_at > clock_timestamp() AS deferred "
+            "FROM job_queue.procrastinate_jobs WHERE id=:id"
+        ),
+        {"id": job.queue_job_id},
+    ).first()
+    state = job.status
+    if state != "finished" and queue_status:
+        raw, deferred = queue_status
+        state = {
+            "doing": "started",
+            "succeeded": "finished",
+            "failed": "failed",
+            "cancelled": "canceled",
+            "aborted": "failed",
+        }.get(raw, "deferred" if deferred or job.attempts else "queued")
     return JobStatus(
         job_id=job_id,
-        status=job_status,
-        result=result,
-        error=error,
+        status=state,
+        result=job.result if state == "finished" else None,
+        error=(job.error or "execution_failed") if state == "failed" else None,
     )

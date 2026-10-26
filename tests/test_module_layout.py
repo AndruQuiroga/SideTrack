@@ -16,7 +16,17 @@ pytestmark = pytest.mark.unit
 
 def test_openapi_matches_phase0():
     baseline = Path(__file__).parent / "fixtures" / "phase0-openapi.json"
-    assert create_app().openapi() == json.loads(baseline.read_text(encoding="utf-8"))
+    before = json.loads(baseline.read_text(encoding="utf-8"))
+    after = create_app().openapi()
+    for path, operations in before["paths"].items():
+        assert after["paths"][path] == operations
+    for name, schema in before["components"]["schemas"].items():
+        assert after["components"]["schemas"][name] == schema
+    assert set(after["paths"]) - set(before["paths"]) == {
+        "/club/notifications/claim",
+        "/club/notifications/{event_id}/ack",
+        "/club/notifications/{event_id}/fail",
+    }
 
 
 def test_each_table_has_one_canonical_owner():
@@ -24,9 +34,15 @@ def test_each_table_has_one_canonical_owner():
     expected = {
         "identity": {"users", "linked_accounts", "follows"},
         "catalog": {"albums", "tracks"},
-        "listening": {"listen_events"},
-        "club": {"weeks", "nominations", "votes", "ratings"},
+        "listening": {"listen_events", "import_checkpoints"},
+        "club": {"weeks", "nominations", "votes", "ratings", "club_notification_outbox"},
         "analysis": {"track_features", "taste_profiles", "compatibility", "user_recommendations"},
+        "queue_models": {
+            "background_jobs",
+            "job_schedules",
+            "job_schedule_occurrences",
+            "job_request_pacing",
+        },
     }
     observed = {domain: set() for domain in expected}
     for mapper in models.Base.registry.mappers:

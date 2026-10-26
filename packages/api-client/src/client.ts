@@ -40,6 +40,7 @@ import {
   TrackFeatureRead,
   JobAccepted,
   JobStatus,
+  DeliveryEvent,
 } from './types';
 import { ApiError, toApiError } from './errors';
 
@@ -73,6 +74,31 @@ export interface TimelineParams {
 }
 
 export class SidetrackApiClient {
+  async claimNotifications(): Promise<DeliveryEvent[]> {
+    return this.request({ method: 'POST', url: '/club/notifications/claim' });
+  }
+
+  async acknowledgeNotification(id: string, leaseToken: string, messageId: string): Promise<void> {
+    return this.request({
+      method: 'POST',
+      url: `/club/notifications/${id}/ack`,
+      data: { lease_token: leaseToken, message_id: messageId },
+    });
+  }
+
+  async failNotification(
+    id: string,
+    leaseToken: string,
+    permanent: boolean,
+    retryAfter = 0,
+  ): Promise<void> {
+    return this.request({
+      method: 'POST',
+      url: `/club/notifications/${id}/fail`,
+      data: { lease_token: leaseToken, permanent, retry_after: retryAfter },
+    });
+  }
+
   private readonly axios: AxiosInstance;
   private readonly getAuthToken?: () => string | undefined;
 

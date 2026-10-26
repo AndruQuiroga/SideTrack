@@ -26,7 +26,12 @@ groups:
         notes: Implemented; untested
       - capability: Reminders and phase transitions
         status: partial
-        notes: "In-memory setTimeout in the bot; lost on restart; transitions only post messages"
+        notes: "Deadlines and leased delivery persist in Postgres; restart and send/ack behavior tested. Notices do not enforce phases; real Discord delivery not verified."
+        evidence:
+          - tests/test_club_schedules.py
+          - services/api/tests/test_club_notifications.py
+          - apps/bot/tests/notification-delivery.test.ts
+          - tests/test_jobs_end_to_end.py
       - capability: Album metadata from Spotify
         status: partial
         notes: "Client credentials, metadata only (external/spotify.py); untested"
@@ -46,20 +51,23 @@ groups:
           - services/api/tests/test_link_state.py
       - capability: Last.fm scrobble import
         status: partial
-        notes: "Newest 200 only, no backfill; scrobbles without an album are dropped"
+        notes: "Durable per-account checkpoints and duplicate-safe retries; newest 200 only, no backfill; unresolved/album-less records can be dropped"
+        evidence:
+          - tests/test_import_checkpoints.py
+          - services/api/tests/test_jobs.py
       - capability: Listen storage
         status: works
         notes: "listen_events.source matches the database enum. Before 2026-10-25 every listen insert failed on Postgres"
         evidence:
           - services/api/tests/test_migrations.py
       - capability: Spotify listen sync
-        status: broken
-        notes: "Inserts listens for tracks that don't exist (FK failure); no Spotify OAuth. Not built or deployed"
+        status: absent
+        notes: "Legacy sync worker retired in Phase 2; Spotify remains metadata-only (ADR 0003)"
       - capability: ListenBrainz import
         status: absent
       - capability: MusicBrainz resolution
         status: partial
-        notes: Per-scrobble web API calls inside the import job
+        notes: "Per-scrobble web API calls inside imports; attempts share a global Postgres pacing lock, including HTTP retries"
 
   - name: Analysis
     items:
@@ -114,11 +122,23 @@ groups:
         evidence:
           - services/api/tests/test_migrations.py
       - capability: Background jobs
-        status: partial
-        notes: "Redis (ephemeral) + one RQ consumer for Last.fm ingest; Phase 2 replaces RQ (ADR 0002)"
+        status: works
+        notes: "Procrastinate/Postgres; transactional submission, bounded retries, recovery, persisted schedules and results. API/worker/bot image rehearsal passed without Redis."
+        evidence:
+          - tests/test_queue_transactions.py
+          - tests/test_worker_recovery.py
+          - tests/test_worker_queues.py
+          - tests/test_job_schedules.py
+          - tests/test_jobs_end_to_end.py
+      - capability: User deletion with listening history
+        status: broken
+        notes: "Pre-existing ORM cascade bug discovered by Phase 2 tests; tracked separately in GitHub issue #286. New checkpoint database cascade and deleted-job behavior are tested."
+        evidence:
+          - docs/issues/user-delete-cascades.md
+          - tests/test_import_checkpoints.py
       - capability: Type checking
         status: broken
-        notes: 40 mypy errors in the canonical sidetrack package; CI runs mypy as non-blocking until fixed
+        notes: 39 existing mypy errors in the canonical sidetrack package; no errors in the new Phase 2 modules. CI remains non-blocking until the backlog is fixed.
       - capability: Python module boundaries
         status: works
         notes: Canonical sidetrack package with five domain owners; import-linter enforced in CI; legacy imports share canonical objects
