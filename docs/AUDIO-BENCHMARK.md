@@ -61,8 +61,32 @@ Windows 10.
 - **Report:** checked in a browser. Verdicts persist across a reload, and the exported
   `verdicts.json` scores correctly. The test verdicts were then discarded.
 
-### First judged run
+### 2026-10-26: first benchmark run on the owner's listening history
 
-Not run yet. It needs the owner's ~100-seed list fetched with
-`python -m sidetrack.audio fetch` (see `docs/AUDIO.md`), then `embed`, `report`,
-judging at least 20 seeds, and `score`.
+Run `20261026-223453-0ec1bac`. The seeds are 100 tracks from the owner's ListenBrainz
+export (July to October 2026). They are the loved tracks plus the most played (3 to 21
+plays), at most two per artist, from 75 artists, mostly melodic bass and future bass.
+The seed list stays outside the repo.
+
+- **Acquisition:** 100 of 100 full tracks and 86 previews were fetched. 54 full tracks
+  were AcoustID-confirmed. 49 were unverified because AcoustID doesn't know the recording,
+  which is common for obscure releases. 2 were `mismatch` and left out of the benchmark,
+  which used 194 assets in the end. The first pass missed 54 previews because Deezer lists
+  collaborations under their primary artist; credit matching was fixed and the previews
+  refetched.
+- **Embedding:** 194 of 194 per model, 0 failures, 19,800 s of audio per model. The run
+  took 11 minutes for all four models on the RTX 5070.
+
+| Model | Wall s | Audio-s per s | Peak VRAM MiB | Preview→full recall@1 | recall@10 |
+| --- | --- | --- | --- | --- | --- |
+| muq | 159 | 125 | 4693 | **0.955** | **0.989** |
+| muq-mulan | 173 | 114 | 2859 | 0.506 | 0.944 |
+| mert | 145 | 137 | 3827 | 0.933 | 0.989 |
+| clap | 145 | 137 | 1455 | 0.427 | 0.663 |
+
+Self-retrieval covers the 89 seeds that have both a preview and a full track. CLAP fails
+the recall@10 gate of 0.80. MuQ and MERT recognise a 30-second clip of a song almost
+perfectly. Gate items 1, 2 and 4 (the owner's judgement) are still open: judge at least
+20 seeds in this run's `report.html`, then run `audio-lab score`.
+
+**Owner's decision:** pending.
