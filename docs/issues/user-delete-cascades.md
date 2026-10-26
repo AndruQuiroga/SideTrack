@@ -20,3 +20,8 @@ dependent rows. Actual: NotNullViolation on listen_events.user_id.
 Fix in a separate OpenSpec change, reviewing identity's deletion relationships
 and adding an API regression with dependent rows. No identity fix is included
 silently in the Phase 2 infrastructure change.
+
+**Resolved** by the OpenSpec change `fix-user-deletion-and-metadata-alias` (GitHub
+issue #286). The `User` relationships set `passive_deletes`, so Postgres's
+`ON DELETE CASCADE` removes dependent rows. Regression:
+`services/api/tests/test_account_deletion.py`.

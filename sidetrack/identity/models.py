@@ -49,30 +49,48 @@ class User(Base):
         onupdate=lambda: datetime.now(UTC),
     )
 
+    # Every foreign key to users.id cascades in the database. passive_deletes leaves
+    # those rows to Postgres; without it the ORM nulls NOT NULL user_id columns first.
     linked_accounts: Mapped[list[LinkedAccount]] = relationship(
-        back_populates="user", cascade="all, delete-orphan"
+        back_populates="user", cascade="all, delete-orphan", passive_deletes=True
     )
-    nominations: Mapped[list[Nomination]] = relationship(back_populates="user")
-    votes: Mapped[list[Vote]] = relationship(back_populates="user")
-    ratings: Mapped[list[Rating]] = relationship(back_populates="user")
-    listen_events: Mapped[list[ListenEvent]] = relationship(back_populates="user")
+    nominations: Mapped[list[Nomination]] = relationship(
+        back_populates="user", passive_deletes="all"
+    )
+    votes: Mapped[list[Vote]] = relationship(back_populates="user", passive_deletes="all")
+    ratings: Mapped[list[Rating]] = relationship(back_populates="user", passive_deletes="all")
+    listen_events: Mapped[list[ListenEvent]] = relationship(
+        back_populates="user", passive_deletes="all"
+    )
     taste_profiles: Mapped[list[TasteProfile]] = relationship(
-        back_populates="user", cascade="all, delete-orphan"
+        back_populates="user", cascade="all, delete-orphan", passive_deletes=True
     )
     followers: Mapped[list[Follow]] = relationship(
-        "Follow", foreign_keys="Follow.followee_id", back_populates="followee"
+        "Follow",
+        foreign_keys="Follow.followee_id",
+        back_populates="followee",
+        passive_deletes="all",
     )
     following: Mapped[list[Follow]] = relationship(
-        "Follow", foreign_keys="Follow.follower_id", back_populates="follower"
+        "Follow",
+        foreign_keys="Follow.follower_id",
+        back_populates="follower",
+        passive_deletes="all",
     )
     compatibility_a: Mapped[list[Compatibility]] = relationship(
-        "Compatibility", foreign_keys="Compatibility.user_a_id", back_populates="user_a"
+        "Compatibility",
+        foreign_keys="Compatibility.user_a_id",
+        back_populates="user_a",
+        passive_deletes="all",
     )
     compatibility_b: Mapped[list[Compatibility]] = relationship(
-        "Compatibility", foreign_keys="Compatibility.user_b_id", back_populates="user_b"
+        "Compatibility",
+        foreign_keys="Compatibility.user_b_id",
+        back_populates="user_b",
+        passive_deletes="all",
     )
     recommendations: Mapped[list[UserRecommendation]] = relationship(
-        back_populates="user", cascade="all, delete-orphan"
+        back_populates="user", cascade="all, delete-orphan", passive_deletes=True
     )
 
 

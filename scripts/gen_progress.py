@@ -75,6 +75,14 @@ PHASES: list[dict[str, Any]] = [
         "changes": ["add-per-user-authorization"],
     },
     {
+        "id": "fixes",
+        "title": "Pre-rollout fixes",
+        "label": "Fixes",
+        "summary": "Pre-existing defects found by Phase 2-3 tests: rating metadata, user deletion.",
+        "adrs": [],
+        "changes": ["fix-user-deletion-and-metadata-alias"],
+    },
+    {
         "id": "audio",
         "title": "Audio analysis benchmark",
         "label": "Track",
