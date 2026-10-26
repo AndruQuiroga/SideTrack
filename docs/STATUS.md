@@ -63,15 +63,14 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 
 ### In-flight changes
 
-- `api-tests-on-postgres`: 4/4 tasks
 - `deploy-on-stache-rack`: 13/13 tasks
-- `generated-status-page`: 4/4 tasks
 - `harden-api-credentials`: 10/11 tasks
-- `remove-web-fake-data`: 8/8 tasks
 
 ### Specs
 
-None yet (specs land when changes are archived).
+- `platform/schema-migrations`
+- `platform/status-report`
+- `web/data-honesty`
 
 ### Migration head
 
