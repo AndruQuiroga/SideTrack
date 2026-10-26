@@ -19,7 +19,7 @@
 ## 4. Real models
 
 - [x] 4.1 Implement the MuQ, MuQ-MuLan, MERT-v1-95M and CLAP adapters with pinned revisions. Each reads its sample rate and dimension from the checkpoint config and records its licence. Prove them with `tests/test_adapters_gpu.py` (marked `gpu`, run on the owner's PC): declared dimension, finite and non-constant output, and peak VRAM above zero.
-- [ ] 4.2 Add the `audio-lab` CI job (core install plus pytest, no GPU), and verify it passes on the PR.
+- [x] 4.2 Add the `audio-lab` CI job (core install plus pytest, no GPU), and verify it passes on the PR.
 
 ## 5. First benchmark and docs
 
