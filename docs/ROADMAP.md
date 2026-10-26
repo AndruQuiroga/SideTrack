@@ -37,7 +37,8 @@ Do not implement the later phases while moving code. Postgres-backed background
 jobs are Phase 2 (ADR 0002); per-user API authorization is Phase 3. Audio analysis
 starts with the separate benchmark described by ADR 0004.
 
-Phase 1 implementation is complete (5/5 tracked tasks). Reverification on
+Phase 1 merged in PR #284 (5/5 tracked tasks); the change was archived on
+2026-10-26. Reverification on
 2026-10-25 passed all 87 Python tests against migrated Postgres, 11 web tests,
 4 bot tests, six import contracts, Python and TypeScript lint, TypeScript builds,
 strict OpenSpec validation and the generated-status check. Existing mypy errors remain the
@@ -61,8 +62,10 @@ status generation and strict OpenSpec validation. The separate image rehearsal
 also passed, including rollback to the saved Phase 1 API and return to Phase 2
 with new job results retained. Its temporary containers/network were removed.
 
-CI follow-up #288 fixes SIGTERM during `--once` drain by retaining the signal
-handler through the full worker lifetime. The complete Linux CI test selection
+Phase 2 merged in PR #287, and the change was archived on 2026-10-26.
+
+CI follow-up #288 (closed) fixes SIGTERM during `--once` drain by retaining the
+signal handler through the full worker lifetime. The complete Linux CI test selection
 now passes 133 tests, including shutdown in both continuous and drain modes,
 and synchronized queue-isolation checks with one and two slots per worker.
 
@@ -79,8 +82,8 @@ API trusts per-client tokens (web, bot) that name the acting user with
 members, personal listening data to its owner unless they share it with the club,
 and ballots only to the voter.
 
-`add-per-user-authorization` is implemented on `codex/phase-3-per-user-auth`
-(19/19 tasks):
+`add-per-user-authorization` (19/19 tasks) merged in PR #289 and was archived on
+2026-10-26:
 
 - Migration `0008_per_user_authorization` adds `club_members`,
   `users.listening_visibility` and job submitters.
@@ -95,7 +98,7 @@ against a live API, and the TypeScript lint, build and test runs.
 
 Still open:
 
-- The owner hasn't merged or deployed the change.
+- The change hasn't been deployed; the first rack rollout covers Phases 1–3.
 - Real Discord sign-in hasn't been verified.
 - Two crashes found on main are recorded in `docs/issues/metadata-alias-crashes.md`
   for a separate change.

@@ -24,3 +24,6 @@ That test now uses continuous workers, an explicit default-work barrier, and a
 probe while the first MusicBrainz job is held. It verifies `doing`/`todo` states,
 then releases the lock and waits for both jobs. Assertions remain strict for
 `platform/background-jobs` requirement "Queues isolate workloads".
+
+**Resolved** by 70a0cb8, merged in PR #287. Main CI run 40285970245 passed the
+Linux selection (133 tests), including the SIGTERM regression in both modes.

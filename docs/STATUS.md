@@ -65,17 +65,20 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 
 ### In-flight changes
 
-- `add-per-user-authorization`: 19/19 tasks
 - `deploy-on-stache-rack`: 13/13 tasks
 - `harden-api-credentials`: 10/11 tasks
-- `modularize-python-package`: 5/5 tasks
-- `remove-fabricated-connection-status`: 2/2 tasks
-- `replace-rq-with-postgres-jobs`: 14/14 tasks
 
 ### Specs
 
+- `club/durable-notifications`
+- `club/membership-access`
+- `identity/personal-data-visibility`
+- `listening/import-checkpoints`
+- `platform/api-authorization`
+- `platform/background-jobs`
 - `platform/schema-migrations`
 - `platform/status-report`
+- `web/authenticated-pages`
 - `web/data-honesty`
 
 ### Migration head
