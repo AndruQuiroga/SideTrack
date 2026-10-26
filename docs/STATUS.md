@@ -64,6 +64,7 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 
 ### In-flight changes
 
+- `add-per-user-authorization`: 0/19 tasks
 - `deploy-on-stache-rack`: 13/13 tasks
 - `harden-api-credentials`: 10/11 tasks
 - `modularize-python-package`: 5/5 tasks

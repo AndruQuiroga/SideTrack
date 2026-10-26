@@ -36,3 +36,15 @@ Postgres metadata, and reject illegal module imports.
 Do not implement the later phases while moving code. Postgres-backed background
 jobs are Phase 2 (ADR 0002); per-user API authorization is Phase 3. Audio analysis
 starts with the separate benchmark described by ADR 0004.
+
+## Phase 3: per-user API authorization
+
+ADR 0009 (proposed) decides the model: the web server holds user sessions; the API
+trusts per-client tokens (web, bot) that name the acting user with
+`X-Sidetrack-Act-As`. GETs stop being public; club data is visible to club members,
+personal listening data to its owner unless they share it with the club, and ballots
+to the voter only. `add-per-user-authorization` holds the proposal, four behavior
+specs, design and tasks; it passes strict OpenSpec validation. Implementation has
+not started and waits for Phase 2 to merge, because both edit the same routes, the
+generated client and the Alembic chain; its migration is `0008_per_user_authorization`.
+Encrypting stored provider tokens at rest is separate Phase 3 work.
