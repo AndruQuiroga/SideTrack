@@ -34,8 +34,11 @@
 CI repair (#288): reproduced the Linux `--once` SIGTERM failure from PR #287,
 then moved signal handling to the outer worker lifetime. Both continuous and
 drain-mode SIGTERM subprocess regressions pass. The complete Linux CI test
-selection passes 132 tests, with only the opt-in image rehearsal skipped;
-Ruff and all six import contracts pass. The test assertions remain strict.
+selection passes 133 tests, with only the opt-in image rehearsal skipped.
+The queue-isolation regression uses continuous workers, explicit overlap/lock
+barriers and a probe, covering one and two execution slots per worker; it waits
+for locked work to become eligible. Ruff and all six import contracts pass.
+The test assertions remain strict.
 
 Verification on 2026-10-25: 130 Python tests pass. The normal run skips the opt-in
 image rehearsal and host-Windows SIGTERM test; the explicit API/worker/bot image

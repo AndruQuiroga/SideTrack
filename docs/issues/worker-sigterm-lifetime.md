@@ -17,3 +17,10 @@ subprocess regression; container PID 1 behavior must not mask default terminatio
 
 The fix belongs to the Phase 2 CI repair on PR #287. This separate issue records
 the defect as required by AGENTS.md.
+
+The follow-up CI run 40283094618 also exposed a timing assumption in the queue
+isolation regression: `--once` can exit with another MusicBrainz job still locked.
+That test now uses continuous workers, an explicit default-work barrier, and a
+probe while the first MusicBrainz job is held. It verifies `doing`/`todo` states,
+then releases the lock and waits for both jobs. Assertions remain strict for
+`platform/background-jobs` requirement "Queues isolate workloads".

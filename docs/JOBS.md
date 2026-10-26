@@ -15,7 +15,10 @@ verified independently on Postgres 16 + pgvector.
 Run migrations, then `python -m sidetrack.worker`. CPU workers consume `default`
 and `musicbrainz` with concurrency four. `--queues gpu` selects a dedicated lane;
 mixed GPU/CPU queues are rejected. Real GPU analysis remains unavailable.
-`--once` drains runnable work and exits. The API image also runs the worker.
+`--once` processes currently eligible work and finishes its claimed jobs before
+exiting. Continuous workers keep polling for work that becomes eligible after
+queue locks are released; use continuous mode to settle all accepted work during
+cutover. The API image also runs the worker.
 Legacy RQ entrypoints forward to it, while `python -m services.worker` exits with
 retirement instructions and never schedules Spotify jobs.
 

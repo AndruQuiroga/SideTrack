@@ -23,7 +23,8 @@ def test_queue_selection():
         selected_queues("unknown")
 
 
-def test_two_cpu_workers_isolate_and_serialize(engine, database_url):
+@pytest.mark.parametrize("concurrency", [1, 2])
+def test_two_cpu_workers_isolate_and_serialize(engine, database_url, concurrency):
     with Session(engine) as db:
         for queue in ["default", "default", "musicbrainz", "musicbrainz", "gpu"]:
             enqueue(db, "test-record", {"queue": queue}, queue=queue)
@@ -32,28 +33,75 @@ def test_two_cpu_workers_isolate_and_serialize(engine, database_url):
     peaks = active.copy()
     seen = []
 
-    async def record(job_id, task, arguments):
-        queue = arguments["queue"]
-        seen.append(queue)
-        active[queue] += 1
-        peaks[queue] = max(peaks[queue], active[queue])
-        await asyncio.sleep(0.15)
-        active[queue] -= 1
-
     async def work():
+        default_overlap = asyncio.Event()
+        musicbrainz_started = asyncio.Event()
+        release_musicbrainz = asyncio.Event()
+        probe_completed = asyncio.Event()
+        all_completed = asyncio.Event()
+        completed = 0
+
+        async def record(job_id, task, arguments):
+            nonlocal completed
+            queue = arguments["queue"]
+            if queue == "probe":
+                probe_completed.set()
+                return
+            seen.append(queue)
+            active[queue] += 1
+            peaks[queue] = max(peaks[queue], active[queue])
+            if queue == "default":
+                if active[queue] == 2:
+                    default_overlap.set()
+                await default_overlap.wait()
+            else:
+                musicbrainz_started.set()
+                await release_musicbrainz.wait()
+            active[queue] -= 1
+            completed += 1
+            if completed == 4:
+                all_completed.set()
+
         async def one():
             app = create_worker_app(database_url)
             app.tasks["sidetrack.execute"].func = record
             async with app.open_async():
                 await app.run_worker_async(
                     queues=["default", "musicbrainz"],
-                    concurrency=2,
-                    wait=False,
+                    concurrency=concurrency,
+                    wait=True,
+                    fetch_job_polling_interval=0.01,
                     install_signal_handlers=False,
                     listen_notify=False,
                 )
 
-        await asyncio.gather(one(), one())
+        workers = [asyncio.create_task(one()), asyncio.create_task(one())]
+        try:
+            await asyncio.wait_for(default_overlap.wait(), timeout=10)
+            await asyncio.wait_for(musicbrainz_started.wait(), timeout=10)
+            # Keep the first serialized job running while another runnable job
+            # proves the workers continue polling around the locked second job.
+            with Session(engine) as db:
+                enqueue(db, "test-record", {"queue": "probe"})
+                db.commit()
+            await asyncio.wait_for(probe_completed.wait(), timeout=10)
+            with engine.connect() as conn:
+                states = conn.scalars(
+                    text(
+                        "SELECT status::text FROM job_queue.procrastinate_jobs "
+                        "WHERE queue_name='musicbrainz'"
+                    )
+                ).all()
+            assert sorted(states) == ["doing", "todo"]
+            release_musicbrainz.set()
+            await asyncio.wait_for(all_completed.wait(), timeout=10)
+        finally:
+            default_overlap.set()
+            release_musicbrainz.set()
+            for worker in workers:
+                worker.cancel()
+            results = await asyncio.gather(*workers, return_exceptions=True)
+            assert all(isinstance(result, asyncio.CancelledError) for result in results), results
 
     try:
         with asyncio.Runner(loop_factory=asyncio.SelectorEventLoop) as runner:

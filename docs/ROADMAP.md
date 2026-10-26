@@ -63,7 +63,8 @@ with new job results retained. Its temporary containers/network were removed.
 
 CI follow-up #288 fixes SIGTERM during `--once` drain by retaining the signal
 handler through the full worker lifetime. The complete Linux CI test selection
-now passes 132 tests, including shutdown in both continuous and drain modes.
+now passes 133 tests, including shutdown in both continuous and drain modes,
+and synchronized queue-isolation checks with one and two slots per worker.
 
 The pre-existing user-deletion ORM cascade defect found during checkpoint testing
 is tracked separately in GitHub issue #286. Mypy retains 39 existing errors; the
