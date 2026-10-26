@@ -76,6 +76,12 @@ groups:
 
   - name: Analysis
     items:
+      - capability: Audio acquisition
+        status: partial
+        notes: "Opt-in `python -m sidetrack.audio` (ADR 0007): YouTube Music full tracks and Deezer previews, content-addressed storage, AcoustID verification, manifest and prune; tested with source doubles. No real fetch recorded yet (docs/AUDIO.md)"
+        evidence:
+          - tests/test_audio_assets.py
+          - tests/test_audio_cli.py
       - capability: Audio feature extraction
         status: stub
         notes: services/extraction is an empty FastAPI app

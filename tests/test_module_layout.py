@@ -58,7 +58,13 @@ def test_each_table_has_one_canonical_owner():
             "club_notification_outbox",
             "club_members",
         },
-        "analysis": {"track_features", "taste_profiles", "compatibility", "user_recommendations"},
+        "analysis": {
+            "track_features",
+            "taste_profiles",
+            "compatibility",
+            "user_recommendations",
+            "audio_assets",
+        },
         "queue_models": {
             "background_jobs",
             "job_schedules",

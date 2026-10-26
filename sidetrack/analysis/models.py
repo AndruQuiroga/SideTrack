@@ -7,10 +7,12 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import JSON, DateTime, Float, ForeignKey, String, Text, UniqueConstraint
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from sidetrack.db import Base
+from sidetrack.types import AudioKind, AudioSource, AudioVerification
 
 if TYPE_CHECKING:
     from sidetrack.catalog.models import Album, Track
@@ -116,3 +118,45 @@ class UserRecommendation(Base):
 
     user: Mapped[User] = relationship(back_populates="recommendations")
     album: Mapped[Album] = relationship(back_populates="recommendations")
+
+
+def _enum(enum_type, name: str) -> SAEnum:
+    return SAEnum(enum_type, name=name, values_callable=lambda e: [m.value for m in e])
+
+
+class AudioAsset(Base):
+    """An audio file fetched on the owner's request (ADR 0007).
+
+    ``path`` is relative to ``SIDETRACK_AUDIO_DIR``; the file itself never leaves the
+    owner's disk. Rows outlive their files (``file_deleted_at``) so derived results keep
+    their reference.
+    """
+
+    __tablename__ = "audio_assets"
+    __table_args__ = (
+        UniqueConstraint("sha256", name="uq_audio_assets_sha256"),
+        UniqueConstraint("source", "source_ref", name="uq_audio_assets_source_ref"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    track_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("tracks.id", ondelete="SET NULL"), index=True
+    )
+    seed_artist: Mapped[str] = mapped_column(Text, nullable=False)
+    seed_title: Mapped[str] = mapped_column(Text, nullable=False)
+    source: Mapped[AudioSource] = mapped_column(_enum(AudioSource, "audio_source"), nullable=False)
+    source_ref: Mapped[str] = mapped_column(Text, nullable=False)
+    kind: Mapped[AudioKind] = mapped_column(_enum(AudioKind, "audio_kind"), nullable=False)
+    path: Mapped[str] = mapped_column(Text, nullable=False)
+    format: Mapped[str] = mapped_column(String(16), nullable=False)
+    duration_s: Mapped[float | None] = mapped_column(Float)
+    verification: Mapped[AudioVerification] = mapped_column(
+        _enum(AudioVerification, "audio_verification"), nullable=False
+    )
+    acoustid_score: Mapped[float | None] = mapped_column(Float)
+    recording_mbid: Mapped[str | None] = mapped_column(String(36))
+    fetched_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+    )
+    file_deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

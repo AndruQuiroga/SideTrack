@@ -33,6 +33,7 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 
 | Capability | Status | Notes | Evidence |
 | --- | --- | --- | --- |
+| Audio acquisition | partial | Opt-in `python -m sidetrack.audio` (ADR 0007): YouTube Music full tracks and Deezer previews, content-addressed storage, AcoustID verification, manifest and prune; tested with source doubles. No real fetch recorded yet (docs/AUDIO.md) | `tests/test_audio_assets.py`, `tests/test_audio_cli.py` |
 | Audio feature extraction | stub | services/extraction is an empty FastAPI app |  |
 | Embedding models (any) | absent | Pre-reboot adapters (CLAP, OpenL3, PANNs, MusicNN) returned fake numbers and were deleted |  |
 | Spotify audio features | broken | Endpoint returns 403 for apps created after 2024-11-27 (ADR 0003) |  |
@@ -65,6 +66,8 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 
 ### In-flight changes
 
+- `add-audio-acquisition`: 10/11 tasks
+- `add-audio-lab-benchmark`: 0/12 tasks
 - `deploy-on-stache-rack`: 13/13 tasks
 - `fix-user-deletion-and-metadata-alias`: 9/9 tasks
 - `harden-api-credentials`: 10/11 tasks
@@ -84,7 +87,7 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 
 ### Migration head
 
-`0008_per_user_authorization`
+`0009_audio_assets`
 
 ### API routes
 

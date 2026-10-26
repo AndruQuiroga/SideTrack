@@ -36,6 +36,11 @@ class Settings(BaseSettings):
     lastfm_api_secret: SecretStr | None = None
     spotify_client_id: str | None = None
     spotify_client_secret: SecretStr | None = None
+    # Audio acquisition (ADR 0007): explicit CLI only, files on the owner's disk.
+    sidetrack_audio_dir: Path | None = None
+    sidetrack_audio_fetch_enabled: bool = False
+    sidetrack_audio_retention_days: int | None = None
+    acoustid_api_key: SecretStr | None = None
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
@@ -46,6 +51,7 @@ class Settings(BaseSettings):
         "sidetrack_link_secret",
         "lastfm_api_secret",
         "spotify_client_secret",
+        "acoustid_api_key",
         mode="before",
     )
     @classmethod

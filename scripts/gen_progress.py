@@ -88,7 +88,7 @@ PHASES: list[dict[str, Any]] = [
         "label": "Track",
         "summary": "Benchmark extractors before building analysis (separate track).",
         "adrs": ["0004", "0005", "0007"],
-        "changes": [],
+        "changes": ["add-audio-acquisition", "add-audio-lab-benchmark"],
     },
 ]
 
@@ -159,6 +159,7 @@ ARCHITECTURE: list[dict[str, Any]] = [
         "sub": "features, taste",
         "kind": "module",
         "caps": [
+            "Audio acquisition",
             "Audio feature extraction",
             "Embedding models (any)",
             "Spotify audio features",
