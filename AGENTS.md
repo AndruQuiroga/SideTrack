@@ -4,7 +4,7 @@ Shared by Codex, Claude Code and any other agent. Keep this file short; details 
 
 ## Read first
 
-1. `docs/STATUS.md`: what actually works today. Trust it over any other prose.
+1. `docs/STATUS.md`: what actually works today. Trust it over any other prose. It's generated: edit `docs/status.yaml`, then run `python scripts/gen_status.py` (CI fails if it's stale). Marking something **works** requires an evidence path, preferably a test.
 2. `docs/decisions/`: architecture decisions (ADRs). Don't re-propose a decision without a new ADR.
 3. `openspec/specs/`: the behaviour the system must have. `openspec/changes/`: work in flight.
 

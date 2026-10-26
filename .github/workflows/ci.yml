@@ -51,6 +51,8 @@ jobs:
         run: uv run --frozen pytest -m "not slow and not gpu"
       - name: Deploy docs cover the stack
         run: uv run --frozen python scripts/check_stack_docs.py
+      - name: Status page is current
+        run: uv run --frozen python scripts/gen_status.py --check
 
   node:
     runs-on: ubuntu-latest

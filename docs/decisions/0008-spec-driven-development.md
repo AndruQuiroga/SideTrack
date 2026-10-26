@@ -9,7 +9,7 @@ About 5k lines of agent task specs described features that didn't exist, and the
 
 ## Decision
 
-Use OpenSpec (`@fission-ai/openspec`, pinned as a dev dependency). Living specs in `openspec/specs/`, one folder per change in `openspec/changes/`. One shared `AGENTS.md`; `CLAUDE.md` imports it. `docs/STATUS.md` records what actually works. Spec scenarios need tests before a change is archived.
+Use OpenSpec (`@fission-ai/openspec`, pinned as a dev dependency). Living specs in `openspec/specs/`, one folder per change in `openspec/changes/`. One shared `AGENTS.md`; `CLAUDE.md` imports it. `docs/STATUS.md` records what actually works; it's generated from `docs/status.yaml` by `scripts/gen_status.py`, every **works** claim cites evidence, and CI rejects a stale page. Spec scenarios need tests before a change is archived.
 
 ## Consequences
 
