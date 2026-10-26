@@ -30,7 +30,7 @@ A bug found mid-task becomes its own change (or a GitHub issue that names the sp
 | Path | What |
 | --- | --- |
 | `services/api` | FastAPI app, SQLAlchemy models, routes |
-| `services/worker` | Legacy sync worker, due for replacement (ADR 0002) |
+| `services/worker` | Legacy sync worker: not built or deployed, due for replacement (ADR 0002) |
 | `services/extraction` | Stub only; the audio lab replaces it |
 | `apps/bot` | discord.js club bot |
 | `apps/web` | Next.js site |

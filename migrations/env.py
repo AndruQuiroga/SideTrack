@@ -21,16 +21,20 @@ if config.config_file_name is not None:
 target_metadata = all_metadata
 
 
-def get_url() -> str:
-    """Return database URL from env or alembic.ini (no legacy config)."""
+def _secret_file_url() -> str | None:
+    """DATABASE_URL from a Docker secret file, as the API reads it (services/api/config.py)."""
 
-    raw = os.getenv("DATABASE_URL") or config.get_main_option("sqlalchemy.url")
-    # if not raw:
-    #     raise RuntimeError("DATABASE_URL or sqlalchemy.url must be set for migrations")
-    #
-    # url = make_url(raw)
-    # if url.drivername == "postgresql":
-    #     url = url.set(drivername="postgresql+psycopg")
+    secrets_dir = pathlib.Path(os.getenv("SIDETRACK_SECRETS_DIR", "/run/secrets"))
+    path = secrets_dir / "database_url"
+    return path.read_text().rstrip("\r\n") if path.is_file() else None
+
+
+def get_url() -> str:
+    """Return the database URL: env var, then secret file, then alembic.ini."""
+
+    raw = os.getenv("DATABASE_URL") or _secret_file_url() or config.get_main_option("sqlalchemy.url")
+    if not raw:
+        raise RuntimeError("Set DATABASE_URL (or a database_url secret) to run migrations")
     return str(raw)
 
 

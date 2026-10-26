@@ -1,25 +1,19 @@
 import type { AuthOptions } from 'next-auth';
 import DiscordProvider from 'next-auth/providers/discord';
 
-const apiBase = () =>
-  process.env.SIDETRACK_API_BASE_URL ||
-  process.env.NEXT_PUBLIC_API_BASE_URL ||
-  'http://localhost:8000';
+import { readSecret, serverApiBaseUrl, serverApiHeaders } from './server-env';
 
-const apiHeaders = (): Record<string, string> => {
-  const h: Record<string, string> = { 'Content-Type': 'application/json' };
-  const t = process.env.SIDETRACK_API_TOKEN;
-  if (t) h['Authorization'] = `Bearer ${t}`;
-  return h;
-};
+const apiBase = serverApiBaseUrl;
+const apiHeaders = serverApiHeaders;
 
 export const authOptions: AuthOptions = {
   providers: [
     DiscordProvider({
       clientId: process.env.DISCORD_CLIENT_ID!,
-      clientSecret: process.env.DISCORD_CLIENT_SECRET!,
+      clientSecret: readSecret('DISCORD_CLIENT_SECRET')!,
     }),
   ],
+  secret: readSecret('NEXTAUTH_SECRET'),
   session: { strategy: 'jwt' },
   pages: { signIn: '/login' },
   callbacks: {

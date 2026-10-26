@@ -9,10 +9,10 @@ The homelab (Stache-Rack) runs a three-manager Docker Swarm (docker-0, docker-1,
 
 ## Decision
 
-- CI builds and pushes images to `ghcr.io/andruquiroga/sidetrack-<service>`, tagged with the commit SHA (and `main`).
-- `deploy/stack.yml` is a Swarm stack for Portainer: stateless services carry Traefik labels on `traefik-public`; Postgres pins to one node with `/srv/sidetrack/postgres`; the GPU worker pins to docker-0.
-- Internal host `sidetrack.stache.lan`; the public archive goes through Cloudflare Tunnel.
-- Secrets are Docker/Portainer secrets or Portainer stack env, never the repo.
+- CI builds and pushes images to `ghcr.io/andruquiroga/sidetrack-{api,web,bot}`, tagged `sha-<short>` (and `main`). The RQ worker runs from the API image.
+- `deploy/stack.yml` is a Swarm stack for Portainer: stateless services carry Traefik labels on `traefik-public`; Postgres pins to the node labelled `sidetrack.db=true` with `/srv/sidetrack/postgres`; a future GPU worker pins to docker-0 once passthrough is verified.
+- Hostnames: `sidetrack.stache.lan` / `sidetrack.network` for the web app, and `api.sidetrack.stache.lan` / `api.sidetrack.network` for the API, which needs its own host because NextAuth owns `/api/auth/*`. Public names go through Cloudflare Tunnel.
+- Secrets are Swarm secrets (API: `/run/secrets/<name>`; Node: `<NAME>_FILE`); non-secret config is Portainer stack env. Nothing secret is in the repo.
 - `compose.yml` stays for local development only.
 
 ## Consequences

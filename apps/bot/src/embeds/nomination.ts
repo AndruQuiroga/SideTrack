@@ -23,9 +23,6 @@ export interface NominationEmbedOptions {
   pitchTrackInfo?: { name: string; artist: string } | null;
 }
 
-/** Thin separator line for embed sections */
-const SEPARATOR = '─────────────────────────────';
-
 /**
  * Build a beautiful, modern Nomination Card embed.
  *

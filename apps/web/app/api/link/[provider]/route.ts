@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 
 import { authOptions } from '../../../lib/auth';
+import { serverApiBaseUrl, serverApiHeaders } from '../../../lib/server-env';
 
 /**
  * Starts linking an external account for the signed-in user.
@@ -15,21 +16,12 @@ export async function POST(request: Request, { params }: { params: { provider: s
     return NextResponse.json({ detail: 'Sign in to link accounts.' }, { status: 401 });
   }
 
-  const apiBase =
-    process.env.SIDETRACK_API_BASE_URL ||
-    process.env.NEXT_PUBLIC_API_BASE_URL ||
-    'http://localhost:8000';
   const siteUrl = process.env.NEXTAUTH_URL || new URL(request.url).origin;
 
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (process.env.SIDETRACK_API_TOKEN) {
-    headers['Authorization'] = `Bearer ${process.env.SIDETRACK_API_TOKEN}`;
-  }
-
   const provider = encodeURIComponent(params.provider);
-  const res = await fetch(`${apiBase}/integrations/${provider}/connect`, {
+  const res = await fetch(`${serverApiBaseUrl()}/integrations/${provider}/connect`, {
     method: 'POST',
-    headers,
+    headers: serverApiHeaders(),
     cache: 'no-store',
     body: JSON.stringify({
       user_id: session.user.id,

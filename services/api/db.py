@@ -22,7 +22,11 @@ def init_engine(database_url: str) -> None:
     global _engine, _SessionLocal
 
     if _engine is None:
-        _engine = create_engine(database_url, future=True)
+        # Bound connection attempts so a hung database can't stall workers indefinitely.
+        connect_args = {"connect_timeout": 5} if database_url.startswith("postgresql") else {}
+        _engine = create_engine(
+            database_url, future=True, pool_pre_ping=True, connect_args=connect_args
+        )
         _SessionLocal = sessionmaker(bind=_engine, autoflush=False, autocommit=False, future=True)
 
 

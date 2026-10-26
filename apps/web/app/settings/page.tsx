@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { getServerSession } from 'next-auth/next';
 
 import { authOptions } from '../lib/auth';
+import { serverApiBaseUrl, serverApiHeaders } from '../lib/server-env';
 import { PageShell } from '../components/page-shell';
 import { Card, SectionHeading } from '../components/ui';
 import { ConnectionsGrid } from '../components/connections-grid';
@@ -15,17 +16,9 @@ export const metadata = {
 type LinkedAccount = { provider: string; username?: string; display_name?: string };
 
 async function fetchLinkedAccounts(userId: string): Promise<LinkedAccount[]> {
-  const base =
-    process.env.SIDETRACK_API_BASE_URL ||
-    process.env.NEXT_PUBLIC_API_BASE_URL ||
-    'http://localhost:8000';
-  const headers: Record<string, string> = {};
-  if (process.env.SIDETRACK_API_TOKEN) {
-    headers['Authorization'] = `Bearer ${process.env.SIDETRACK_API_TOKEN}`;
-  }
   try {
-    const res = await fetch(`${base}/users/${userId}/linked-accounts`, {
-      headers,
+    const res = await fetch(`${serverApiBaseUrl()}/users/${userId}/linked-accounts`, {
+      headers: serverApiHeaders(),
       cache: 'no-store',
     });
     if (!res.ok) return [];

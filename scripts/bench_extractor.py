@@ -2,14 +2,14 @@ import argparse
 import json
 import sys
 import time
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 import numpy as np
 
-
 # ----------------------------------------------------------------------------
 # GPU statistics helpers
+
 
 def _gpu_stats() -> tuple[float, float]:
     """Return (utilization %, memory MB) for the first visible GPU.
@@ -23,7 +23,7 @@ def _gpu_stats() -> tuple[float, float]:
         pynvml.nvmlInit()
         handle = pynvml.nvmlDeviceGetHandleByIndex(0)
         util = float(pynvml.nvmlDeviceGetUtilizationRates(handle).gpu)
-        mem = float(pynvml.nvmlDeviceGetMemoryInfo(handle).used) / (1024 ** 2)
+        mem = float(pynvml.nvmlDeviceGetMemoryInfo(handle).used) / (1024**2)
         pynvml.nvmlShutdown()
         return util, mem
     except Exception:
@@ -32,6 +32,7 @@ def _gpu_stats() -> tuple[float, float]:
 
 # ----------------------------------------------------------------------------
 # Benchmark core
+
 
 def _simulate_work(models: Iterable[str]) -> None:
     """Run a small compute workload per model to approximate extraction."""
@@ -73,12 +74,11 @@ def run_benchmark(n_tracks: int, models: Iterable[str]) -> dict[str, float]:
 # ----------------------------------------------------------------------------
 # CLI
 
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Benchmark extraction performance")
     parser.add_argument("--tracks", type=int, default=1, help="number of tracks")
-    parser.add_argument(
-        "--models", nargs="*", default=["dummy"], help="model names to benchmark"
-    )
+    parser.add_argument("--models", nargs="*", default=["dummy"], help="model names to benchmark")
     parser.add_argument(
         "--baseline",
         type=Path,

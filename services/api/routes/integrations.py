@@ -163,7 +163,7 @@ def lastfm_callback(
         "token": body.token,
         "format": "json",
     }
-    params["api_sig"] = _lastfm_api_sig(params, settings.lastfm_api_secret)
+    params["api_sig"] = _lastfm_api_sig(params, settings.lastfm_api_secret.get_secret_value())
 
     try:
         data = lastfm.request_json("lastfm", "GET", lastfm.BASE_URL, params=params)

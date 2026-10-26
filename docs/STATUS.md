@@ -40,6 +40,10 @@ Status values: **works** (implemented end to end), **partial** (implemented with
 | --- | --- | --- |
 | Auth | partial | Writes need the service token and the API fails closed without it; stored credentials are never returned. No per-user auth yet (Phase 3); GETs are public |
 | Web fallback data | broken | `apps/web/app/lib/api/{weeks,profile,feed}.ts` show sample weeks, profiles and feed items when the API fails, which violates the no-fakes rule |
-| Background jobs | partial | Redis + RQ (two consumers) + APScheduler; cursors in memory |
-| Tests | partial | 14 club API tests on SQLite; none for worker, bot, web |
-| Deployment to Stache-Rack | absent | Compose file only |
+| Background jobs | partial | Redis (ephemeral) + one RQ consumer for Last.fm ingest. The legacy `services/worker` (APScheduler, Spotify sync) is no longer built or run; Phase 2 replaces RQ |
+| Health checks | works | `/health` returns 503 within 2 s when the DB is unreachable (verified live, 2026-10-25) |
+| Runtime secrets | works | API reads `/run/secrets/<name>`; web and bot read `<NAME>_FILE` |
+| Tests | partial | 57 API tests (SQLite, not Postgres yet); 6 web and 4 bot unit tests; no worker tests |
+| Type checking | broken | 44 pre-existing mypy errors; CI runs mypy as non-blocking until fixed |
+| CI | partial | Rewritten (lint, tests, OpenSpec validation, GHCR images); not yet run on GitHub. `main` had been failing since 2025-12 |
+| Deployment to Stache-Rack | partial | `deploy/stack.yml` and runbook ready; never deployed. Local compose verified healthy (db, redis, api, web, rq-worker) |

@@ -1,34 +1,56 @@
-# Sidetrack Environment Variables
+# Environment variables
 
-This repo uses a single `.env` at the repo root. Copy `.env.example` to `.env` and fill in the values that apply to your setup. Docker Compose, the API, the bot, the worker, and the web app all read from the same file.
+Every variable the code reads, by service. `.env.example` lists them for local `docker compose`; `deploy/README.md` covers Stache-Rack. Rows marked **secret** must come from a Swarm secret in production, never from stack env.
 
-## Core services
-- `POSTGRES_HOST`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_PORT` — database connection pieces used to assemble `DATABASE_URL`.
-- `DATABASE_URL` — full SQLAlchemy/Postgres URL. In Compose this points at `db`.
-- `REDIS_URL` — Redis connection string (default `redis://redis:6379/0` in Compose).
-- `SIDETRACK_API_BASE_URL` — internal API address for bot/worker/web containers (e.g. `http://api:8000`).
-- `SIDETRACK_ENV` — `production` (default) or `development`. In production the API refuses to start without `SIDETRACK_API_TOKEN`; development allows unauthenticated writes and generates a per-process link secret.
-- `SIDETRACK_API_TOKEN` — shared bearer token for bot/worker/web server → API writes. Never expose it to the browser.
-- `SIDETRACK_LINK_SECRET` — signs the `state` value in account-linking flows (Last.fm). Required in production for linking; keep it API-only.
+How secrets are read:
+- **API (Python):** env var first, then a file of the same lowercase name in `SIDETRACK_SECRETS_DIR` (default `/run/secrets`), e.g. `/run/secrets/sidetrack_api_token`.
+- **Web and bot (Node):** env var first, then the file named by `<NAME>_FILE`, e.g. `DISCORD_BOT_TOKEN_FILE=/run/secrets/sidetrack_discord_bot_token`.
 
-## Discord bot
-- `DISCORD_BOT_TOKEN` — bot token from the Discord developer portal.
-- `DISCORD_CLIENT_ID` — application/client id.
-- `DISCORD_GUILD_ID` — target guild for club automation.
+## API (`services/api`, also the RQ worker and Alembic)
 
-## Web (Next.js) auth & API access
-- `NEXT_PUBLIC_API_BASE_URL` — public API base URL for the browser (e.g. `http://localhost:8000`).
-- `NEXTAUTH_URL` — site origin passed to NextAuth.
-- `NEXTAUTH_SECRET` — secret used by NextAuth session cookies.
+| Variable | Secret | Default | Notes |
+| --- | --- | --- | --- |
+| `SIDETRACK_ENV` | | `production` | `development` allows a missing API token and generates a link secret |
+| `DATABASE_URL` | **secret** | `sqlite:///./sidetrack.db` | `postgresql+psycopg://user:pass@host:5432/db`; also read by Alembic |
+| `SIDETRACK_API_TOKEN` | **secret** | none | Required in production; shared with bot and web server |
+| `SIDETRACK_LINK_SECRET` | **secret** | random in development | Signs account-linking state; API only |
+| `CORS_ORIGINS` | | `["http://localhost:3000","http://localhost:3001"]` | JSON list of browser origins |
+| `REDIS_URL` | | `redis://localhost:6379` | Until Phase 2 removes RQ |
+| `LASTFM_API_KEY` | | none | |
+| `LASTFM_API_SECRET` | **secret** | none | |
+| `SPOTIFY_CLIENT_ID` | | none | Metadata only (ADR 0003) |
+| `SPOTIFY_CLIENT_SECRET` | **secret** | none | |
+| `SIDETRACK_MUSICBRAINZ_APP_NAME` | | `Sidetrack API/0.1` | User-Agent for MusicBrainz; include contact info |
+| `SIDETRACK_SECRETS_DIR` | | `/run/secrets` | Where secret files are read from |
 
-## Third-party integrations
-- `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, `SPOTIFY_REDIRECT_URI` — Spotify OAuth credentials.
-- `LASTFM_API_KEY`, `LASTFM_API_SECRET` — Last.fm API keys.
-- `MUSICBRAINZ_RATE_LIMIT` — optional throttle for MusicBrainz traffic.
+## Bot (`apps/bot`)
 
-## Feature flags & misc
-- `SPOTIFY_RECS_ENABLED`, `LASTFM_SIMILAR_ENABLED` — booleans that gate recommendation features.
-- `AUDIO_ROOT`, `CACHE_DIR` — filesystem paths for audio assets and temporary caches.
-- `TZ` — default timezone for containers and scheduler defaults.
+| Variable | Secret | Notes |
+| --- | --- | --- |
+| `SIDETRACK_API_BASE_URL` | | Internal API URL, e.g. `http://api:8000` (alias `API_BASE_URL`) |
+| `SIDETRACK_API_TOKEN` | **secret** | Or `SIDETRACK_API_TOKEN_FILE` |
+| `DISCORD_BOT_TOKEN` | **secret** | Or `DISCORD_BOT_TOKEN_FILE` (alias `DISCORD_TOKEN`) |
+| `DISCORD_CLIENT_ID`, `DISCORD_GUILD_ID` | | Slash-command registration |
+| `SIDETRACK_NOMINATIONS_FORUM_ID` | | Forum channel for nominations |
+| `SIDETRACK_ADMIN_ROLE_IDS` | | Comma-separated role IDs |
+| `SIDETRACK_RETRY_ATTEMPTS`, `SIDETRACK_RETRY_DELAY_MS` | | Optional, defaults 3 and 250 |
 
-> Task refs: core/env-config, core/init-monorepo. Keep this list in sync with `.env.example` and Docker Compose expectations when adding new services or integrations.
+## Web (`apps/web`)
+
+| Variable | Secret | When read | Notes |
+| --- | --- | --- | --- |
+| `NEXT_PUBLIC_API_BASE_URL` | | **Build time** (Docker build arg) | Public API origin for the browser, e.g. `https://api.sidetrack.network` |
+| `SIDETRACK_API_BASE_URL` | | Runtime | Internal API URL for server-side calls |
+| `SIDETRACK_API_TOKEN` | **secret** | Runtime | Or `SIDETRACK_API_TOKEN_FILE`; server-side only |
+| `NEXTAUTH_URL` | | Runtime | Public site origin, e.g. `https://sidetrack.network` |
+| `NEXTAUTH_SECRET` | **secret** | Runtime | Or `NEXTAUTH_SECRET_FILE` |
+| `DISCORD_CLIENT_ID` | | Runtime | Discord sign-in |
+| `DISCORD_CLIENT_SECRET` | **secret** | Runtime | Or `DISCORD_CLIENT_SECRET_FILE` |
+| `NEXT_PUBLIC_DISCORD_GUILD_ID` | | Build time | Optional (alias `SIDETRACK_DISCORD_GUILD_ID` at runtime) |
+
+## Postgres container
+
+| Variable | Secret | Notes |
+| --- | --- | --- |
+| `POSTGRES_DB`, `POSTGRES_USER` | | |
+| `POSTGRES_PASSWORD` | **secret** | On the rack, `POSTGRES_PASSWORD_FILE=/run/secrets/sidetrack_postgres_password` |

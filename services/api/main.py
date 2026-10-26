@@ -10,15 +10,15 @@ import logging
 import re
 import time
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 
-from fastapi import Depends, FastAPI, Request
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
-from sqlalchemy.orm import Session
 
 from services.api.config import get_settings
-from services.api.db import get_db, init_engine
+from services.api.db import get_engine, init_engine
 from services.api.routes import register_routes
 
 logger = logging.getLogger(__name__)
@@ -40,7 +40,13 @@ def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""
 
     settings = get_settings()
-    token = settings.sidetrack_api_token
+    logger.info(
+        "Starting %s env=%s database=%s",
+        settings.app_name,
+        settings.sidetrack_env,
+        settings.redacted_database(),
+    )
+    token = settings.api_token
     if not token:
         if not settings.is_development:
             raise RuntimeError(
@@ -120,18 +126,34 @@ def create_app() -> FastAPI:
     register_routes(app)
 
     @app.get("/health")
-    def health(db: Session = Depends(get_db)) -> dict[str, object]:
-        """Simple health endpoint with database connectivity probe."""
+    def health() -> JSONResponse:
+        """Report database reachability: 200 when it answers, 503 otherwise."""
 
-        status = "ok"
-        details = {}
+        future = _health_executor.submit(check_database)
         try:
-            db.execute(text("SELECT 1"))
-            details["database"] = "ok"
-        except Exception as exc:  # pragma: no cover - diagnostic pathway
-            status = "degraded"
-            details["database"] = f"unreachable: {exc.__class__.__name__}"
+            future.result(timeout=HEALTH_TIMEOUT_SECONDS)
+            database = "ok"
+        except Exception:
+            future.cancel()
+            logger.warning("Health check: database unreachable", exc_info=True)
+            database = "unreachable"
 
-        return {"status": status, "details": details}
+        ok = database == "ok"
+        return JSONResponse(
+            status_code=200 if ok else 503,
+            content={"status": "ok" if ok else "degraded", "details": {"database": database}},
+        )
 
     return app
+
+
+HEALTH_TIMEOUT_SECONDS = 2.0
+# Runs probes off the request thread so a hung database can't hang /health.
+_health_executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="health")
+
+
+def check_database() -> None:
+    """Raise unless the database answers a trivial query."""
+
+    with get_engine().connect() as connection:
+        connection.execute(text("SELECT 1"))

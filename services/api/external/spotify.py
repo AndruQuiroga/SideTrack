@@ -46,8 +46,9 @@ def _get_access_token() -> str:
                 "Set SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET."
             )
 
+        client_secret = settings.spotify_client_secret.get_secret_value()
         credentials = base64.b64encode(
-            f"{settings.spotify_client_id}:{settings.spotify_client_secret}".encode()
+            f"{settings.spotify_client_id}:{client_secret}".encode()
         ).decode()
 
         resp = httpx.post(

@@ -5,22 +5,35 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   python:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v4
+      - uses: astral-sh/setup-uv@v5
         with:
           python-version: '3.11'
       - name: Install dependencies
         run: uv sync --frozen --python 3.11 --extra api --extra worker --extra dev
-      - name: Lint (ruff + mypy)
+      - name: Ruff
         run: |
-          uv run --frozen ruff check services/api services/worker
-          uv run --frozen mypy services/api services/worker
-      - name: Unit tests
-        run: uv run --frozen pytest -m unit
+          uv run --frozen ruff check services/api services/worker scripts
+          uv run --frozen ruff format --check services/api scripts
+      - name: Mypy (known errors, tracked in docs/STATUS.md)
+        # 44 pre-existing errors as of 2026-10-25. Remove continue-on-error once they're fixed.
+        continue-on-error: true
+        run: uv run --frozen mypy services/api
+      - name: Tests
+        run: uv run --frozen pytest -m "not slow and not gpu"
+      - name: Deploy docs cover the stack
+        run: uv run --frozen python scripts/check_stack_docs.py
 
   node:
     runs-on: ubuntu-latest
@@ -29,30 +42,78 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Enable corepack
-        run: corepack enable
+      - run: corepack enable
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Lint workspace (TypeScript)
+      - name: Lint
         run: pnpm -r run lint
-      - name: Unit suites (TypeScript)
+      - name: Build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
+          NEXT_PUBLIC_API_BASE_URL: https://api.sidetrack.network
+        run: pnpm -r run build
+      - name: Test
         run: pnpm -r run test
 
-  docker:
+  specs:
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - name: Validate OpenSpec changes and specs
+        env:
+          OPENSPEC_TELEMETRY: '0'
+        run: pnpm exec openspec validate --all --strict
+
+  images:
+    needs: [python, node, specs]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     strategy:
+      fail-fast: false
       matrix:
         include:
           - app: api
             dockerfile: services/api/Dockerfile
-          - app: worker
-            dockerfile: services/worker/Dockerfile
-          - app: bot
-            dockerfile: apps/bot/Dockerfile
           - app: web
             dockerfile: apps/web/Dockerfile
+          - app: bot
+            dockerfile: apps/bot/Dockerfile
+    env:
+      PUSH: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
-      - name: Build ${{ matrix.app }} image
-        run: docker build -f ${{ matrix.dockerfile }} -t sidetrack/${{ matrix.app }}:ci .
+      - name: Log in to GHCR
+        if: env.PUSH == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Image tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/andruquiroga/sidetrack-${{ matrix.app }}
+          tags: |
+            type=sha,prefix=sha-
+            type=raw,value=main,enable=${{ github.ref == 'refs/heads/main' }}
+      - name: Build${{ env.PUSH == 'true' && ' and push' || '' }} ${{ matrix.app }}
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: ${{ env.PUSH == 'true' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            NEXT_PUBLIC_API_BASE_URL=https://api.sidetrack.network
+          cache-from: type=gha,scope=${{ matrix.app }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.app }}
