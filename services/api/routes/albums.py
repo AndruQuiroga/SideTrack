@@ -1,17 +1,27 @@
-"""Album search and creation endpoints."""
+"""Album search, creation, resolution, and update endpoints."""
 
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from services.api.db import get_db
 from services.api.models import Album
-from services.api.schemas import AlbumCreate, AlbumRead
+from services.api.schemas import AlbumCreate, AlbumRead, AlbumUpdate
+from services.api.services.metadata import enrich_album, resolve_album
 
 router = APIRouter(prefix="/albums", tags=["albums"])
+
+
+class AlbumResolveRequest(BaseModel):
+    """Request body for the /albums/resolve endpoint."""
+
+    title: str
+    artist: str
+    year: int | None = None
 
 
 def _normalize(text: str | None) -> str | None:
@@ -86,4 +96,68 @@ async def create_album(payload: AlbumCreate, db: Session = Depends(get_db)) -> A
         ) from exc
 
     db.refresh(album)
+    return album
+
+
+@router.post("/resolve", response_model=AlbumRead, status_code=status.HTTP_200_OK)
+async def resolve_album_endpoint(
+    payload: AlbumResolveRequest,
+    db: Session = Depends(get_db),
+) -> AlbumRead:
+    """Find or create an album, enriching it with MusicBrainz, Cover Art Archive,
+    and Spotify metadata.
+
+    This is the primary endpoint for the nomination flow. It returns a fully-populated
+    album with cover art, genres, release year, and external IDs.
+    """
+    album = resolve_album(
+        db,
+        title=payload.title,
+        artist=payload.artist,
+        year=payload.year,
+    )
+    return album
+
+
+@router.patch("/{album_id}", response_model=AlbumRead)
+async def update_album(
+    album_id: UUID,
+    payload: AlbumUpdate,
+    db: Session = Depends(get_db),
+) -> AlbumRead:
+    """Update an album's metadata fields."""
+
+    album = db.get(Album, album_id)
+    if not album:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Album not found.")
+
+    update_data = payload.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(album, field, value)
+
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Update conflicts with an existing album record.",
+        ) from exc
+
+    db.refresh(album)
+    return album
+
+
+@router.post("/{album_id}/enrich", response_model=AlbumRead)
+async def enrich_album_endpoint(
+    album_id: UUID,
+    db: Session = Depends(get_db),
+) -> AlbumRead:
+    """Re-run enrichment on an existing album to fill missing metadata."""
+
+    album = db.get(Album, album_id)
+    if not album:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Album not found.")
+
+    album = enrich_album(album, db)
     return album

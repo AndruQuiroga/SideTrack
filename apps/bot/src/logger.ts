@@ -8,7 +8,6 @@ export interface Logger {
 function logWithLevel(level: 'info' | 'warn' | 'error' | 'debug', scope: string, message: string, meta?: Record<string, unknown>): void {
   const prefix = `[bot:${scope}]`;
   const payload = meta ? { message, ...meta } : message;
-  // eslint-disable-next-line no-console
   console[level](prefix, payload);
 }
 

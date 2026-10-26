@@ -13,7 +13,12 @@ dist/
 
 # Env
 .env
+.env.*
+!.env.example
 .DS_Store
+
+# IDE
+.idea/
 
 # Database
 *.db

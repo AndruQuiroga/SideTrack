@@ -1,3 +1,5 @@
+import { readSecret } from './secrets';
+
 export interface ApiConfig {
   baseUrl: string;
   token?: string;
@@ -37,7 +39,7 @@ export function loadBotConfig(env: NodeJS.ProcessEnv = process.env): BotConfig {
     throw new Error('SIDETRACK_API_BASE_URL is required to start the bot.');
   }
 
-  const discordToken = env.DISCORD_BOT_TOKEN || env.DISCORD_TOKEN;
+  const discordToken = readSecret('DISCORD_BOT_TOKEN', env) || env.DISCORD_TOKEN;
   if (!discordToken) {
     throw new Error('DISCORD_BOT_TOKEN is required to start the bot.');
   }
@@ -52,7 +54,7 @@ export function loadBotConfig(env: NodeJS.ProcessEnv = process.env): BotConfig {
   return {
     api: {
       baseUrl,
-      token: env.SIDETRACK_API_TOKEN,
+      token: readSecret('SIDETRACK_API_TOKEN', env),
     },
     discord: {
       token: discordToken,

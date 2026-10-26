@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import re
 from datetime import UTC, datetime
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -44,16 +45,23 @@ class UserUpdate(OrmSchema):
 
 
 class LinkedAccountBase(OrmSchema):
+    """Fields that are safe to return to any client."""
+
     user_id: UUID
     provider: ProviderType
     provider_user_id: str
     display_name: str | None = None
-    access_token: str | None = None
-    refresh_token: str | None = None
     token_expires_at: datetime | None = None
 
+
+class LinkedAccountCreate(LinkedAccountBase):
+    """Write schema: the only place credentials are accepted."""
+
+    access_token: str | None = None
+    refresh_token: str | None = None
+
     @model_validator(mode="after")
-    def validate_provider_specific(self) -> LinkedAccountBase:
+    def validate_provider_specific(self) -> LinkedAccountCreate:
         """Apply provider-specific validation rules."""
 
         if self.provider == ProviderType.DISCORD:
@@ -75,13 +83,28 @@ class LinkedAccountBase(OrmSchema):
         return self
 
 
-class LinkedAccountCreate(LinkedAccountBase):
-    pass
-
-
 class LinkedAccountRead(LinkedAccountBase):
+    """Read schema: reports whether credentials exist, never their values."""
+
     id: UUID
     created_at: datetime
+    has_credentials: bool = False
+
+    @model_validator(mode="before")
+    @classmethod
+    def _derive_has_credentials(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            tokens = (data.get("access_token"), data.get("refresh_token"))
+            fields = {k: v for k, v in data.items() if k not in ("access_token", "refresh_token")}
+        else:
+            tokens = (getattr(data, "access_token", None), getattr(data, "refresh_token", None))
+            fields = {
+                name: getattr(data, name)
+                for name in cls.model_fields
+                if name != "has_credentials" and hasattr(data, name)
+            }
+        fields["has_credentials"] = any(tokens)
+        return fields
 
 
 # Club weeks and nominations
@@ -161,6 +184,15 @@ class NominationRead(NominationBase):
     id: UUID
 
 
+class NominationUpdate(OrmSchema):
+    pitch: str | None = None
+    pitch_track_url: str | None = None
+    genre: str | None = None
+    decade: str | None = None
+    country: str | None = None
+    album_id: UUID | None = None
+
+
 class NominationWithStats(NominationRead):
     vote_summary: VoteAggregate
     rating_summary: RatingAggregate
@@ -222,10 +254,23 @@ class AlbumBase(OrmSchema):
     musicbrainz_id: str | None = None
     spotify_id: str | None = None
     cover_url: str | None = None
+    spotify_url: str | None = None
+    genres: list[str] | None = None
 
 
 class AlbumCreate(AlbumBase):
     pass
+
+
+class AlbumUpdate(OrmSchema):
+    title: str | None = None
+    artist_name: str | None = None
+    release_year: int | None = None
+    musicbrainz_id: str | None = None
+    spotify_id: str | None = None
+    cover_url: str | None = None
+    spotify_url: str | None = None
+    genres: list[str] | None = None
 
 
 class AlbumRead(AlbumBase):

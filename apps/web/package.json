@@ -6,8 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "test": "echo \"No tests configured\"",
+    "lint": "eslint app",
+    "test": "node --experimental-strip-types --no-warnings --test \"app/**/*.test.ts\"",
     "format": "prettier --write \"app/**/*.{ts,tsx}\""
   },
   "dependencies": {

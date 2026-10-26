@@ -1,12 +1,10 @@
-import {
-  ModalBuilder,
-  TextInputBuilder,
-  TextInputStyle,
-  ActionRowBuilder,
-} from 'discord.js';
+import { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } from 'discord.js';
 
 /**
  * Build the nomination modal form.
+ *
+ * Simplified from the original — tags and year are now auto-filled via
+ * MusicBrainz/Spotify enrichment. Pitch track is REQUIRED.
  */
 export function buildNominationModal(weekId: string): ModalBuilder {
   const modal = new ModalBuilder()
@@ -29,36 +27,128 @@ export function buildNominationModal(weekId: string): ModalBuilder {
     .setRequired(true)
     .setMaxLength(200);
 
-  const linkInput = new TextInputBuilder()
-    .setCustomId('link')
-    .setLabel('Link (Spotify, Bandcamp, etc.)')
-    .setPlaceholder('https://open.spotify.com/album/...')
-    .setStyle(TextInputStyle.Short)
-    .setRequired(false)
-    .setMaxLength(500);
-
   const pitchInput = new TextInputBuilder()
     .setCustomId('pitch')
-    .setLabel('Why should we listen? (Pitch)')
+    .setLabel('Why should we listen?')
     .setPlaceholder('A brief pitch for why the club should check this out...')
     .setStyle(TextInputStyle.Paragraph)
     .setRequired(true)
     .setMaxLength(500);
 
-  const tagsInput = new TextInputBuilder()
-    .setCustomId('tags')
-    .setLabel('Tags (Genre / Decade / Country)')
-    .setPlaceholder('e.g., rock / 90s / UK')
+  const pitchTrackInput = new TextInputBuilder()
+    .setCustomId('pitch_track')
+    .setLabel('Pitch Track (Spotify or YouTube link)')
+    .setPlaceholder('https://open.spotify.com/track/...')
     .setStyle(TextInputStyle.Short)
-    .setRequired(false)
-    .setMaxLength(100);
+    .setRequired(true)
+    .setMaxLength(500);
 
   modal.addComponents(
     new ActionRowBuilder<TextInputBuilder>().addComponents(albumInput),
     new ActionRowBuilder<TextInputBuilder>().addComponents(artistInput),
     new ActionRowBuilder<TextInputBuilder>().addComponents(pitchInput),
-    new ActionRowBuilder<TextInputBuilder>().addComponents(linkInput),
-    new ActionRowBuilder<TextInputBuilder>().addComponents(tagsInput),
+    new ActionRowBuilder<TextInputBuilder>().addComponents(pitchTrackInput),
+  );
+
+  return modal;
+}
+
+/**
+ * Build the edit nomination modal — pre-filled with current pitch and track.
+ *
+ * Only allows editing pitch text and pitch track URL (not the album itself).
+ */
+export function buildNominationEditModal(
+  nominationId: string,
+  currentPitch?: string | null,
+  currentPitchTrackUrl?: string | null,
+): ModalBuilder {
+  const modal = new ModalBuilder()
+    .setCustomId(`nomination:edit-submit:${nominationId}`)
+    .setTitle('Edit Nomination');
+
+  const pitchInput = new TextInputBuilder()
+    .setCustomId('pitch')
+    .setLabel('Why should we listen?')
+    .setPlaceholder('Update your pitch...')
+    .setStyle(TextInputStyle.Paragraph)
+    .setRequired(true)
+    .setMaxLength(500);
+  if (currentPitch) pitchInput.setValue(currentPitch);
+
+  const pitchTrackInput = new TextInputBuilder()
+    .setCustomId('pitch_track')
+    .setLabel('Pitch Track (Spotify or YouTube link)')
+    .setPlaceholder('https://open.spotify.com/track/...')
+    .setStyle(TextInputStyle.Short)
+    .setRequired(true)
+    .setMaxLength(500);
+  if (currentPitchTrackUrl) pitchTrackInput.setValue(currentPitchTrackUrl);
+
+  modal.addComponents(
+    new ActionRowBuilder<TextInputBuilder>().addComponents(pitchInput),
+    new ActionRowBuilder<TextInputBuilder>().addComponents(pitchTrackInput),
+  );
+
+  return modal;
+}
+
+/**
+ * Build the change-album modal — for switching the entire nominated album.
+ *
+ * Pre-filled with current album/artist, requires new pitch and pitch track
+ * since the album is changing.
+ */
+export function buildAlbumChangeModal(
+  nominationId: string,
+  currentAlbumTitle?: string | null,
+  currentArtist?: string | null,
+  currentPitch?: string | null,
+): ModalBuilder {
+  const modal = new ModalBuilder()
+    .setCustomId(`nomination:change-album-submit:${nominationId}`)
+    .setTitle('Change Album');
+
+  const albumInput = new TextInputBuilder()
+    .setCustomId('album')
+    .setLabel('New Album Title')
+    .setPlaceholder('e.g., Kid A')
+    .setStyle(TextInputStyle.Short)
+    .setRequired(true)
+    .setMaxLength(200);
+  if (currentAlbumTitle) albumInput.setValue(currentAlbumTitle);
+
+  const artistInput = new TextInputBuilder()
+    .setCustomId('artist')
+    .setLabel('Artist')
+    .setPlaceholder('e.g., Radiohead')
+    .setStyle(TextInputStyle.Short)
+    .setRequired(true)
+    .setMaxLength(200);
+  if (currentArtist) artistInput.setValue(currentArtist);
+
+  const pitchInput = new TextInputBuilder()
+    .setCustomId('pitch')
+    .setLabel('Why should we listen?')
+    .setPlaceholder('Update your pitch for the new album...')
+    .setStyle(TextInputStyle.Paragraph)
+    .setRequired(true)
+    .setMaxLength(500);
+  if (currentPitch) pitchInput.setValue(currentPitch);
+
+  const pitchTrackInput = new TextInputBuilder()
+    .setCustomId('pitch_track')
+    .setLabel('Pitch Track (Spotify or YouTube link)')
+    .setPlaceholder('https://open.spotify.com/track/...')
+    .setStyle(TextInputStyle.Short)
+    .setRequired(true)
+    .setMaxLength(500);
+
+  modal.addComponents(
+    new ActionRowBuilder<TextInputBuilder>().addComponents(albumInput),
+    new ActionRowBuilder<TextInputBuilder>().addComponents(artistInput),
+    new ActionRowBuilder<TextInputBuilder>().addComponents(pitchInput),
+    new ActionRowBuilder<TextInputBuilder>().addComponents(pitchTrackInput),
   );
 
   return modal;

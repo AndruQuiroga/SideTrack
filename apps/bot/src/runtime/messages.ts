@@ -1,9 +1,17 @@
 import { Message, ChannelType, Client } from 'discord.js';
-import { NominationCreate, RatingCreate } from '@sidetrack/api-client';
+import { NominationCreate, RatingCreate, AlbumRead, WeekDetail } from '@sidetrack/api-client';
 
 import { ClubSyncService } from '../clubService';
 import { BotConfig } from '../config';
 import { Logger } from '../logger';
+import {
+  buildNominationEmbed,
+  buildNominationButtons,
+  formatWeekLabel,
+  BRAND_COLORS,
+} from '../embeds';
+import { extractDominantColor } from '../utils/color';
+import { updateNominationsEmbed } from './handlers';
 
 export function registerMessageHandlers(
   client: Client,
@@ -24,7 +32,7 @@ export function registerMessageHandlers(
     if (!nominationWeek && !ratingWeek) return;
 
     if (nominationWeek) {
-      await handleNominationMessage(message, nominationWeek.id, service, logger);
+      await handleNominationMessage(message, nominationWeek, service, logger);
     } else if (ratingWeek) {
       await handleRatingMessage(message, ratingWeek, service, logger);
     }
@@ -35,10 +43,13 @@ export function registerMessageHandlers(
 
 async function handleNominationMessage(
   message: Message,
-  weekId: string,
+  week: WeekDetail,
   service: ClubSyncService,
   logger: Logger,
 ): Promise<void> {
+  if (!message.channel.isThread()) return;
+  const thread = message.channel;
+
   const parsed = parseNominationForm(message.content);
   if (!parsed.ok) {
     await safeReply(
@@ -55,45 +66,101 @@ async function handleNominationMessage(
       message.member?.displayName ?? message.author.globalName ?? message.author.username,
     );
 
+    let album: AlbumRead | undefined;
     let albumId = parsed.albumId;
     if (!albumId) {
       if (!parsed.title || !parsed.artist) {
         await safeReply(
           message,
-          'Please format as `Album — Artist (Year)` or include `[album:<uuid>]` to help me find the album.',
+          'Please format as `Album — Artist` to help me find the album.',
           logger,
         );
         return;
       }
-      const album = await service.ensureAlbumFromForm({
-        title: parsed.title,
-        artist_name: parsed.artist,
-        release_year: parsed.releaseYear ?? undefined,
-      });
+      // Use enrichment pipeline: MusicBrainz → Cover Art Archive → Spotify
+      try {
+        album = await service.getClient().resolveAlbum({
+          title: parsed.title,
+          artist: parsed.artist,
+        });
+      } catch (resolveError) {
+        logger.warn('Album enrichment failed, falling back to basic creation.', {
+          error: resolveError instanceof Error ? resolveError.message : String(resolveError),
+        });
+        album = await service.ensureAlbumFromForm({
+          title: parsed.title,
+          artist_name: parsed.artist,
+          release_year: parsed.releaseYear ?? undefined,
+        });
+      }
       albumId = album.id;
+    } else {
+      album = await service
+        .getClient()
+        .getAlbum(albumId)
+        .catch(() => undefined);
     }
 
+    // Extract dominant color from album cover art
+    let accentColor = BRAND_COLORS.nomination;
+    if (album?.cover_url) {
+      try {
+        accentColor = await extractDominantColor(album.cover_url);
+      } catch {
+        // Fall back silently
+      }
+    }
+
+    // Auto-populate genre from enrichment data
+    const genre = album?.genres?.length ? album.genres[0] : undefined;
+
     const nomination: NominationCreate = {
-      week_id: weekId,
+      week_id: week.id,
       user_id: user.id,
       album_id: albumId,
       pitch: parsed.pitch ?? undefined,
       pitch_track_url: parsed.pitchTrack ?? undefined,
-      genre: parsed.genre ?? undefined,
-      decade: parsed.decade ?? undefined,
-      country: parsed.country ?? undefined,
+      genre,
     };
 
-    const created = await service.recordNomination(weekId, nomination, {
-      week_id: weekId,
+    const created = await service.recordNomination(week.id, nomination, {
+      week_id: week.id,
       user_id: user.id,
-      album_id: parsed.albumId,
+      album_id: albumId,
     });
     logger.info('Nomination recorded from Discord thread.', {
       nomination_id: created.id,
-      week_id: weekId,
+      week_id: week.id,
+      enriched: !!album?.musicbrainz_id || !!album?.spotify_id,
     });
-    await message.react('✅');
+
+    // Delete the raw mini-form message and replace with a rich embed card
+    await message.delete().catch((error) =>
+      logger.warn('Failed to delete original nomination message.', {
+        error: error instanceof Error ? error.message : String(error),
+      }),
+    );
+
+    // Count existing nominations to determine index
+    const freshWeek = await service.getClient().getWeek(week.id);
+    const nominationIndex = freshWeek.nominations.findIndex((n) => n.id === created.id) + 1;
+
+    const weekLabel = formatWeekLabel(week.label, week.week_number);
+    const nominationEmbed = buildNominationEmbed({
+      nomination: created,
+      album,
+      nominatorName:
+        message.member?.displayName ?? message.author.globalName ?? message.author.username,
+      nominatorAvatarURL: message.author.avatarURL() ?? undefined,
+      weekLabel,
+      nominationIndex: nominationIndex || undefined,
+      accentColor,
+    });
+    const buttons = buildNominationButtons(created.id);
+    await thread.send({ embeds: [nominationEmbed], components: [buttons] });
+
+    // Update nominations count in the starter embed
+    await updateNominationsEmbed(thread, week.id, service, logger);
   } catch (error) {
     logger.error('Failed to record nomination.', {
       error: error instanceof Error ? error.message : String(error),
@@ -194,9 +261,6 @@ interface ParsedNomination {
   releaseYear?: number | null;
   pitch?: string | null;
   pitchTrack?: string | null;
-  genre?: string | null;
-  decade?: string | null;
-  country?: string | null;
 }
 
 function parseNominationForm(content: string): ParsedNomination {
@@ -213,24 +277,12 @@ function parseNominationForm(content: string): ParsedNomination {
 
   const whyLine = lines.find((line) => line.toLowerCase().startsWith('why'));
   const pitchTrackLine = lines.find((line) => line.toLowerCase().startsWith('pitch track'));
-  const tagsLine = lines.find((line) => line.toLowerCase().startsWith('tags'));
 
   const pitch = whyLine ? whyLine.split(':').slice(1).join(':').trim() : null;
   const pitchTrack = pitchTrackLine ? pitchTrackLine.split(':').slice(1).join(':').trim() : null;
 
-  let genre: string | null = null;
-  let decade: string | null = null;
-  let country: string | null = null;
-  if (tagsLine) {
-    const tagPayload = tagsLine.split(':').slice(1).join(':').trim();
-    const [genrePart, decadePart, countryPart] = tagPayload.split('/').map((part) => part.trim());
-    genre = genrePart || null;
-    decade = decadePart || null;
-    country = countryPart || null;
-  }
-
   if (!albumLine) {
-    return { ok: false, error: 'Missing album line. Format: Album — Artist (Year)' };
+    return { ok: false, error: 'Missing album line. Format: Album — Artist' };
   }
 
   const parsedAlbum = parseAlbumLine(albumLine);
@@ -243,9 +295,6 @@ function parseNominationForm(content: string): ParsedNomination {
     releaseYear: parsedAlbum?.year ?? null,
     pitch,
     pitchTrack,
-    genre,
-    decade,
-    country,
   };
 }
 

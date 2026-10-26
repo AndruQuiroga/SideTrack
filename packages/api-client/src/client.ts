@@ -16,6 +16,7 @@ import {
   WeekUpdate,
   NominationRead,
   NominationCreate,
+  NominationUpdate,
   VoteRead,
   VoteCreate,
   RatingBase,
@@ -32,6 +33,8 @@ import {
   ListenEventRead,
   AlbumCreate,
   AlbumRead,
+  AlbumUpdate,
+  AlbumResolveRequest,
   TrackRead,
   TrackFeatureCreate,
   TrackFeatureRead,
@@ -119,6 +122,18 @@ export class SidetrackApiClient {
 
   async getNomination(nominationId: UUID): Promise<NominationRead> {
     return this.request<NominationRead>({ method: 'GET', url: `/nominations/${nominationId}` });
+  }
+
+  async updateNomination(nominationId: UUID, payload: NominationUpdate): Promise<NominationRead> {
+    return this.request<NominationRead>({
+      method: 'PATCH',
+      url: `/nominations/${nominationId}`,
+      data: payload,
+    });
+  }
+
+  async deleteNomination(nominationId: UUID): Promise<void> {
+    await this.request<void>({ method: 'DELETE', url: `/nominations/${nominationId}` });
   }
 
   async listVotes(): Promise<VoteRead[]> {
@@ -254,6 +269,25 @@ export class SidetrackApiClient {
 
   async createAlbum(payload: AlbumCreate): Promise<AlbumRead> {
     return this.request<AlbumRead>({ method: 'POST', url: '/albums', data: payload });
+  }
+
+  async resolveAlbum(payload: AlbumResolveRequest): Promise<AlbumRead> {
+    return this.request<AlbumRead>({ method: 'POST', url: '/albums/resolve', data: payload });
+  }
+
+  async updateAlbum(albumId: UUID, payload: AlbumUpdate): Promise<AlbumRead> {
+    return this.request<AlbumRead>({
+      method: 'PATCH',
+      url: `/albums/${albumId}`,
+      data: payload,
+    });
+  }
+
+  async enrichAlbum(albumId: UUID): Promise<AlbumRead> {
+    return this.request<AlbumRead>({
+      method: 'POST',
+      url: `/albums/${albumId}/enrich`,
+    });
   }
 
   async getTracksPendingFeatures(limit = 100): Promise<TrackRead[]> {
@@ -417,12 +451,15 @@ export type {
   RatingRead,
   AlbumCreate,
   AlbumRead,
+  AlbumUpdate,
+  AlbumResolveRequest,
   WeekDetail,
   WeekRead,
   WeekCreate,
   WeekUpdate,
   NominationRead,
   NominationCreate,
+  NominationUpdate,
   VoteRead,
   VoteCreate,
   RatingSummary,

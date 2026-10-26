@@ -90,7 +90,11 @@ class LinkedAccount(Base):
         nullable=False,
         index=True,
     )
-    provider: Mapped[ProviderType] = mapped_column(SAEnum(ProviderType), nullable=False, index=True)
+    provider: Mapped[ProviderType] = mapped_column(
+        SAEnum(ProviderType, values_callable=lambda e: [m.value for m in e]),
+        nullable=False,
+        index=True,
+    )
     provider_user_id: Mapped[str] = mapped_column(String(255), nullable=False)
     display_name: Mapped[str | None] = mapped_column(String(255))
     access_token: Mapped[str | None] = mapped_column(Text)

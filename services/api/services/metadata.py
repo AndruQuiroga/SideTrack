@@ -1,18 +1,25 @@
-"""Metadata service built on MusicBrainz for Sidetrack MVP.
+"""Metadata service for Sidetrack.
 
-Functions here prefer MusicBrainz MBIDs and upsert Album/Track rows.
+Combines MusicBrainz, Cover Art Archive, and Spotify to resolve and enrich
+Album/Track rows. MusicBrainz is the canonical source for metadata, with
+Spotify providing cover art and genre data as supplements.
 """
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Iterable
 from typing import Any
 
-from sqlalchemy import select
+import httpx
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from services.api.config import get_settings
 from services.api.external import musicbrainz as mb
 from services.api.models import Album, Track
+
+log = logging.getLogger(__name__)
 
 
 def _year_from_date(date_str: str | None) -> int | None:
@@ -137,3 +144,155 @@ def resolve_recording_mbid(
 
     cands.sort(key=cand_score)
     return cands[0].get("id")
+
+
+# --- Cover Art Archive -------------------------------------------------------
+
+COVER_ART_ARCHIVE_BASE = "https://coverartarchive.org"
+
+
+def _fetch_cover_art_url(musicbrainz_id: str) -> str | None:
+    """Try to get a front cover URL from the Cover Art Archive for a release-group MBID."""
+    url = f"{COVER_ART_ARCHIVE_BASE}/release-group/{musicbrainz_id}/front-500"
+    try:
+        # CAA returns a 307 redirect to the actual image. We follow it and use the final URL.
+        resp = httpx.head(url, follow_redirects=True, timeout=10)
+        if resp.status_code == 200:
+            return str(resp.url)
+    except Exception:
+        log.debug("Cover Art Archive lookup failed for %s", musicbrainz_id)
+    return None
+
+
+# --- Spotify enrichment helpers -----------------------------------------------
+
+
+def _spotify_available() -> bool:
+    settings = get_settings()
+    return bool(settings.spotify_client_id and settings.spotify_client_secret)
+
+
+def _enrich_from_spotify(
+    album: Album,
+    title: str,
+    artist: str,
+    year: int | None = None,
+) -> None:
+    """Supplement an Album row with Spotify data (cover, genres, spotify_id, url).
+
+    Only updates fields that are currently empty on the album.
+    """
+    if not _spotify_available():
+        return
+
+    from services.api.external.spotify import search_and_match_album
+
+    try:
+        result = search_and_match_album(title, artist, year=year)
+    except Exception:
+        log.warning("Spotify search failed for %s - %s", artist, title, exc_info=True)
+        return
+
+    if not result:
+        return
+
+    if not album.spotify_id and result.get("spotify_id"):
+        album.spotify_id = result["spotify_id"]
+    if not album.spotify_url and result.get("spotify_url"):
+        album.spotify_url = result["spotify_url"]
+    if not album.cover_url and result.get("cover_url"):
+        album.cover_url = result["cover_url"]
+    if not album.genres and result.get("genres"):
+        album.genres = result["genres"]
+    if not album.release_year and result.get("release_year"):
+        album.release_year = result["release_year"]
+
+
+# --- High-level enrichment ---------------------------------------------------
+
+
+def enrich_album(album: Album, db: Session) -> Album:
+    """Fill in missing metadata on an Album using MusicBrainz, CAA, and Spotify.
+
+    This is idempotent — it skips fields that are already populated.
+    """
+    title = album.title
+    artist = album.artist_name
+    year = album.release_year
+
+    # 1. MusicBrainz: get MBID and basic metadata if missing
+    if not album.musicbrainz_id:
+        rgs = mb.search_release_groups(artist, title, year=year, limit=5)
+        if rgs:
+
+            def score_rg(rg: dict[str, Any]) -> tuple[int, str]:
+                s = 0
+                if (rg.get("primary_type") or "").lower() == "album":
+                    s += 10
+                if rg.get("title", "").lower() == title.lower():
+                    s += 5
+                return (-s, rg.get("first_release_date") or "9999-99-99")
+
+            rgs.sort(key=score_rg)
+            best = rgs[0]
+            album.musicbrainz_id = best["id"]
+            if not album.release_year:
+                album.release_year = _year_from_date(best.get("first_release_date"))
+
+    # 2. Cover Art Archive: get cover if we have an MBID and no cover yet
+    if album.musicbrainz_id and not album.cover_url:
+        cover = _fetch_cover_art_url(album.musicbrainz_id)
+        if cover:
+            album.cover_url = cover
+
+    # 3. Spotify: supplement cover, genres, spotify_id, url
+    _enrich_from_spotify(album, title, artist, year=year)
+
+    db.commit()
+    db.refresh(album)
+    return album
+
+
+def resolve_album(
+    db: Session,
+    *,
+    title: str,
+    artist: str,
+    year: int | None = None,
+) -> Album:
+    """Find or create an Album, then enrich it with all available metadata.
+
+    This is the primary entry point for the nomination flow. It:
+    1. Searches the local DB for an existing match (case-insensitive).
+    2. If not found, tries MusicBrainz release-group resolution.
+    3. If still not found, creates a bare Album row.
+    4. Enriches the album with Cover Art Archive and Spotify data.
+    5. Returns a fully-populated Album instance.
+    """
+    # Try local DB first (case-insensitive)
+    stmt = select(Album).where(
+        func.lower(Album.title) == title.strip().lower(),
+        func.lower(Album.artist_name) == artist.strip().lower(),
+    )
+    if year:
+        stmt = stmt.where(Album.release_year == year)
+    album = db.execute(stmt).scalar_one_or_none()
+
+    # If no local match, try MusicBrainz upsert
+    if album is None:
+        album = upsert_album_from_release_group(
+            db, artist_name=artist, album_title=title, year=year
+        )
+
+    # If MB also didn't match, create a bare record
+    if album is None:
+        album = Album(
+            title=title.strip(),
+            artist_name=artist.strip(),
+            release_year=year,
+        )
+        db.add(album)
+        db.flush()
+
+    # Now enrich with all sources
+    return enrich_album(album, db)

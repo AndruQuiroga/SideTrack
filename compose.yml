@@ -1,26 +1,24 @@
+# Local development. Production on Stache-Rack uses deploy/stack.yml.
 services:
   db:
-    image: postgres:15
-    env_file: .env
+    image: pgvector/pgvector:pg16
+    env_file: ${SIDETRACK_ENV_FILE:-.env}
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - db_data:/var/lib/postgresql/data
     ports:
       - '5432:5432'
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER}']
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
       interval: 10s
       timeout: 5s
       retries: 5
 
+  # Ephemeral queue for the Last.fm ingest job until Phase 2 replaces RQ (ADR 0002).
   redis:
-    image: redis:7
-    ports:
-      - '6379:6379'
+    image: redis:7-alpine
+    command: ['redis-server', '--save', '', '--appendonly', 'no']
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
       interval: 10s
@@ -31,11 +29,14 @@ services:
     build:
       context: .
       dockerfile: services/api/Dockerfile
-    env_file: .env
+    image: sidetrack/api:dev
+    env_file: ${SIDETRACK_ENV_FILE:-.env}
     environment:
-      DATABASE_URL: ${DATABASE_URL}
+      SIDETRACK_ENV: ${SIDETRACK_ENV:-development}
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     ports:
       - '8000:8000'
@@ -45,19 +46,30 @@ services:
           'CMD',
           'python',
           '-c',
-          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)",
         ]
       interval: 10s
       timeout: 5s
       retries: 5
 
+  rq-worker:
+    image: sidetrack/api:dev
+    command: ['python', '-m', 'services.api.rq_worker']
+    env_file: ${SIDETRACK_ENV_FILE:-.env}
+    environment:
+      SIDETRACK_ENV: ${SIDETRACK_ENV:-development}
+    depends_on:
+      api:
+        condition: service_healthy
+
   web:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
-    env_file: .env
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
+    env_file: ${SIDETRACK_ENV_FILE:-.env}
     environment:
-      NEXT_PUBLIC_API_BASE_URL: http://api:8000
       SIDETRACK_API_BASE_URL: http://api:8000
       NODE_ENV: production
     depends_on:
@@ -79,65 +91,12 @@ services:
     build:
       context: .
       dockerfile: apps/bot/Dockerfile
-    env_file: .env
+    env_file: ${SIDETRACK_ENV_FILE:-.env}
     environment:
       SIDETRACK_API_BASE_URL: http://api:8000
-      SIDETRACK_API_TOKEN: ${SIDETRACK_API_TOKEN:-changeme}
-      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:-development-token}
     depends_on:
       api:
         condition: service_healthy
-
-  worker:
-    build:
-      context: .
-      dockerfile: services/worker/Dockerfile
-    env_file: .env
-    environment:
-      WORKER_DATABASE_URL: ${DATABASE_URL}
-      WORKER_REDIS_URL: ${REDIS_URL:-redis://redis:6379}
-      WORKER_SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID:-}
-      WORKER_SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET:-}
-      WORKER_STATUS_PORT: '8700'
-    ports:
-      - '8700:8700'
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    healthcheck:
-      test:
-        [
-          'CMD',
-          'python',
-          '-c',
-          "import urllib.request; urllib.request.urlopen('http://localhost:8700')",
-        ]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-
-  extraction:
-    profiles: ['gpu']
-    build:
-      context: .
-      dockerfile: services/extraction/Dockerfile
-    env_file: .env
-    environment:
-      SIDETRACK_API_BASE_URL: http://api:8000
-    ports:
-      - '8800:8800'
-    depends_on:
-      api:
-        condition: service_healthy
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
 
 volumes:
   db_data:

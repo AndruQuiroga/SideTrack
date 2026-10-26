@@ -1,0 +1,45 @@
+schema: spec-driven
+
+# Constraints an agent cannot infer from the code. Background lives in docs/decisions/.
+context: |
+  Sidetrack is a personal homelab project: a Discord album club plus audio-first
+  listening intelligence. One owner, a handful of club members. Not a commercial service.
+
+  Truth rules (the project previously lost track of mocked ML models):
+  - Production code under services/, apps/, packages/ must never return fake or
+    placeholder data. Unimplemented behaviour raises NotImplementedError or returns
+    an explicit "unavailable" status. Test doubles live only under tests/.
+  - Every spec scenario must be backed by a test before a change is archived.
+  - Distinguish observed current behaviour from proposed behaviour in every artifact.
+
+  Target architecture (ADR 0001-0004): one Python package with modules identity,
+  catalog, listening, club, analysis; Postgres (+pgvector) is the only stateful
+  service; background work uses a Postgres-backed queue. Do not add Redis, RQ,
+  APScheduler, Celery or new microservices.
+
+  External APIs: Spotify is metadata-only (client credentials). Audio features,
+  recommendations and preview URLs are unavailable to this app. MusicBrainz web
+  API is limited to 1 request/second; bulk lookups use the local mirror (ADR 0005).
+
+  Deployment (ADR 0006): Stache-Rack Docker Swarm managed by Portainer. Images on
+  GHCR. HTTP via Traefik on the traefik-public overlay; public routes via Cloudflare
+  Tunnel. Stateful services pin to one node with /srv/sidetrack/* bind mounts.
+  GPU work runs on docker-0 (GTX 1070 Ti, 8 GB, Pascal: no FlashAttention, fp16/fp32 only).
+
+  Storage budget (ADR 0005): Sidetrack's own data stays under ~40 GB of SSD.
+  The MusicBrainz mirror, audio files and backups live on HDD.
+
+  Audio acquisition (ADR 0007): yt-dlp is an explicit, opt-in, personal-only CLI.
+  Never run it automatically and never expose audio through the web app or API.
+
+  Secrets never go in the repo, specs, logs or API responses.
+
+rules:
+  proposal:
+    - State what is out of scope.
+    - Label current-state claims as observed (with file references) or assumed.
+  specs:
+    - Every scenario must be testable and name the observable outcome.
+  tasks:
+    - Each implementation task names the test that proves it.
+    - End with a task to update docs/STATUS.md or ADRs if the change alters them.

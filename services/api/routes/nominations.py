@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from services.api.db import get_db
 from services.api.models.club import Nomination
-from services.api.schemas import NominationRead
+from services.api.schemas import NominationRead, NominationUpdate
 
 router = APIRouter(prefix="/nominations", tags=["nominations"])
 
@@ -46,3 +46,41 @@ async def get_nomination(nomination_id: UUID, db: Session = Depends(get_db)) -> 
     if not nomination:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Nomination not found.")
     return NominationRead.model_validate(nomination)
+
+
+@router.patch("/{nomination_id}", response_model=NominationRead)
+async def update_nomination(
+    nomination_id: UUID,
+    payload: NominationUpdate,
+    db: Session = Depends(get_db),
+) -> NominationRead:
+    """Update a nomination's pitch, pitch track, tags, or album.
+
+    Only fields included in the request body are updated.
+    """
+    nomination = db.get(Nomination, nomination_id)
+    if not nomination:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Nomination not found.")
+
+    update_data = payload.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(nomination, field, value)
+
+    db.commit()
+    db.refresh(nomination)
+    return NominationRead.model_validate(nomination)
+
+
+@router.delete("/{nomination_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None)
+async def delete_nomination(
+    nomination_id: UUID,
+    db: Session = Depends(get_db),
+) -> None:
+    """Withdraw (delete) a nomination. Cascades to associated votes."""
+
+    nomination = db.get(Nomination, nomination_id)
+    if not nomination:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Nomination not found.")
+
+    db.delete(nomination)
+    db.commit()

@@ -35,16 +35,10 @@ const defaultConnections: Connection[] = [
   },
 ];
 
-export function ConnectionsGrid({
-  connections = defaultConnections,
-  userId,
-}: {
-  connections?: Connection[];
-  userId?: string;
-}) {
+export function ConnectionsGrid({ connections = defaultConnections }: { connections?: Connection[] }) {
   async function onConnect(key: Connection['key']) {
     try {
-      const { url } = await requestIntegrationConnect(key, userId);
+      const { url } = await requestIntegrationConnect(key);
       if (url) {
         showToast(`Opening ${key} connect…`, 'success');
         window.open(url, '_blank');

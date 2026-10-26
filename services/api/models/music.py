@@ -28,6 +28,8 @@ class Album(Base):
     musicbrainz_id: Mapped[str | None] = mapped_column(String(64), unique=True)
     spotify_id: Mapped[str | None] = mapped_column(String(64), unique=True)
     cover_url: Mapped[str | None] = mapped_column(Text)
+    spotify_url: Mapped[str | None] = mapped_column(Text)
+    genres: Mapped[list[str] | None] = mapped_column(JSON)
 
     tracks: Mapped[list[Track]] = relationship(back_populates="album", cascade="all, delete-orphan")
     nominations: Mapped[list[Nomination]] = relationship(back_populates="album")
