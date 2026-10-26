@@ -59,7 +59,8 @@ The bot reads configuration from environment variables:
 ### Required
 
 - `SIDETRACK_API_BASE_URL` — API base URL.
-- `SIDETRACK_API_TOKEN` — Bot auth token for the API.
+- `SIDETRACK_BOT_API_TOKEN` (or `SIDETRACK_BOT_API_TOKEN_FILE`) — the bot's own API token. The bot acts for the Discord user of each interaction (`X-Sidetrack-Act-As: discord:<id>`) and records club membership as itself (ADR 0009).
+- `DISCORD_MEMBERS_INTENT` — `true` to hear members leaving the guild (privileged intent).
 - `DISCORD_BOT_TOKEN` — Discord bot token.
 - `SIDETRACK_NOMINATIONS_FORUM_ID` — Forum channel ID for nomination threads.
 

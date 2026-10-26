@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from sidetrack.catalog import Album
 from sidetrack.club.models import Nomination, Rating, Week
 from sidetrack.db import get_db
-from sidetrack.identity import User
+from sidetrack.identity import Principal, User, auth, policy
 from sidetrack.schemas import (
     RatingCreate,
     RatingHistogramBin,
@@ -95,11 +95,13 @@ def _bucket_value(value: float, bin_size: float) -> float:
 @router.get("/ratings", response_model=list[RatingRead])
 async def list_ratings(
     db: Session = Depends(get_db),
+    principal: Principal = Depends(policy(auth.CLUB_READ)),
     week_id: UUID | None = Query(None, description="Filter ratings by week ID."),
     user_id: UUID | None = Query(None, description="Filter ratings by user ID."),
     limit: int = Query(50, ge=1, le=500, description="Maximum number of ratings to return."),
     offset: int = Query(0, ge=0, description="Number of ratings to skip."),
 ) -> list[RatingRead]:
+    auth.require_member(db, principal)
     query = select(Rating)
     if week_id is not None:
         query = query.where(Rating.week_id == week_id)
@@ -110,7 +112,12 @@ async def list_ratings(
 
 
 @router.get("/ratings/{rating_id}", response_model=RatingRead)
-async def get_rating(rating_id: UUID, db: Session = Depends(get_db)) -> RatingRead:
+async def get_rating(
+    rating_id: UUID,
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(policy(auth.CLUB_READ)),
+) -> RatingRead:
+    auth.require_member(db, principal)
     rating = db.get(Rating, rating_id)
     if not rating:
         raise HTTPException(
@@ -130,9 +137,12 @@ async def create_week_rating(
     payload: RatingCreate,
     response: Response,
     db: Session = Depends(get_db),
+    principal: Principal = Depends(policy(auth.CLUB_WRITE)),
 ) -> RatingRead:
+    user_id = auth.resolve_owner(principal, payload.user_id)
+    auth.require_member(db, principal)
     week = _require_week(db, week_id)
-    _require_user(db, payload.user_id)
+    _require_user(db, user_id)
     _require_album(db, payload.album_id)
     _validate_nomination(db, payload.nomination_id, week_id, payload.album_id)
 
@@ -151,7 +161,7 @@ async def create_week_rating(
     existing_rating = db.execute(
         select(Rating).where(
             Rating.week_id == week_id,
-            Rating.user_id == payload.user_id,
+            Rating.user_id == user_id,
         )
     ).scalar_one_or_none()
     if existing_rating:
@@ -162,7 +172,7 @@ async def create_week_rating(
 
     rating = Rating(
         week_id=week_id,
-        user_id=payload.user_id,
+        user_id=user_id,
         album_id=payload.album_id,
         nomination_id=payload.nomination_id,
         value=payload.value,
@@ -193,9 +203,11 @@ async def create_week_rating(
 async def get_week_rating_summary(
     week_id: UUID,
     db: Session = Depends(get_db),
+    principal: Principal = Depends(policy(auth.CLUB_READ)),
     include_histogram: bool = Query(False, description="Return histogram bins."),
     bin_size: float = Query(0.5, gt=0, description="Histogram bin size."),
 ) -> RatingSummary:
+    auth.require_member(db, principal)
     _require_week(db, week_id)
 
     stats = db.execute(

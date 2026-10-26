@@ -14,19 +14,34 @@ from sidetrack.api.main import create_app
 pytestmark = pytest.mark.unit
 
 
-def test_openapi_matches_phase0():
-    baseline = Path(__file__).parent / "fixtures" / "phase0-openapi.json"
-    before = json.loads(baseline.read_text(encoding="utf-8"))
+FIXTURES = Path(__file__).parent / "fixtures"
+
+
+def test_phase0_routes_are_retained():
+    """Every Phase 0 operation still exists; Phase 2 and 3 only added routes."""
+    before = json.loads((FIXTURES / "phase0-openapi.json").read_text(encoding="utf-8"))
     after = create_app().openapi()
     for path, operations in before["paths"].items():
-        assert after["paths"][path] == operations
-    for name, schema in before["components"]["schemas"].items():
-        assert after["components"]["schemas"][name] == schema
+        assert set(after["paths"][path]) == set(operations), path
     assert set(after["paths"]) - set(before["paths"]) == {
         "/club/notifications/claim",
         "/club/notifications/{event_id}/ack",
         "/club/notifications/{event_id}/fail",
+        "/club/members/discord/{discord_id}",
     }
+
+
+def test_openapi_matches_phase3_contract():
+    """The API contract is frozen at Phase 3 (add-per-user-authorization).
+
+    Phase 3 made body ``user_id`` fields optional (the acting user owns writes), added
+    ``listening_visibility`` to users and added club membership routes. Regenerate the
+    fixture only with a reviewed contract change:
+    ``python -c "import json; from sidetrack.api.main import create_app;
+    print(json.dumps(create_app().openapi(), indent=1, sort_keys=True))"``.
+    """
+    expected = json.loads((FIXTURES / "phase3-openapi.json").read_text(encoding="utf-8"))
+    assert create_app().openapi() == expected
 
 
 def test_each_table_has_one_canonical_owner():
@@ -35,7 +50,14 @@ def test_each_table_has_one_canonical_owner():
         "identity": {"users", "linked_accounts", "follows"},
         "catalog": {"albums", "tracks"},
         "listening": {"listen_events", "import_checkpoints"},
-        "club": {"weeks", "nominations", "votes", "ratings", "club_notification_outbox"},
+        "club": {
+            "weeks",
+            "nominations",
+            "votes",
+            "ratings",
+            "club_notification_outbox",
+            "club_members",
+        },
         "analysis": {"track_features", "taste_profiles", "compatibility", "user_recommendations"},
         "queue_models": {
             "background_jobs",

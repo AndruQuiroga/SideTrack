@@ -12,7 +12,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from sidetrack.db import Base
-from sidetrack.types import ProviderType
+from sidetrack.types import ListeningVisibility, ProviderType
 
 if TYPE_CHECKING:
     from sidetrack.analysis.models import (
@@ -30,6 +30,16 @@ class User(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     display_name: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
     handle: Mapped[str | None] = mapped_column(String(64), unique=True)
+    listening_visibility: Mapped[ListeningVisibility] = mapped_column(
+        SAEnum(
+            ListeningVisibility,
+            name="listening_visibility",
+            values_callable=lambda e: [m.value for m in e],
+        ),
+        nullable=False,
+        default=ListeningVisibility.PRIVATE,
+        server_default=ListeningVisibility.PRIVATE.value,
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC)
     )

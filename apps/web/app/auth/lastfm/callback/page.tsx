@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-import { getApiBaseUrl } from '../../../lib/config';
+import { completeLastfmLink } from '../../../lib/browser-api';
 import { PageShell } from '../../../components/page-shell';
 import { Card, SectionHeading } from '../../../components/ui';
 
@@ -36,11 +36,7 @@ export default function LastFmCallbackPage() {
 
     async function completeAuth(authToken: string, signedState: string) {
       try {
-        const res = await fetch(`${getApiBaseUrl()}/integrations/lastfm/callback`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: authToken, state: signedState }),
-        });
+        const res = await completeLastfmLink(authToken, signedState);
 
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));

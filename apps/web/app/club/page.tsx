@@ -1,9 +1,10 @@
 import { Metadata } from 'next';
 
-import { fetchWeekList, type WeekDetailWithRatings } from '../lib/api/weeks';
+import { fetchWeekList } from '../lib/api/weeks';
+import { loadAs } from '../lib/server-api';
+import { sessionUserId } from '../lib/session';
 import { PageShell } from '../components/page-shell';
-import { ClubGallery } from '../components/club-gallery';
-import { Unavailable } from '../components/ui';
+import { ClubArchive } from '../components/club-archive';
 
 export const metadata: Metadata = {
   title: 'Sidetrack Club — Winners',
@@ -11,19 +12,14 @@ export const metadata: Metadata = {
 };
 
 export default async function ClubPage() {
-  let weeks: WeekDetailWithRatings[] | null = null;
-  try {
-    weeks = await fetchWeekList();
-  } catch (error) {
-    console.error('Club archive unavailable', error);
-  }
+  const archive = await loadAs(await sessionUserId(), (api) => fetchWeekList(api));
   return (
     <PageShell
       title="Club archive"
       description="Every week of Sidetrack in one place: winners, tags, ratings, filters, and participation stats."
       accent="Live archive + filters"
     >
-      {weeks ? <ClubGallery weeks={weeks} /> : <Unavailable what="club archive" />}
+      <ClubArchive archive={archive} />
     </PageShell>
   );
 }

@@ -6,7 +6,8 @@ import Link from 'next/link';
 
 import { PageShell } from '../components/page-shell';
 import { Card, SectionHeading } from '../components/ui';
-import { createFriendBlend, type BlendPreview } from '../lib/api/social';
+import type { BlendPreview } from '../lib/api/social';
+import { createFriendBlend } from '../lib/browser-api';
 import { showToast } from '../components/toast';
 
 export default function BlendPage() {

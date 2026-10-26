@@ -7,8 +7,9 @@ from sqlalchemy import or_, select
 from sqlalchemy.orm import Session, joinedload
 
 from sidetrack.catalog import Album, Track, upsert_album_from_release_group
+from sidetrack.club import ClubMember
 from sidetrack.db import get_db
-from sidetrack.identity import User
+from sidetrack.identity import Principal, User, auth, policy
 
 router = APIRouter(tags=["search"])
 
@@ -17,15 +18,22 @@ router = APIRouter(tags=["search"])
 async def search(
     q: str = Query("", description="Free text search query"),
     db: Session = Depends(get_db),
+    principal: Principal = Depends(policy(auth.CATALOG_READ)),
 ) -> dict[str, list[dict[str, object]]]:
     query = (q or "").strip()
     like = f"%{query}%"
 
     # Users
+    # Only club members find people, and only other current members.
     users_q = (
-        select(User).where(or_(User.display_name.ilike(like), User.handle.ilike(like))).limit(10)
+        select(User)
+        .join(ClubMember, ClubMember.user_id == User.id)
+        .where(ClubMember.left_at.is_(None))
+        .where(or_(User.display_name.ilike(like), User.handle.ilike(like)))
+        .limit(10)
     )
-    users_rows = db.execute(users_q).scalars().all() if query else []
+    find_users = bool(query) and auth.is_member_actor(db, principal)
+    users_rows = db.execute(users_q).scalars().all() if find_users else []
     users = [
         {"id": str(u.id), "display_name": u.display_name, "handle": u.handle} for u in users_rows
     ]

@@ -14,7 +14,7 @@ from sidetrack.catalog import Album
 from sidetrack.club.models import Nomination, Rating, Vote, Week
 from sidetrack.club.notifications import reconcile_week
 from sidetrack.db import get_db
-from sidetrack.identity import User
+from sidetrack.identity import Principal, User, auth, policy
 from sidetrack.schemas import (
     NominationCreate,
     NominationRead,
@@ -29,6 +29,10 @@ from sidetrack.schemas import (
 )
 
 router = APIRouter(prefix="/weeks", tags=["weeks"])
+
+THREAD_FIELDS = frozenset(
+    {"nominations_thread_id", "poll_thread_id", "winner_thread_id", "ratings_thread_id"}
+)
 
 
 def _validate_timeline(
@@ -195,6 +199,7 @@ def _build_week_details(db: Session, weeks: list[Week]) -> list[WeekDetail]:
 @router.get("/", response_model=list[WeekDetail])
 async def list_weeks(
     db: Session = Depends(get_db),
+    principal: Principal = Depends(policy(auth.CLUB_READ)),
     discussion_start: datetime | None = Query(
         None, description="Filter weeks with discussion on/after this timestamp."
     ),
@@ -220,6 +225,7 @@ async def list_weeks(
 ) -> list[WeekDetail]:
     """Return club weeks with nomination, vote, and rating aggregates."""
 
+    auth.require_member(db, principal)
     query = select(Week)
     if discussion_start:
         query = query.where(Week.discussion_at >= discussion_start)
@@ -257,8 +263,14 @@ async def list_weeks(
 
 
 @router.get("/{week_id}", response_model=WeekDetail)
-async def get_week(week_id: UUID, db: Session = Depends(get_db)) -> WeekDetail:
+async def get_week(
+    week_id: UUID,
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(policy(auth.CLUB_READ)),
+) -> WeekDetail:
     """Return a single week with nested aggregates."""
+
+    auth.require_member(db, principal)
 
     week = db.get(Week, week_id)
     if not week:
@@ -273,15 +285,21 @@ async def get_week(week_id: UUID, db: Session = Depends(get_db)) -> WeekDetail:
     status_code=status.HTTP_201_CREATED,
 )
 async def create_week_nomination(
-    week_id: UUID, payload: NominationCreate, db: Session = Depends(get_db)
+    week_id: UUID,
+    payload: NominationCreate,
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(policy(auth.CLUB_WRITE)),
 ) -> NominationRead:
-    """Create a nomination for a week; enforce uniqueness per (user, album, week)."""
+    """Create a nomination for the acting member; unique per (user, album, week)."""
+
+    user_id = auth.resolve_owner(principal, payload.user_id)
+    auth.require_member(db, principal)
 
     week = db.get(Week, week_id)
     if not week:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Week not found")
 
-    if not db.get(User, payload.user_id):
+    if not db.get(User, user_id):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     if not db.get(Album, payload.album_id):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Album not found")
@@ -289,7 +307,7 @@ async def create_week_nomination(
     existing = db.execute(
         select(Nomination).where(
             Nomination.week_id == week_id,
-            Nomination.user_id == payload.user_id,
+            Nomination.user_id == user_id,
             Nomination.album_id == payload.album_id,
         )
     ).scalar_one_or_none()
@@ -299,7 +317,7 @@ async def create_week_nomination(
             detail="Nomination already exists for this user and album.",
         )
 
-    nomination = Nomination(**payload.model_dump())
+    nomination = Nomination(**payload.model_dump(exclude={"user_id"}), user_id=user_id)
     db.add(nomination)
     db.commit()
     db.refresh(nomination)
@@ -307,8 +325,14 @@ async def create_week_nomination(
 
 
 @router.post("/", response_model=WeekDetail, status_code=status.HTTP_201_CREATED)
-async def create_week(payload: WeekCreate, db: Session = Depends(get_db)) -> WeekDetail:
-    """Create or update a week using idempotent matching fields."""
+async def create_week(
+    payload: WeekCreate,
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(policy(auth.CLUB_WRITE)),
+) -> WeekDetail:
+    """Create or update a week using idempotent matching fields. Club admins only."""
+
+    auth.require_admin(db, principal)
 
     _validate_timeline(payload.discussion_at, payload.nominations_close_at, payload.poll_close_at)
 
@@ -335,15 +359,27 @@ async def create_week(payload: WeekCreate, db: Session = Depends(get_db)) -> Wee
 
 @router.patch("/{week_id}", response_model=WeekDetail)
 async def update_week(
-    week_id: UUID, payload: WeekUpdate, db: Session = Depends(get_db)
+    week_id: UUID,
+    payload: WeekUpdate,
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(policy(auth.CLUB_WRITE, auth.CLUB_THREADS)),
 ) -> WeekDetail:
-    """Apply partial updates to a week while validating the timeline."""
+    """Apply partial updates to a week while validating the timeline.
+
+    Club admins may change any field; the bot acting as itself only thread IDs.
+    """
+
+    updates = payload.model_dump(exclude_unset=True)
+    if principal.actor is None:
+        if not set(updates) <= THREAD_FIELDS:
+            raise auth.forbidden("Only thread IDs can be set without an acting admin.")
+    else:
+        auth.require_admin(db, principal)
 
     week = db.get(Week, week_id, with_for_update=True)
     if not week:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Week not found")
 
-    updates = payload.model_dump(exclude_unset=True)
     updated_discussion = updates.get("discussion_at", week.discussion_at)
     updated_nom_close = updates.get("nominations_close_at", week.nominations_close_at)
     updated_poll_close = updates.get("poll_close_at", week.poll_close_at)

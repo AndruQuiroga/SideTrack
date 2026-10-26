@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from sidetrack.catalog import Album
 from sidetrack.club import Rating, Week
 from sidetrack.db import get_db
-from sidetrack.identity import User
+from sidetrack.identity import Principal, User, auth, policy
 
 
 class FeedEventType(str, Enum):
@@ -44,10 +44,16 @@ router = APIRouter(tags=["feed"])
 @router.get("/feed", response_model=list[FeedItem])
 async def get_feed(
     db: Session = Depends(get_db),
-    user_id: str | None = Query(None, description="User ID for personalized feed"),
+    principal: Principal = Depends(policy(auth.CLUB_READ)),
+    user_id: str | None = Query(None, description="Must be the acting user when given."),
     limit: int = Query(20, ge=1, le=100, description="Number of feed items to return"),
 ) -> list[FeedItem]:
-    """Return recent activity feed combining ratings, listens, and club events."""
+    """Return recent club activity (ratings and winners) for an acting club member."""
+
+    actor = principal.require_actor()
+    if user_id is not None and user_id != str(actor):
+        raise auth.forbidden("user_id does not match the acting user.")
+    auth.require_member(db, principal)
     feed_items: list[FeedItem] = []
 
     # Fetch recent ratings with user and album data

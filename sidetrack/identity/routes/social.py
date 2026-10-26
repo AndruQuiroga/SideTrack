@@ -10,6 +10,8 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from sidetrack.db import get_db
+from sidetrack.identity import auth
+from sidetrack.identity.auth import Principal, policy
 from sidetrack.identity.models import Follow, User
 from sidetrack.schemas import UserRead
 
@@ -25,9 +27,14 @@ def _require_user(db: Session, user_id: UUID) -> User:
 
 @router.post("/{user_id}/follow/{target_id}", status_code=status.HTTP_201_CREATED)
 async def follow_user(
-    user_id: UUID, target_id: UUID, db: Session = Depends(get_db)
+    user_id: UUID,
+    target_id: UUID,
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(policy(auth.SELF)),
 ) -> dict[str, str]:
-    """Create a follow relationship from user_id → target_id."""
+    """Create a follow relationship from the acting user (user_id) → target_id."""
+
+    auth.require_self(principal, user_id)
 
     if user_id == target_id:
         raise HTTPException(
@@ -49,8 +56,15 @@ async def follow_user(
 
 
 @router.delete("/{user_id}/follow/{target_id}")
-async def unfollow_user(user_id: UUID, target_id: UUID, db: Session = Depends(get_db)) -> Response:
-    """Remove a follow relationship from user_id → target_id."""
+async def unfollow_user(
+    user_id: UUID,
+    target_id: UUID,
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(policy(auth.SELF)),
+) -> Response:
+    """Remove a follow relationship from the acting user (user_id) → target_id."""
+
+    auth.require_self(principal, user_id)
 
     follow = db.execute(
         select(Follow).where(
@@ -70,8 +84,15 @@ async def unfollow_user(user_id: UUID, target_id: UUID, db: Session = Depends(ge
 
 
 @router.get("/{user_id}/followers", response_model=list[UserRead])
-async def list_followers(user_id: UUID, db: Session = Depends(get_db)) -> list[UserRead]:
-    """Return users who follow user_id."""
+async def list_followers(
+    user_id: UUID,
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(policy(auth.CLUB_READ)),
+) -> list[UserRead]:
+    """Return users who follow user_id. Club members only."""
+
+    principal.require_actor()
+    auth.require_member(db, principal)
 
     _require_user(db, user_id)
     follows = db.scalars(select(Follow).where(Follow.followee_id == user_id)).all()
@@ -83,8 +104,15 @@ async def list_followers(user_id: UUID, db: Session = Depends(get_db)) -> list[U
 
 
 @router.get("/{user_id}/following", response_model=list[UserRead])
-async def list_following(user_id: UUID, db: Session = Depends(get_db)) -> list[UserRead]:
-    """Return users that user_id follows."""
+async def list_following(
+    user_id: UUID,
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(policy(auth.CLUB_READ)),
+) -> list[UserRead]:
+    """Return users that user_id follows. Club members only."""
+
+    principal.require_actor()
+    auth.require_member(db, principal)
 
     _require_user(db, user_id)
     follows = db.scalars(select(Follow).where(Follow.follower_id == user_id)).all()

@@ -11,9 +11,13 @@ from sqlalchemy.orm import Session
 from sidetrack.analysis.models import TrackFeature
 from sidetrack.catalog import Track
 from sidetrack.db import get_db
+from sidetrack.identity import auth, policy
 from sidetrack.schemas.core import TrackFeatureCreate, TrackFeatureRead, TrackRead
 
-router = APIRouter(prefix="/tracks", tags=["tracks"])
+# No client holds analysis:write today (ADR 0009); the GPU worker calls code directly.
+router = APIRouter(
+    prefix="/tracks", tags=["tracks"], dependencies=[Depends(policy(auth.ANALYSIS_WRITE))]
+)
 
 
 @router.get("/pending-features", response_model=list[TrackRead])

@@ -1,4 +1,5 @@
-import { getApiBaseUrl } from '../config';
+/** Server-only blend generation for the session user. */
+import { apiRequest } from '../server-api';
 
 export type BlendPreview = {
   name: string;
@@ -6,12 +7,13 @@ export type BlendPreview = {
   tracks: Array<{ id: string; title: string; artist_name: string; reason?: string }>;
 };
 
-export async function createFriendBlend(userA: string, userB: string): Promise<BlendPreview> {
-  const res = await fetch(`${getApiBaseUrl()}/playlist/blend`, {
+export async function createFriendBlend(
+  sessionUserId: string,
+  userA: string,
+  userB: string,
+): Promise<BlendPreview> {
+  return apiRequest<BlendPreview>(sessionUserId, '/playlist/blend', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ user_a: userA, user_b: userB }),
+    body: { user_a: userA, user_b: userB },
   });
-  if (!res.ok) throw new Error(`Blend failed with status ${res.status}`);
-  return (await res.json()) as BlendPreview;
 }

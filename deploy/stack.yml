@@ -47,15 +47,16 @@ services:
     image: ghcr.io/andruquiroga/sidetrack-api:${SIDETRACK_TAG:?set SIDETRACK_TAG to an image tag}
     environment:
       SIDETRACK_ENV: production
-      CORS_ORIGINS: '["https://sidetrack.network","http://sidetrack.stache.lan"]'
       LASTFM_API_KEY: ${LASTFM_API_KEY:-}
       SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID:-}
       SIDETRACK_MUSICBRAINZ_APP_NAME: ${SIDETRACK_MUSICBRAINZ_APP_NAME:-Sidetrack/0.1}
     secrets: &api_secrets
       - source: sidetrack_database_url
         target: database_url
-      - source: sidetrack_api_token
-        target: sidetrack_api_token
+      - source: sidetrack_web_api_token
+        target: sidetrack_web_api_token
+      - source: sidetrack_bot_api_token
+        target: sidetrack_bot_api_token
       - source: sidetrack_link_secret
         target: sidetrack_link_secret
       - source: sidetrack_lastfm_api_secret
@@ -115,11 +116,11 @@ services:
       SIDETRACK_API_BASE_URL: http://api:8000
       NEXTAUTH_URL: https://sidetrack.network
       DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID:?set DISCORD_CLIENT_ID}
-      SIDETRACK_API_TOKEN_FILE: /run/secrets/sidetrack_api_token
+      SIDETRACK_WEB_API_TOKEN_FILE: /run/secrets/sidetrack_web_api_token
       NEXTAUTH_SECRET_FILE: /run/secrets/sidetrack_nextauth_secret
       DISCORD_CLIENT_SECRET_FILE: /run/secrets/sidetrack_discord_client_secret
     secrets:
-      - sidetrack_api_token
+      - sidetrack_web_api_token
       - sidetrack_nextauth_secret
       - sidetrack_discord_client_secret
     networks:
@@ -157,10 +158,11 @@ services:
       DISCORD_GUILD_ID: ${DISCORD_GUILD_ID:?set DISCORD_GUILD_ID}
       SIDETRACK_NOMINATIONS_FORUM_ID: ${SIDETRACK_NOMINATIONS_FORUM_ID:-}
       SIDETRACK_ADMIN_ROLE_IDS: ${SIDETRACK_ADMIN_ROLE_IDS:-}
-      SIDETRACK_API_TOKEN_FILE: /run/secrets/sidetrack_api_token
+      DISCORD_MEMBERS_INTENT: ${DISCORD_MEMBERS_INTENT:-false}
+      SIDETRACK_BOT_API_TOKEN_FILE: /run/secrets/sidetrack_bot_api_token
       DISCORD_BOT_TOKEN_FILE: /run/secrets/sidetrack_discord_bot_token
     secrets:
-      - sidetrack_api_token
+      - sidetrack_bot_api_token
       - sidetrack_discord_bot_token
     networks:
       - backend
@@ -184,7 +186,9 @@ secrets:
     external: true
   sidetrack_database_url:
     external: true
-  sidetrack_api_token:
+  sidetrack_web_api_token:
+    external: true
+  sidetrack_bot_api_token:
     external: true
   sidetrack_link_secret:
     external: true

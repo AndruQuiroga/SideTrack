@@ -6,13 +6,14 @@ list[ { type: 'album'|'track', id, title, artist_name, [album_title], [reason] }
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from sidetrack.catalog import Album, Track
 from sidetrack.club import Rating
 from sidetrack.db import get_db
+from sidetrack.identity import Principal, auth, policy
 from sidetrack.listening import ListenEvent
 
 router = APIRouter(tags=["recommendations"])
@@ -20,16 +21,20 @@ router = APIRouter(tags=["recommendations"])
 
 @router.get("/recommendations")
 async def get_recommendations(
-    user_id: str = Query(..., description="User ID for whom to fetch recommendations"),
+    user_id: str | None = Query(None, description="Must be the acting user when given."),
     db: Session = Depends(get_db),
+    principal: Principal = Depends(policy(auth.PERSONAL_READ)),
 ) -> list[dict[str, str]]:
+    actor = principal.require_actor()
+    if user_id is not None and user_id != str(actor):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found.")
     items: list[dict[str, str]] = []
 
     # 1) Seed from user's top artists by listen count
     top_artists_stmt = (
         select(Track.artist_name, func.count(ListenEvent.id).label("cnt"))
         .join(Track, ListenEvent.track_id == Track.id)
-        .where(ListenEvent.user_id == user_id)
+        .where(ListenEvent.user_id == actor)
         .group_by(Track.artist_name)
         .order_by(func.count(ListenEvent.id).desc())
         .limit(3)
@@ -58,7 +63,7 @@ async def get_recommendations(
     top_tracks_stmt = (
         select(Track, func.count(ListenEvent.id).label("cnt"))
         .join(Track, ListenEvent.track_id == Track.id)
-        .where(ListenEvent.user_id == user_id)
+        .where(ListenEvent.user_id == actor)
         .group_by(Track.id)
         .order_by(func.count(ListenEvent.id).desc())
         .limit(3)

@@ -14,7 +14,7 @@ import {
 } from 'discord.js';
 
 import { Logger } from '../logger';
-import { ClubSyncService } from '../clubService';
+import { ClubSyncService, runAsDiscordUser } from '../clubService';
 import { BotConfig } from '../config';
 import {
   WeekCreate,
@@ -97,41 +97,62 @@ export function registerInteractionHandlers(
   config: BotConfig,
   logger: Logger,
 ): void {
-  client.on('interactionCreate', async (interaction: Interaction) => {
-    try {
-      // Slash commands
-      if (interaction.isChatInputCommand()) {
-        await handleSlashCommand(interaction, service, scheduler, config, logger);
-        return;
-      }
+  client.on('interactionCreate', (interaction: Interaction) =>
+    // Every API call made while handling this interaction acts for its Discord user.
+    runAsDiscordUser(interaction.user.id, () =>
+      handleInteraction(interaction, service, scheduler, config, logger),
+    ),
+  );
+}
 
-      // Button interactions
-      if (interaction.isButton()) {
-        await handleButtonInteraction(interaction, service, config, logger);
-        return;
-      }
-
-      // Select menu interactions
-      if (interaction.isStringSelectMenu()) {
-        await handleSelectMenuInteraction(interaction, logger);
-        return;
-      }
-
-      // Modal submissions
-      if (interaction.isModalSubmit()) {
-        await handleModalSubmit(interaction, service, config, logger);
-        return;
-      }
-    } catch (error) {
-      logger.error('Unhandled interaction error.', {
-        error: error instanceof Error ? error.message : String(error),
-        interactionType: interaction.type,
-      });
-
-      // Try to respond with error if possible using type-safe checks
-      await safeErrorReply(interaction, logger);
+async function handleInteraction(
+  interaction: Interaction,
+  service: ClubSyncService,
+  scheduler: ReminderScheduler,
+  config: BotConfig,
+  logger: Logger,
+): Promise<void> {
+  try {
+    if (interaction.inGuild()) {
+      await service.recordMember(
+        interaction.user.id,
+        interaction.user.displayName || interaction.user.username,
+        isAdmin(interaction, config),
+      );
     }
-  });
+
+    // Slash commands
+    if (interaction.isChatInputCommand()) {
+      await handleSlashCommand(interaction, service, scheduler, config, logger);
+      return;
+    }
+
+    // Button interactions
+    if (interaction.isButton()) {
+      await handleButtonInteraction(interaction, service, config, logger);
+      return;
+    }
+
+    // Select menu interactions
+    if (interaction.isStringSelectMenu()) {
+      await handleSelectMenuInteraction(interaction, logger);
+      return;
+    }
+
+    // Modal submissions
+    if (interaction.isModalSubmit()) {
+      await handleModalSubmit(interaction, service, config, logger);
+      return;
+    }
+  } catch (error) {
+    logger.error('Unhandled interaction error.', {
+      error: error instanceof Error ? error.message : String(error),
+      interactionType: interaction.type,
+    });
+
+    // Try to respond with error if possible using type-safe checks
+    await safeErrorReply(interaction, logger);
+  }
 }
 
 /** Safely attempt to reply with an error message for any interaction type */
@@ -1732,8 +1753,8 @@ function parseDateOption(
 }
 
 /** Check if a user has admin permissions for Sidetrack commands. */
-function isAdmin(
-  interaction: ChatInputCommandInteraction | ButtonInteraction,
+export function isAdmin(
+  interaction: Pick<Interaction, 'memberPermissions' | 'member'>,
   config: BotConfig,
 ): boolean {
   // Check for Manage Server permission using type-safe method

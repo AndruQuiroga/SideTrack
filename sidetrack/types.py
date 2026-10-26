@@ -15,3 +15,15 @@ class ListenSource(str, Enum):
     LASTFM = "lastfm"
     LISTENBRAINZ = "listenbrainz"
     MANUAL = "manual"
+
+
+class ClubRole(str, Enum):
+    MEMBER = "member"
+    ADMIN = "admin"
+
+
+class ListeningVisibility(str, Enum):
+    """Who besides the owner may see a user's listening data (ADR 0009)."""
+
+    PRIVATE = "private"
+    CLUB = "club"

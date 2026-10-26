@@ -27,15 +27,23 @@ test('configured but missing file throws', () => {
   assert.throws(() => readSecret('TOKEN', { TOKEN_FILE: '/run/secrets/absent' }, readFile));
 });
 
-test('server base URL prefers the internal address', () => {
-  const env = {
-    SIDETRACK_API_BASE_URL: 'http://api:8000',
-    NEXT_PUBLIC_API_BASE_URL: 'https://api.sidetrack.network',
-  };
-  assert.equal(serverApiBaseUrl(env), 'http://api:8000');
+test('server base URL is the internal address, never a public one', () => {
+  assert.equal(serverApiBaseUrl({ SIDETRACK_API_BASE_URL: 'http://api:8000' }), 'http://api:8000');
+  assert.equal(
+    serverApiBaseUrl({ NEXT_PUBLIC_API_BASE_URL: 'https://api.sidetrack.network' }),
+    'http://localhost:8000',
+  );
 });
 
-test('server headers carry the token only when configured', () => {
+test('server headers carry the web token only when configured', () => {
   assert.equal(serverApiHeaders({}).Authorization, undefined);
-  assert.equal(serverApiHeaders({ SIDETRACK_API_TOKEN: 't' }).Authorization, 'Bearer t');
+  assert.equal(serverApiHeaders({ SIDETRACK_WEB_API_TOKEN: 't' }).Authorization, 'Bearer t');
+  // The retired shared token is not sent.
+  assert.equal(serverApiHeaders({ SIDETRACK_API_TOKEN: 't' }).Authorization, undefined);
+});
+
+test('server headers name the acting session user', () => {
+  const headers = serverApiHeaders({ SIDETRACK_WEB_API_TOKEN: 't' }, 'user-1');
+  assert.equal(headers['X-Sidetrack-Act-As'], 'user:user-1');
+  assert.equal(serverApiHeaders({ SIDETRACK_WEB_API_TOKEN: 't' })['X-Sidetrack-Act-As'], undefined);
 });

@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from sidetrack.analysis.models import TasteProfile
 from sidetrack.db import get_db
-from sidetrack.identity import User
+from sidetrack.identity import Principal, User, auth, policy
 from sidetrack.queue_client import enqueue
 from sidetrack.schemas import TasteProfileRead
 
@@ -31,11 +31,13 @@ def _ensure_user(db: Session, user_id: UUID) -> User:
 
 @router.get("/", response_model=list[TasteProfileRead])
 async def list_taste_profiles(
-    user_id: UUID, db: Session = Depends(get_db)
+    user_id: UUID,
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(policy(auth.PERSONAL_READ)),
 ) -> list[TasteProfileRead]:
-    """Return stored taste profiles for a user."""
+    """Return stored taste profiles for a user, if their visibility allows."""
 
-    _ensure_user(db, user_id)
+    auth.require_personal_view(db, principal, user_id)
     profiles = db.scalars(select(TasteProfile).where(TasteProfile.user_id == user_id)).all()
     return profiles
 
@@ -46,12 +48,17 @@ async def list_taste_profiles(
     status_code=status.HTTP_202_ACCEPTED,
 )
 async def recompute_taste_profile(
-    user_id: UUID, scope: str = "all_time", db: Session = Depends(get_db)
+    user_id: UUID,
+    scope: str = "all_time",
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(policy(auth.PERSONAL_WRITE)),
 ) -> RecomputeAccepted:
     """Enqueue a taste profile recomputation for the user.
 
     Returns 202 with a job_id. Poll GET /jobs/{job_id}/status for progress.
+    Only the user themselves may recompute.
     """
+    auth.resolve_owner(principal, user_id)
 
     try:
         _ensure_user(db, user_id)
@@ -62,6 +69,7 @@ async def recompute_taste_profile(
                 "user_id": str(user_id),
                 "scope": scope,
             },
+            requested_by=user_id,
         )
         public_id = str(job.id)
         db.commit()

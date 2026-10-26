@@ -1,6 +1,8 @@
 import Link from 'next/link';
 
 import { fetchWeekList } from './lib/api/weeks';
+import { loadAs } from './lib/server-api';
+import { sessionUserId } from './lib/session';
 import { PageShell } from './components/page-shell';
 import { Card, SectionHeading } from './components/ui';
 import { RatingBadge } from './components/rating-badge';
@@ -12,16 +14,9 @@ export const metadata = {
 };
 
 export default async function Home() {
-  let latestWeek = null;
-  try {
-    const weeks = await fetchWeekList();
-    if (weeks.length > 0) {
-      latestWeek = weeks[0];
-    }
-  } catch (error) {
-    // The highlight is optional on the home page; omit it rather than invent one.
-    console.error('Latest club week unavailable', error);
-  }
+  // The highlight is optional and for club members only; omit it rather than invent one.
+  const weeks = await loadAs(await sessionUserId(), (api) => fetchWeekList(api));
+  const latestWeek = weeks.state === 'ok' && weeks.data.length > 0 ? weeks.data[0] : null;
 
   return (
     <PageShell

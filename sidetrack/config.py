@@ -25,11 +25,11 @@ class Settings(BaseSettings):
     app_name: str = "Sidetrack API"
     # Runtime mode. "production" fails closed when secrets are missing.
     sidetrack_env: Literal["development", "production"] = "production"
-    # Auth
-    sidetrack_api_token: SecretStr | None = None
+    # Auth: one bearer token per client (ADR 0009). SIDETRACK_API_TOKEN is retired.
+    sidetrack_web_api_token: SecretStr | None = None
+    sidetrack_bot_api_token: SecretStr | None = None
     # Signs Last.fm link state; never shared with clients.
     sidetrack_link_secret: SecretStr | None = None
-    cors_origins: list[str] = ["http://localhost:3000", "http://localhost:3001"]
     # External APIs
     sidetrack_musicbrainz_app_name: str | None = None
     lastfm_api_key: str | None = None
@@ -41,7 +41,8 @@ class Settings(BaseSettings):
 
     @field_validator(
         "database_url",
-        "sidetrack_api_token",
+        "sidetrack_web_api_token",
+        "sidetrack_bot_api_token",
         "sidetrack_link_secret",
         "lastfm_api_secret",
         "spotify_client_secret",
@@ -56,10 +57,14 @@ class Settings(BaseSettings):
     def is_development(self) -> bool:
         return self.sidetrack_env == "development"
 
-    @property
-    def api_token(self) -> str | None:
-        token = self.sidetrack_api_token
-        return token.get_secret_value() or None if token else None
+    def client_tokens(self) -> dict[str, str | None]:
+        """Bearer token for each API client, keyed by client ID; None when unset."""
+
+        tokens = {"web": self.sidetrack_web_api_token, "bot": self.sidetrack_bot_api_token}
+        return {
+            client: (token.get_secret_value() or None) if token else None
+            for client, token in tokens.items()
+        }
 
     @cached_property
     def link_secret(self) -> str | None:

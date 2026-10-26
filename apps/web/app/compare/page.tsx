@@ -2,8 +2,10 @@ import { Suspense } from 'react';
 import Link from 'next/link';
 
 import { fetchCompatibility } from '../lib/api/client';
+import { accessFailure } from '../lib/server-api';
+import { sessionUserId } from '../lib/session';
 import { PageShell } from '../components/page-shell';
-import { Card, SectionHeading } from '../components/ui';
+import { AccessNotice, Card, SectionHeading } from '../components/ui';
 
 interface ComparePageProps {
   searchParams: { userA?: string; userB?: string };
@@ -42,13 +44,26 @@ function MatchScore({ score }: { score: number }) {
 }
 
 async function CompatibilityResult({ userA, userB }: { userA: string; userB: string }) {
-  const result = await fetchCompatibility(userA, userB).catch(() => null);
-
-  if (!result) {
+  const userId = await sessionUserId();
+  if (!userId) return <AccessNotice state="signed-out" what="taste comparison" />;
+  let result;
+  try {
+    result = await fetchCompatibility(userId, userA, userB);
+  } catch (error) {
+    if (accessFailure(error).state === 'unavailable') {
+      return (
+        <Card className="text-center">
+          <p className="text-sm text-slate-400">Compatibility lookup failed. Try again later.</p>
+        </Card>
+      );
+    }
+    // The API hides comparisons the session user may not see (identity/personal-data-visibility).
     return (
-      <Card className="text-center">
-        <p className="text-sm text-slate-400">Compatibility lookup failed. Try again later.</p>
-      </Card>
+      <AccessNotice
+        state="forbidden"
+        what="comparison"
+        audience="you and a club member who shares listening with the club"
+      />
     );
   }
 

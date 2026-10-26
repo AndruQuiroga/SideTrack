@@ -55,10 +55,24 @@ export interface RatingSummaryParams {
   bin_size?: number;
 }
 
+/** The user a trusted client acts for (ADR 0009): web sends `user`, the bot `discord`. */
+export type Actor = { user: UUID } | { discord: string };
+
+export type ClubRole = 'member' | 'admin';
+
+export const ACT_AS_HEADER = 'X-Sidetrack-Act-As';
+
+export function actAsHeader(actor: Actor): string {
+  return 'user' in actor ? `user:${actor.user}` : `discord:${actor.discord}`;
+}
+
 export interface SidetrackClientOptions {
   baseUrl: string;
+  /** This client's own token (`SIDETRACK_WEB_API_TOKEN` or `SIDETRACK_BOT_API_TOKEN`). */
   authToken?: string;
   getAuthToken?: () => string | undefined;
+  /** The user every request acts for; omit to act as the client itself. */
+  actAs?: Actor;
   axiosConfig?: AxiosRequestConfig;
 }
 
@@ -74,6 +88,23 @@ export interface TimelineParams {
 }
 
 export class SidetrackApiClient {
+  /** A client sharing this one's settings that acts for `actor`. */
+  withActor(actor: Actor): SidetrackApiClient {
+    return new SidetrackApiClient({ ...this.options, actAs: actor });
+  }
+
+  async putClubMember(discordUserId: string, role: ClubRole): Promise<void> {
+    await this.request<void>({
+      method: 'PUT',
+      url: `/club/members/discord/${discordUserId}`,
+      data: { role },
+    });
+  }
+
+  async removeClubMember(discordUserId: string): Promise<void> {
+    await this.request<void>({ method: 'DELETE', url: `/club/members/discord/${discordUserId}` });
+  }
+
   async claimNotifications(): Promise<DeliveryEvent[]> {
     return this.request({ method: 'POST', url: '/club/notifications/claim' });
   }
@@ -101,8 +132,10 @@ export class SidetrackApiClient {
 
   private readonly axios: AxiosInstance;
   private readonly getAuthToken?: () => string | undefined;
+  private readonly options: SidetrackClientOptions;
 
   constructor(options: SidetrackClientOptions) {
+    this.options = options;
     this.getAuthToken = options.getAuthToken;
     this.axios = axios.create({
       baseURL: this.normalizeBaseUrl(options.baseUrl),
@@ -111,11 +144,14 @@ export class SidetrackApiClient {
 
     this.axios.interceptors.request.use((config) => {
       const token = this.getAuthToken?.() ?? options.authToken;
+      const headers = AxiosHeaders.from(config.headers);
       if (token) {
-        const headers = AxiosHeaders.from(config.headers);
         headers.set('Authorization', `Bearer ${token}`);
-        config.headers = headers;
       }
+      if (options.actAs) {
+        headers.set(ACT_AS_HEADER, actAsHeader(options.actAs));
+      }
+      config.headers = headers;
       return config;
     });
   }
@@ -335,11 +371,12 @@ export class SidetrackApiClient {
     });
   }
 
-  async ingestLastfm(userId: UUID, lastfmUsername: string, sinceTs?: number): Promise<JobAccepted> {
+  /** Import the acting user's Last.fm scrobbles. */
+  async ingestLastfm(lastfmUsername: string, sinceTs?: number): Promise<JobAccepted> {
     return this.request<JobAccepted>({
       method: 'POST',
       url: '/ingest/lastfm',
-      data: { user_id: userId, lastfm_username: lastfmUsername, since_ts: sinceTs ?? null },
+      data: { lastfm_username: lastfmUsername, since_ts: sinceTs ?? null },
     });
   }
 

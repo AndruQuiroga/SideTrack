@@ -1,3 +1,5 @@
+import { AsyncLocalStorage } from 'node:async_hooks';
+
 import {
   ApiError,
   NominationCreate,
@@ -14,10 +16,24 @@ import {
   WeekDetail,
   WeekUpdate,
   AlbumRead,
+  ClubRole,
 } from '@sidetrack/api-client';
 
-import { BotConfig } from './config';
-import { Logger } from './logger';
+import type { BotConfig } from './config';
+import type { Logger } from './logger';
+
+/** The Discord user the current interaction or message acts for (ADR 0009). */
+const actingDiscordUser = new AsyncLocalStorage<string>();
+
+/**
+ * Run `fn` so that every API call it makes acts for the Discord user, sending
+ * `X-Sidetrack-Act-As: discord:<id>`. Outside such a call the bot acts as itself.
+ */
+export function runAsDiscordUser<T>(discordUserId: string, fn: () => Promise<T>): Promise<T> {
+  return actingDiscordUser.run(discordUserId, fn);
+}
+
+const MEMBERSHIP_REFRESH_MS = 10 * 60 * 1000;
 
 export interface ClubPhasePayload {
   week: WeekCreate;
@@ -30,25 +46,60 @@ function sleep(ms: number): Promise<void> {
 
 export class ClubSyncService {
   private readonly starterMessageIds: Map<string, string> = new Map();
+  private readonly recordedMembers: Map<string, { role: ClubRole; at: number }> = new Map();
 
   constructor(
-    private readonly client: SidetrackApiClient,
+    /** The bot acting as itself; `client` adds the current Discord user. */
+    private readonly serviceClient: SidetrackApiClient,
     private readonly config: BotConfig,
     private readonly logger: Logger,
     private readonly nominationsThreadMap: Map<string, WeekDetail> = new Map(),
     private readonly ratingsThreadMap: Map<string, WeekDetail> = new Map(),
   ) {}
 
-  /** Get the underlying API client for direct access. */
+  /** The API client for the current context: acting for the Discord user when there is one. */
+  private get client(): SidetrackApiClient {
+    const discordUserId = actingDiscordUser.getStore();
+    return discordUserId
+      ? this.serviceClient.withActor({ discord: discordUserId })
+      : this.serviceClient;
+  }
+
+  /** Get the API client for direct access, acting for the current Discord user if any. */
   getClient(): SidetrackApiClient {
     return this.client;
+  }
+
+  /**
+   * Make sure the Discord user has a Sidetrack account and record their club role.
+   * The bot is the only writer of membership; this runs as the bot itself.
+   */
+  async recordMember(discordUserId: string, displayName: string, admin: boolean): Promise<void> {
+    const role: ClubRole = admin ? 'admin' : 'member';
+    const known = this.recordedMembers.get(discordUserId);
+    if (known && known.role === role && Date.now() - known.at < MEMBERSHIP_REFRESH_MS) return;
+    await this.ensureDiscordUser(discordUserId, displayName);
+    await this.withRetry('record-member', () =>
+      this.serviceClient.putClubMember(discordUserId, role),
+    );
+    this.recordedMembers.set(discordUserId, { role, at: Date.now() });
+  }
+
+  /** Record that a member left the guild; their club history is kept. */
+  async recordDeparture(discordUserId: string): Promise<void> {
+    this.recordedMembers.delete(discordUserId);
+    try {
+      await this.serviceClient.removeClubMember(discordUserId);
+    } catch (error) {
+      if (!(error instanceof ApiError) || error.status !== 404) throw error;
+    }
   }
 
   async bootstrap(): Promise<WeekDetail[]> {
     this.logger.info('Bootstrapping bot sync service with shared API client.', {
       apiBaseUrl: this.config.api.baseUrl,
     });
-    const weeks = await this.client.listWeeks({ has_winner: false });
+    const weeks = await this.serviceClient.listWeeks({ has_winner: false });
     weeks.forEach((week) => {
       if (week.nominations_thread_id) {
         this.nominationsThreadMap.set(String(week.nominations_thread_id), week);
@@ -85,7 +136,8 @@ export class ClubSyncService {
 
   async ensureDiscordUser(discordUserId: string, displayName: string): Promise<UserRead> {
     try {
-      return await this.client.lookupUserByProvider(ProviderType.DISCORD, discordUserId);
+      // Provisioning runs as the bot itself: the user may not exist yet.
+      return await this.serviceClient.lookupUserByProvider(ProviderType.DISCORD, discordUserId);
     } catch (error) {
       if (!(error instanceof ApiError) || error.status !== 404) {
         throw error;
@@ -93,12 +145,12 @@ export class ClubSyncService {
       this.logger.info('Creating Sidetrack user for Discord member.', { discordUserId });
 
       const user = await this.withRetry('create-user', () =>
-        this.client.createUser({ display_name: displayName }),
+        this.serviceClient.createUser({ display_name: displayName }),
       );
 
       await this.withRetry('link-discord-account', async () => {
         try {
-          await this.client.linkAccount(user.id, {
+          await this.serviceClient.linkAccount(user.id, {
             provider: ProviderType.DISCORD,
             provider_user_id: discordUserId,
             display_name: displayName,
@@ -228,7 +280,8 @@ export class ClubSyncService {
 
   async attachNominationsThread(weekId: UUID, threadId: string): Promise<WeekDetail> {
     const updated = await this.withRetry('attach-nominations-thread', () =>
-      this.client.updateWeek(weekId, { nominations_thread_id: threadId }),
+      // Thread IDs are the one week field the bot may set as itself.
+      this.serviceClient.updateWeek(weekId, { nominations_thread_id: threadId }),
     );
     this.nominationsThreadMap.set(threadId, updated);
     return updated;
@@ -240,7 +293,7 @@ export class ClubSyncService {
 
   async attachRatingsThread(weekId: UUID, threadId: string): Promise<WeekDetail> {
     const updated = await this.withRetry('attach-ratings-thread', () =>
-      this.client.updateWeek(weekId, { ratings_thread_id: threadId }),
+      this.serviceClient.updateWeek(weekId, { ratings_thread_id: threadId }),
     );
     this.ratingsThreadMap.set(threadId, updated);
     return updated;

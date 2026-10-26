@@ -1,4 +1,4 @@
-import { WeekDetailWithRatings } from '../lib/api/weeks';
+import type { WeekDetailWithRatings } from '../lib/api/weeks';
 import { WeekCard } from './week-card';
 
 interface WeekListProps {

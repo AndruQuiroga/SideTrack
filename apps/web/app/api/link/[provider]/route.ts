@@ -21,12 +21,10 @@ export async function POST(request: Request, { params }: { params: { provider: s
   const provider = encodeURIComponent(params.provider);
   const res = await fetch(`${serverApiBaseUrl()}/integrations/${provider}/connect`, {
     method: 'POST',
-    headers: serverApiHeaders(),
+    // Acts for the session user; the API links accounts only for the acting user.
+    headers: serverApiHeaders(process.env, session.user.id),
     cache: 'no-store',
-    body: JSON.stringify({
-      user_id: session.user.id,
-      callback_url: `${siteUrl}/auth/${provider}/callback`,
-    }),
+    body: JSON.stringify({ callback_url: `${siteUrl}/auth/${provider}/callback` }),
   });
   const body = await res.json().catch(() => ({}));
   return NextResponse.json(body, { status: res.status });

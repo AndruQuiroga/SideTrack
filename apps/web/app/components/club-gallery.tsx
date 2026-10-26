@@ -4,7 +4,7 @@ import clsx from 'clsx';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
-import { WeekDetailWithRatings } from '../lib/api/weeks';
+import type { WeekDetailWithRatings } from '../lib/api/weeks';
 import { Card, Pill, SectionHeading } from './ui';
 import { WeekList } from './week-list';
 import { RatingBadge } from './rating-badge';

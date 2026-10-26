@@ -5,6 +5,7 @@ from uuid import UUID
 
 import pytest
 
+from services.api.tests.conftest import as_user
 from sidetrack.identity import User
 from sidetrack.queue_models import BackgroundJob
 
@@ -27,13 +28,15 @@ def test_endpoints_persist_public_job_ids(client, db, task, suffix):
                 "user_id": str(user.id),
                 "lastfm_username": "listener",
             },
+            headers=as_user(user),
         )
     else:
-        response = client.post(f"/users/{user.id}/{suffix}")
+        response = client.post(f"/users/{user.id}/{suffix}", headers=as_user(user))
     assert response.status_code == 202
     job_id = UUID(response.json()["job_id"])
     assert db.get(BackgroundJob, job_id).task == task
-    assert client.get(f"/jobs/{job_id}/status").json()["status"] == "queued"
+    assert db.get(BackgroundJob, job_id).requested_by_user_id == user.id
+    assert client.get(f"/jobs/{job_id}/status", headers=as_user(user)).json()["status"] == "queued"
 
 
 def test_legacy_functions_still_alias_canonical_functions():

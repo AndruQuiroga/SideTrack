@@ -4,7 +4,15 @@ from fastapi import FastAPI
 
 from sidetrack.analysis.routes import compatibility, recommendations, taste_profiles, tracks
 from sidetrack.catalog.routes import albums
-from sidetrack.club.routes import admin, nominations, notifications, ratings, votes, weeks
+from sidetrack.club.routes import (
+    admin,
+    members,
+    nominations,
+    notifications,
+    ratings,
+    votes,
+    weeks,
+)
 from sidetrack.identity.routes import integrations, social, users
 from sidetrack.listening.routes import ingest, listen_events
 
@@ -21,6 +29,7 @@ def register_routes(app: FastAPI) -> None:
         tracks.router,
         weeks.router,
         notifications.router,
+        members.router,
         nominations.router,
         votes.router,
         ratings.router,

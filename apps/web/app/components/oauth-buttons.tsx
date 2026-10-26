@@ -2,7 +2,7 @@
 
 import { signIn } from 'next-auth/react';
 import { useState } from 'react';
-import { requestIntegrationConnect } from '../lib/api/discover';
+import { requestIntegrationConnect } from '../lib/browser-api';
 import { showToast } from './toast';
 
 type Provider = 'discord' | 'spotify' | 'lastfm';

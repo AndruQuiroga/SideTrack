@@ -30,7 +30,7 @@ BOT_SCRIPT = """
 const { SidetrackApiClient } = require('./packages/api-client/dist');
 const { NotificationDelivery } = require('./apps/bot/dist/notificationDelivery');
 const client = new SidetrackApiClient({baseUrl: process.env.SIDETRACK_API_BASE_URL,
-                                      authToken: process.env.SIDETRACK_API_TOKEN});
+                                      authToken: process.env.SIDETRACK_BOT_API_TOKEN});
 let sent = 0;
 let done;
 const delivered = new Promise(resolve => done = resolve);
@@ -66,9 +66,13 @@ def test_images_enqueue_deliver_restart_and_sigterm(engine, database_url):
     environment = {
         "DATABASE_URL": url,
         "SIDETRACK_ENV": "production",
+        "SIDETRACK_WEB_API_TOKEN": "test-web-token",
+        "SIDETRACK_BOT_API_TOKEN": "test-bot-token",
+        # Read only by the pre-Phase-3 image used in the rollback step.
         "SIDETRACK_API_TOKEN": "test-api-token",
         "SIDETRACK_LINK_SECRET": "test-link-secret",
     }
+    bot_auth = {"Authorization": "Bearer test-bot-token"}
 
     def start(image, command=None, **kwargs):
         container = client.containers.run(
@@ -110,13 +114,24 @@ def test_images_enqueue_deliver_restart_and_sigterm(engine, database_url):
         port = bindings[0]["HostPort"]
         with httpx.Client(
             base_url=f"http://127.0.0.1:{port}",
-            headers={"Authorization": "Bearer test-api-token"},
+            headers={"Authorization": "Bearer test-web-token"},
             timeout=5,
         ) as http:
             ready(http)
             user = http.post("/users/", json={"display_name": "Image rehearsal"})
             assert user.status_code == 201, user.text
             user_id = user.json()["id"]
+            from sqlalchemy import text
+
+            with engine.begin() as conn:
+                conn.execute(
+                    text(
+                        "INSERT INTO club_members (user_id, role, joined_at) "
+                        "VALUES (:id, 'admin', clock_timestamp())"
+                    ),
+                    {"id": user_id},
+                )
+            http.headers["X-Sidetrack-Act-As"] = f"user:{user_id}"
             accepted = http.post(f"/users/{user_id}/taste-profiles/recompute")
             assert accepted.status_code == 202
             job_id = accepted.json()["job_id"]
@@ -145,19 +160,20 @@ def test_images_enqueue_deliver_restart_and_sigterm(engine, database_url):
                     ["node", "-e", BOT_SCRIPT],
                     environment={
                         "SIDETRACK_API_BASE_URL": f"http://{api.name}:8000",
-                        "SIDETRACK_API_TOKEN": "test-api-token",
+                        "SIDETRACK_BOT_API_TOKEN": "test-bot-token",
                     },
                 )
                 assert bot.wait(timeout=20)["StatusCode"] == 0, bot.logs().decode()
                 assert json.loads(bot.logs().decode())["sent"] == 1
-            assert http.post("/club/notifications/claim").json() == []
+            claim = http.post(
+                "/club/notifications/claim", headers={**bot_auth, "X-Sidetrack-Act-As": ""}
+            )
+            assert claim.json() == []
 
             # Linux SIGTERM stops claiming but lets the current domain transaction finish.
             second = http.post(f"/users/{user_id}/taste-profiles/recompute").json()["job_id"]
             with engine.connect() as barrier:
                 transaction = barrier.begin()
-                from sqlalchemy import text
-
                 barrier.execute(text("LOCK TABLE taste_profiles IN ACCESS EXCLUSIVE MODE"))
                 worker = start(API_IMAGE, ["python", "-m", "sidetrack.worker", "--once"])
                 try:

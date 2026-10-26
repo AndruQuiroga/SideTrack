@@ -8,17 +8,19 @@ from sqlalchemy.exc import OperationalError
 from sidetrack.identity import User
 from sidetrack.queue_client import enqueue
 
-
-def test_unknown_job(client):
-    assert client.get(f"/jobs/{uuid4()}/status").status_code == 404
-    assert client.get("/jobs/not-an-id/status").status_code == 404
+from .conftest import as_user
 
 
-def test_persisted_success_and_failure(client, db):
-    row = enqueue(db, "unavailable", {})
+def test_unknown_job(client, member):
+    assert client.get(f"/jobs/{uuid4()}/status", headers=as_user(member)).status_code == 404
+    assert client.get("/jobs/not-an-id/status", headers=as_user(member)).status_code == 404
+
+
+def test_persisted_success_and_failure(client, db, member):
+    row = enqueue(db, "unavailable", {}, requested_by=member.id)
     row.status, row.result = "finished", {"inserted": 1}
     db.commit()
-    assert client.get(f"/jobs/{row.id}/status").json() == {
+    assert client.get(f"/jobs/{row.id}/status", headers=as_user(member)).json() == {
         "job_id": str(row.id),
         "status": "finished",
         "result": {"inserted": 1},
@@ -48,6 +50,7 @@ def test_enqueue_failure_is_503_without_acceptance(client, db, monkeypatch, modu
             "user_id": str(user.id),
             "lastfm_username": "listener",
         },
+        headers=as_user(user),
     )
     assert response.status_code == 503
     assert response.json() == {"detail": "Job queue unavailable"}
@@ -103,13 +106,14 @@ def test_ingest_submission_execution_and_polling(client, app, engine, monkeypatc
                     "user_id": str(user_id),
                     "lastfm_username": "api-listener",
                 },
+                headers=as_user(user_id),
             )
             assert response.status_code == 202
             job_id = UUID(response.json()["job_id"])
             assert run(job_id) == 0
             assert run(job_id) == 0  # Replay after result commit does not duplicate effects.
             writer.expire_all()
-            response = client.get(f"/jobs/{job_id}/status")
+            response = client.get(f"/jobs/{job_id}/status", headers=as_user(user_id))
             assert response.json()["status"] == "finished"
             assert response.json()["result"]["inserted"] == 1
             assert (
@@ -135,3 +139,14 @@ def test_ingest_submission_execution_and_polling(client, app, engine, monkeypatc
                     conn.execute(delete(BackgroundJob).where(BackgroundJob.id == job_id))
                 conn.execute(delete(User).where(User.id == user_id))
                 conn.execute(delete(Album).where(Album.id == album_id))
+
+
+def test_status_only_for_submitter(client, db, make_user):
+    owner = make_user("Owner")
+    other = make_user("Other")
+    row = enqueue(db, "unavailable", {}, requested_by=owner.id)
+    anonymous = enqueue(db, "unavailable", {})
+    db.flush()
+    assert client.get(f"/jobs/{row.id}/status", headers=as_user(other)).status_code == 404
+    assert client.get(f"/jobs/{row.id}/status", headers=as_user(owner)).status_code == 200
+    assert client.get(f"/jobs/{anonymous.id}/status", headers=as_user(owner)).status_code == 404

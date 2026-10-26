@@ -71,7 +71,6 @@ jobs:
       - name: Build
         env:
           NEXT_TELEMETRY_DISABLED: '1'
-          NEXT_PUBLIC_API_BASE_URL: https://api.sidetrack.network
         run: pnpm -r run build
       - name: Test
         run: pnpm -r run test
@@ -134,7 +133,5 @@ jobs:
           push: ${{ env.PUSH == 'true' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            NEXT_PUBLIC_API_BASE_URL=https://api.sidetrack.network
           cache-from: type=gha,scope=${{ matrix.app }}
           cache-to: type=gha,mode=max,scope=${{ matrix.app }}

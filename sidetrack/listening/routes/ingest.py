@@ -15,14 +15,15 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from sidetrack.db import get_db
-from sidetrack.identity import User
+from sidetrack.identity import Principal, User, auth, policy
 from sidetrack.queue_client import enqueue
 
 router = APIRouter(prefix="/ingest", tags=["ingest"])
 
 
 class LastfmIngestRequest(BaseModel):
-    user_id: UUID
+    # Deprecated: the acting user is imported; a different value is refused.
+    user_id: UUID | None = None
     lastfm_username: str
     since_ts: int | None = None
 
@@ -37,20 +38,23 @@ class JobAccepted(BaseModel):
 def trigger_lastfm_ingest(
     payload: LastfmIngestRequest,
     db: Session = Depends(get_db),
+    principal: Principal = Depends(policy(auth.PERSONAL_WRITE)),
 ) -> JobAccepted:
-    """Enqueue a Last.fm scrobble ingest for the given user."""
+    """Enqueue a Last.fm scrobble ingest for the acting user."""
 
+    user_id = auth.resolve_owner(principal, payload.user_id)
     try:
-        if not db.get(User, payload.user_id):
+        if not db.get(User, user_id):
             raise HTTPException(status_code=404, detail="User not found")
         job = enqueue(
             db,
             "listening.ingest_lastfm",
             {
-                "user_id": str(payload.user_id),
+                "user_id": str(user_id),
                 "lastfm_username": payload.lastfm_username,
                 "since_ts": payload.since_ts,
             },
+            requested_by=user_id,
         )
         public_id = str(job.id)
         db.commit()

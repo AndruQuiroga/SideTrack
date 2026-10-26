@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { WeekDetailWithRatings } from '../lib/api/weeks';
+import type { WeekDetailWithRatings } from '../lib/api/weeks';
 import { RatingBadge } from './rating-badge';
 
 interface WeekCardProps {

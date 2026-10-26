@@ -11,6 +11,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from sidetrack.db import get_db
+from sidetrack.identity import Principal, auth, policy
 from sidetrack.queue_models import BackgroundJob
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
@@ -24,7 +25,11 @@ class JobStatus(BaseModel):
 
 
 @router.get("/{job_id}/status", response_model=JobStatus)
-def get_job_status(job_id: str, db: Session = Depends(get_db)) -> JobStatus:
+def get_job_status(
+    job_id: str,
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(policy(auth.PERSONAL_READ)),
+) -> JobStatus:
     """Poll the status of a background job.
 
     Possible status values: queued, started, finished, failed, deferred, canceled.
@@ -34,7 +39,12 @@ def get_job_status(job_id: str, db: Session = Depends(get_db)) -> JobStatus:
     except ValueError:
         raise HTTPException(status_code=404, detail="Job not found") from None
     job = db.get(BackgroundJob, uid)
-    if job is None:
+    # Only the submitter may poll; jobs nobody submitted are hidden too.
+    if (
+        job is None
+        or job.requested_by_user_id is None
+        or job.requested_by_user_id != principal.actor
+    ):
         raise HTTPException(status_code=404, detail="Job not found")
     queue_status = db.execute(
         text(

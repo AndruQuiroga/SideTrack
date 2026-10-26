@@ -2,7 +2,7 @@
 # Statuses: works | partial | broken | stub | absent.
 # "works" needs at least one evidence path (a test, preferably) that exists in the repo.
 
-reviewed: 2026-10-25
+reviewed: 2026-10-26
 
 groups:
   - name: Club (Discord album club)
@@ -22,8 +22,11 @@ groups:
         evidence:
           - services/api/tests/test_votes.py
       - capability: Ratings and summary
-        status: partial
-        notes: Implemented; untested
+        status: broken
+        notes: "Submitting a rating returns 500 (payload.metadata alias bug, found by Phase 3 tests); summaries and member-only reads are tested"
+        evidence:
+          - docs/issues/metadata-alias-crashes.md
+          - services/api/tests/test_club_access.py
       - capability: Reminders and phase transitions
         status: partial
         notes: "Deadlines and leased delivery persist in Postgres; restart and send/ack behavior tested. Notices do not enforce phases; real Discord delivery not verified."
@@ -37,9 +40,10 @@ groups:
         notes: "Client credentials, metadata only (external/spotify.py); untested"
       - capability: Web archive (weeks, winners)
         status: partial
-        notes: "Renders API data with an honest unavailable state; no page tests"
+        notes: "Members only since Phase 3: anonymous visitors get a sign-in prompt, non-members a members-only notice; not verified with real Discord sign-in"
         evidence:
           - apps/web/app/no-fake-data.test.ts
+          - apps/web/tests/authenticated-pages.test.cjs
 
   - name: Listening
     items:
@@ -99,11 +103,16 @@ groups:
   - name: Platform
     items:
       - capability: Auth
-        status: partial
-        notes: "Writes need the service token and the API fails closed without it; stored credentials are never returned. No per-user auth yet (Phase 3); GETs are public"
+        status: works
+        notes: "ADR 0009: per-client tokens (web, bot), X-Sidetrack-Act-As, club membership and roles, owner/club visibility on every route, default deny; verified against a live API on Postgres 2026-10-26. Provider tokens are not yet encrypted at rest; real Discord sign-in not yet verified"
         evidence:
           - services/api/tests/test_api_access.py
-          - services/api/tests/test_linked_accounts.py
+          - services/api/tests/test_principals.py
+          - services/api/tests/test_route_policies.py
+          - services/api/tests/test_club_access.py
+          - services/api/tests/test_personal_access.py
+          - tests/test_club_membership.py
+          - docs/AUTHORIZATION.md
       - capability: Health checks
         status: works
         notes: /health returns 503 within 2 s when the DB is unreachable (also verified live, 2026-10-25)

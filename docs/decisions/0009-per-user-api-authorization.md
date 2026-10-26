@@ -1,6 +1,6 @@
 # 0009: Per-user API authorization
 
-- Status: proposed
+- Status: accepted (implemented by `add-per-user-authorization`, 2026-10-26)
 - Date: 2026-10-25
 
 ## Context
@@ -62,7 +62,7 @@ Club membership is a new `club_members` table owned by `club`, with role `member
 `admin`. The bot is its only writer (service scope `club:membership`). The bot upserts the
 member and their role whenever a guild member uses it, deriving the role from the same Discord
 permission check it uses today, and it marks a member as left when they leave the guild.
-Signing in on the web does not make anyone a member. A one-off CLI grants the first admin.
+Signing in on the web does not make anyone a member. A one-off CLI (`python -m sidetrack.club_admin grant-admin`) grants the first admin.
 The migration adds existing users as members if they have a linked Discord account and any
 nomination, vote or rating.
 

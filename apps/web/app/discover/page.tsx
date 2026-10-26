@@ -1,8 +1,6 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
-import { getServerSession } from 'next-auth/next';
-
-import { authOptions } from '../lib/auth';
+import { sessionUserId } from '../lib/session';
 import { PageShell } from '../components/page-shell';
 import { Card, SectionHeading } from '../components/ui';
 import { RatingBadge } from '../components/rating-badge';
@@ -22,17 +20,15 @@ export const metadata: Metadata = {
 type Recs = RecommendationItem[] | null | 'signedOut';
 
 async function getData(): Promise<{ recs: Recs; trending: TrendingItem[] | null }> {
-  const session = await getServerSession(authOptions);
-  const userId = session?.user?.id;
+  const userId = await sessionUserId();
+  if (!userId) return { recs: 'signedOut', trending: null };
 
   const [recs, trending] = await Promise.all([
-    userId
-      ? fetchRecommendations(userId).catch((error) => {
-          console.error('Recommendations unavailable', error);
-          return null;
-        })
-      : Promise.resolve('signedOut' as const),
-    fetchTrending().catch((error) => {
+    fetchRecommendations(userId).catch((error) => {
+      console.error('Recommendations unavailable', error);
+      return null;
+    }),
+    fetchTrending(userId).catch((error) => {
       console.error('Trending unavailable', error);
       return null;
     }),
