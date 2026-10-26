@@ -55,7 +55,7 @@ async def recompute_taste_profile(
 
     queue = get_queue()
     job = queue.enqueue(
-        "sidetrack.jobs.job_recompute_taste_profile",
+        "services.api.jobs.job_recompute_taste_profile",
         str(user_id),
         scope,
         job_timeout="5m",

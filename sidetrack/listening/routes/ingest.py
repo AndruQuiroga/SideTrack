@@ -45,7 +45,7 @@ def trigger_lastfm_ingest(
 
     queue = get_queue()
     job = queue.enqueue(
-        "sidetrack.jobs.job_ingest_lastfm",
+        "services.api.jobs.job_ingest_lastfm",
         str(payload.user_id),
         payload.lastfm_username,
         payload.since_ts,

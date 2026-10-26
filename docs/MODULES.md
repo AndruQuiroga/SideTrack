@@ -47,7 +47,8 @@ migrated Postgres. Existing migration tests reject metadata drift.
 - Alembic imports `sidetrack.models.all_metadata`; this move requires no migration.
 
 Old `services.api` paths forward to the same canonical objects, including serialized
-`services.api.jobs.*` jobs. Old worker startup remains valid. Keep adapters during
+`services.api.jobs.*` jobs. New jobs keep those serialized names too, so a rollback
+to the previous image can still consume them. Old worker startup remains valid. Keep adapters during
 rollout; removal needs a later change. Deploy API and worker together with the same
 image. Rollback uses the previous image and the unchanged database schema.
 

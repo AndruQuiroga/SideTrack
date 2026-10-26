@@ -11,13 +11,15 @@
 - [x] 2.2 Protect module internals and prevent domain imports of transport/registry; verify `tests/test_import_boundaries.py` fails on an injected cross-domain private import and passes on the real source.
 - [x] 2.3 Update AGENTS.md, README, module documentation, roadmap and generated status evidence; run Python/web checks, strict OpenSpec validation and `gen_status.py --check`, retaining the deferred live checks as partial.
 
-Verification on 2026-10-25: 85 Python tests, 11 web tests and 4 bot tests pass.
+Verification on 2026-10-25: 87 Python tests, 11 web tests and 4 bot tests pass.
 Workspace lint/build, Ruff, all six import contracts, strict OpenSpec validation,
 deployment-document coverage and the generated-status check pass. The API image
 loads canonical/legacy imports, applies all migrations to temporary Postgres 16,
 and returns a healthy response. Temporary containers/network were removed.
 Mypy reports 40 errors in the canonical package and remains non-blocking; this
 change does not claim to resolve the recorded type-checking backlog.
+`tests/test_job_compatibility.py` verifies both enqueueing endpoints retain their
+original serialized names and resolve to the canonical functions.
 
 ## Workflow follow-up
 

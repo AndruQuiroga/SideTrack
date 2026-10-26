@@ -30,7 +30,8 @@ Phase 2 owns its replacement. Preserve old job/import paths during rollout.
 - The all-model registry is loaded before ORM use. Explicit legacy module aliases
   point to the same module objects, so dependency overrides, monkeypatches and old
   serialized job paths keep working. Tests use canonical imports while compatibility
-  tests cover old ones. Containers use the new entrypoint.
+  tests cover old ones. Enqueueing keeps the old serialized function names so the
+  previous image can consume jobs after rollback. Containers use the new entrypoint.
 - Capture Phase 0 OpenAPI as a fixture before moving code; compare full paths and
   schema components afterward. Existing migration drift tests prove metadata is
   unchanged. Add a cross-domain ingest test and a negative import-linter test.
