@@ -44,7 +44,8 @@ Status values: **works** (implemented end to end), **partial** (implemented with
 | Background jobs | partial | Redis (ephemeral) + one RQ consumer for Last.fm ingest. The legacy `services/worker` (APScheduler, Spotify sync) is no longer built or run; Phase 2 replaces RQ |
 | Health checks | works | `/health` returns 503 within 2 s when the DB is unreachable (verified live, 2026-10-25) |
 | Runtime secrets | works | API reads `/run/secrets/<name>`; web and bot read `<NAME>_FILE` |
-| Tests | partial | 57 API tests (SQLite, not Postgres yet); 6 web and 4 bot unit tests; no worker tests |
+| Tests | partial | 61 API tests on Postgres 16 + pgvector with an Alembic-migrated schema and a model/migration drift check; 7 web and 4 bot unit tests; no worker tests |
+| Listen storage | works | `listen_events.source` now matches the database enum. Before 2026-10-25 every listen insert failed on Postgres (`invalid input value for enum listen_source`) |
 | Type checking | broken | 44 pre-existing mypy errors; CI runs mypy as non-blocking until fixed |
 | CI | works | Lint, tests, OpenSpec validation and image builds pass on PRs; `main` pushes `ghcr.io/andruquiroga/sidetrack-{api,web,bot}` (first green run 2026-10-25, PR #280). Required for merging into `main` |
 | Image visibility | works | GHCR packages are public, matching the public repo (owner's choice, 2026-10-25). Images contain no secrets; switch to private in package settings if needed |

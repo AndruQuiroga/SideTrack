@@ -35,7 +35,8 @@ class Week(Base):
     nominations_close_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     poll_close_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     winner_album_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("albums.id")
+        UUID(as_uuid=True),
+        ForeignKey("albums.id", name="fk_weeks_winner_album_id", ondelete="SET NULL"),
     )
     nominations_thread_id: Mapped[str | None] = mapped_column(String(32))
     poll_thread_id: Mapped[str | None] = mapped_column(String(32))
@@ -59,10 +60,10 @@ class Nomination(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     week_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("weeks.id", ondelete="CASCADE"), nullable=False
+        UUID(as_uuid=True), ForeignKey("weeks.id", ondelete="CASCADE"), nullable=False, index=True
     )
     user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
     album_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("albums.id", ondelete="CASCADE"), nullable=False
@@ -89,6 +90,8 @@ class Vote(Base):
     __tablename__ = "votes"
     __table_args__ = (
         UniqueConstraint("week_id", "user_id", "rank", name="uq_vote_week_user_rank"),
+        # One vote per nomination per user: rank 1 and rank 2 can't be the same pick.
+        UniqueConstraint("nomination_id", "user_id", name="uq_vote_nomination_user"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -96,10 +99,13 @@ class Vote(Base):
         UUID(as_uuid=True), ForeignKey("weeks.id", ondelete="CASCADE"), nullable=False
     )
     nomination_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("nominations.id", ondelete="CASCADE"), nullable=False
+        UUID(as_uuid=True),
+        ForeignKey("nominations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
     user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
     rank: Mapped[int] = mapped_column(Integer, nullable=False)
     submitted_at: Mapped[datetime] = mapped_column(
@@ -120,7 +126,7 @@ class Rating(Base):
         UUID(as_uuid=True), ForeignKey("weeks.id", ondelete="CASCADE"), nullable=False
     )
     user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
     album_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("albums.id", ondelete="CASCADE"), nullable=False

@@ -39,7 +39,7 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    display_name: Mapped[str] = mapped_column(String(120), nullable=False)
+    display_name: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
     handle: Mapped[str | None] = mapped_column(String(64), unique=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC)
@@ -91,7 +91,7 @@ class LinkedAccount(Base):
         index=True,
     )
     provider: Mapped[ProviderType] = mapped_column(
-        SAEnum(ProviderType, values_callable=lambda e: [m.value for m in e]),
+        SAEnum(ProviderType, name="provider_type", values_callable=lambda e: [m.value for m in e]),
         nullable=False,
         index=True,
     )

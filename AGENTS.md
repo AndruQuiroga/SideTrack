@@ -50,3 +50,5 @@ pnpm exec openspec list                                         # changes in fli
 ```
 
 Python: uv only (never pip). TypeScript: pnpm only. Python 3.11. Ruff line length 100.
+
+API tests run on Postgres 16 + pgvector: have Docker running (testcontainers starts one), or set `SIDETRACK_TEST_DATABASE_URL` to a throwaway database. A model change needs a migration, or `test_migrations.py` fails.
