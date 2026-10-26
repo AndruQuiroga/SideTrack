@@ -64,7 +64,7 @@ PHASES: list[dict[str, Any]] = [
         "label": "Phase 2",
         "summary": "Replace Redis + RQ with a Postgres-backed queue; retire services/worker.",
         "adrs": ["0002"],
-        "changes": [],
+        "changes": ["replace-rq-with-postgres-jobs"],
     },
     {
         "id": "phase-3",
@@ -160,7 +160,7 @@ ARCHITECTURE: list[dict[str, Any]] = [
     {
         "id": "jobs",
         "label": "Background jobs",
-        "sub": "Redis + RQ today",
+        "sub": "Procrastinate on Postgres",
         "kind": "infra",
         "caps": ["Background jobs"],
     },
