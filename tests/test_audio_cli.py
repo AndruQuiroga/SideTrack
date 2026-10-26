@@ -185,3 +185,40 @@ def test_reverify_confirms_without_fetching(db, tmp_path):
     assert {a.recording_mbid for a in assets} == {"mbid-p"}
     assert "2 confirmed" in out.getvalue()
     assert calls == [None]
+
+
+def test_verify_reports_why_assets_stay_unverified(db, tmp_path):
+    seeds = tmp_path / "one.csv"
+    seeds.write_text("artist,title\nBroadcast,Papercuts\n", "utf-8")
+    common = {
+        "settings": _settings(tmp_path / "audio"),
+        "session": db,
+        "resolve_track": lambda session, seed: None,
+        "sources_factory": lambda cookies, only: fake_sources(),
+        "verifier_factory": lambda s: FakeAcoustId(unavailable="lookup"),
+    }
+    main(["fetch", "--seeds", str(seeds)], out=io.StringIO(), **common)
+
+    out = io.StringIO()
+    assert main(["verify"], out=out, **common) == 0
+    assert "unverified because AcoustID lookup failed: 2" in out.getvalue()
+
+
+def test_lookup_error_message_is_reported(monkeypatch):
+    import types
+
+    from sidetrack.analysis.audio import PyAcoustIdClient, VerifyUnavailable
+
+    fake = types.SimpleNamespace(
+        lookup=lambda *a, **k: {
+            "status": "error",
+            "error": {"code": 4, "message": "invalid API key"},
+        },
+        AcoustidError=RuntimeError,
+        FingerprintGenerationError=RuntimeError,
+    )
+    monkeypatch.setitem(__import__("sys").modules, "acoustid", fake)
+    client = PyAcoustIdClient("not-a-real-key")
+    with pytest.raises(VerifyUnavailable, match="invalid API key") as exc:
+        client.lookup(10.0, "AQAA")
+    assert "not-a-real-key" not in str(exc.value)

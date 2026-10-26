@@ -182,12 +182,15 @@ def main(
             return 0
         if args.command == "verify":
             verifier_factory = fetch_options.get("verifier_factory", build_verifier)
-            counts = reverify_assets(db, audio_dir, verifier_factory(settings))
+            result = reverify_assets(db, audio_dir, verifier_factory(settings))
             db.commit()
+            counts = result.counts
             print(
                 "Re-verified: " + ", ".join(f"{counts[v]} {v.value}" for v in AudioVerification),
                 file=out,
             )
+            for reason, count in result.reasons.items():
+                print(f"  unverified because {reason}: {count}", file=out)
             return 0
         assert settings.sidetrack_audio_retention_days is not None
         pruned = prune_assets(db, audio_dir, settings.sidetrack_audio_retention_days)

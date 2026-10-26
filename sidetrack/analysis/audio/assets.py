@@ -197,10 +197,18 @@ def export_manifest(db: Session, audio_dir: Path, out: IO[str]) -> int:
     return rows
 
 
-def reverify_assets(db: Session, audio_dir: Path, verifier: AcoustIdClient | None) -> Counter:
-    """Re-check ``unverified`` assets whose file exists; return the new verification counts."""
+@dataclass
+class ReverifyResult:
+    counts: Counter = field(default_factory=Counter)  # verification -> assets
+    reasons: Counter = field(default_factory=Counter)  # why assets stayed unverified
 
-    counts: Counter = Counter()
+
+def reverify_assets(
+    db: Session, audio_dir: Path, verifier: AcoustIdClient | None
+) -> ReverifyResult:
+    """Re-check ``unverified`` assets whose file exists; return new counts and reasons."""
+
+    result = ReverifyResult()
     assets = db.scalars(
         select(AudioAsset).where(
             AudioAsset.verification == AudioVerification.UNVERIFIED,
@@ -216,9 +224,11 @@ def reverify_assets(db: Session, audio_dir: Path, verifier: AcoustIdClient | Non
         asset.acoustid_score = check.score
         asset.recording_mbid = check.recording_mbid
         asset.duration_s = check.duration_s or asset.duration_s
-        counts[check.status] += 1
+        result.counts[check.status] += 1
+        if check.status is AudioVerification.UNVERIFIED and check.note:
+            result.reasons[check.note] += 1
     db.flush()
-    return counts
+    return result
 
 
 def prune_assets(

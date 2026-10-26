@@ -19,7 +19,9 @@ are subject to Deezer's API terms. Nothing fetched is redistributed.
    - Windows: `scoop install chromaprint ffmpeg deno`
    - Debian/Ubuntu: `sudo apt install libchromaprint-tools ffmpeg`, plus deno from <https://deno.com>
    - Check: `fpcalc -version`, `ffmpeg -version` and `deno --version`
-3. Register an application at <https://acoustid.org/new-application> (free) for an API key.
+3. Register an application at <https://acoustid.org/new-application> (free) and use its
+   **application API key**. The user API key on your account page is for submitting
+   fingerprints, and lookups reject it as "invalid API key".
 4. Set these, in `.env` or the shell (see `config/ENVIRONMENT.md`):
    ```
    DATABASE_URL=postgresql+psycopg://…        # the database to record assets in

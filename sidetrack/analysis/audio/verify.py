@@ -122,7 +122,9 @@ class PyAcoustIdClient:
         except self._acoustid.AcoustidError as exc:
             raise VerifyUnavailable(f"AcoustID lookup failed: {exc}") from exc
         if response.get("status") != "ok":
-            raise VerifyUnavailable("AcoustID lookup failed")
+            # AcoustID's error text (e.g. "invalid API key") never contains the key itself.
+            message = (response.get("error") or {}).get("message")
+            raise VerifyUnavailable(f"AcoustID lookup failed: {message or 'unknown error'}")
         matches = []
         for result in response.get("results", []):
             for recording in result.get("recordings", []):
