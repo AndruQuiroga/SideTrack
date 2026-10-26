@@ -113,7 +113,13 @@ Run against a local Postgres 16 (migrated to `0009_audio_assets`) with
   (full tracks 125 to 303 s, previews 29 s).
 - The 4 seeds with an album are linked to catalog tracks. Stereolab, which had no album, is unlinked as designed.
 - `manifest` wrote 10 rows.
-- **Verification: 0 confirmed, 0 mismatch, 10 unverified**, because no AcoustID key was
-  configured yet. Fingerprinting ran, but the lookup didn't. To finish task 4.2, the
-  owner adds `ACOUSTID_API_KEY` and runs `verify`. "Audio acquisition" stays
-  **partial** until that confirms real matches.
+- **Verification**, after adding an AcoustID application key and running `verify`:
+  **5 confirmed, 0 mismatch, 5 unverified**.
+  - All 5 full tracks were confirmed, with scores of 0.959 to 0.998, each with a
+    MusicBrainz recording ID.
+  - All 5 Deezer previews were unverified ("no match"), as expected for 30-second clips.
+  - The first key tried was a user API key, and AcoustID rejected it as "invalid API key".
+    That's why setup step 3 now names the application key, and why `verify` prints its
+    reasons.
+
+Task 4.2 is complete, and STATUS now lists "Audio acquisition" as **works**.

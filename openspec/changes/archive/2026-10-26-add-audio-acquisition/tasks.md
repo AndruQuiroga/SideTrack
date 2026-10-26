@@ -20,7 +20,7 @@
 ## 4. Docs, status and a real run
 
 - [x] 4.1 Document the workflow in `docs/AUDIO.md`: installing fpcalc on Windows and Linux, getting an AcoustID key, the seed CSV format, a cookie-file note, retention, and reading the summary. Add an "Audio acquisition" row to `docs/status.yaml` as **partial** with test evidence, and regenerate `docs/STATUS.md` (`gen_status.py --check`).
-- [ ] 4.2 Owner smoke run: fetch 5 real seeds with both sources on the owner's PC, and record the summary counts (fetched, confirmed, mismatch, unverified, missing) in `docs/AUDIO.md`. "Audio acquisition" moves to **works** only after this succeeds.
+- [x] 4.2 Owner smoke run: fetch 5 real seeds with both sources on the owner's PC, and record the summary counts (fetched, confirmed, mismatch, unverified, missing) in `docs/AUDIO.md`. "Audio acquisition" moves to **works** only after this succeeds.
 - [x] 4.3 Run the full checks: `lint-imports`, `ruff check`, `mypy` (no new errors), the unit selection, the API suite on migrated Postgres, and `pnpm exec openspec validate add-audio-acquisition --strict`.
 
 ## Workflow follow-up

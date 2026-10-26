@@ -77,11 +77,12 @@ groups:
   - name: Analysis
     items:
       - capability: Audio acquisition
-        status: partial
-        notes: "Opt-in `python -m sidetrack.audio` (ADR 0007): YouTube Music full tracks and Deezer previews, content-addressed storage, AcoustID verification, manifest and prune; tested with source doubles. Real 5-seed smoke run on 2026-10-26 fetched and stored all 10 assets; AcoustID matching not yet run for real (no key), see docs/AUDIO.md"
+        status: works
+        notes: "Opt-in `python -m sidetrack.audio` (ADR 0007): YouTube Music full tracks and Deezer previews, content-addressed storage, AcoustID verification, manifest, verify and prune. Real 5-seed run on 2026-10-26: 10 assets stored, all 5 full tracks AcoustID-confirmed (0.96-1.00); previews stay unverified as expected"
         evidence:
           - tests/test_audio_assets.py
           - tests/test_audio_cli.py
+          - docs/AUDIO.md
       - capability: Audio feature extraction
         status: partial
         notes: "services/audio-lab benchmark CLI (ADR 0004) embeds acquired audio into versioned Parquet runs with a neighbour report and verdict scoring; benchmark only, not integrated into Sidetrack. No model has passed the gate yet (docs/AUDIO-BENCHMARK.md)"
