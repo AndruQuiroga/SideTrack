@@ -45,5 +45,6 @@ Status values: **works** (implemented end to end), **partial** (implemented with
 | Runtime secrets | works | API reads `/run/secrets/<name>`; web and bot read `<NAME>_FILE` |
 | Tests | partial | 57 API tests (SQLite, not Postgres yet); 6 web and 4 bot unit tests; no worker tests |
 | Type checking | broken | 44 pre-existing mypy errors; CI runs mypy as non-blocking until fixed |
-| CI | partial | Rewritten (lint, tests, OpenSpec validation, GHCR images); not yet run on GitHub. `main` had been failing since 2025-12 |
+| CI | works | Lint, tests, OpenSpec validation and image builds pass on PRs; `main` pushes `ghcr.io/andruquiroga/sidetrack-{api,web,bot}` (first green run 2026-10-25, PR #280). Required for merging into `main` |
+| Image visibility | works | GHCR packages are public, matching the public repo (owner's choice, 2026-10-25). Images contain no secrets; switch to private in package settings if needed |
 | Deployment to Stache-Rack | partial | `deploy/stack.yml` and runbook ready; never deployed. Local compose verified healthy (db, redis, api, web, rq-worker) |

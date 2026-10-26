@@ -58,7 +58,7 @@ Verify each step against live state first, as the stache-infra change rules requ
    | `SPOTIFY_CLIENT_ID` | no | Spotify client ID |
    | `SIDETRACK_MUSICBRAINZ_APP_NAME` | no | `Sidetrack/0.1 (you@example.com)` |
 
-   GHCR packages are private: add a GHCR registry in Portainer with a token that has `read:packages`.
+   The GHCR packages are public (as of 2026-10-25), so Portainer needs no registry credentials. If they're ever made private, add a GHCR registry in Portainer with a token that has `read:packages`.
 
 6. **Names and routes:**
    - LAN: AdGuard rewrites for `sidetrack.stache.lan` and `api.sidetrack.stache.lan` → Traefik VIP `10.20.0.40`.

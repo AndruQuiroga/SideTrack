@@ -13,7 +13,7 @@ Sidetrack has no deployment path to the new homelab. Its CI builds images and th
 - `GET /health` returns 503 when the database is unreachable, so Swarm healthchecks can see it.
 - `.env.example` is rewritten to the variables code actually reads; `config/ENVIRONMENT.md` is regenerated to match.
 - Removed: `deploy/Caddyfile`, the `services/worker` image and compose service (its Spotify sync is broken and is replaced in Phase 2), and the GPU `extraction` compose profile (a stub).
-- Repo settings: branch protection on `main` requiring CI, and GHCR packages kept private.
+- Repo settings: branch protection on `main` requiring CI. GHCR packages stay public, matching the public repo (decided 2026-10-25; originally planned private).
 
 ### Out of scope
 
