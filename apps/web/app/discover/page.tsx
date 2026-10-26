@@ -1,6 +1,8 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
+import { getServerSession } from 'next-auth/next';
 
+import { authOptions } from '../lib/auth';
 import { PageShell } from '../components/page-shell';
 import { Card, SectionHeading } from '../components/ui';
 import { RatingBadge } from '../components/rating-badge';
@@ -16,86 +18,26 @@ export const metadata: Metadata = {
   description: 'Fresh recommendations tailored to your taste, plus trending picks from the club.',
 };
 
-async function getData(): Promise<{
-  recs: RecommendationItem[];
-  trending: TrendingItem[];
-  source: 'api' | 'fallback';
-}> {
-  try {
-    const [recs, trending] = await Promise.all([
-      fetchRecommendations('demo'),
-      fetchTrending().catch(() => []),
-    ]);
-    return { recs, trending, source: 'api' };
-  } catch {
-    // Fallback demo content
-    return {
-      recs: [
-        {
-          type: 'album',
-          id: 'a2',
-          title: 'In Rainbows',
-          artist_name: 'Radiohead',
-          reason: 'valence match',
-        },
-        {
-          type: 'album',
-          id: 'a1',
-          title: 'Random Access Memories',
-          artist_name: 'Daft Punk',
-          reason: 'danceability',
-        },
-        {
-          type: 'track',
-          id: 't1',
-          title: 'Get Lucky',
-          artist_name: 'Daft Punk',
-          album_title: 'Random Access Memories',
-        },
-        {
-          type: 'album',
-          id: 'a3',
-          title: 'Vespertine',
-          artist_name: 'Björk',
-          reason: 'mood similarity',
-        },
-        {
-          type: 'album',
-          id: 'a4',
-          title: 'Endtroducing...',
-          artist_name: 'DJ Shadow',
-          reason: 'tempo match',
-        },
-      ],
-      trending: [
-        {
-          type: 'album',
-          id: 'album-1',
-          title: 'Spirit of Eden',
-          artist_name: 'Talk Talk',
-          average: 4.37,
-          count: 24,
-        },
-        {
-          type: 'album',
-          id: 'album-2',
-          title: 'Visions',
-          artist_name: 'Grimes',
-          average: 3.9,
-          count: 18,
-        },
-        {
-          type: 'album',
-          id: 'album-3',
-          title: 'Heat Rush',
-          artist_name: 'Cloudy Friends',
-          average: 3.6,
-          count: 11,
-        },
-      ],
-      source: 'fallback',
-    };
-  }
+/** `null` means the API couldn't provide it; `signedOut` means there's no user to recommend for. */
+type Recs = RecommendationItem[] | null | 'signedOut';
+
+async function getData(): Promise<{ recs: Recs; trending: TrendingItem[] | null }> {
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id;
+
+  const [recs, trending] = await Promise.all([
+    userId
+      ? fetchRecommendations(userId).catch((error) => {
+          console.error('Recommendations unavailable', error);
+          return null;
+        })
+      : Promise.resolve('signedOut' as const),
+    fetchTrending().catch((error) => {
+      console.error('Trending unavailable', error);
+      return null;
+    }),
+  ]);
+  return { recs, trending };
 }
 
 function RecommendationCard({ item, index }: { item: RecommendationItem; index: number }) {
@@ -152,7 +94,7 @@ function TrendingCard({ item, rank }: { item: TrendingItem; rank: number }) {
 }
 
 export default async function DiscoverPage() {
-  const { recs, trending, source } = await getData();
+  const { recs, trending } = await getData();
 
   return (
     <PageShell
@@ -163,7 +105,21 @@ export default async function DiscoverPage() {
       <div className="grid gap-5 lg:grid-cols-[1.5fr,1fr]">
         <Card className="space-y-4">
           <SectionHeading eyebrow="Personalized" title="Recommended for you" />
-          {recs.length > 0 ? (
+          {recs === 'signedOut' ? (
+            <div className="rounded-2xl border border-slate-800/60 bg-slate-900/40 p-6 text-center">
+              <p className="text-sm text-slate-400">Sign in to see recommendations.</p>
+              <Link
+                href="/login"
+                className="mt-2 inline-block text-sm text-emerald-300 hover:text-white"
+              >
+                Sign in →
+              </Link>
+            </div>
+          ) : recs === null ? (
+            <p className="text-sm text-slate-400">
+              Recommendations are unavailable right now: Sidetrack couldn&apos;t reach its API.
+            </p>
+          ) : recs.length > 0 ? (
             <div className="grid gap-3 sm:grid-cols-2">
               {recs.map((item, index) => (
                 <RecommendationCard key={`${item.type}-${item.id}`} item={item} index={index} />
@@ -182,16 +138,15 @@ export default async function DiscoverPage() {
               </Link>
             </div>
           )}
-          {source === 'fallback' && (
-            <p className="text-xs text-slate-500">
-              Showing sample recommendations. Connect Spotify or Last.fm for personalized picks.
-            </p>
-          )}
         </Card>
 
         <Card className="space-y-4">
           <SectionHeading eyebrow="Club picks" title="Trending this week" />
-          {trending.length > 0 ? (
+          {trending === null ? (
+            <p className="text-sm text-slate-400">
+              Trending albums are unavailable right now: Sidetrack couldn&apos;t reach its API.
+            </p>
+          ) : trending.length > 0 ? (
             <div className="space-y-2">
               {trending.map((item, index) => (
                 <TrendingCard key={item.id} item={item} rank={index + 1} />
@@ -212,7 +167,7 @@ export default async function DiscoverPage() {
           <div className="rounded-xl bg-slate-900/50 p-4">
             <p className="text-sm font-semibold text-white">🎵 Your taste</p>
             <p className="mt-1 text-xs text-slate-400">
-              We analyze your listening history for mood, energy, and genre patterns.
+              Picks come from your listening history and what you&apos;ve rated.
             </p>
           </div>
           <div className="rounded-xl bg-slate-900/50 p-4">

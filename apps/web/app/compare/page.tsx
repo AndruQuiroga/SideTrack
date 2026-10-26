@@ -53,8 +53,8 @@ async function CompatibilityResult({ userA, userB }: { userA: string; userB: str
   }
 
   const overlap = result.overlap as OverlapData | undefined;
-  const sharedArtists = overlap?.shared_artists ?? ['Björk', 'Little Simz', 'Radiohead'];
-  const sharedGenres = overlap?.shared_genres ?? ['Art Pop', 'Indie Rock', 'Alt Hip-Hop'];
+  const sharedArtists = overlap?.shared_artists ?? [];
+  const sharedGenres = overlap?.shared_genres ?? [];
 
   return (
     <div className="space-y-5">
@@ -68,10 +68,9 @@ async function CompatibilityResult({ userA, userB }: { userA: string; userB: str
             <h2 className="mt-1 text-2xl font-bold text-white">
               {userA} <span className="text-slate-500">×</span> {userB}
             </h2>
-            <p className="mt-3 max-w-md text-sm text-slate-400">
-              {result.explanation ??
-                'Based on shared listening patterns, genre preferences, and mood similarities.'}
-            </p>
+            {result.explanation && (
+              <p className="mt-3 max-w-md text-sm text-slate-400">{result.explanation}</p>
+            )}
           </div>
           <MatchScore score={result.score} />
         </div>
@@ -80,6 +79,9 @@ async function CompatibilityResult({ userA, userB }: { userA: string; userB: str
       <div className="grid gap-4 md:grid-cols-2">
         <Card className="space-y-3">
           <SectionHeading eyebrow="Common ground" title="Shared artists" />
+          {sharedArtists.length === 0 && (
+            <p className="text-sm text-slate-400">No shared-artist data available.</p>
+          )}
           <div className="flex flex-wrap gap-2">
             {sharedArtists.map((artist) => (
               <span
@@ -94,6 +96,9 @@ async function CompatibilityResult({ userA, userB }: { userA: string; userB: str
 
         <Card className="space-y-3">
           <SectionHeading eyebrow="Overlap zones" title="Shared genres" />
+          {sharedGenres.length === 0 && (
+            <p className="text-sm text-slate-400">No shared-genre data available.</p>
+          )}
           <div className="flex flex-wrap gap-2">
             {sharedGenres.map((genre) => (
               <span
@@ -181,15 +186,9 @@ export default function ComparePage({ searchParams }: ComparePageProps) {
               <code className="rounded bg-slate-800 px-1.5 py-0.5 text-xs">
                 ?userA=name&userB=name
               </code>{' '}
-              to the URL
+              to the URL, using user IDs from profile pages.
             </p>
           </div>
-          <Link
-            href="/compare?userA=demo&userB=demo2"
-            className="inline-block rounded-full bg-slate-800 px-5 py-2 text-sm font-medium text-white transition hover:bg-slate-700"
-          >
-            Try demo comparison
-          </Link>
         </Card>
       </PageShell>
     );
@@ -198,7 +197,7 @@ export default function ComparePage({ searchParams }: ComparePageProps) {
   return (
     <PageShell
       title="Compatibility"
-      description="How do these two listeners' tastes align? Based on listening history, ratings, and audio features."
+      description="How do these two listeners' tastes align? Based on listening history and club ratings."
       accent="Live match"
     >
       <Suspense fallback={<LoadingSkeleton />}>

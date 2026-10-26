@@ -9,20 +9,6 @@ import { Card, SectionHeading } from '../components/ui';
 import { createFriendBlend, type BlendPreview } from '../lib/api/social';
 import { showToast } from '../components/toast';
 
-// Demo tracks for fallback
-const demoTracks = [
-  { id: '1', title: 'Hyperballad', artist_name: 'Björk', reason: 'Shared favorite' },
-  { id: '2', title: 'Vroom Vroom', artist_name: 'Charli XCX', reason: 'High energy match' },
-  { id: '3', title: 'Intro', artist_name: 'The xx', reason: 'Mood similarity' },
-  {
-    id: '4',
-    title: 'How to Disappear Completely',
-    artist_name: 'Radiohead',
-    reason: 'Top artist overlap',
-  },
-  { id: '5', title: 'Oblivion', artist_name: 'Grimes', reason: 'Genre blend' },
-];
-
 export default function BlendPage() {
   const searchParams = useSearchParams();
   const [userA, setUserA] = useState('');
@@ -49,13 +35,7 @@ export default function BlendPage() {
       setPreview(result);
       showToast('Blend generated!', 'success');
     } catch {
-      // Use demo fallback
-      setPreview({
-        name: `${userA} × ${userB} Blend`,
-        description: 'A curated mix based on your shared tastes and listening patterns.',
-        tracks: demoTracks,
-      });
-      showToast('Showing demo blend (API unavailable)', 'success');
+      showToast("Couldn't generate a blend: the Sidetrack API is unavailable", 'error');
     } finally {
       setLoading(false);
     }

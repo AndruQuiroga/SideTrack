@@ -39,7 +39,8 @@ Status values: **works** (implemented end to end), **partial** (implemented with
 | Capability | Status | Notes |
 | --- | --- | --- |
 | Auth | partial | Writes need the service token and the API fails closed without it; stored credentials are never returned. No per-user auth yet (Phase 3); GETs are public |
-| Web fallback data | broken | `apps/web/app/lib/api/{weeks,profile,feed}.ts` show sample weeks, profiles and feed items when the API fails, which violates the no-fakes rule |
+| Web data honesty | works | No sample, demo or random data; pages show an "unavailable" state on API failure. Guarded by `apps/web/app/no-fake-data.test.ts` |
+| Profile pages | absent | The web app calls `/users/{id}/profile`, timeline and now-playing endpoints the API doesn't implement, so `/u/<id>` is a 404. It previously showed an invented profile |
 | Background jobs | partial | Redis (ephemeral) + one RQ consumer for Last.fm ingest. The legacy `services/worker` (APScheduler, Spotify sync) is no longer built or run; Phase 2 replaces RQ |
 | Health checks | works | `/health` returns 503 within 2 s when the DB is unreachable (verified live, 2026-10-25) |
 | Runtime secrets | works | API reads `/run/secrets/<name>`; web and bot read `<NAME>_FILE` |

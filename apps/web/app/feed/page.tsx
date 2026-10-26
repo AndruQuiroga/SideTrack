@@ -1,9 +1,9 @@
 import Link from 'next/link';
 import type { Route } from 'next';
 
-import { fetchFeedWithFallback, type FeedItem } from '../lib/api/feed';
+import { fetchFeed, type FeedItem } from '../lib/api/feed';
 import { PageShell } from '../components/page-shell';
-import { Card, SectionHeading } from '../components/ui';
+import { Card, SectionHeading, Unavailable } from '../components/ui';
 import { RatingBadge } from '../components/rating-badge';
 
 export const metadata = {
@@ -80,7 +80,12 @@ function FeedItemCard({ item }: { item: FeedItem }) {
 }
 
 export default async function FeedPage() {
-  const feed = await fetchFeedWithFallback();
+  let feed: FeedItem[] | null = null;
+  try {
+    feed = await fetchFeed();
+  } catch (error) {
+    console.error('Feed unavailable', error);
+  }
 
   return (
     <PageShell
@@ -88,24 +93,28 @@ export default async function FeedPage() {
       description="See what friends are rating, listening to, and celebrating. Live updates once you link Discord and Spotify."
       accent="Live"
     >
-      <Card className="space-y-5">
-        <SectionHeading eyebrow="Recent activity" title="Club + friends" />
-        <div className="space-y-3">
-          {feed.length > 0 ? (
-            feed.map((item) => <FeedItemCard key={item.id} item={item} />)
-          ) : (
-            <div className="rounded-2xl border border-slate-800/60 bg-slate-900/40 p-6 text-center">
-              <p className="text-sm text-slate-400">
-                No activity yet. Rate an album or follow a friend to see updates here.
-              </p>
-            </div>
-          )}
-        </div>
-        <p className="text-xs text-slate-500">
-          Hook up Spotify or Last.fm for listening events. Presence indicators and now-playing
-          badges appear once accounts are linked.
-        </p>
-      </Card>
+      {feed === null ? (
+        <Unavailable what="activity feed" />
+      ) : (
+        <Card className="space-y-5">
+          <SectionHeading eyebrow="Recent activity" title="Club + friends" />
+          <div className="space-y-3">
+            {feed.length > 0 ? (
+              feed.map((item) => <FeedItemCard key={item.id} item={item} />)
+            ) : (
+              <div className="rounded-2xl border border-slate-800/60 bg-slate-900/40 p-6 text-center">
+                <p className="text-sm text-slate-400">
+                  No activity yet. Rate an album or follow a friend to see updates here.
+                </p>
+              </div>
+            )}
+          </div>
+          <p className="text-xs text-slate-500">
+            Hook up Spotify or Last.fm for listening events. Presence indicators and now-playing
+            badges appear once accounts are linked.
+          </p>
+        </Card>
+      )}
     </PageShell>
   );
 }

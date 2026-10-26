@@ -1,9 +1,9 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ListeningTimelinePoint } from '@sidetrack/api-client';
+import { ApiError, ListeningTimelinePoint } from '@sidetrack/api-client';
 
-import { fetchProfileForServer } from '../../lib/api/profile';
-import { Card, Pill, SectionHeading } from '../../components/ui';
+import { fetchProfileForServer, type ProfilePageData } from '../../lib/api/profile';
+import { Card, Pill, SectionHeading, Unavailable } from '../../components/ui';
 import { TasteRadar } from '../../components/taste-radar';
 import { PageShell } from '../../components/page-shell';
 
@@ -37,13 +37,20 @@ function formatListenTime(input?: string) {
 }
 
 export default async function ProfilePage({ params }: ProfilePageProps) {
-  const profile = await fetchProfileForServer(params.id);
-  if (!profile) {
-    notFound();
+  let profile: ProfilePageData;
+  try {
+    profile = await fetchProfileForServer(params.id);
+  } catch (error) {
+    if (error instanceof ApiError && (error.status === 404 || error.status === 422)) {
+      notFound();
+    }
+    console.error('Profile unavailable', error);
+    return (
+      <PageShell title="Profile" accent="Profile">
+        <Unavailable what="profile" />
+      </PageShell>
+    );
   }
-
-  const compatibility = Math.round((profile.taste_metrics[0]?.percentile ?? 0.72) * 100);
-  const recommendations = profile.top_genres.slice(0, 3).map((genre) => `${genre.name} essentials`);
 
   return (
     <PageShell
@@ -70,14 +77,11 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
               Follow
             </span>
             <Link
-              href={`/compare?userA=${params.id}&userB=demo`}
+              href={`/compare?userA=${params.id}`}
               className="rounded-full bg-slate-800 px-3 py-1 text-xs font-semibold text-emerald-200 hover:text-white"
             >
               Compare tastes →
             </Link>
-            <span className="rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-semibold text-emerald-200">
-              Compatibility {compatibility}%
-            </span>
           </div>
 
           {profile.now_playing ? (
@@ -171,45 +175,48 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.2fr,1fr]">
         <Card className="space-y-3">
           <SectionHeading eyebrow="Taste metrics" title="Mood + energy fingerprint" />
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-3">
-              <p className="mb-2 text-sm font-semibold text-white">Radar</p>
-              <TasteRadar metrics={profile.taste_metrics} />
-            </div>
-            <div className="space-y-3">
-              {profile.taste_metrics.slice(0, 3).map((metric) => (
-                <div
-                  key={metric.id}
-                  className="rounded-2xl border border-slate-800 bg-slate-900/60 p-3"
-                >
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-semibold text-white">{metric.label}</p>
-                    {metric.percentile !== undefined && (
-                      <span className="text-xs text-slate-400">
-                        {Math.round((metric.percentile ?? 0) * 100)}%
-                      </span>
-                    )}
+          {profile.taste_metrics.length === 0 ? (
+            <p className="text-sm text-slate-400">
+              Taste metrics aren&apos;t available yet. They&apos;ll come from Sidetrack&apos;s own
+              audio analysis once it ships.
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-3">
+                <p className="mb-2 text-sm font-semibold text-white">Radar</p>
+                <TasteRadar metrics={profile.taste_metrics} />
+              </div>
+              <div className="space-y-3">
+                {profile.taste_metrics.slice(0, 3).map((metric) => (
+                  <div
+                    key={metric.id}
+                    className="rounded-2xl border border-slate-800 bg-slate-900/60 p-3"
+                  >
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold text-white">{metric.label}</p>
+                      {metric.percentile !== undefined && (
+                        <span className="text-xs text-slate-400">
+                          {Math.round((metric.percentile ?? 0) * 100)}%
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-2 h-2 rounded-full bg-slate-800">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-sky-400 to-purple-500"
+                        style={{
+                          width: `${Math.min((metric.value / 1) * 100, 100)}%`,
+                          minWidth: '6%',
+                        }}
+                      />
+                    </div>
+                    <p className="mt-1 text-xs text-slate-400">
+                      {metric.value} {metric.unit ?? ''}
+                    </p>
                   </div>
-                  <div className="mt-2 h-2 rounded-full bg-slate-800">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-sky-400 to-purple-500"
-                      style={{
-                        width: `${Math.min((metric.value / 1) * 100, 100)}%`,
-                        minWidth: '6%',
-                      }}
-                    />
-                  </div>
-                  <p className="mt-1 text-xs text-slate-400">
-                    {metric.value} {metric.unit ?? ''}
-                  </p>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-          <p className="text-xs text-slate-400">
-            Visual fingerprint based on Spotify/Last.fm audio features. Powers compatibility and
-            recommendations.
-          </p>
+          )}
         </Card>
 
         <Card className="space-y-3">
@@ -223,32 +230,17 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       </div>
 
       <Card className="space-y-3">
-        <SectionHeading eyebrow="Social" title="Recommendations + actions" />
-        <div className="grid gap-3 md:grid-cols-3">
-          {recommendations.map((rec) => (
-            <div
-              key={rec}
-              className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-sm text-slate-200"
-            >
-              <p className="font-semibold text-white">{rec}</p>
-              <p className="mt-1 text-slate-400">
-                Auto playlists and friend blends will appear here once listening data and club
-                ratings sync.
-              </p>
-            </div>
-          ))}
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-sm text-slate-200">
-            <p className="font-semibold text-white">Invite a friend</p>
-            <p className="mt-1 text-slate-400">
-              Share your profile link to compare compatibility instantly.
-            </p>
-            <Link
-              href="/compare?userA=demo&userB=demo2"
-              className="mt-2 inline-flex text-emerald-200 hover:text-white"
-            >
-              Compare →
-            </Link>
-          </div>
+        <SectionHeading eyebrow="Social" title="Compare with a friend" />
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-sm text-slate-200">
+          <p className="text-slate-400">
+            Share this profile link, or compare it with another listener&apos;s profile.
+          </p>
+          <Link
+            href={`/compare?userA=${params.id}`}
+            className="mt-2 inline-flex text-emerald-200 hover:text-white"
+          >
+            Compare →
+          </Link>
         </div>
       </Card>
     </PageShell>

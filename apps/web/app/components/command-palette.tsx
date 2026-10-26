@@ -202,10 +202,7 @@ function DefaultShortcuts({ onClose }: { onClose: () => void }) {
       </button>
       <button
         type="button"
-        onClick={() => {
-          router.push('/compare?userA=demo&userB=demo2' as '/compare');
-          onClose();
-        }}
+        onClick={() => handleNavigate('/compare')}
         className="block w-full text-left rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-slate-900"
       >
         Compare tastes

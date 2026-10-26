@@ -96,11 +96,6 @@ export function WeekDetailPanel({ week }: WeekDetailPanelProps) {
                           {chip as string}
                         </span>
                       ))}
-                    {week.source === 'fallback' && (
-                      <span className="rounded-full bg-amber-500/20 px-3 py-1 text-[0.7rem] font-semibold text-amber-200">
-                        Demo data
-                      </span>
-                    )}
                   </div>
                 </div>
               </div>

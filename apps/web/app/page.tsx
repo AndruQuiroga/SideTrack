@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { fetchWeekListWithFallback } from './lib/api/weeks';
+import { fetchWeekList } from './lib/api/weeks';
 import { PageShell } from './components/page-shell';
 import { Card, SectionHeading } from './components/ui';
 import { RatingBadge } from './components/rating-badge';
@@ -14,12 +14,13 @@ export const metadata = {
 export default async function Home() {
   let latestWeek = null;
   try {
-    const weeks = await fetchWeekListWithFallback();
-    if (weeks && weeks.length > 0) {
+    const weeks = await fetchWeekList();
+    if (weeks.length > 0) {
       latestWeek = weeks[0];
     }
-  } catch {
-    // Fallback gracefully
+  } catch (error) {
+    // The highlight is optional on the home page; omit it rather than invent one.
+    console.error('Latest club week unavailable', error);
   }
 
   return (
@@ -58,10 +59,10 @@ export default async function Home() {
               Beautiful graphs and timelines.
             </p>
             <Link
-              href="/u/demo"
+              href="/settings"
               className="mt-4 inline-flex items-center gap-1 text-sm text-emerald-300 transition-colors hover:text-white"
             >
-              View demo profile <span aria-hidden>→</span>
+              Link your accounts <span aria-hidden>→</span>
             </Link>
           </div>
         </Card>
@@ -85,10 +86,10 @@ export default async function Home() {
                 Open feed →
               </Link>
               <Link
-                href="/compare?userA=demo&userB=demo2"
+                href="/compare"
                 className="text-sm text-emerald-300 transition-colors hover:text-white"
               >
-                Try matching →
+                Compare tastes →
               </Link>
             </div>
           </div>
