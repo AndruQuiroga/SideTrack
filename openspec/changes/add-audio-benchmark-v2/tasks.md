@@ -8,7 +8,7 @@
 
 - [x] 2.1 Implement `seeds.py` cleaning and resolution: the exclusion rules with counts, and channel-title parsing. Prove "Personal seeds exclude non-music" and "Uploader-channel listens resolve to the real artist" in `services/audio-lab/tests/test_seeds.py` with a synthetic export.
 - [x] 2.2 Implement balanced selection (co-listened pairs first, then year × play-band round-robin, artist cap) and session detection for `colisten.csv`. Prove "Personal seeds are balanced" and "Co-listening pairs are recorded" in `tests/test_seeds.py`.
-- [x] 2.3 Implement night-session sleep labelling (night sessions are excluded from co-listening, and sleep tracks are capped at 15% of seeds) and the `audio-lab seeds` command, which writes `seeds.csv`, `labels.csv`, `colisten.csv` and an exclusion report, and refuses output inside the repo. Prove "Sleep tracks are labelled from night sessions", "Night autoplay ignored" and "Output inside the repo" in `tests/test_seeds.py`.
+- [x] 2.3 Implement night-session sleep labelling (night sessions are excluded from co-listening, and sleep tracks fill up to 15% of seeds) and the `audio-lab seeds` command, which writes `seeds.csv`, `labels.csv`, `colisten.csv` and an exclusion report, and refuses output inside the repo. Prove "Sleep tracks are labelled from night sessions", "Night autoplay ignored" and "Output inside the repo" in `tests/test_seeds.py`.
 
 ## 3. Genre control set
 

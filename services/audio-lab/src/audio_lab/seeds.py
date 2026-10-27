@@ -267,6 +267,16 @@ def select(
             if batch and fits(batch):
                 take(batch)
 
+    # Sleep tracks are rarely replayed by choice, so the play-ordered buckets would never
+    # reach them: fill the sleep share first, most night plays first.
+    for t in sorted(
+        (t for t in eligible.values() if is_sleep(t)), key=lambda t: (-t.night_plays, t.key)
+    ):
+        if sleeping >= sleep_cap:
+            break
+        if t.key not in chosen_keys and fits([t]):
+            take([t])
+
     buckets: dict[tuple[int, int], list[Track]] = defaultdict(list)
     for t in eligible.values():
         buckets[(t.first_year, _band(t.plays))].append(t)

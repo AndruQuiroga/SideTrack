@@ -208,3 +208,18 @@ def test_output_inside_repo_refused(tmp_path):
     assert not target.exists()
     assert main(["seeds", str(export), "--out", str(target)]) == 1
     assert not target.exists()
+
+
+def test_sleep_share_is_filled_even_when_rarely_played(tmp_path):
+    filler = [("Filler", f"F{i}") for i in range(11)]
+    listens = []
+    for d in range(2):
+        listens += _night(NIGHT + d * 86400, [("Sleepy", "Rain"), *filler])
+    listens += _favourites(DAY + 30 * 86400, "Loud", 1, plays=9)
+    listens += [x for i in range(10) for x in _favourites(DAY + 40 * 86400, f"Band{i}", 1, plays=5)]
+    export = write_export(tmp_path / "lb", listens)
+    out = tmp_path / "out"
+    build_seeds(export, out, Options(count=10, sleep_share=0.1, colisten_share=0), tz=UTC)
+
+    labels = rows(out / "labels.csv")
+    assert sum(r["label"] == "sleep" for r in labels) == 1

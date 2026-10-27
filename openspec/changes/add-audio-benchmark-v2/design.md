@@ -56,7 +56,7 @@ Archive `add-audio-lab-benchmark` before applying this change:
 ### 5. Balanced selection
 
 - **Eligible tracks:** loved, or played at least twice after cleaning.
-- **Sleep share:** sleep-labelled tracks are capped at 15% of personal seeds, so they're represented without dominating the pool.
+- **Sleep share:** sleep-labelled tracks fill up to 15% of personal seeds, taken before the buckets (most night plays first). Sleep tracks are rarely replayed by choice, so play-ordered buckets alone would never reach them.
 - **Co-listened pairs first:** take the strongest pairs (most sessions, ties broken by key), keeping both tracks, until 25% of `--count` is filled (`--colisten-share`) or the artist cap blocks a pair.
 - **The rest, round-robin over buckets:** each bucket is a (first-play year, play band) combination, with bands 2–3, 4–9 and 10+. Within a bucket, tracks are ordered by plays (descending), then key. This keeps old favourites and recent finds both represented.
 - **Artist cap:** at most 2 tracks per primary artist (the first credited name), the same split as acquisition's credit matching.
