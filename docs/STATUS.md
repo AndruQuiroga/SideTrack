@@ -69,7 +69,6 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 - `add-muq-mulan-embeddings`: 1/19 tasks
 - `deploy-on-stache-rack`: 13/13 tasks
 - `harden-api-credentials`: 10/11 tasks
-- `measure-audio-models-on-1070ti`: 16/16 tasks
 
 ### Specs
 
