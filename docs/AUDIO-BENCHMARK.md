@@ -224,3 +224,10 @@ Run `20261027-031711-c7c3698` (`add-audio-benchmark-v2`).
 - **Items 1 and 3 pass:** 103 duels were judged, and MuQ-MuLan's recall@10 is 0.915.
 - **Item 2 passes for MuQ-MuLan,** just: it has the top win rate, and 0.55 meets the threshold.
 - **Item 4:** the two are 0.10 apart, outside the 0.05 margin, so the owner's decision is a yes or no on MuQ-MuLan.
+
+**Owner's decision (2026-10-27):** MuQ-MuLan passes and becomes the lead model, because it
+can do more: its joint audio–text space allows text queries and descriptions, and it leads
+on genre. MuQ is kept as a second model for now, for song recognition and artist grouping,
+where it is clearly stronger, and because the two tie on the owner's own songs. Integration
+(pgvector, `gpu` queue) starts with MuQ-MuLan. Whether MuQ is embedded in production too is
+decided in that change. MERT and CLAP stay dropped.
