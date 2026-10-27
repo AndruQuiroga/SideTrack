@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import json
+import os
 import platform
 import shutil
 import subprocess
@@ -31,7 +32,8 @@ class ModelResult:
     reason: str | None = None
     info: dict | None = None
     audio_seconds: float = 0.0
-    wall_seconds: float = 0.0
+    wall_seconds: float = 0.0  # embedding only; model load is load_seconds
+    load_seconds: float = 0.0
     peak_vram_mib: float = 0.0
     embedded: int = 0
     failed: int = 0
@@ -45,6 +47,7 @@ class ModelResult:
             "performance": {
                 "audio_seconds": round(self.audio_seconds, 2),
                 "wall_seconds": round(self.wall_seconds, 2),
+                "load_seconds": round(self.load_seconds, 2),
                 "audio_seconds_per_second": round(throughput, 2),
                 "peak_vram_mib": round(self.peak_vram_mib, 1),
                 "embedded": self.embedded,
@@ -61,6 +64,8 @@ class Run:
 
 
 def git_commit(repo: Path | None = None) -> str:
+    if built := os.environ.get("AUDIO_LAB_COMMIT"):  # set by the Pascal image
+        return built
     git = shutil.which("git")
     if git is None:
         return "unknown"
@@ -79,6 +84,9 @@ def environment() -> dict:
     env.update(torch=torch.__version__, cuda=torch.version.cuda)
     if torch.cuda.is_available():
         env["gpu"] = torch.cuda.get_device_name(0)
+        major, minor = torch.cuda.get_device_capability(0)
+        env["compute_capability"] = f"{major}.{minor}"
+        env["arch_list"] = list(torch.cuda.get_arch_list())
         smi = shutil.which("nvidia-smi")
         if smi:
             query = [smi, "--query-gpu=driver_version", "--format=csv,noheader"]
@@ -116,12 +124,13 @@ def embed_run(
     failures: list[tuple[str, str, str]] = []
 
     for adapter in adapters:
+        loading = time.perf_counter()
         try:
             info = adapter.load(device)
         except ModelUnavailable as exc:
             run.models[adapter.name] = ModelResult("unavailable", reason=str(exc))
             continue
-        result = ModelResult("ok", info=info.as_dict())
+        result = ModelResult("ok", info=info.as_dict(), load_seconds=time.perf_counter() - loading)
         adapter.reset_peak_memory()
         began = time.perf_counter()
         for asset in assets:

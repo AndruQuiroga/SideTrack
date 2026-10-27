@@ -16,8 +16,12 @@ uv sync --python 3.11 --extra models --extra dev  # + PyTorch 2.11 (CUDA 12.8), 
 ```
 
 - **GPU:** the `models` extra targets CUDA 12.8 builds, which support Blackwell (RTX 50xx)
-  but not Pascal (GTX 10xx). The rack's GTX 1070 Ti needs a separate environment; that's
-  a follow-up change.
+  but not Pascal (GTX 10xx). The `models-pascal` extra has the same pins from the CUDA
+  12.6 index for the rack's GTX 1070; the two extras can't be installed together. Use
+  it through the image below.
+- **Compatibility check:** before a model loads on a GPU, `embed` checks that the torch
+  build has kernels for the GPU's compute capability. If not, every model is recorded as
+  unavailable with both values (for example `sm_61` against a CUDA 12.8 build).
 - **ffmpeg** must be on `PATH` for m4a and webm files from YouTube (`scoop install ffmpeg`).
 - **Weights** download to the Hugging Face cache on first use: about 3 GB in total. On
   Windows, set `HF_HUB_DISABLE_SYMLINKS_WARNING=1` to silence the symlink notice. MERT runs
@@ -59,11 +63,15 @@ uv run --extra models audio-lab embed ... --model muq --model clap           # a
 uv run audio-lab report E:/sidetrack/audio-lab-runs/<run-id> \
     --manifest E:/sidetrack/manifest.csv --audio-dir E:/sidetrack/audio
 uv run audio-lab score E:/sidetrack/audio-lab-runs/<run-id> --votes duels.json
+uv run audio-lab parity E:/sidetrack/audio-lab-runs/<run-a> \
+    E:/sidetrack/audio-lab-runs/<run-b> --model muq-mulan                    # one model, two runs
 ```
 
 - **`embed`** creates `<out>/<YYYYMMDD-HHMMSS>-<git sha>/` containing `embeddings.parquet`,
   `failures.csv` and `run.json`. `run.json` records checkpoints, revisions, licences,
-  sample rates, pooling, environment, and per-model throughput and peak VRAM. Assets are
+  sample rates, pooling, environment (including the GPU's compute capability and the torch
+  build's architecture list), and per-model throughput, peak VRAM and model load time
+  (`load_seconds`, not included in `wall_seconds`). Assets are
   cut into 10 s windows; full tracks are capped at 180 s. A model that can't load is
   recorded as unavailable and never produces vectors. With `--max-duration 600`, longer
   assets are skipped and recorded as `too_long`.
@@ -83,11 +91,48 @@ uv run audio-lab score E:/sidetrack/audio-lab-runs/<run-id> --votes duels.json
   - **Results:** live duel standings and the automatic metrics: preview→full recall,
     same-artist rate, separation, and top-10 overlap between models.
   - **Browse:** every seed's top 10 per model.
+- **`parity`** compares one model's vectors in two runs (for example the same manifest on
+  two GPUs) by asset SHA-256. It prints the shared asset count, the minimum, 1st-percentile
+  and median cosine, and every asset below `--threshold` (default 0.999). It refuses runs
+  with different checkpoint revisions or window settings for that model.
 - **`score`** prints each model's wins, losses, ties and win rate (a tie counts as half a
   win), plus each pair's head-to-head, and writes `scores.json` into the run. It refuses
   votes from a different run or for models the run didn't embed.
 
 The pass gate and recorded results are in `docs/AUDIO-BENCHMARK.md`.
+
+## GTX 1070 (docker-0)
+
+The rack's Pascal card runs audio-lab from a local image with the `models-pascal` extra.
+The image is a benchmark tool: build it on docker-0, and don't push it or add it to the stack.
+
+```bash
+# On docker-0, in a copy of services/audio-lab (Dockerfile, pyproject.toml, uv.lock, src).
+# There's no checkout there, so pass the commit it came from (add -dirty for local edits).
+cd $STAGE/build
+docker build --build-arg GIT_COMMIT=<short sha> -t audio-lab-pascal .
+docker run --rm --gpus all --entrypoint python audio-lab-pascal \
+    -c "import torch; print(torch.cuda.get_device_capability(), torch.cuda.get_arch_list())"
+
+# STAGE=<staging directory on docker-0's root disk>; audio keeps the manifest's relative paths.
+docker run --rm --gpus all --user $(id -u):$(id -g) \
+    -v $STAGE/audio:/audio:ro \
+    -v $STAGE/benchmark-v2:/benchmark:ro \
+    -v $STAGE/audio-lab-runs:/runs \
+    -v $STAGE/hf-cache:/hf \
+    audio-lab-pascal embed --manifest /benchmark/manifest.csv --audio-dir /audio \
+    --out /runs --model muq-mulan --model muq --max-duration 600
+```
+
+- **Commit:** the image has no `.git`, so `GIT_COMMIT` is baked in as `AUDIO_LAB_COMMIT`
+  and goes into the run ID and `run.json`.
+- **Weights** download once into the mounted Hugging Face cache. Run a one-asset `embed`
+  first (to a throwaway `--out`), so the timed run's `load_seconds` doesn't include the
+  download.
+- **Long runs:** use `docker run -d --name …` and `docker wait`, so the run survives an SSH
+  disconnect.
+- **Afterwards,** copy the run directory back to `E:/sidetrack/audio-lab-runs` and compare
+  it with the RTX 5070 run using `parity`.
 
 ## Test
 

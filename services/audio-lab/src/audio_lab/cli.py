@@ -10,6 +10,7 @@ from pathlib import Path
 
 from .adapters import ADAPTERS, get_adapter
 from .control import DEFAULT_GENRES, ControlUnavailable, deezer_fetch, write_control
+from .parity import ParityError, parity
 from .report import UnknownModel, write_report
 from .runs import RUN_JSON, embed_run
 from .score import VoteError, score
@@ -56,6 +57,12 @@ def _parser() -> argparse.ArgumentParser:
     control.add_argument("--per-genre", type=int, default=10)
     control.add_argument("--genre", action="append", help="Repeatable; default 15 genres.")
 
+    compare = commands.add_parser("parity", help="One model's vectors in two runs, per asset.")
+    compare.add_argument("run_a", type=Path)
+    compare.add_argument("run_b", type=Path)
+    compare.add_argument("--model", required=True)
+    compare.add_argument("--threshold", type=float, default=0.999)
+
     scoring = commands.add_parser("score", help="Duel win rates per model from duels.json.")
     scoring.add_argument("run_dir", type=Path)
     scoring.add_argument("--votes", type=Path, required=True, help="duels.json from the report.")
@@ -82,7 +89,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             perf = result.as_dict()["performance"]
             print(
                 f"  {name}: {perf['embedded']} embedded, {perf['failed']} failed, "
-                f"{perf['audio_seconds_per_second']} audio-s/s, peak {perf['peak_vram_mib']} MiB"
+                f"{perf['audio_seconds_per_second']} audio-s/s, peak {perf['peak_vram_mib']} MiB, "
+                f"loaded in {perf['load_seconds']} s"
             )
         return 0 if any(r.status == "ok" for r in run.models.values()) else 1
 
@@ -128,6 +136,26 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(str(exc), file=sys.stderr)
             return 1
         print(f"Wrote {count} control seeds to {args.out}")
+        return 0
+
+    if args.command == "parity":
+        try:
+            result = parity(args.run_a, args.run_b, args.model, args.threshold)
+        except ParityError as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+        print(
+            f"{result['model']} @ {result['revision']}: {result['shared']} shared assets "
+            f"({result['only_in_a']} only in {result['runs'][0]}, "
+            f"{result['only_in_b']} only in {result['runs'][1]})"
+        )
+        print(
+            f"  cosine min {result['min']:.6f}, p1 {result['p1']:.6f}, "
+            f"median {result['median']:.6f}"
+        )
+        print(f"  {len(result['below'])} below {result['threshold']}")
+        for row in result["below"]:
+            print(f"    {row['sha256']}  {row['cosine']:.6f}")
         return 0
 
     record = json.loads((args.run_dir / RUN_JSON).read_text(encoding="utf-8"))

@@ -123,6 +123,36 @@ restore the `sidetrack_api_token` secret, and run
 the old one. The downgrade drops club membership, listening visibility and job
 submitters; nothing else changes.
 
+## GPU services on docker-0
+
+docker-0 has the rack's GTX 1070 (Pascal, compute capability 6.1, 8 GB, driver 580). It was
+passed through from stache-0 on 2026-10-27 (stache-infra:
+`docs/evidence/gpu-passthrough-docker-0-2026-10-27.md`). Docker there uses the `nvidia`
+runtime by default, and a container gets the GPU only when it asks for it:
+
+- **Plain `docker run`:** add `--gpus all`.
+- **Swarm service or stack:** `--gpus` isn't available. Set the environment instead and pin
+  the service to the node:
+
+  ```yaml
+  environment:
+    NVIDIA_VISIBLE_DEVICES: all
+    NVIDIA_DRIVER_CAPABILITIES: compute,utility
+  deploy:
+    placement:
+      constraints:
+        - node.hostname == docker-0
+  ```
+
+- **Sharing:** Swarm doesn't reserve the GPU. Every GPU service on docker-0 shares the
+  8 GB, so their peak VRAM has to add up to less than that.
+- **PyTorch:** it needs a build with Pascal kernels, `sm_60`, which CUDA 12.6 builds have
+  and CUDA 12.8+ builds don't. The driver must stay on the 580 branch, the last one that
+  supports Pascal.
+
+This method was verified on 2026-10-27 with a one-replica service running audio-lab's
+Pascal image: it reported the GTX 1070 at capability (6, 1) and was removed afterwards.
+
 ## Backups
 
 Not automated yet; it's an open question in the `deploy-on-stache-rack` design. Until then, before risky changes:

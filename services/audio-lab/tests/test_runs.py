@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 import json
 import re
+import time
 from pathlib import Path
 
 import pyarrow.parquet as pq
@@ -12,7 +13,7 @@ import pytest
 from conftest import HashAdapter, UnloadableAdapter
 
 from audio_lab.adapters import ADAPTERS, ModelUnavailable, get_adapter
-from audio_lab.runs import EMBEDDINGS, FAILURES, RUN_JSON, embed_run
+from audio_lab.runs import EMBEDDINGS, FAILURES, RUN_JSON, embed_run, git_commit
 
 THREE = [
     ("A", "One", "full", 12, 220),
@@ -75,9 +76,34 @@ def test_run_json_records_versions_and_performance(make_manifest, audio_dir, tmp
     # 12 s full tracks keep one 10 s window (the 2 s tail is dropped); the 6 s preview is kept.
     assert perf["audio_seconds"] == pytest.approx(26.0, abs=0.1)
     assert perf["embedded"] == 3 and perf["failed"] == 0
-    for key in ("wall_seconds", "audio_seconds_per_second", "peak_vram_mib"):
+    for key in ("wall_seconds", "load_seconds", "audio_seconds_per_second", "peak_vram_mib"):
         assert key in perf
     assert "python" in record["environment"]
+
+
+class SlowLoadAdapter(HashAdapter):
+    """Test double: a model that takes a measurable time to load."""
+
+    name = "slow-load"
+
+    def load(self, device: str):
+        time.sleep(0.5)
+        return super().load(device)
+
+
+def test_load_time_is_recorded_apart_from_wall_time(make_manifest, audio_dir, tmp_path):
+    run = _run(make_manifest(THREE), audio_dir, tmp_path / "runs", [SlowLoadAdapter()])
+
+    perf = json.loads((run.path / RUN_JSON).read_text(encoding="utf-8"))["models"]["slow-load"][
+        "performance"
+    ]
+    assert perf["load_seconds"] >= 0.5
+    assert perf["wall_seconds"] < 0.5  # embedding three short tones, without the load
+
+
+def test_commit_comes_from_the_image_when_set(monkeypatch):
+    monkeypatch.setenv("AUDIO_LAB_COMMIT", "f00dfac")
+    assert git_commit() == "f00dfac"
 
 
 def test_unloadable_model_is_reported_not_faked(make_manifest, audio_dir, tmp_path):

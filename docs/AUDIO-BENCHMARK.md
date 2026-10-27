@@ -41,8 +41,10 @@ The thresholds are a starting point. Change them here with a dated note, never s
   more) to blind duels. On the owner's library every model's list sounded reasonable, so
   verdicts couldn't separate models that share only 22–44% of their neighbours.
 
-Integration also requires timing on the rack's GTX 1070 Ti. That needs a separate
-PyTorch environment, because CUDA 12.8+ builds dropped Pascal. It's a follow-up change.
+Integration also requires timing on the rack's GPU. That's a GTX 1070, recorded as a
+1070 Ti until 2026-10-27. Timing it needs a separate PyTorch environment, because CUDA
+12.8+ builds dropped Pascal. It was measured in run `20261027-172855-0c32766-dirty`
+(below).
 
 ## Runs
 
@@ -68,7 +70,8 @@ Windows 10.
 - **Time:** at these rates, 100 seeds (about 20,000 s of capped audio) take roughly 2 to 3
   minutes per model.
 - **Memory:** every model fits well inside 12 GB. MuQ's 4.7 GB peak is the largest, so all
-  four should also fit the 1070 Ti's 8 GB. That still has to be measured.
+  four should also fit the rack GPU's 8 GB. That still had to be measured; see the GTX
+  1070 run below.
 - **Report:** checked in a browser. Verdicts persist across a reload, and the exported
   `verdicts.json` scores correctly. The test verdicts were then discarded. (This was the
   first report version; duels replaced verdicts the same day.)
@@ -231,3 +234,55 @@ on genre. MuQ is kept as a second model for now, for song recognition and artist
 where it is clearly stronger, and because the two tie on the owner's own songs. Integration
 (pgvector, `gpu` queue) starts with MuQ-MuLan. Whether MuQ is embedded in production too is
 decided in that change. MERT and CLAP stay dropped.
+
+### 2026-10-27: GTX 1070 timing on docker-0
+
+Run `20261027-172855-0c32766-dirty` (`measure-audio-models-on-1070ti`). It's the v2 manifest
+(the same SHA-256, 704 assets) on the rack's GPU, embedded with MuQ-MuLan and MuQ only. The
+`-dirty` suffix means it ran from that change's uncommitted audio-lab code at `0c32766`.
+
+- **Environment:**
+  - docker-0, Ubuntu 26.04 VM, GeForce GTX 1070 (compute capability 6.1, 8 GB) passed
+    through from stache-0, driver 580.178.04.
+  - The audio-lab `models-pascal` image: torch 2.11.0+cu126 (built for `sm_50`–`sm_90`),
+    torchvision 0.26.0+cu126, Python 3.11.18, fp32.
+  - Audio staged on docker-0's root disk.
+- **Weights** were downloaded by a one-asset warm-up first, so the load times are from a
+  warm cache in a fresh process, as a production job would see them.
+
+| Model | Wall s | Audio-s per s | vs RTX 5070 | Load s | Peak VRAM MiB | Embedded | Failed |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| muq-mulan | 919 | 76.9 | 2.1× slower | 13.6 | 2756 | 703 | 1 |
+| muq | 915 | 77.2 | 2.2× slower | 2.1 | 5332 | 703 | 1 |
+
+- **Failures:** the one failure per model is the same 90-minute mix skipped by
+  `--max-duration 600`, as in run `20261027-031711-c7c3698`.
+- **Memory:**
+  - MuQ-MuLan peaks well inside 8 GB.
+  - MuQ peaks higher than on the RTX 5070 (5,332 against 4,693 MiB), but still fits.
+  - Together they'd need about 8.1 GB, so on this card the two can't be resident at once.
+    Swarm doesn't reserve the GPU, so any other GPU service on docker-0 shares the same 8 GB.
+
+**Parity with the RTX 5070** (`audio-lab parity`, run `20261027-031711-c7c3698` against this
+one, 703 shared assets each):
+
+| Model | Min cosine | 1st percentile | Median | Below 0.999 |
+| --- | --- | --- | --- | --- |
+| muq-mulan | 0.999993 | 0.999999 | 1.000000 | 0 |
+| muq | 0.999983 | 1.000000 | 1.000000 | 0 |
+
+The vectors are the same model across two GPUs, two CUDA runtimes, two operating systems
+and two ffmpeg builds: every asset agrees to at least 0.99998. The integration's parity
+threshold of 0.999 holds with a wide margin.
+
+**Sizing `analysis.embed_audio`** (Decision 7 of the change):
+- **Worst case:** a full track capped at 180 s takes 180 / 76.9 ≈ 2.34 s. A batch of 128
+  then takes at most 13.6 + 128 × 2.34 ≈ 313 s, about a sixth of an 1,800 s limit, so the
+  limit stays at 1,800 s.
+- **Typical:** this library's assets average 100 s, so a typical batch is about 3 minutes.
+- **Batch size:** 128 keeps the model load to about 4% of a worst-case batch, and limits
+  the re-done work when a batch is retried. The rule (a batch at most half its limit) would
+  allow up to about 375.
+- **Backfill cost:** at this library's average length, MuQ-MuLan takes about 22 minutes per
+  1,000 assets. Embedding MuQ as well would add about 22 minutes per 1,000. The owner kept
+  MuQ out of the integration regardless.

@@ -19,6 +19,34 @@ def require(module: str) -> Any:
         raise ModelUnavailable(f"{module} is not installed ({INSTALL_HINT})") from exc
 
 
+def compute_capability(torch: Any, device: str) -> tuple[int, int]:
+    index = torch.device(device).index
+    return tuple(torch.cuda.get_device_capability(0 if index is None else index))
+
+
+def check_arch(torch: Any, device: str) -> None:
+    """Refuse a GPU this torch build has no kernels for (CUDA 12.8 builds dropped Pascal).
+
+    A cubin for sm_XY runs on X.Z when Z >= Y; PTX for compute_V JIT-compiles on V and newer.
+    """
+
+    major, minor = compute_capability(torch, device)
+    built = list(torch.cuda.get_arch_list())
+    for arch in built:
+        kind, _, digits = arch.partition("_")
+        if not digits.isdigit():
+            continue
+        m, n = int(digits[:-1]), int(digits[-1])
+        if kind == "sm" and m == major and n <= minor:
+            return
+        if kind == "compute" and (m, n) <= (major, minor):
+            return
+    raise ModelUnavailable(
+        f"torch {torch.__version__} has no kernels for this GPU (sm_{major}{minor}); "
+        f"it was built for {', '.join(built) or 'no CUDA architectures'}"
+    )
+
+
 class TorchAdapter(Adapter):
     """fp32 inference; windows of equal length are batched together."""
 
@@ -35,6 +63,8 @@ class TorchAdapter(Adapter):
         torch = require("torch")
         if device.startswith("cuda") and not torch.cuda.is_available():
             raise ModelUnavailable("CUDA is not available to PyTorch on this machine")
+        if device.startswith("cuda"):
+            check_arch(torch, device)
         self._torch, self._device = torch, device
         return torch
 
@@ -50,11 +80,13 @@ class TorchAdapter(Adapter):
         self._prepare(device)
         try:
             self._load_model()
+            probe = self.embed_windows([np.zeros(self.sample_rate, dtype=np.float32)])
         except ModelUnavailable:
+            self.unload()
             raise
-        except Exception as exc:  # download, checkpoint or remote-code failures
+        except Exception as exc:  # download, checkpoint, remote-code or CUDA kernel failures
+            self.unload()
             raise ModelUnavailable(f"could not load {self.checkpoint}: {exc}") from exc
-        probe = self.embed_windows([np.zeros(self.sample_rate, dtype=np.float32)])
         if probe.shape[1] != self.expected_dim:
             raise ModelUnavailable(
                 f"{self.name} produced dim {probe.shape[1]}, declared {self.expected_dim}"

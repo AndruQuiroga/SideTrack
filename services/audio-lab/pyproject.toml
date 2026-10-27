@@ -13,12 +13,23 @@ dependencies = [
 
 [project.optional-dependencies]
 # Real model adapters. torch/torchaudio come from the CUDA 12.8 index: the first builds
-# with Blackwell (RTX 5070, sm_120) and without Pascal (GTX 1070 Ti; a later change).
+# with Blackwell (RTX 5070, sm_120) and without Pascal (the rack's GTX 1070).
 # torchaudio 2.11 is its last release and pins torch 2.11. transformers stays on 4.x
 # because MERT loads remote code written against it.
 models = [
     "torch==2.11.0",
     "torchaudio==2.11.0",
+    "transformers==4.57.6",
+    "muq==0.1.0",
+]
+# The same pins from the CUDA 12.6 index, for the rack's GTX 1070 (Pascal, sm_61).
+# Conflicts with `models`; install one or the other. torchvision (pulled in by muq's x-clip)
+# must come from the same index: PyPI's Linux wheel is built against PyPI torch, and its
+# compiled ops (torchvision::nms) don't load with the cu126 build.
+models-pascal = [
+    "torch==2.11.0",
+    "torchaudio==2.11.0",
+    "torchvision==0.26.0",
     "transformers==4.57.6",
     "muq==0.1.0",
 ]
@@ -37,13 +48,28 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/audio_lab"]
 
+[tool.uv]
+conflicts = [[{ extra = "models" }, { extra = "models-pascal" }]]
+
 [tool.uv.sources]
-torch = [{ index = "pytorch-cu128" }]
-torchaudio = [{ index = "pytorch-cu128" }]
+torch = [
+    { index = "pytorch-cu128", extra = "models" },
+    { index = "pytorch-cu126", extra = "models-pascal" },
+]
+torchaudio = [
+    { index = "pytorch-cu128", extra = "models" },
+    { index = "pytorch-cu126", extra = "models-pascal" },
+]
+torchvision = [{ index = "pytorch-cu126", extra = "models-pascal" }]
 
 [[tool.uv.index]]
 name = "pytorch-cu128"
 url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
 explicit = true
 
 [tool.pytest.ini_options]

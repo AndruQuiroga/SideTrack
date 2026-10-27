@@ -24,7 +24,8 @@ context: |
   Deployment (ADR 0006): Stache-Rack Docker Swarm managed by Portainer. Images on
   GHCR. HTTP via Traefik on the traefik-public overlay; public routes via Cloudflare
   Tunnel. Stateful services pin to one node with /srv/sidetrack/* bind mounts.
-  GPU work runs on docker-0 (GTX 1070 Ti, 8 GB, Pascal: no FlashAttention, fp16/fp32 only).
+  GPU work runs on docker-0 (GTX 1070, 8 GB, Pascal sm_61: no FlashAttention, fp32 in
+  practice; PyTorch needs a CUDA 12.6 build, and the driver stays on the 580 branch).
 
   Storage budget (ADR 0005): Sidetrack's own data stays under ~40 GB of SSD.
   The MusicBrainz mirror, audio files and backups live on HDD.

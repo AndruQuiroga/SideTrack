@@ -90,6 +90,15 @@ PHASES: list[dict[str, Any]] = [
         "adrs": ["0004", "0005", "0007"],
         "changes": ["add-audio-acquisition", "add-audio-lab-benchmark", "add-audio-benchmark-v2"],
     },
+    {
+        "id": "audio-embeddings",
+        "title": "Audio embeddings",
+        "label": "Track",
+        "summary": "MuQ-MuLan embeddings in pgvector on the gpu queue, after the GTX 1070 Ti "
+        "timing run.",
+        "adrs": ["0002", "0004"],
+        "changes": ["measure-audio-models-on-1070ti", "add-muq-mulan-embeddings"],
+    },
 ]
 
 # System map: each node lists the status.yaml capabilities it is made of.
