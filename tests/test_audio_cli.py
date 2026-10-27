@@ -148,8 +148,9 @@ def test_no_task_fetches_audio(database_url):
         imports = _imports(source)
         assert not any(m.startswith("sidetrack.analysis.audio") for m in imports), source
         assert not imports & {"yt_dlp", "acoustid", "sidetrack.audio"}, source
+    # The job runner may embed audio (analysis.embed_audio) but never fetches it.
     runner = (ROOT / "sidetrack" / "job_runner.py").read_text(encoding="utf-8")
-    assert "audio" not in runner
+    assert not any(name in runner for name in ("fetch_seed", "yt_dlp", "acoustid"))
 
 
 def test_reverify_confirms_without_fetching(db, tmp_path):

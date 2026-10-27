@@ -64,6 +64,7 @@ def test_each_table_has_one_canonical_owner():
             "compatibility",
             "user_recommendations",
             "audio_assets",
+            "audio_embeddings",
         },
         "queue_models": {
             "background_jobs",

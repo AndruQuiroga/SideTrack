@@ -15,10 +15,15 @@ from sqlalchemy.engine import make_url
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
+from sidetrack.analysis.embeddings import TASK as EMBED_AUDIO
+from sidetrack.analysis.embeddings import TIME_LIMIT_S as EMBED_AUDIO_LIMIT_S
 from sidetrack.config import get_settings
 from sidetrack.db import database_now, get_engine, init_engine
 from sidetrack.queue_maintenance import reconcile_schedules, recover_stalled, seed_cleanup
 from sidetrack.queue_models import BackgroundJob
+
+# Seconds a job's child process may run, by task; everything else gets 300.
+TIME_LIMITS = {"listening.ingest_lastfm": 600, EMBED_AUDIO: EMBED_AUDIO_LIMIT_S}
 
 
 class ExecutionFailed(Exception):
@@ -56,7 +61,7 @@ async def execute(job_id: str, task: str, arguments: dict) -> None:
             row.status, row.error = "started", None
     if exhausted:
         raise Unavailable("attempts_exhausted")
-    timeout = 600 if task == "listening.ingest_lastfm" else 300
+    timeout = TIME_LIMITS.get(task, 300)
     process = None
     try:
         process = subprocess.Popen(
@@ -130,7 +135,7 @@ async def run_worker(app, *, queues, once=False):
         worker = asyncio.create_task(
             app.run_worker_async(
                 queues=queues,
-                concurrency=4,
+                concurrency=1 if queues == ["gpu"] else 4,  # one model on the GPU
                 shutdown_graceful_timeout=30,
                 wait=not once,
                 fetch_job_polling_interval=1,

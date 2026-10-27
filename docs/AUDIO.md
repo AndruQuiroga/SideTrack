@@ -78,6 +78,36 @@ uv run --frozen --extra api --extra audio python -m sidetrack.audio prune
   adding `ACOUSTID_API_KEY`, without fetching again.
 - **`prune`** deletes files older than `SIDETRACK_AUDIO_RETENTION_DAYS` and keeps their rows.
 
+## Embeddings
+
+Stored assets are embedded with MuQ-MuLan on the `gpu` queue (openspec
+`analysis/audio-embeddings`, docs/AUDIO-BENCHMARK.md). Nothing schedules it: you queue it.
+
+```bash
+uv run --frozen --extra api python -m sidetrack.audio embed
+uv run --frozen --extra api python -m sidetrack.audio embed --limit 50
+uv run --frozen --extra api python -m sidetrack.audio neighbours <sha256 or asset id> --k 10
+```
+
+- **`embed`** queues `analysis.embed_audio` jobs, 128 assets each. It covers assets whose
+  file exists under `SIDETRACK_AUDIO_DIR` and that have no embedding at MuQ-MuLan's current
+  revision and pipeline. It prints the asset count and the job IDs, which
+  `GET /jobs/{id}/status` reports on. Only the dedicated GPU worker runs them
+  (docs/JOBS.md). `--model` accepts only enabled models; today that's `muq-mulan` alone.
+  Running it again before those jobs finish queues the same assets again. That's harmless:
+  the later job finds them already embedded and doesn't load the model.
+- **`neighbours`** prints an asset's nearest assets by cosine similarity, within MuQ-MuLan's
+  current revision only. It leaves out the asset's own track, or its own seed when it isn't
+  linked to a track. An asset that hasn't been embedded yet says so.
+- **The GPU worker reads the same audio.** On the rack that's `/srv/sidetrack/audio` on
+  docker-0, mounted read-only into `gpu-worker`. Copy files there yourself, keeping their
+  `<sha256>.<ext>` names. Nothing fetches or syncs audio automatically (ADR 0007). Assets
+  whose file is missing there are reported per asset as `missing_file`, and the next
+  `embed` picks them up.
+- **Pruning** a file keeps its embedding, so the asset still shows up in neighbour lists.
+- **Licence:** MuQ-MuLan's weights are CC BY-NC 4.0, so the stored vectors are for this
+  personal, non-commercial project only.
+
 ## Reading the summary
 
 ```
