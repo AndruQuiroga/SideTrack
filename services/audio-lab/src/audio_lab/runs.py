@@ -103,6 +103,7 @@ def embed_run(
     *,
     device: str = "cuda",
     commit: str | None = None,
+    max_duration_s: float | None = None,
 ) -> Run:
     """Embed every manifest asset with every adapter; write Parquet, failures and run.json."""
 
@@ -124,7 +125,12 @@ def embed_run(
         adapter.reset_peak_memory()
         began = time.perf_counter()
         for asset in assets:
-            reason = _embed_asset(adapter, info.sample_rate, asset, audio_dir, rows, run_id, result)
+            if max_duration_s and (asset.duration_s or 0) > max_duration_s:
+                reason: str | None = "too_long"
+            else:
+                reason = _embed_asset(
+                    adapter, info.sample_rate, asset, audio_dir, rows, run_id, result
+                )
             if reason:
                 result.failed += 1
                 failures.append((adapter.name, asset.sha256, reason))
@@ -163,6 +169,7 @@ def embed_run(
             "window_s": audio.WINDOW_S,
             "min_tail_s": audio.MIN_TAIL_S,
             "max_full_s": audio.MAX_FULL_S,
+            "max_duration_s": max_duration_s,
         },
         "environment": environment(),
         "models": {name: result.as_dict() for name, result in run.models.items()},

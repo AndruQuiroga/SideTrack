@@ -7,7 +7,15 @@ import pytest
 
 from audio_lab.duels import build_duels
 from audio_lab.manifest import Asset
-from audio_lab.metrics import credited_artists, overlap, same_artist_rate, separation
+from audio_lab.metrics import (
+    colisten_hit_rate,
+    credited_artists,
+    genre_precision,
+    overlap,
+    same_artist_rate,
+    separation,
+    sleep_purity,
+)
 from audio_lab.neighbours import Neighbour
 
 
@@ -79,3 +87,41 @@ def test_order_and_sides_fixed_by_run_and_spread_across_pairs():
     opening = {frozenset((d.left_model, d.right_model)) for d in first[:3]}
     assert len(opening) == 3  # the first round covers every pair
     assert {d.left_model for d in first} == set(models)  # sides vary
+
+
+def test_perfect_genre_separation():
+    rock = [_asset(f"R{i}", f"rock {i}") for i in range(3)]
+    jazz = [_asset(f"J{i}", f"jazz {i}") for i in range(3)]
+    personal = _asset("Me", "mine")
+    vectors = {a.sha256: np.array([1.0, 0.1 * i], dtype=np.float32) for i, a in enumerate(rock)}
+    vectors |= {a.sha256: np.array([0.1 * i, 1.0], dtype=np.float32) for i, a in enumerate(jazz)}
+    vectors[personal.sha256] = np.array([0.0, 1.0], dtype=np.float32)
+    labels = {a.seed: {"genre:Rock"} for a in rock} | {a.seed: {"genre:Jazz"} for a in jazz}
+
+    # k=2: each control seed's two nearest *control* tracks; the personal track never counts.
+    assert genre_precision([*rock, *jazz, personal], vectors, labels, k=2) == (1.0, 6)
+
+
+def test_colisten_one_direction_found():
+    lists = {"a": _list("b", "x"), "b": _list("x", "y")}
+    assert colisten_hit_rate(lists, [("a", "b")]) == (0.5, 1)
+
+
+def test_sleep_purity_against_base_rate():
+    seeds = [f"s{i}" for i in range(20)]
+    sleepy = {"s0", "s1"}  # 10% of the pool
+    others = [s for s in seeds if s not in sleepy]
+    lists = {s: _list(*others[:10]) for s in seeds}
+    lists["s0"] = _list(*[f"t{i}" for i in range(6)], *others[:4])
+    lists["s1"] = _list(*[f"t{i}" for i in range(6)], *others[:4])
+    labels = {s: {"sleep"} for s in sleepy} | {f"t{i}": {"sleep"} for i in range(6)}
+
+    purity, base, count = sleep_purity(lists, labels)
+    assert (purity, base, count) == (pytest.approx(0.6), pytest.approx(0.1), 2)
+
+
+def test_duels_only_between_chosen_models():
+    lists = {m: {f"s{i}": _list(f"{m}{i}", "shared") for i in range(4)} for m in "abc"}
+    duels = build_duels(lists, "run-1", ["a", "c"])
+    assert len(duels) == 4
+    assert all({d.left_model, d.right_model} == {"a", "c"} for d in duels)

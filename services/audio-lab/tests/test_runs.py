@@ -117,3 +117,30 @@ def test_adapters_never_generate_vectors():
     for source in source_dir.glob("*.py"):
         text = source.read_text(encoding="utf-8")
         assert not re.search(r"\brandom\b|\brandn?\(|\bfull\(|\bones\(", text), source.name
+
+
+def test_podcast_that_slipped_through_is_skipped(make_manifest, audio_dir, tmp_path):
+    manifest = make_manifest(
+        [("Show", "Episode", "full", 12, 220), ("Band", "Song", "full", 5, 330)]
+    )
+    rows = list(csv.DictReader(manifest.open(encoding="utf-8")))
+    rows[0]["duration_s"] = "3344"
+    with manifest.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, rows[0].keys(), lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(rows)
+
+    run = embed_run(
+        manifest,
+        audio_dir,
+        [HashAdapter()],
+        tmp_path / "runs",
+        device="cpu",
+        commit="abc1234",
+        max_duration_s=600,
+    )
+
+    table = pq.read_table(run.path / "embeddings.parquet")
+    assert table.column("sha256").to_pylist() == [rows[1]["sha256"]]
+    failures = list(csv.DictReader((run.path / "failures.csv").open(encoding="utf-8")))
+    assert [(f["sha256"], f["reason"]) for f in failures] == [(rows[0]["sha256"], "too_long")]

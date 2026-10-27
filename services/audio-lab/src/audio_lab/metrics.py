@@ -8,16 +8,16 @@ import re
 import numpy as np
 
 from .manifest import Asset, _norm
-from .neighbours import Neighbour
+from .neighbours import Neighbour, similarities
 
 # Same split as sidetrack.analysis.audio.verify; the lab never imports sidetrack.
-_CREDIT_SPLIT = re.compile(
+CREDIT_SPLIT = re.compile(
     r"\s*(?:,|&|\+|/|\bx\b|\bfeat\.?|\bft\.?|\bfeaturing\b|\bwith\b)\s*", re.I
 )
 
 
 def credited_artists(text: str) -> set[str]:
-    return {n for part in _CREDIT_SPLIT.split(text) if (n := _norm(part))}
+    return {n for part in CREDIT_SPLIT.split(text) if (n := _norm(part))}
 
 
 def same_artist_rate(
@@ -54,3 +54,53 @@ def overlap(lists_by_model: dict[str, dict[str, list[Neighbour]]]) -> dict[str, 
         if shared:
             out[f"{a}|{b}"] = round(float(np.mean(shared)), 4)
     return out
+
+
+def genre_precision(
+    assets: list[Asset], vectors: dict[str, np.ndarray], labels: dict[str, set[str]], k: int = 10
+) -> tuple[float | None, int]:
+    """Mean share of a control seed's k nearest *control* tracks that share its genre."""
+
+    genre = {
+        seed: next(iter(sorted(g for g in labs if g.startswith("genre:"))))
+        for seed, labs in labels.items()
+        if any(g.startswith("genre:") for g in labs)
+    }
+    control = [a for a in assets if a.seed in genre]
+    shares = []
+    for seed, (pool, scores) in similarities(control, vectors).items():
+        order = np.argsort(-scores, kind="stable")[:k]
+        if len(order):
+            shares.append(float(np.mean([genre[pool[i].seed] == genre[seed] for i in order])))
+    return (float(np.mean(shares)) if shares else None), len(shares)
+
+
+def colisten_hit_rate(
+    lists: dict[str, list[Neighbour]], pairs: list[tuple[str, str]]
+) -> tuple[float | None, int]:
+    """Share of pair directions (A→B, B→A) where the partner is in the track's list."""
+
+    hits = []
+    for a, b in pairs:
+        for x, y in ((a, b), (b, a)):
+            if x in lists:
+                hits.append(y in {n.seed for n in lists[x]})
+    return (float(np.mean(hits)) if hits else None), len(pairs)
+
+
+def sleep_purity(
+    lists: dict[str, list[Neighbour]], labels: dict[str, set[str]]
+) -> tuple[float | None, float | None, int]:
+    """(purity, base rate, sleep seeds): share of a sleep seed's neighbours labelled sleep."""
+
+    sleepy = {s for s, labs in labels.items() if "sleep" in labs}
+    pool = {s for s in lists}
+    shares = [
+        float(np.mean([n.seed in sleepy for n in lists[s]]))
+        for s in sorted(sleepy & pool)
+        if lists[s]
+    ]
+    if not shares:
+        return None, None, 0
+    base = len(sleepy & pool) / len(pool)
+    return float(np.mean(shares)), base, len(shares)

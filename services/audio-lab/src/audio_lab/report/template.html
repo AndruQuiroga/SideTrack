@@ -231,8 +231,25 @@ function renderResults() {
       <div class="table-wrap"><table><thead><tr><th>Model</th><th class="num">Preview→full @1</th><th class="num">@10</th><th class="num">Same artist in top 10</th><th class="num">Separation</th></tr></thead>
       <tbody>${DATA.models.map((name) => { const r = mx.models[name] || {}; return `<tr><td>${esc(name)}</td><td class="num">${num(r.recall_at_1)}</td><td class="num">${num(r.recall_at_10)}</td><td class="num">${pct(r.same_artist_rate)}</td><td class="num">${num(r.separation, 3)}</td></tr>`; }).join("")}</tbody></table></div>
       <p class="hint"><b>Preview→full:</b> how often a 30 s preview finds its own song. <b>Same artist:</b> share of the artist's other seeds in a song's top 10. <b>Separation:</b> how far the best match stands out from a typical song; higher means the model tells your tracks apart more sharply.</p></div>
+    ${labelledCard()}
     <div class="card"><div class="label"><span>Neighbours in common</span></div>
       <div class="table-wrap"><table><thead><tr><th>Models</th><th class="num">Top-10 overlap</th></tr></thead><tbody>${pairs}</tbody></table></div></div>`;
+}
+
+function labelledCard() {
+  const mx = DATA.metrics.models;
+  const has = (k) => DATA.models.some((m) => mx[m] && k in mx[m]);
+  if (!has("genre_precision_at_10") && !has("colisten_hit_rate")) {
+    return `<div class="card"><div class="label"><span>Labelled tests</span></div><p class="hint">Genre, co-listening and sleep tests need label files: render with <code>--labels</code> and <code>--colisten</code>.</p></div>`;
+  }
+  const cell = (r, k, f) => k in r ? f(r[k]) : "–";
+  return `<div class="card"><div class="label"><span>Labelled tests</span></div>
+    <div class="table-wrap"><table><thead><tr><th>Model</th><th class="num">Genre match @10</th><th class="num">Co-listened partner in top 10</th><th class="num">Sleep purity (base)</th></tr></thead>
+    <tbody>${DATA.models.map((name) => { const r = mx[name] || {}; return `<tr><td>${esc(name)}</td>
+      <td class="num">${cell(r, "genre_precision_at_10", pct)}</td>
+      <td class="num">${cell(r, "colisten_hit_rate", pct)}</td>
+      <td class="num">${cell(r, "sleep_purity", (v) => `${pct(v)} (${pct(r.sleep_base_rate)})`)}</td></tr>`; }).join("")}</tbody></table></div>
+    <p class="hint"><b>Genre match:</b> share of a chart song's 10 nearest chart songs in the same genre. <b>Co-listened:</b> how often a song you often play right after another has that partner in its top 10. <b>Sleep purity:</b> share of a sleep track's neighbours that are also sleep tracks, against the share you'd get by chance.</p></div>`;
 }
 
 // Browse

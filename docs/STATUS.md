@@ -66,13 +66,14 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 
 ### In-flight changes
 
-- `add-audio-lab-benchmark`: 16/17 tasks
+- `add-audio-benchmark-v2`: 10/13 tasks
 - `deploy-on-stache-rack`: 13/13 tasks
 - `harden-api-credentials`: 10/11 tasks
 
 ### Specs
 
 - `analysis/audio-assets`
+- `analysis/audio-benchmark`
 - `club/durable-notifications`
 - `club/membership-access`
 - `club/ratings`

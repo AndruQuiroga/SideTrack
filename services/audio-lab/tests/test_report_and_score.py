@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import re
 
+import numpy as np
 import pytest
 from conftest import HashAdapter, UnloadableAdapter
 
@@ -28,6 +29,13 @@ class OtherHashAdapter(HashAdapter):
 
     def embed_windows(self, batch):
         return super().embed_windows(batch)[:, ::-1].copy()
+
+
+class ThirdHashAdapter(HashAdapter):
+    name = "hash3"
+
+    def embed_windows(self, batch):
+        return np.roll(super().embed_windows(batch), 3, axis=1)
 
 
 def _report(make_manifest, audio_dir, tmp_path):
@@ -123,3 +131,54 @@ def test_score_cli_writes_scores(make_manifest, audio_dir, tmp_path):
     scores = json.loads((run.path / "scores.json").read_text())
     assert scores["models"]["hash"]["win_rate"] == 1.0
     assert scores["models"]["hash2"]["win_rate"] == 0.0
+
+
+def test_no_label_files_omit_labelled_metrics(make_manifest, audio_dir, tmp_path):
+    run, report = _report(make_manifest, audio_dir, tmp_path)
+    metrics = json.loads((run.path / "metrics.json").read_text(encoding="utf-8"))
+    for figures in metrics["models"].values():
+        assert not {"genre_precision_at_10", "colisten_hit_rate", "sleep_purity"} & set(figures)
+    assert "need label files" in report.read_text(encoding="utf-8")
+
+
+def test_label_files_add_labelled_metrics(make_manifest, audio_dir, tmp_path):
+    run, _ = _report(make_manifest, audio_dir, tmp_path)
+    labels = tmp_path / "labels.csv"
+    labels.write_text(
+        "artist,title,label\nBroadcast,Papercuts,sleep\nStereolab,French Disko,genre:Rock\n"
+        "Portishead,Roads,genre:Rock\n",
+        encoding="utf-8",
+    )
+    colisten = tmp_path / "colisten.csv"
+    colisten.write_text(
+        "artist_a,title_a,artist_b,title_b,sessions\nBroadcast,Papercuts,Portishead,Roads,4\n",
+        encoding="utf-8",
+    )
+    write_report(
+        run.path, tmp_path / "manifest.csv", audio_dir, labels_path=labels, colisten_path=colisten
+    )
+    figures = json.loads((run.path / "metrics.json").read_text(encoding="utf-8"))["models"]["hash"]
+
+    assert figures["genre_precision_at_10"] == 1.0 and figures["genre_seeds"] == 2
+    assert figures["colisten_hit_rate"] == 1.0  # three seeds: everyone is in everyone's top 10
+    assert figures["sleep_seeds"] == 1
+
+
+def test_duels_limited_to_two_finalists(make_manifest, audio_dir, tmp_path):
+    manifest = make_manifest(ROWS)
+    adapters = [HashAdapter(), OtherHashAdapter(), ThirdHashAdapter()]
+    run = embed_run(manifest, audio_dir, adapters, tmp_path / "runs", device="cpu", commit="abc")
+    report = write_report(run.path, manifest, audio_dir, duel_models=["hash", "hash3"])
+    data = _data(report.read_text(encoding="utf-8"))
+
+    assert data["models"] == ["hash", "hash2", "hash3"]
+    # Generation itself is proven in test_metrics_and_duels; here: only finalists appear.
+    assert all({d["l"], d["r"]} == {0, 2} for d in data["duels"])
+    assert all(set(s["neighbours"]) == set(data["models"]) for s in data["seeds"])
+
+
+def test_unknown_duel_model_rejected(make_manifest, audio_dir, tmp_path, capsys):
+    run, _ = _report(make_manifest, audio_dir, tmp_path)
+    args = ["report", str(run.path), "--manifest", str(tmp_path / "manifest.csv")]
+    assert main([*args, "--audio-dir", str(audio_dir), "--duel-model", "openl3"]) == 1
+    assert "openl3" in capsys.readouterr().err

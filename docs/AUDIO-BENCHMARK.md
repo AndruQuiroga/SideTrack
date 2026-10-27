@@ -157,4 +157,8 @@ are in the run directory).
     dubstep".
 - **MERT and CLAP are out.** CLAP fails recall, and MERT loses to both MuQ models.
 
-**Owner's decision:** pending.
+**Owner's decision (2026-10-27):** MuQ leads provisionally. Its 0.65 win rate against
+MuQ-MuLan's 0.61 is inside the 0.05 margin, and the owner judged the seed set too narrow
+and dirty to decide on: one recent genre, two podcast episodes, and unlabelled sleep
+tracks. The final pick between MuQ and MuQ-MuLan is deferred to the v2 benchmark
+(`add-audio-benchmark-v2`). MERT and CLAP are dropped.

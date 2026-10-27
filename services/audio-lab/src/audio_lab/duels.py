@@ -26,7 +26,11 @@ def _first_difference(a: list[Neighbour], b: list[Neighbour]) -> int | None:
     return None
 
 
-def build_duels(lists_by_model: dict[str, dict[str, list[Neighbour]]], run_id: str) -> list[Duel]:
+def build_duels(
+    lists_by_model: dict[str, dict[str, list[Neighbour]]],
+    run_id: str,
+    models: list[str] | None = None,
+) -> list[Duel]:
     """At most one duel per seed and model pair, ordered and sided by the run ID.
 
     Each pair's duels are shuffled, then taken round-robin across pairs, so any prefix the
@@ -35,7 +39,7 @@ def build_duels(lists_by_model: dict[str, dict[str, list[Neighbour]]], run_id: s
 
     rng = random.Random(run_id)
     per_pair: list[list[Duel]] = []
-    for a, b in itertools.combinations(sorted(lists_by_model), 2):
+    for a, b in itertools.combinations(sorted(models or lists_by_model), 2):
         duels = []
         for seed in sorted(lists_by_model[a].keys() & lists_by_model[b].keys()):
             la, lb = lists_by_model[a][seed], lists_by_model[b][seed]

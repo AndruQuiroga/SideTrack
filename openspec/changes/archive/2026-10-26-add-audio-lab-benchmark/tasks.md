@@ -24,7 +24,7 @@
 ## 5. First benchmark and docs
 
 - [x] 5.1 Write `docs/AUDIO-BENCHMARK.md`: how to run embed, report and score, the pass gate (at least 20 judged seeds including obscure picks, agreement of 0.70 or more, recall@10 of 0.8 or more, owner's decision), licences, and the 1070 Ti follow-up. Update the `docs/status.yaml` rows "Audio feature extraction" and "Embedding models (any)" to **partial**, with the lab tests as evidence, and regenerate `docs/STATUS.md`.
-- [ ] 5.2 Owner run: embed the acquired ~100-seed manifest with all four models on the RTX 5070, open the report, judge at least 40 duels, and score. Record the run ID, performance table, metrics and duel win rates per model in `docs/AUDIO-BENCHMARK.md`, with the owner's pass or fail decision.
+- [x] 5.2 Owner run: embed the acquired ~100-seed manifest with all four models on the RTX 5070, open the report, judge at least 40 duels, and score. Record the run ID, performance table, metrics and duel win rates per model in `docs/AUDIO-BENCHMARK.md`, with the owner's pass or fail decision.
 - [x] 5.3 Run the checks: lab pytest (core), the root `make lint` and unit selection (unchanged), and `pnpm exec openspec validate add-audio-lab-benchmark --strict`.
 
 ## 6. Blind duels and automatic metrics
