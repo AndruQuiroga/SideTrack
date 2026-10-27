@@ -19,6 +19,7 @@ import httpx
 from sidetrack.types import AudioKind, AudioSource
 
 from .store import partial_path
+from .verify import Match, matches_seed
 
 logger = logging.getLogger(__name__)
 
@@ -171,9 +172,13 @@ class DeezerPreviewSource:
         if seed.deezer_id:
             track = self._get(f"/track/{seed.deezer_id}")
             return None if "error" in track else track
-        query = f'artist:"{seed.artist}" track:"{seed.title}"'
-        for track in self._get("/search", q=query).get("data", []):
-            if track.get("preview"):
+        # Deezer's advanced syntax (artist:"…" track:"…") returns nothing as of 2026-10;
+        # search plain text and keep only a result that matches the seed.
+        for track in self._get("/search", q=f"{seed.artist} {seed.title}").get("data", []):
+            candidate = Match(
+                1.0, "", (track.get("artist") or {}).get("name", ""), track.get("title", "")
+            )
+            if track.get("preview") and matches_seed(candidate, seed.artist, seed.title):
                 return track
         return None
 

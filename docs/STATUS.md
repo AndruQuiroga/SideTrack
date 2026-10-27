@@ -33,9 +33,9 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 
 | Capability | Status | Notes | Evidence |
 | --- | --- | --- | --- |
-| Audio acquisition | partial | Opt-in `python -m sidetrack.audio` (ADR 0007): YouTube Music full tracks and Deezer previews, content-addressed storage, AcoustID verification, manifest and prune; tested with source doubles. No real fetch recorded yet (docs/AUDIO.md) | `tests/test_audio_assets.py`, `tests/test_audio_cli.py` |
-| Audio feature extraction | stub | services/extraction is an empty FastAPI app |  |
-| Embedding models (any) | absent | Pre-reboot adapters (CLAP, OpenL3, PANNs, MusicNN) returned fake numbers and were deleted |  |
+| Audio acquisition | works | Opt-in `python -m sidetrack.audio` (ADR 0007): YouTube Music full tracks and Deezer previews, content-addressed storage, AcoustID verification, manifest, verify and prune. Real 5-seed run on 2026-10-26: 10 assets stored, all 5 full tracks AcoustID-confirmed (0.96-1.00); previews stay unverified as expected | `tests/test_audio_assets.py`, `tests/test_audio_cli.py`, `docs/AUDIO.md` |
+| Audio feature extraction | partial | services/audio-lab benchmark CLI (ADR 0004) embeds acquired audio into versioned Parquet runs with a blind-duel report, automatic neighbour metrics and duel scoring; plus a seed builder for ListenBrainz exports and a Deezer genre control set. Benchmark only, not integrated into Sidetrack (docs/AUDIO-BENCHMARK.md) | `services/audio-lab/tests/test_runs.py`, `services/audio-lab/tests/test_neighbours.py`, `services/audio-lab/tests/test_report_and_score.py` |
+| Embedding models (any) | partial | MuQ-MuLan passed the v2 benchmark gate as the lead model, with MuQ kept as a second (run 20261027-031711-c7c3698, 703 assets, 103 owner duels, 2026-10-27). Both also run on the rack's GTX 1070 on docker-0 (run 20261027-172855-0c32766-dirty: torch 2.11 cu126, 77 audio-s/s, MuQ-MuLan peak 2.8 GB, MuQ 5.3 GB), and their vectors match the RTX 5070's to a cosine of at least 0.99998. Neither is integrated into Sidetrack yet | `services/audio-lab/tests/test_adapters_gpu.py`, `services/audio-lab/tests/test_gpu_compat.py`, `services/audio-lab/tests/test_parity.py`, `docs/AUDIO-BENCHMARK.md` |
 | Spotify audio features | broken | Endpoint returns 403 for apps created after 2024-11-27 (ADR 0003) |  |
 | Taste profiles, compatibility, recommendations | stub | Tables exist; values derive from empty features |  |
 
@@ -66,13 +66,15 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 
 ### In-flight changes
 
-- `add-audio-acquisition`: 10/11 tasks
-- `add-audio-lab-benchmark`: 0/12 tasks
+- `add-muq-mulan-embeddings`: 1/19 tasks
 - `deploy-on-stache-rack`: 13/13 tasks
 - `harden-api-credentials`: 10/11 tasks
 
 ### Specs
 
+- `analysis/audio-assets`
+- `analysis/audio-benchmark`
+- `analysis/benchmark-seeds`
 - `club/durable-notifications`
 - `club/membership-access`
 - `club/ratings`

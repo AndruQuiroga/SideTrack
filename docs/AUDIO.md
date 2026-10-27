@@ -12,12 +12,16 @@ are subject to Deezer's API terms. Nothing fetched is redistributed.
 ## Setup (once)
 
 1. Install the Python extra: `uv sync --python 3.11 --extra api --extra worker --extra dev --extra audio`
-2. Install **Chromaprint's `fpcalc`** and **ffmpeg** and put them on `PATH`:
-   - Windows: `scoop install chromaprint ffmpeg`, or download the `fpcalc` zip from
-     <https://acoustid.org/chromaprint> and ffmpeg from <https://ffmpeg.org/download.html>
-   - Debian/Ubuntu: `sudo apt install libchromaprint-tools ffmpeg`
-   - Check: `fpcalc -version` and `ffmpeg -version`
-3. Register an application at <https://acoustid.org/new-application> (free) for an API key.
+2. Install **Chromaprint's `fpcalc`**, **ffmpeg** and **deno**, and put them on `PATH`.
+   YouTube now requires a JavaScript challenge solver: yt-dlp runs the official
+   `yt-dlp-ejs` scripts (pinned in the `audio` extra) with deno. Without deno, some
+   downloads fail with "n challenge solving failed".
+   - Windows: `scoop install chromaprint ffmpeg deno`
+   - Debian/Ubuntu: `sudo apt install libchromaprint-tools ffmpeg`, plus deno from <https://deno.com>
+   - Check: `fpcalc -version`, `ffmpeg -version` and `deno --version`
+3. Register an application at <https://acoustid.org/new-application> (free) and use its
+   **application API key**. The user API key on your account page is for submitting
+   fingerprints, and lookups reject it as "invalid API key".
 4. Set these, in `.env` or the shell (see `config/ENVIRONMENT.md`):
    ```
    DATABASE_URL=postgresql+psycopg://…        # the database to record assets in
@@ -55,6 +59,7 @@ uv run --frozen --extra api --extra audio python -m sidetrack.audio fetch --seed
 uv run --frozen --extra api --extra audio python -m sidetrack.audio fetch --seeds seeds.csv --only preview
 uv run --frozen --extra api --extra audio python -m sidetrack.audio fetch --seeds seeds.csv --cookies C:/private/yt-cookies.txt
 uv run --frozen --extra api --extra audio python -m sidetrack.audio manifest --out manifest.csv
+uv run --frozen --extra api --extra audio python -m sidetrack.audio verify
 uv run --frozen --extra api --extra audio python -m sidetrack.audio prune
 ```
 
@@ -69,6 +74,8 @@ uv run --frozen --extra api --extra audio python -m sidetrack.audio prune
 - **`manifest`** writes one row per asset whose file still exists: path (relative to the
   audio directory), sha256, kind, source, source_id, duration_s, verification, track_id,
   artist, title.
+- **`verify`** re-checks every `unverified` asset whose file exists, for example after
+  adding `ACOUSTID_API_KEY`, without fetching again.
 - **`prune`** deletes files older than `SIDETRACK_AUDIO_RETENTION_DAYS` and keeps their rows.
 
 ## Reading the summary
@@ -89,8 +96,30 @@ Verification: 141 confirmed, 6 mismatch, 40 unverified
   or the service was down). Previews often land here, since 30 seconds fingerprints poorly.
   Their Deezer ID was chosen by metadata.
 
-## Smoke run
+## Smoke run (2026-10-26, owner's PC)
 
-Not yet recorded. Fetch 5 real seeds with both sources and record the summary counts
-here (task 4.2 of `add-audio-acquisition`). "Audio acquisition" in STATUS stays
-**partial** until then.
+Run against a local Postgres 16 (migrated to `0009_audio_assets`) with
+`SIDETRACK_AUDIO_DIR=E:/sidetrack/audio` on the HDD, using five seeds: Broadcast
+"Come On Let's Go", Radiohead "Reckoner", Portishead "Roads", Aphex Twin "Avril 14th"
+(each with album) and Stereolab "French Disko" (no album).
+
+| Run | New assets | Already stored | Missing | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | 5 (all full) | 0 | 5 previews | Deezer's `artist:"…" track:"…"` search now returns nothing; fixed to plain-text search filtered by artist and title |
+| 2 | 5 (all previews) | 4 | 1 full | Reruns reused identical audio. Radiohead failed once deno was present without the solver scripts; fixed by pinning `yt-dlp-ejs` |
+| 3 | 0 | 10 | 0 | Clean, with no yt-dlp warnings |
+
+- All 10 files exist under the audio directory. `fpcalc` durations match the tracks
+  (full tracks 125 to 303 s, previews 29 s).
+- The 4 seeds with an album are linked to catalog tracks. Stereolab, which had no album, is unlinked as designed.
+- `manifest` wrote 10 rows.
+- **Verification**, after adding an AcoustID application key and running `verify`:
+  **5 confirmed, 0 mismatch, 5 unverified**.
+  - All 5 full tracks were confirmed, with scores of 0.959 to 0.998, each with a
+    MusicBrainz recording ID.
+  - All 5 Deezer previews were unverified ("no match"), as expected for 30-second clips.
+  - The first key tried was a user API key, and AcoustID rejected it as "invalid API key".
+    That's why setup step 3 now names the application key, and why `verify` prints its
+    reasons.
+
+Task 4.2 is complete, and STATUS now lists "Audio acquisition" as **works**.

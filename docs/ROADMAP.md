@@ -110,3 +110,9 @@ Still open:
 every rating or listen-event response returned 500, because of the `metadata`
 alias (`docs/issues/metadata-alias-crashes.md`). User deletion failed whenever the
 user had dependent rows (#286). Postgres-backed regressions cover both.
+
+## Audio analysis
+
+The goal behind the audio work, with the weekly listening mirror, visuals and
+compatibility test and the order of changes, is in `docs/PRODUCT-VISION.md`. Benchmark
+results are in `docs/AUDIO-BENCHMARK.md`.

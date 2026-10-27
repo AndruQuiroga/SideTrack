@@ -128,21 +128,37 @@ def _deezer(handler) -> DeezerPreviewSource:
     return source
 
 
-def test_deezer_search_takes_first_result_with_preview(tmp_path):
+def _deezer_track(track_id, artist, title, preview="https://cdn.test/p.mp3"):
+    return {"id": track_id, "artist": {"name": artist}, "title": title, "preview": preview}
+
+
+def test_deezer_search_takes_first_matching_result_with_preview(tmp_path):
     seen = []
 
     def handler(request):
-        seen.append(request.url.path)
+        seen.append((request.url.path, request.url.params.get("q")))
         if request.url.path == "/search":
-            data = [{"id": 1, "preview": ""}, {"id": 2, "preview": "https://cdn.test/p.mp3"}]
+            data = [
+                _deezer_track(1, "Broadcast", "Come On Let's Go", preview=""),
+                _deezer_track(2, "A Tribute Band", "Come On Let's Go"),
+                _deezer_track(3, "Broadcast", "Come On Let's Go (Remastered)"),
+            ]
             return httpx.Response(200, json={"data": data})
         return httpx.Response(200, content=b"mp3-bytes")
 
     download = _deezer(handler).fetch(SEED, tmp_path)
 
-    assert download is not None and download.source_ref == "2"
+    assert download is not None and download.source_ref == "3"
     assert download.path.read_bytes() == b"mp3-bytes"
-    assert seen == ["/search", "/p.mp3"]
+    assert seen == [("/search", "Broadcast Come On Let's Go"), ("/p.mp3", None)]
+
+
+def test_deezer_search_without_matching_artist_is_no_result(tmp_path):
+    def handler(request):
+        data = [_deezer_track(9, "Someone Else", "Come On Let's Go")]
+        return httpx.Response(200, json={"data": data})
+
+    assert _deezer(handler).fetch(SEED, tmp_path) is None
 
 
 def test_deezer_explicit_id_and_no_preview(tmp_path):
@@ -293,3 +309,19 @@ def test_redacting_logger_drops_secret_lines(caplog):
         log.warning("ordinary message")
     assert secret not in caplog.text
     assert "ordinary message" in caplog.text
+
+
+@pytest.mark.parametrize(
+    ("seed_artist", "result_artist", "expected"),
+    [
+        ("ILLENIUM & WYLDE", "ILLENIUM", True),  # Deezer lists the primary artist only
+        ("Dabin, William Black & Audra Miller", "William Black", True),
+        ("Dabin feat Dia Frampton", "Dabin", True),
+        ("Trivecta & MitiS", "MitiS, Trivecta", True),
+        ("ILLENIUM & WYLDE", "Some Cover Band", False),
+    ],
+)
+def test_collaboration_credits_match(seed_artist, result_artist, expected):
+    assert matches_seed(Match(0.9, "m", result_artist, "Ur Alive"), seed_artist, "Ur Alive") is (
+        expected
+    )

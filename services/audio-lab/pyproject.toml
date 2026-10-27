@@ -1,0 +1,85 @@
+[project]
+name = "sidetrack-audio-lab"
+version = "0.1.0"
+description = "Audio model benchmark for Sidetrack (ADR 0004). A CLI; it serves nothing."
+requires-python = ">=3.11,<3.12"
+# Core layer: manifests, decoding, runs, neighbours, report. No PyTorch, so CI can test it.
+dependencies = [
+    "numpy==2.3.5",
+    "pyarrow==26.0.0",
+    "soundfile==0.14.0",
+    "soxr==1.1.0",
+]
+
+[project.optional-dependencies]
+# Real model adapters. torch/torchaudio come from the CUDA 12.8 index: the first builds
+# with Blackwell (RTX 5070, sm_120) and without Pascal (the rack's GTX 1070).
+# torchaudio 2.11 is its last release and pins torch 2.11. transformers stays on 4.x
+# because MERT loads remote code written against it.
+models = [
+    "torch==2.11.0",
+    "torchaudio==2.11.0",
+    "transformers==4.57.6",
+    "muq==0.1.0",
+]
+# The same pins from the CUDA 12.6 index, for the rack's GTX 1070 (Pascal, sm_61).
+# Conflicts with `models`; install one or the other. torchvision (pulled in by muq's x-clip)
+# must come from the same index: PyPI's Linux wheel is built against PyPI torch, and its
+# compiled ops (torchvision::nms) don't load with the cu126 build.
+models-pascal = [
+    "torch==2.11.0",
+    "torchaudio==2.11.0",
+    "torchvision==0.26.0",
+    "transformers==4.57.6",
+    "muq==0.1.0",
+]
+dev = [
+    "pytest==7.4.4",
+    "ruff==0.6.9",
+]
+
+[project.scripts]
+audio-lab = "audio_lab.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/audio_lab"]
+
+[tool.uv]
+conflicts = [[{ extra = "models" }, { extra = "models-pascal" }]]
+
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cu128", extra = "models" },
+    { index = "pytorch-cu126", extra = "models-pascal" },
+]
+torchaudio = [
+    { index = "pytorch-cu128", extra = "models" },
+    { index = "pytorch-cu126", extra = "models-pascal" },
+]
+torchvision = [{ index = "pytorch-cu126", extra = "models-pascal" }]
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --strict-markers -m 'not gpu'"
+markers = ["gpu: needs a CUDA GPU, the models extra and downloaded weights"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

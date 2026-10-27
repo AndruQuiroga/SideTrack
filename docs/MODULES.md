@@ -66,5 +66,7 @@ checks (`require_member`, `require_admin`, `resolve_owner`, `can_view_personal`)
 It reads membership through `club`'s public package. `club.membership` must not
 import identity, which keeps imports acyclic. `sidetrack.club_admin` is the
 operator's first-admin command; it sits outside the domains because it composes
-identity and club. `services/extraction`
-remains a stub. ROADMAP.md records deferred live OAuth and first rack deployment.
+identity and club. `sidetrack.audio` is the owner's audio acquisition command
+(ADR 0007); only it may import `sidetrack.analysis.audio`. `services/audio-lab` is a
+separate benchmark project with its own environment (ADR 0004); it reads acquisition's
+manifest and never the database. ROADMAP.md records deferred live OAuth and first rack deployment.

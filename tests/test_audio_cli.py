@@ -150,3 +150,75 @@ def test_no_task_fetches_audio(database_url):
         assert not imports & {"yt_dlp", "acoustid", "sidetrack.audio"}, source
     runner = (ROOT / "sidetrack" / "job_runner.py").read_text(encoding="utf-8")
     assert "audio" not in runner
+
+
+def test_reverify_confirms_without_fetching(db, tmp_path):
+    seeds = tmp_path / "one.csv"
+    seeds.write_text("artist,title\nBroadcast,Papercuts\n", "utf-8")
+    audio_dir = tmp_path / "audio"
+    common = {
+        "settings": _settings(audio_dir),
+        "session": db,
+        "resolve_track": lambda session, seed: None,
+    }
+    calls = []
+
+    def sources(cookies, only):
+        calls.append(only)
+        return fake_sources()
+
+    main(
+        ["fetch", "--seeds", str(seeds)],
+        sources_factory=sources,
+        verifier_factory=lambda s: FakeAcoustId(unavailable="lookup"),
+        out=io.StringIO(),
+        **common,
+    )
+    assert {a.verification.value for a in db.scalars(select(AudioAsset))} == {"unverified"}
+
+    out = io.StringIO()
+    confirming = FakeAcoustId([Match(0.9, "mbid-p", "Broadcast", "Papercuts")])
+    assert main(["verify"], verifier_factory=lambda s: confirming, out=out, **common) == 0
+
+    assets = db.scalars(select(AudioAsset)).all()
+    assert {a.verification.value for a in assets} == {"confirmed"}
+    assert {a.recording_mbid for a in assets} == {"mbid-p"}
+    assert "2 confirmed" in out.getvalue()
+    assert calls == [None]
+
+
+def test_verify_reports_why_assets_stay_unverified(db, tmp_path):
+    seeds = tmp_path / "one.csv"
+    seeds.write_text("artist,title\nBroadcast,Papercuts\n", "utf-8")
+    common = {
+        "settings": _settings(tmp_path / "audio"),
+        "session": db,
+        "resolve_track": lambda session, seed: None,
+        "sources_factory": lambda cookies, only: fake_sources(),
+        "verifier_factory": lambda s: FakeAcoustId(unavailable="lookup"),
+    }
+    main(["fetch", "--seeds", str(seeds)], out=io.StringIO(), **common)
+
+    out = io.StringIO()
+    assert main(["verify"], out=out, **common) == 0
+    assert "unverified because AcoustID lookup failed: 2" in out.getvalue()
+
+
+def test_lookup_error_message_is_reported(monkeypatch):
+    import types
+
+    from sidetrack.analysis.audio import PyAcoustIdClient, VerifyUnavailable
+
+    fake = types.SimpleNamespace(
+        lookup=lambda *a, **k: {
+            "status": "error",
+            "error": {"code": 4, "message": "invalid API key"},
+        },
+        AcoustidError=RuntimeError,
+        FingerprintGenerationError=RuntimeError,
+    )
+    monkeypatch.setitem(__import__("sys").modules, "acoustid", fake)
+    client = PyAcoustIdClient("not-a-real-key")
+    with pytest.raises(VerifyUnavailable, match="invalid API key") as exc:
+        client.lookup(10.0, "AQAA")
+    assert "not-a-real-key" not in str(exc.value)

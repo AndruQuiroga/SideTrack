@@ -13,6 +13,7 @@ from .assets import (
     prune_assets,
     read_seeds,
     resolve_catalog_track,
+    reverify_assets,
 )
 from .sources import (
     DeezerPreviewSource,
@@ -44,4 +45,5 @@ __all__ = [
     "prune_assets",
     "read_seeds",
     "resolve_catalog_track",
+    "reverify_assets",
 ]
