@@ -120,7 +120,41 @@ from the same embeddings):
   songs are closest.
 
 The report has 630 duels: each of 105 seeds against 6 model pairs. 559 of them compare
-rank-1 picks. Gate items 1, 2 and 4 are still open: answer at least 40 duels in this
-run's `report.html`, then run `audio-lab score`.
+rank-1 picks.
+
+**Duels (2026-10-27):** the owner answered 81 blind duels (`duels.json` and `scores.json`
+are in the run directory).
+
+| Model | Win rate | Won | Lost | Tied |
+| --- | --- | --- | --- | --- |
+| muq | **0.65** | 20 | 8 | 13 |
+| muq-mulan | 0.61 | 20 | 11 | 9 |
+| mert | 0.43 | 11 | 17 | 13 |
+| clap | 0.31 | 6 | 21 | 13 |
+
+| Pair | Result (wins–wins–ties) |
+| --- | --- |
+| muq vs muq-mulan | 9–3–2 |
+| muq vs mert | 4–4–6 |
+| muq vs clap | 7–1–5 |
+| muq-mulan vs mert | 10–0–3 |
+| muq-mulan vs clap | 7–2–4 |
+| mert vs clap | 7–3–4 |
+
+- **Uncertainty:** each model has about 40 duels, so a win rate is good to roughly ±0.15.
+  Only muq-mulan's 10–0 over MERT is clear on its own (sign test p < 0.01). MuQ's 9–3 over
+  muq-mulan points the same way as the overall ranking but isn't conclusive (p ≈ 0.15).
+- **Gate:**
+  - **Items 1 and 3 pass:** 81 duels were answered, and MuQ's recall@10 is 0.989.
+  - **Item 2 passes for MuQ:** it has the top win rate, and 0.65 is above 0.55.
+  - **Item 4 is the owner's choice:** MuQ and muq-mulan are 0.04 apart, inside the 0.05
+    margin, so cost and capability decide.
+- **The trade-off between the two:**
+  - **MuQ:** wins the head-to-head and recognises previews far better (recall@1 0.955
+    against 0.506).
+  - **muq-mulan:** groups artists better and separates the library more sharply. It is
+    also the only model with a text tower, which would allow a search like "dark melodic
+    dubstep".
+- **MERT and CLAP are out.** CLAP fails recall, and MERT loses to both MuQ models.
 
 **Owner's decision:** pending.
