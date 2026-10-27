@@ -24,7 +24,7 @@
 
 ## 5. Owner run and docs
 
-- [ ] 5.1 Build seeds from the full export into `E:/sidetrack/benchmark-v2/`, together with the control set. Fetch them with `python -m sidetrack.audio fetch`, export the manifest without mismatches, embed with `--max-duration 600`, and render the report with label files and `--duel-model muq --duel-model muq-mulan`. Record the exclusion counts, seed counts and every metric per model in `docs/AUDIO-BENCHMARK.md`.
+- [x] 5.1 Build seeds from the full export into `E:/sidetrack/benchmark-v2/`, together with the control set. Fetch them with `python -m sidetrack.audio fetch`, export the manifest without mismatches, embed with `--max-duration 600`, and render the report with label files and `--duel-model muq --duel-model muq-mulan`. Record the exclusion counts, seed counts and every metric per model in `docs/AUDIO-BENCHMARK.md`.
 - [ ] 5.2 Owner judges at least 30 finalist duels. Score them, and record the gate v2 result and the owner's decision in `docs/AUDIO-BENCHMARK.md`.
 - [ ] 5.3 Update `services/audio-lab/README.md` (the seeds, control-seeds and label options) and `docs/status.yaml` (the embedding-model notes), regenerate `docs/STATUS.md`, and check it with `scripts/gen_status.py --check`.
 

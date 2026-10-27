@@ -162,3 +162,49 @@ MuQ-MuLan's 0.61 is inside the 0.05 margin, and the owner judged the seed set to
 and dirty to decide on: one recent genre, two podcast episodes, and unlabelled sleep
 tracks. The final pick between MuQ and MuQ-MuLan is deferred to the v2 benchmark
 (`add-audio-benchmark-v2`). MERT and CLAP are dropped.
+
+### 2026-10-27: v2 benchmark: cleaned history plus a genre control set
+
+Run `20261027-031711-c7c3698` (`add-audio-benchmark-v2`).
+
+**Seeds:**
+- **Personal:** 250 seeds from the owner's full ListenBrainz export (74,826 listens, 2019–2026).
+  - **Removed:** 83 listens over 10 minutes, 7 podcast listens and 386 YouTube Labs listens.
+  - **Channel uploads** titled "Artist - Title" are credited to the real artist.
+  - **Sleep tracks:** 37 seeds are labelled sleep. Their plays fall mostly in the 84 long night sessions, which are sleep-tab autoplay.
+  - **Balance:** at most 2 per artist, spread across first-play years 2019–2026, with 57 pairs of songs the owner often plays back to back.
+- **Genre control set:** 150 tracks, 10 from each of 15 Deezer genre charts.
+
+**Acquisition:**
+- **Coverage:** 384 of 399 seeds have audio: 341 full tracks and 363 previews, 704 assets after removing 15 mismatches.
+- **Missing full tracks:** about 30 of the owner's songs have none. Their YouTube uploads are gone, and an explicit video ID never falls back to search.
+- **Too long:** one 90-minute mix was skipped by `--max-duration 600`.
+
+**Embedding:** RTX 5070, about 70,600 s of audio per model, 28 minutes for all four models.
+
+| Model | Wall s | Audio-s per s | Peak VRAM MiB |
+| --- | --- | --- | --- |
+| muq | 411 | 172 | 4693 |
+| muq-mulan | 434 | 163 | 2859 |
+| mert | 352 | 201 | 3827 |
+| clap | 441 | 160 | 1455 |
+
+**Automatic metrics** (`metrics.json`). The "Chance" column is what random neighbours would score.
+
+| Metric | muq | muq-mulan | mert | clap | Chance |
+| --- | --- | --- | --- | --- | --- |
+| Preview→full recall@1 (319 seeds) | **0.962** | 0.658 | 0.950 | 0.245 | – |
+| Preview→full recall@10 | **0.991** | 0.915 | 0.975 | 0.436 | – |
+| Genre precision@10 (150 control seeds) | 0.215 | **0.313** | 0.173 | 0.086 | ~0.06 |
+| Co-listening hit rate (51 pairs) | 0.118 | **0.127** | 0.078 | 0.010 | ~0.03 |
+| Sleep purity (36 sleep seeds) | 0.625 | **0.628** | 0.431 | 0.319 | 0.094 |
+| Same-artist rate (153 seeds) | **0.295** | 0.213 | 0.195 | 0.136 | – |
+| Separation | 0.223 | **0.405** | 0.055 | 0.043 | – |
+
+- **Finalists:** MuQ and MuQ-MuLan lead every metric except recall, where MERT is close behind MuQ. CLAP stays out, failing recall@10 again at 0.44.
+- **Genre:** MuQ-MuLan separates genres best, about 5 times chance, against MuQ's 3.5. Deezer's chart labels are noisy (a Shakira track charts under Rap/Hip Hop, for example), so the absolute figures are low for every model.
+- **Taste and mood:** MuQ and MuQ-MuLan are even on co-listening (12% and 13%, about 4 times chance) and on sleep purity (0.63 each, about 6.7 times the base rate).
+- **Recognition and artist:** MuQ is clearly better at recognising a song from its preview and at grouping an artist's songs.
+- **Overlap:** the two finalists share 32% of their top-10 neighbours.
+
+**Finalist duels:** the report has 384 blind MuQ against MuQ-MuLan duels, one per seed. The gate needs at least 30 judged duels and the owner's decision.
