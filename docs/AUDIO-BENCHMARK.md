@@ -207,4 +207,20 @@ Run `20261027-031711-c7c3698` (`add-audio-benchmark-v2`).
 - **Recognition and artist:** MuQ is clearly better at recognising a song from its preview and at grouping an artist's songs.
 - **Overlap:** the two finalists share 32% of their top-10 neighbours.
 
-**Finalist duels:** the report has 384 blind MuQ against MuQ-MuLan duels, one per seed. The gate needs at least 30 judged duels and the owner's decision.
+**Finalist duels** (`audio-lab score`, 103 of 384 duels judged on 2026-10-27):
+
+| Seeds | Duels | MuQ wins | MuQ-MuLan wins | Ties | MuQ-MuLan win rate |
+| --- | --- | --- | --- | --- | --- |
+| All | 103 | 25 | 35 | 43 | **0.55** |
+| Personal | 55 | 23 | 27 | 5 | 0.54 |
+| Genre control | 47 | 1 | 8 | 38 | 0.57 |
+| Sleep (within personal) | 9 | 1 | 1 | 7 | 0.50 |
+
+- **Personal seeds** are close to even: 27 against 23, which a coin would beat or match two times in three (sign test p ≈ 0.67).
+- **Genre control seeds** are mostly ties, and MuQ-MuLan wins nearly all the rest, 8 to 1 (p ≈ 0.04). This agrees with its genre precision.
+- **Overall,** 35 against 25 decisive duels is suggestive, not conclusive (p ≈ 0.25).
+
+**Gate v2:**
+- **Items 1 and 3 pass:** 103 duels were judged, and MuQ-MuLan's recall@10 is 0.915.
+- **Item 2 passes for MuQ-MuLan,** just: it has the top win rate, and 0.55 meets the threshold.
+- **Item 4:** the two are 0.10 apart, outside the 0.05 margin, so the owner's decision is a yes or no on MuQ-MuLan.
