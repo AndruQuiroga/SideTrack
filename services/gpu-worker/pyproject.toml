@@ -1,0 +1,50 @@
+[project]
+name = "sidetrack-gpu-worker"
+version = "0.1.0"
+description = "Environment for Sidetrack's gpu-queue worker: the sidetrack package plus PyTorch."
+requires-python = ">=3.11,<3.12"
+# The pins audio-lab's models-pascal extra proved on the rack's GTX 1070 (Pascal, sm_61):
+# torch, torchaudio and torchvision from the CUDA 12.6 index (12.8+ builds dropped Pascal).
+# torchvision must come from that index too: PyPI's Linux wheel is built against PyPI
+# torch, and its ops (torchvision::nms) don't load with the cu126 build.
+dependencies = [
+    "sidetrack[api,worker,embeddings]",
+    "torch==2.11.0",
+    "torchaudio==2.11.0",
+    "torchvision==0.26.0",
+    "transformers==4.57.6",
+    "muq==0.1.0",
+]
+
+[dependency-groups]
+# The GPU parity test (tests/test_parity.py) reads audio-lab's Parquet runs.
+dev = [
+    "pytest==7.4.4",
+    # pyarrow 21+ needs numpy 2; the sidetrack package pins numpy 1.26.
+    "pyarrow==20.0.0",
+]
+
+[tool.uv]
+# An environment, not a package: the image runs the sidetrack sources from /app, like the
+# API image, so PyTorch never enters the root lock (AGENTS.md).
+package = false
+
+[tool.uv.sources]
+sidetrack = { path = "../..", editable = true }
+torch = { index = "pytorch-cu126" }
+torchaudio = { index = "pytorch-cu126" }
+torchvision = { index = "pytorch-cu126" }
+
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --strict-markers"
+markers = ["gpu: needs a CUDA GPU, the model weights and an audio-lab run"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

@@ -9,7 +9,7 @@ processes share this code; the Next.js app and Discord bot call the HTTP API.
 | `catalog`   | albums, tracks                                                      |
 | `listening` | listen_events, import_checkpoints                                   |
 | `club`      | weeks, nominations, votes, ratings, club_notification_outbox, club_members |
-| `analysis`  | track_features, taste_profiles, compatibility, user_recommendations, audio_assets |
+| `analysis`  | track_features, taste_profiles, compatibility, user_recommendations, audio_assets, audio_embeddings |
 
 Import another domain's public package for operations or exported **read models**.
 Never mutate a foreign domain's ORM instances or construct its rows. Listening

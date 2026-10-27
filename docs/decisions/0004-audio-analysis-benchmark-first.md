@@ -15,3 +15,4 @@ Build a standalone benchmark CLI first (MuQ, MuQ-MuLan, MERT-v1-95M, CLAP) that 
 
 - Each model adapter declares its checkpoint, license, sample rate and status.
 - Embeddings from different models are never compared to each other.
+- **2026-10-27:** MuQ-MuLan passed the gate (run `20261027-031711-c7c3698`); [ADR 0010](0010-muq-mulan-audio-embeddings.md) records how it is integrated.

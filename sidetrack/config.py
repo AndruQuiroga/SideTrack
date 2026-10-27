@@ -41,6 +41,8 @@ class Settings(BaseSettings):
     sidetrack_audio_fetch_enabled: bool = False
     sidetrack_audio_retention_days: int | None = None
     acoustid_api_key: SecretStr | None = None
+    # Audio embeddings run on the gpu queue's dedicated worker (openspec analysis/audio-embeddings).
+    sidetrack_gpu_device: str = "cuda:0"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

@@ -137,6 +137,17 @@ Copying roughly 150 lines of adapter and windowing code is the cost. The parity 
   each asset check currency, check the file, decode, window, embed, pool and upsert. All
   rows and the job result commit together in the job runner's transaction, as other tasks
   do. A failed load raises `Unavailable`, which stops retries and stores nothing.
+- **Per-asset problems** (as implemented):
+  - Skip reasons: the spec's `missing_file`, `file_deleted` and `decode_failed`, plus
+    `asset_not_found` for an ID whose asset row was deleted after queueing.
+  - Model errors: an exception in the model's forward pass, or a zero vector, isn't an
+    asset fault (usually CUDA or memory). It fails the job, which retries like other
+    transient errors.
+  - When nothing needs embedding, the model is never loaded.
+- **Imports:** decoding uses numpy, soundfile and soxr from a root `embeddings` extra,
+  installed by the GPU environment and by `dev` for tests. These, and torch, are imported
+  only inside the job, so the API and CPU worker import `sidetrack.analysis` without numpy
+  (tested).
 - **Time limit and batch size:** `sidetrack.worker` gets a per-task limit table.
   `analysis.embed_audio` has a 1,800 s limit and a batch size of 128, both from run
   `20261027-172855-0c32766-dirty`:

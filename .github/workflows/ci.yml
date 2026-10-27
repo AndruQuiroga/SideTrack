@@ -125,10 +125,17 @@ jobs:
             dockerfile: apps/web/Dockerfile
           - app: bot
             dockerfile: apps/bot/Dockerfile
+          # The gpu-queue worker: sidetrack plus PyTorch for the rack's GTX 1070 (~12 GB).
+          - app: gpu
+            dockerfile: services/gpu-worker/Dockerfile
+            large: true
     env:
       PUSH: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     steps:
       - uses: actions/checkout@v4
+      - name: Free disk space for the PyTorch image
+        if: matrix.large
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
       - uses: docker/setup-buildx-action@v3
       - name: Log in to GHCR
         if: env.PUSH == 'true'
@@ -154,4 +161,5 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=${{ matrix.app }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.app }}
+          # The PyTorch layer alone would evict every other image from the 10 GB cache.
+          cache-to: ${{ !matrix.large && format('type=gha,mode=max,scope={0}', matrix.app) || '' }}

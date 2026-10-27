@@ -7,6 +7,7 @@ CI publishes images on every push to `main`:
 - `ghcr.io/andruquiroga/sidetrack-api:sha-<short>` (also the Postgres worker)
 - `ghcr.io/andruquiroga/sidetrack-web:sha-<short>`
 - `ghcr.io/andruquiroga/sidetrack-bot:sha-<short>`
+- `ghcr.io/andruquiroga/sidetrack-gpu:sha-<short>` (the gpu-queue worker, with PyTorch; about 12 GB)
 
 A `main` tag also follows the latest build. Deploy a `sha-` tag so rollbacks are exact.
 
@@ -21,6 +22,11 @@ Verify each step against live state first, as the stache-infra change rules requ
 2. **Create the data directory on that node:**
    ```bash
    sudo mkdir -p /srv/sidetrack/postgres
+   ```
+   On docker-0, create the GPU worker's audio and model-cache directories too (see
+   [GPU services on docker-0](#gpu-services-on-docker-0)):
+   ```bash
+   sudo mkdir -p /srv/sidetrack/audio /srv/sidetrack/models
    ```
 3. **Check the `arch` label** exists on the amd64 nodes (the wedding stack uses `node.labels.arch == amd64`):
    ```bash
@@ -60,6 +66,7 @@ Verify each step against live state first, as the stache-infra change rules requ
    | `LASTFM_API_KEY` | no | Last.fm API key |
    | `SPOTIFY_CLIENT_ID` | no | Spotify client ID |
    | `SIDETRACK_MUSICBRAINZ_APP_NAME` | no | `Sidetrack/0.1 (you@example.com)` |
+   | `SIDETRACK_HF_OFFLINE` | no | `1` once `gpu-worker` has downloaded the pinned MuQ-MuLan weights (default `0`) |
 
    The GHCR packages are public (as of 2026-10-25), so Portainer needs no registry credentials. If they're ever made private, add a GHCR registry in Portainer with a token that has `read:packages`.
 
@@ -152,6 +159,18 @@ runtime by default, and a container gets the GPU only when it asks for it:
 
 This method was verified on 2026-10-27 with a one-replica service running audio-lab's
 Pascal image: it reported the GTX 1070 at capability (6, 1) and was removed afterwards.
+
+`gpu-worker` in `stack.yml` is the one such service. It runs `python -m sidetrack.worker
+--queues gpu` from `sidetrack-gpu`, one job at a time, and reads:
+
+- **`/srv/sidetrack/audio`**, read-only: the audio files `python -m sidetrack.audio embed`
+  queues jobs for, named `<sha256>.<ext>` as the fetch command stores them. Copy them here
+  yourself (docs/AUDIO.md); nothing syncs audio automatically (ADR 0007).
+- **`/srv/sidetrack/models`**: the Hugging Face cache, about 2.5 GB for MuQ-MuLan. The
+  first job downloads the pinned weights; then set `SIDETRACK_HF_OFFLINE=1`.
+- **`sidetrack_database_url`**, its only secret.
+
+Both directories sit on docker-0's root disk: the 4 TB HDD isn't attached to it yet.
 
 ## Backups
 

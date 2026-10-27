@@ -4,9 +4,12 @@
     python -m sidetrack.audio manifest --out manifest.csv
     python -m sidetrack.audio verify
     python -m sidetrack.audio prune
+    python -m sidetrack.audio embed [--model muq-mulan] [--limit N]
+    python -m sidetrack.audio neighbours SHA256_OR_ID [--model muq-mulan] [--k 10]
 
 Fetching runs only with SIDETRACK_AUDIO_FETCH_ENABLED=true. Files go to
-SIDETRACK_AUDIO_DIR; rows go to the configured database.
+SIDETRACK_AUDIO_DIR; rows go to the configured database. `embed` only queues gpu jobs for
+the dedicated GPU worker; nothing schedules it.
 """
 
 from __future__ import annotations
@@ -36,6 +39,14 @@ from sidetrack.analysis.audio import (
     prune_assets,
     read_seeds,
     reverify_assets,
+)
+from sidetrack.analysis.embeddings import (
+    ENABLED,
+    ModelNotEnabled,
+    enabled_model,
+    queue_backfill,
+    resolve_asset,
+    similar_assets,
 )
 from sidetrack.config import Settings, get_settings
 from sidetrack.db import get_engine, init_engine
@@ -73,7 +84,51 @@ def _parser() -> argparse.ArgumentParser:
     manifest.add_argument("--out", type=Path, required=True)
     commands.add_parser("verify", help="Re-check unverified assets with AcoustID.")
     commands.add_parser("prune", help="Delete files past SIDETRACK_AUDIO_RETENTION_DAYS.")
+    default_model = next(iter(ENABLED))
+    embed = commands.add_parser("embed", help="Queue gpu jobs for assets without embeddings.")
+    embed.add_argument("--model", default=default_model)
+    embed.add_argument("--limit", type=int, help="Queue at most this many assets.")
+    near = commands.add_parser("neighbours", help="Most similar assets to one asset.")
+    near.add_argument("asset", help="Asset SHA-256 or ID.")
+    near.add_argument("--model", default=default_model)
+    near.add_argument("--k", type=int, default=10)
     return parser
+
+
+def run_embed(db: Session, args: argparse.Namespace, audio_dir: Path, out: IO[str]) -> int:
+    backfill = queue_backfill(db, args.model, audio_dir, limit=args.limit)
+    db.commit()
+    print(
+        f"Queued {backfill.assets} assets for {backfill.model} in {len(backfill.job_ids)} "
+        "gpu jobs.",
+        file=out,
+    )
+    for job_id in backfill.job_ids:
+        print(f"  job {job_id}", file=out)
+    return 0
+
+
+def run_neighbours(db: Session, args: argparse.Namespace, out: IO[str]) -> int:
+    asset = resolve_asset(db, args.asset)
+    if asset is None:
+        print(f"No asset {args.asset}.", file=sys.stderr)
+        return 1
+    result = similar_assets(db, asset.id, args.model, args.k)
+    if not result.embedded:
+        print(
+            f"{asset.seed_artist} - {asset.seed_title} has no {result.model} embedding.", file=out
+        )
+        return 1
+    print(
+        f"{asset.seed_artist} - {asset.seed_title} ({asset.kind.value}), {result.model}:", file=out
+    )
+    for rank, n in enumerate(result.neighbours, start=1):
+        print(
+            f"{rank:3}. {n.similarity:.3f}  {n.seed_artist} - {n.seed_title} ({n.kind})  "
+            f"{n.sha256[:12]}",
+            file=out,
+        )
+    return 0
 
 
 def _summary(results: list[SeedResult], out: IO[str]) -> None:
@@ -159,8 +214,14 @@ def main(
             file=sys.stderr,
         )
         return 2
+    if args.command in ("embed", "neighbours"):
+        try:
+            enabled_model(args.model)
+        except ModelNotEnabled as exc:
+            print(str(exc), file=sys.stderr)
+            return 2
     audio_dir = settings.sidetrack_audio_dir
-    if audio_dir is None:
+    if audio_dir is None and args.command != "neighbours":
         print("Set SIDETRACK_AUDIO_DIR to the audio directory.", file=sys.stderr)
         return 2
     if args.command == "prune" and settings.sidetrack_audio_retention_days is None:
@@ -175,6 +236,11 @@ def main(
     with owned as db:
         if args.command == "fetch":
             return run_fetch(db, args, settings, out=out, **fetch_options)
+        if args.command == "neighbours":
+            return run_neighbours(db, args, out)
+        assert audio_dir is not None
+        if args.command == "embed":
+            return run_embed(db, args, audio_dir, out)
         if args.command == "manifest":
             with args.out.open("w", encoding="utf-8", newline="") as handle:
                 rows = export_manifest(db, audio_dir, handle)

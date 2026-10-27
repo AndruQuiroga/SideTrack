@@ -286,3 +286,17 @@ threshold of 0.999 holds with a wide margin.
 - **Backfill cost:** at this library's average length, MuQ-MuLan takes about 22 minutes per
   1,000 assets. Embedding MuQ as well would add about 22 minutes per 1,000. The owner kept
   MuQ out of the integration regardless.
+
+### 2026-10-27: production parity on docker-0
+
+`add-muq-mulan-embeddings` reimplements MuQ-MuLan's decoding, windowing, inference and
+pooling inside Sidetrack (`sidetrack.analysis.embeddings`). Its GPU parity test
+(`services/gpu-worker/tests/test_parity.py`) ran in the `sidetrack-gpu` test image on
+docker-0's GTX 1070. That image has torch 2.11.0+cu126 and numpy 1.26.4, where the
+benchmark had numpy 2.3.5.
+
+- **Sample:** 24 assets spread across run `20261027-031711-c7c3698`, previews and full
+  tracks alike.
+- **Result:** every production vector matched the benchmark run's MuQ-MuLan vector for the
+  same SHA-256, with a minimum cosine of 1.000000 at six decimals. The spec's threshold is
+  0.999. The test took 99 s, including the weight download.

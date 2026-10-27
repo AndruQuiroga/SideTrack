@@ -10,7 +10,9 @@ from uuid import UUID
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
-from sidetrack.analysis import compute_user_taste_profile
+from sidetrack.analysis import compute_user_taste_profile, embed_assets
+from sidetrack.analysis.embeddings import TASK as EMBED_AUDIO
+from sidetrack.analysis.embeddings import ModelUnavailable
 from sidetrack.club import cleanup_notifications, produce_notification
 from sidetrack.config import get_settings
 from sidetrack.db import database_now, get_engine, init_engine
@@ -58,6 +60,13 @@ def run(job_id: UUID) -> int:
                 cleanup_notifications(db)
             elif row.task == "club.notify":
                 result = produce_notification(db, **arguments)
+            elif row.task == EMBED_AUDIO:
+                result = embed_assets(
+                    db,
+                    arguments["model"],
+                    [UUID(value) for value in arguments["asset_ids"]],
+                    job_id=row.id,
+                )
             else:
                 raise NotImplementedError
             row.result = result
@@ -66,7 +75,7 @@ def run(job_id: UUID) -> int:
             row.finished_at = database_now(db)
             db.commit()
             return 0
-        except (NotImplementedError, ValueError, KeyError):
+        except (NotImplementedError, ValueError, KeyError, ModelUnavailable):
             db.rollback()
             return 2
         except Exception:

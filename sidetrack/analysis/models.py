@@ -6,7 +6,18 @@ import uuid
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import JSON, DateTime, Float, ForeignKey, String, Text, UniqueConstraint
+from pgvector.sqlalchemy import VECTOR
+from sqlalchemy import (
+    JSON,
+    CheckConstraint,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -160,3 +171,33 @@ class AudioAsset(Base):
         DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
     )
     file_deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class AudioEmbedding(Base):
+    """One model's embedding of one audio asset (ADR 0004; openspec analysis/audio-embeddings).
+
+    ``embedding`` is an untyped pgvector column so models of different dimensions share the
+    table; ``dim`` records the length and a check keeps them in step. Vectors are compared
+    only within one ``model``, ``checkpoint_revision`` and ``pipeline``.
+    """
+
+    __tablename__ = "audio_embeddings"
+    __table_args__ = (
+        UniqueConstraint("asset_id", "model", name="uq_audio_embeddings_asset_model"),
+        CheckConstraint("vector_dims(embedding) = dim", name="ck_audio_embeddings_dim"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    asset_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("audio_assets.id", ondelete="CASCADE"), nullable=False
+    )
+    model: Mapped[str] = mapped_column(String(64), nullable=False)
+    checkpoint_revision: Mapped[str] = mapped_column(String(64), nullable=False)
+    pipeline: Mapped[str] = mapped_column(String(64), nullable=False)
+    dim: Mapped[int] = mapped_column(Integer, nullable=False)
+    embedding: Mapped[list[float]] = mapped_column(VECTOR(), nullable=False)
+    # The background job that produced it. Not a foreign key: finished jobs are cleaned up.
+    job_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    embedded_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+    )

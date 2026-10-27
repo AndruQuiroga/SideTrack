@@ -14,7 +14,11 @@ verified independently on Postgres 16 + pgvector.
 
 Run migrations, then `python -m sidetrack.worker`. CPU workers consume `default`
 and `musicbrainz` with concurrency four. `--queues gpu` selects a dedicated lane;
-mixed GPU/CPU queues are rejected. Real GPU analysis remains unavailable.
+mixed GPU/CPU queues are rejected. The GPU lane runs one job at a time, so only one model
+is on the card, and only from the GPU worker image (services/gpu-worker), which has PyTorch.
+Its one task is `analysis.embed_audio`: MuQ-MuLan embeddings for up to 128 audio assets,
+with a 30-minute limit. A job that can't load the model (no PyTorch, weights or CUDA)
+fails as `unavailable` without retrying and stores nothing (docs/AUDIO.md).
 `--once` processes currently eligible work and finishes its claimed jobs before
 exiting. Continuous workers keep polling for work that becomes eligible after
 queue locks are released; use continuous mode to settle all accepted work during
@@ -37,8 +41,8 @@ returns sanitized 503. Results persist across API restarts. Errors are safe code
 such as unavailable, execution_failed, attempts_exhausted and worker_interrupted;
 tracebacks and credentials are never response fields.
 
-Domain work runs in child processes with a ten-minute Last.fm limit and a
-five-minute limit for other tasks. A child watchdog also bounds orphan execution.
+Domain work runs in child processes with a ten-minute Last.fm limit, a thirty-minute
+audio-embedding limit and a five-minute limit for other tasks. A child watchdog also bounds orphan execution.
 Windows uses the selector event loop required by psycopg; subprocess waits run
 outside it. Credentials are runtime settings, never command-line arguments.
 Graceful shutdown stops claims and allows 30 seconds for current work; the stack
