@@ -70,20 +70,50 @@ For seeds with both a full asset and a preview asset, the report SHALL give each
 - **WHEN** every preview's nearest full-track embedding belongs to its own seed
 - **THEN** that model's recall@1 is 1.0
 
-### Requirement: The report captures the owner's judgement
-`audio-lab report` SHALL write a self-contained static HTML file. For each seed, it shows the top 10 neighbours per model with artist and title, local playback of the owner's audio files, and good, bad and unsure controls per seed and model. The owner's choices SHALL survive a reload and be exportable as `verdicts.json`. The report MUST NOT load scripts or styles from the network.
+### Requirement: Neighbour lists are described by automatic metrics
+`audio-lab report` SHALL compute per model: the same-artist rate (mean share of a seed's same-artist seeds in its top 10), separation (mean gap between best and median neighbour similarity), and per pair of models the overlap (mean share of top-10 neighbours in common). It SHALL write them with self-retrieval to `metrics.json` and show them. They SHALL NOT pass or fail a model by themselves.
 
-#### Scenario: Recording verdicts
-- **WHEN** the owner marks MuQ "good" for 2 seeds and "bad" for 1, reloads the page, and exports
-- **THEN** `verdicts.json` contains those 3 verdicts tagged with the run ID
+#### Scenario: Same artist found
+- **WHEN** an artist has two seeds and a model ranks each seed's other track among its top 10
+- **THEN** that model's same-artist rate for those seeds is 1.0
 
-### Requirement: Scoring summarises agreement per model
-`audio-lab score` SHALL read `verdicts.json` for a run and report, per model, the counts of good, bad and unsure verdicts and the agreement rate good ÷ (good + bad). It SHALL refuse verdicts whose run ID doesn't match the run.
+#### Scenario: Identical lists
+- **WHEN** two models produce the same top-10 neighbours for every seed
+- **THEN** their overlap is 1.0
+
+### Requirement: Duels compare rank-matched picks
+For each seed and each pair of models, the report SHALL build at most one duel. It compares the two models' neighbours at the first rank where they pick different tracks. When the two lists agree at every rank, that pair has no duel for the seed. The duel order and the side each candidate appears on SHALL be fixed by the run ID, and spread across all model pairs.
+
+#### Scenario: Models pick the same top track
+- **WHEN** MuQ and MERT both rank track X first for a seed, and pick Y and Z respectively at rank 2
+- **THEN** the MuQ–MERT duel for that seed compares Y with Z
+
+#### Scenario: Same run, same order
+- **WHEN** the report is rendered twice for one run
+- **THEN** both pages list the same duels in the same order, with the same sides
+
+### Requirement: The owner judges models in blind duels
+The report SHALL be a self-contained HTML file whose main view shows one duel at a time: a seed and two candidates. The owner picks the closer candidate or a tie, using the keyboard. The duel view MUST NOT reveal which model picked which candidate. Playback SHALL start partway into each track. Votes SHALL survive a reload and export as `duels.json` with the run ID. A browse view SHALL list neighbours per model. The report MUST NOT load scripts or styles from the network.
+
+#### Scenario: Recording votes
+- **WHEN** the owner answers 3 duels, reloads the page and exports
+- **THEN** `duels.json` contains those 3 votes, each with the seed, both models and the winner, tagged with the run ID
+
+#### Scenario: Blind duel
+- **WHEN** a duel is shown
+- **THEN** the page shows the seed and both candidates' artists and titles, and no model name
+
+### Requirement: Scoring summarises duel results per model
+`audio-lab score` SHALL read `duels.json` for a run and report:
+- per model: wins, losses, ties and win rate (wins plus half of ties, divided by duels)
+- per pair of models: each model's wins and the ties
+
+It SHALL write the result to `scores.json` in the run. It SHALL refuse votes whose run ID doesn't match the run, or that name a model the run didn't embed.
 
 #### Scenario: Scoring
-- **WHEN** verdicts give MuQ 8 good, 2 bad and 1 unsure
-- **THEN** the score for MuQ is 8 good, 2 bad, 1 unsure, agreement 0.80
+- **WHEN** MuQ wins 6 duels, loses 2 and ties 2
+- **THEN** MuQ's score is 6 wins, 2 losses, 2 ties, win rate 0.70
 
 #### Scenario: Wrong run
-- **WHEN** `audio-lab score` is given verdicts exported from a different run
+- **WHEN** `audio-lab score` is given votes exported from a different run
 - **THEN** it exits non-zero, naming both run IDs

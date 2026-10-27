@@ -35,6 +35,8 @@ services/audio-lab/
     adapters/      # base.py, muq.py, muq_mulan.py, mert.py, clap.py
     runs.py        # run dir, run.json, Parquet writing, perf capture
     neighbours.py  # cosine top-k per model, self-retrieval
+    metrics.py     # same-artist rate, separation, overlap
+    duels.py       # blind A/B duel generation
     report/        # template.html (inline CSS/JS), __init__.py renders it
     score.py
   tests/           # core tests with generated WAVs and a test-double adapter
@@ -75,25 +77,37 @@ Creation uses `mkdir(exist_ok=False)`. Performance figures:
 
 ### 4. Report
 
-`audio-lab report RUN_DIR --manifest CSV --audio-dir PATH` renders one HTML file with all CSS and JS inline. Layout:
-- a seed list on the left
-- for the chosen seed, one column per model, each showing the top 10 (artist – title, similarity, `<audio controls preload="none" src="file:///…">`) and good, bad and unsure buttons
-- a header with self-retrieval recall@1 and recall@10 per model
+`audio-lab report RUN_DIR --manifest CSV --audio-dir PATH` renders one HTML file with all CSS and JS inline, plus `metrics.json`. The neighbour pool per model is all full-track assets. Previews act only as queries for self-retrieval.
 
-Verdicts are kept in `localStorage` keyed by run ID and exported with a "Download verdicts.json" button. File URLs work because the owner opens the report locally. Nothing is uploaded, and the audio stays on disk (ADR 0007).
+**Duels (the main view).** The first version asked for good, bad or unsure per seed and model. On the owner's real library every list sounded reasonable, so that couldn't separate models that disagree on most neighbours. Duels replace it:
+- **Pairing:** for each seed and each pair of models (A, B), walk both top-10 lists in rank order and take the first rank r where A[r] ≠ B[r]. The duel compares A[r] with B[r]. If the lists agree at every rank, there is no duel for that pair. Rank-matched picks keep the comparison fair: neither model's candidate comes from deeper in its list than the other's.
+- **Order:** duels are generated in Python (`duels.py`) and embedded in the page. Their order is fixed by a `random.Random` seeded with the run ID. They're shuffled, then interleaved round-robin across pairs, so any prefix the owner judges covers every pair about equally. The left and right sides are also drawn from that generator. This only orders the page; it touches no embedding.
+- **What the page shows:** the seed and two candidates, with artist and title but no model names. Each has a play button that seeks 35% into the track, using the manifest's duration, so a clip starts in the body of the song rather than the intro. Only one clip plays at a time.
+- **Keys:**
+  - Space plays the seed; Q and W play the candidates.
+  - 1 or 2 picks the closer candidate; = says they're equally close.
+  - Backspace undoes the last vote; S skips a duel.
 
-The neighbour pool per model is all full-track assets. Previews act only as queries for self-retrieval.
+  The page advances as soon as a vote is cast.
+- **Blindness:** model names appear only on the results tab, which shows live standings. The duel view never names models.
+- **Saving:** votes are kept in `localStorage` keyed by run ID and exported with "Download duels.json" as `{run_id, votes: [{seed, a, b, winner}]}`, where `winner` is a model name or `"tie"`.
+
+**Browse view.** A read-only seed list with one column per model, showing its top 10 (artist – title, similarity, player).
+
+**Metrics.** `metrics.py` computes the same-artist rate, separation and overlap described in the spec. Credited artists are split on `,`, `&`, `+`, `/`, `x`, `feat.` and `with`, the same rule acquisition uses. The rule is copied here because the lab never imports `sidetrack`.
+
+File URLs work because the owner opens the report locally. Nothing is uploaded, and the audio stays on disk (ADR 0007).
 
 Alternative considered: a small local web server. Rejected, because a static file is enough and keeps "never served over HTTP" simple.
 
 ### 5. Pass gate
 
-The gate goes in `docs/AUDIO-BENCHMARK.md`, using the owner's judgement as ADR 0004 requires. A model is a candidate when it has:
-- at least 20 judged seeds, including the owner's obscure picks
-- agreement of 0.70 or more
-- preview→full recall@10 of 0.8 or more
+The gate goes in `docs/AUDIO-BENCHMARK.md`, using the owner's judgement as ADR 0004 requires. A model is a candidate when:
+- at least 40 duels are judged in one run
+- it has the highest duel win rate, and that rate is at least 0.55
+- its preview→full recall@10 is 0.8 or more
 
-The thresholds are a starting point, and the owner can revise them in that doc with a dated note. No model passes automatically. The doc records the owner's decision.
+If the top two win rates are within 0.05, the owner chooses between them on cost and capability, such as MuQ-MuLan's text tower. The thresholds are a starting point, and the owner can revise them in that doc with a dated note. No model passes automatically. The doc records the owner's decision.
 
 ### 6. CI
 
@@ -101,7 +115,7 @@ A new `audio-lab` job runs `uv sync --project services/audio-lab` (core only, no
 - manifest validation
 - chunking and resampling with generated WAVs
 - the run directory and `run.json` schema, through a test-double adapter under `tests/` that hashes input bytes into a vector
-- the neighbour maths, self-retrieval and score
+- the neighbour maths, self-retrieval, metrics, duel generation and score
 - report rendering, checking for no external URLs
 - the unavailable-model path when torch is absent
 

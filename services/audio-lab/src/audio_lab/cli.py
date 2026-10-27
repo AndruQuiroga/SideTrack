@@ -1,4 +1,4 @@
-"""audio-lab: embed a manifest, report neighbours, score the owner's verdicts (ADR 0004)."""
+"""audio-lab: embed a manifest, report neighbours and duels, score the owner's votes (ADR 0004)."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from pathlib import Path
 from .adapters import ADAPTERS, get_adapter
 from .report import write_report
 from .runs import RUN_JSON, embed_run
-from .score import VerdictRunMismatch, score
+from .score import VoteError, score
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -33,9 +33,9 @@ def _parser() -> argparse.ArgumentParser:
     report.add_argument("--audio-dir", type=Path, required=True)
     report.add_argument("--top", type=int, default=10)
 
-    scoring = commands.add_parser("score", help="Agreement per model from verdicts.json.")
+    scoring = commands.add_parser("score", help="Duel win rates per model from duels.json.")
     scoring.add_argument("run_dir", type=Path)
-    scoring.add_argument("--verdicts", type=Path, required=True)
+    scoring.add_argument("--votes", type=Path, required=True, help="duels.json from the report.")
     return parser
 
 
@@ -61,19 +61,22 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"Wrote {out}")
         return 0
 
-    run_id = json.loads((args.run_dir / RUN_JSON).read_text(encoding="utf-8"))["run_id"]
+    record = json.loads((args.run_dir / RUN_JSON).read_text(encoding="utf-8"))
+    embedded = {m for m, r in record["models"].items() if r["status"] == "ok"}
     try:
-        scores = score(args.verdicts, run_id)
-    except VerdictRunMismatch as exc:
+        scores = score(args.votes, record["run_id"], embedded)
+    except VoteError as exc:
         print(str(exc), file=sys.stderr)
         return 1
     (args.run_dir / "scores.json").write_text(json.dumps(scores, indent=2), encoding="utf-8")
-    for model, s in scores.items():
-        agreement = "–" if s["agreement"] is None else f"{s['agreement']:.2f}"
+    ranked = sorted(scores["models"].items(), key=lambda kv: -kv[1]["win_rate"])
+    for model, s in ranked:
         print(
-            f"{model}: {s['good']} good, {s['bad']} bad, {s['unsure']} unsure, "
-            f"agreement {agreement}"
+            f"{model}: win rate {s['win_rate']:.2f} "
+            f"({s['wins']} won, {s['losses']} lost, {s['ties']} tied)"
         )
+    for pair, counts in scores["pairs"].items():
+        print("  " + ", ".join(f"{k} {v}" for k, v in counts.items()) + f"  [{pair}]")
     return 0
 
 

@@ -85,7 +85,7 @@ groups:
           - docs/AUDIO.md
       - capability: Audio feature extraction
         status: partial
-        notes: "services/audio-lab benchmark CLI (ADR 0004) embeds acquired audio into versioned Parquet runs with a neighbour report and verdict scoring; benchmark only, not integrated into Sidetrack. No model has passed the gate yet (docs/AUDIO-BENCHMARK.md)"
+        notes: "services/audio-lab benchmark CLI (ADR 0004) embeds acquired audio into versioned Parquet runs with a blind-duel report, automatic neighbour metrics and duel scoring; benchmark only, not integrated into Sidetrack. No model has passed the gate yet (docs/AUDIO-BENCHMARK.md)"
         evidence:
           - services/audio-lab/tests/test_runs.py
           - services/audio-lab/tests/test_neighbours.py

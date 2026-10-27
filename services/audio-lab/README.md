@@ -33,7 +33,7 @@ uv run --extra models audio-lab embed --manifest E:/sidetrack/manifest.csv \
 uv run --extra models audio-lab embed ... --model muq --model clap           # a subset
 uv run audio-lab report E:/sidetrack/audio-lab-runs/<run-id> \
     --manifest E:/sidetrack/manifest.csv --audio-dir E:/sidetrack/audio
-uv run audio-lab score E:/sidetrack/audio-lab-runs/<run-id> --verdicts verdicts.json
+uv run audio-lab score E:/sidetrack/audio-lab-runs/<run-id> --votes duels.json
 ```
 
 - **`embed`** creates `<out>/<YYYYMMDD-HHMMSS>-<git sha>/` containing `embeddings.parquet`,
@@ -41,13 +41,19 @@ uv run audio-lab score E:/sidetrack/audio-lab-runs/<run-id> --verdicts verdicts.
   sample rates, pooling, environment, and per-model throughput and peak VRAM. Assets are
   cut into 10 s windows; full tracks are capped at 180 s. A model that can't load is
   recorded as unavailable and never produces vectors.
-- **`report`** writes `report.html` and `retrieval.json` into the run. Open the HTML file
-  locally. For each seed it shows the top 10 neighbours per model, with players for your
-  own files and good, bad and unsure buttons. Verdicts are saved in the browser (per run
-  ID); use **Download verdicts.json** to export them.
-- **`score`** prints each model's good, bad and unsure counts and its agreement
-  (good ÷ (good + bad)), and writes `scores.json` into the run. It refuses verdicts from a
-  different run.
+- **`report`** writes `report.html` and `metrics.json` into the run. Open the HTML file
+  locally. It has three tabs:
+  - **Duels:** blind A/B duels. You see one seed and two candidates, each the pick of a
+    different, hidden model at the same rank. Keys: `P` plays seed, A and B for 8 s each;
+    `Space`, `Q` and `W` play one; `1` or `2` picks the closer one; `=` means equally close;
+    `S` skips; `Backspace` undoes. Clips start 35% into the track. Votes are saved in the
+    browser (per run ID); use **Download duels.json** to export them.
+  - **Results:** live duel standings and the automatic metrics: preview→full recall,
+    same-artist rate, separation, and top-10 overlap between models.
+  - **Browse:** every seed's top 10 per model.
+- **`score`** prints each model's wins, losses, ties and win rate (a tie counts as half a
+  win), plus each pair's head-to-head, and writes `scores.json` into the run. It refuses
+  votes from a different run or for models the run didn't embed.
 
 The pass gate and recorded results are in `docs/AUDIO-BENCHMARK.md`.
 
@@ -58,5 +64,5 @@ uv run pytest                        # core, no GPU (also in CI)
 uv run --extra models pytest -m gpu  # real models on a CUDA GPU
 ```
 
-Checking the report by hand: open a run's `report.html`, mark a few verdicts, reload the
-page (they persist), then export and confirm `verdicts.json` contains them with the run ID.
+Checking the report by hand: open a run's `report.html`, answer a few duels, reload the
+page (they persist), then export and confirm `duels.json` contains them with the run ID.

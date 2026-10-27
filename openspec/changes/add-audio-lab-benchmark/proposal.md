@@ -14,9 +14,15 @@ Audio-first listening intelligence is why Sidetrack was rebuilt, and no real aud
   - `run.json`: git commit, adapter checkpoints and licences, sample rates, dtype, GPU name, driver, CUDA and torch versions, manifest hash
   - per-model performance: seconds of audio per second, peak VRAM, failures
 - **Four adapters per ADR 0004:** MuQ (`OpenMuQ/MuQ-large-msd-iter`), MuQ-MuLan (`OpenMuQ/MuQ-MuLan-large`), MERT (`m-a-p/MERT-v1-95M`) and CLAP (`laion/larger_clap_music`). Each declares its checkpoint and revision, licence, input sample rate, embedding dimension and pooling. A model that can't load reports itself unavailable. It never yields placeholder vectors.
-- **CLI `audio-lab report`:** computes cosine nearest neighbours within each model only, never across models (ADR 0004). It writes a static HTML report: each seed with its top-10 neighbours per model side by side, local `<audio>` players for the owner's own files, and good/bad/unsure buttons. Verdicts are kept in the browser and exported as `verdicts.json`.
-- **An objective check alongside the owner's judgement:** for seeds with both a full track and a Deezer preview, the report shows how often each model ranks the preview's own full track first, and within the top 10.
-- **CLI `audio-lab score`:** reads `verdicts.json` and prints and stores each model's agreement rate. The ADR 0004 gate is recorded in `docs/AUDIO-BENCHMARK.md`.
+- **CLI `audio-lab report`:** computes cosine nearest neighbours within each model only, never across models (ADR 0004). It writes a static HTML report whose main view is a sequence of **blind A/B duels**: one seed track, and two candidate tracks picked by two different models, unlabelled. The owner presses 1, 2 or = for whichever is closer to the seed. Votes are kept in the browser and exported as `duels.json`. A browse view lists every seed's neighbours per model.
+- **Automatic metrics alongside the owner's judgement**, written to `metrics.json` and shown in the report:
+  - **self-retrieval:** for seeds with both a full track and a Deezer preview, how often each model ranks the preview's own full track first, and within the top 10
+  - **same-artist rate:** how often a model's top 10 includes the same artist's other seeds
+  - **separation:** how far a seed's best neighbour stands out from the rest
+  - **overlap:** how much each pair of models agrees on neighbours
+- **CLI `audio-lab score`:** reads `duels.json` and stores each model's wins, losses, ties and win rate, plus each pair's head-to-head counts. The ADR 0004 gate is recorded in `docs/AUDIO-BENCHMARK.md`.
+
+Why duels: the first run on the owner's library showed that rating each model's list as good or bad can't separate the models. The library is close in style, so every list sounds reasonable, yet the models share only 22–44% of their top-10 neighbours. A forced choice between two candidates exposes the difference, and takes a few seconds per answer.
 - **Removed:** `services/extraction/`, `scripts/bench_extractor.py` and `scripts/bench_extractor_baseline.json`.
 
 ## Capabilities

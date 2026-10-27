@@ -57,22 +57,33 @@ def _query(seed_assets: list[Asset], vectors: dict[str, np.ndarray]) -> np.ndarr
     return None
 
 
-def neighbours(
-    assets: list[Asset], vectors: dict[str, np.ndarray], k: int = TOP_K
-) -> dict[str, list[Neighbour]]:
-    """Seed → top-k full tracks of *other* seeds by cosine similarity, for one model."""
+def similarities(
+    assets: list[Asset], vectors: dict[str, np.ndarray]
+) -> dict[str, tuple[list[Asset], np.ndarray]]:
+    """Seed → (full tracks of *other* seeds, their cosine similarity to it), for one model."""
 
     by_seed: dict[str, list[Asset]] = {}
     for asset in assets:
         by_seed.setdefault(asset.seed, []).append(asset)
     pool, matrix = _pool(assets, vectors)
-    result: dict[str, list[Neighbour]] = {}
+    result = {}
     for seed, seed_assets in by_seed.items():
         query = _query(seed_assets, vectors)
         if query is None or not pool:
             continue
-        scores = matrix @ query
-        ranked = [i for i in np.argsort(-scores) if pool[i].seed != seed][:k]
+        others = [i for i, a in enumerate(pool) if a.seed != seed]
+        result[seed] = ([pool[i] for i in others], matrix[others] @ query)
+    return result
+
+
+def neighbours(
+    assets: list[Asset], vectors: dict[str, np.ndarray], k: int = TOP_K
+) -> dict[str, list[Neighbour]]:
+    """Seed → top-k full tracks of *other* seeds by cosine similarity, for one model."""
+
+    result: dict[str, list[Neighbour]] = {}
+    for seed, (pool, scores) in similarities(assets, vectors).items():
+        ranked = np.argsort(-scores, kind="stable")[:k]
         result[seed] = [Neighbour(pool[i].seed, pool[i].sha256, float(scores[i])) for i in ranked]
     return result
 

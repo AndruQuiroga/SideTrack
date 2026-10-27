@@ -24,8 +24,18 @@
 ## 5. First benchmark and docs
 
 - [x] 5.1 Write `docs/AUDIO-BENCHMARK.md`: how to run embed, report and score, the pass gate (at least 20 judged seeds including obscure picks, agreement of 0.70 or more, recall@10 of 0.8 or more, owner's decision), licences, and the 1070 Ti follow-up. Update the `docs/status.yaml` rows "Audio feature extraction" and "Embedding models (any)" to **partial**, with the lab tests as evidence, and regenerate `docs/STATUS.md`.
-- [ ] 5.2 Owner run: embed the acquired ~100-seed manifest with all four models on the RTX 5070, open the report, judge at least 20 seeds, and score. Record the run ID, performance table, recall figures and agreement per model in `docs/AUDIO-BENCHMARK.md`, with the owner's pass or fail decision.
+- [ ] 5.2 Owner run: embed the acquired ~100-seed manifest with all four models on the RTX 5070, open the report, judge at least 40 duels, and score. Record the run ID, performance table, metrics and duel win rates per model in `docs/AUDIO-BENCHMARK.md`, with the owner's pass or fail decision.
 - [x] 5.3 Run the checks: lab pytest (core), the root `make lint` and unit selection (unchanged), and `pnpm exec openspec validate add-audio-lab-benchmark --strict`.
+
+## 6. Blind duels and automatic metrics
+
+Added after the first owner run, because good/bad verdicts couldn't separate the models.
+
+- [x] 6.1 Implement `metrics.py` (same-artist rate, separation, overlap), and write `metrics.json` from `audio-lab report`. Prove "Neighbour lists are described by automatic metrics" in `tests/test_metrics_and_duels.py`.
+- [x] 6.2 Implement `duels.py`: rank-matched pairs, no duel when the lists agree, and order and sides fixed by the run ID and interleaved across pairs. Prove "Models pick the same top track" and the deterministic order in `tests/test_metrics_and_duels.py`.
+- [x] 6.3 Rebuild the report template with a blind duel view (keyboard controls, clips from 35%), a results tab and a browse view, and remove the good/bad/unsure controls. Prove in `tests/test_report_and_score.py` that the HTML is self-contained, embeds the duels and has no model name in the duel data. Check "Recording votes" by hand in a browser.
+- [x] 6.4 Replace verdict scoring with duel scoring (`audio-lab score RUN --votes duels.json`). Prove "Scoring", "Wrong run" and the refusal of unknown models in `tests/test_report_and_score.py`.
+- [x] 6.5 Update the README and `docs/AUDIO-BENCHMARK.md` (duel pass gate, metrics), regenerate the report for run `20261026-223453-0ec1bac`, and record its metrics.
 
 ## Workflow follow-up
 

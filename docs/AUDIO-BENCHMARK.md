@@ -23,12 +23,23 @@ pass gate, the licences, and every recorded run.
 A model becomes a candidate for integration (pgvector, `gpu` queue) only when **all** of
 these hold on one run:
 
-1. **Judged seeds:** at least 20 seeds judged in the report, including the owner's obscure picks.
-2. **Agreement:** good ÷ (good + bad) of at least **0.70** (`audio-lab score`).
-3. **Self-retrieval:** preview→full recall@10 of at least **0.80** (from `retrieval.json`), where previews exist.
-4. **Owner's decision:** recorded below with the run ID. Nothing passes automatically.
+1. **Duels judged:** at least **40** blind duels answered in the report's Duels tab.
+2. **Win rate:** the highest duel win rate of the run, and at least **0.55**
+   (`audio-lab score`; a tie counts as half a win).
+3. **Self-retrieval:** preview→full recall@10 of at least **0.80** (from `metrics.json`),
+   where previews exist.
+4. **Owner's decision:** recorded below with the run ID. Nothing passes automatically. If
+   the top two win rates are within 0.05, the owner chooses between them on cost and
+   capability.
+
+The other automatic metrics (same-artist rate, separation, overlap) are evidence for the
+decision, not gates.
 
 The thresholds are a starting point. Change them here with a dated note, never silently.
+
+- **2026-10-26:** the gate moved from good/bad verdicts (20 seeds, agreement of 0.70 or
+  more) to blind duels. On the owner's library every model's list sounded reasonable, so
+  verdicts couldn't separate models that share only 22–44% of their neighbours.
 
 Integration also requires timing on the rack's GTX 1070 Ti. That needs a separate
 PyTorch environment, because CUDA 12.8+ builds dropped Pascal. It's a follow-up change.
@@ -59,7 +70,8 @@ Windows 10.
 - **Memory:** every model fits well inside 12 GB. MuQ's 4.7 GB peak is the largest, so all
   four should also fit the 1070 Ti's 8 GB. That still has to be measured.
 - **Report:** checked in a browser. Verdicts persist across a reload, and the exported
-  `verdicts.json` scores correctly. The test verdicts were then discarded.
+  `verdicts.json` scores correctly. The test verdicts were then discarded. (This was the
+  first report version; duels replaced verdicts the same day.)
 
 ### 2026-10-26: first benchmark run on the owner's listening history
 
@@ -86,7 +98,29 @@ The seed list stays outside the repo.
 
 Self-retrieval covers the 89 seeds that have both a preview and a full track. CLAP fails
 the recall@10 gate of 0.80. MuQ and MERT recognise a 30-second clip of a song almost
-perfectly. Gate items 1, 2 and 4 (the owner's judgement) are still open: judge at least
-20 seeds in this run's `report.html`, then run `audio-lab score`.
+perfectly.
+
+A first pass at judging showed that every model's list sounded reasonable, so the report
+was rebuilt around blind duels and these automatic metrics (`metrics.json`, recomputed
+from the same embeddings):
+
+| Model | Same artist in top 10 | Separation |
+| --- | --- | --- |
+| muq | 27% | 0.239 |
+| muq-mulan | **37%** | **0.325** |
+| mert | 29% | 0.070 |
+| clap | 23% | 0.063 |
+
+- **Same artist:** over the 61 seeds whose artist has another seed. It's the share of
+  those other songs that appear in the seed's top 10.
+- **Separation:** the mean gap between a seed's best and median similarity. MERT and CLAP
+  give nearly every track the same similarity, so they barely tell this library apart.
+- **Overlap:** the top-10 lists share 22% (CLAP and MuQ-MuLan) to 44% (MERT and MuQ) of
+  their neighbours. The models agree that the songs are close, but disagree on which
+  songs are closest.
+
+The report has 630 duels: each of 105 seeds against 6 model pairs. 559 of them compare
+rank-1 picks. Gate items 1, 2 and 4 are still open: answer at least 40 duels in this
+run's `report.html`, then run `audio-lab score`.
 
 **Owner's decision:** pending.
