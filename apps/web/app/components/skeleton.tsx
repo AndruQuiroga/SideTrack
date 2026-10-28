@@ -1,5 +1,5 @@
 export function Skeleton({ className }: { className?: string }) {
-  return <div className={`animate-pulse rounded-md bg-slate-800/60 ${className ?? ''}`} />;
+  return <div aria-hidden="true" className={`loading-line ${className ?? ''}`} />;
 }
 
 export function TextSkeleton({ lines = 3 }: { lines?: number }) {

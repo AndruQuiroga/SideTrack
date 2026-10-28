@@ -1,61 +1,71 @@
 'use client';
-
+import { useState } from 'react';
 import { requestIntegrationConnect } from '../lib/browser-api';
-import { showToast } from './toast';
 
-type Connection = {
+export type Connection = {
   name: 'Discord' | 'Spotify' | 'Last.fm';
   key: 'discord' | 'spotify' | 'lastfm';
   status: string;
   linked: boolean;
   cta: string;
 };
-
 export function ConnectionsGrid({ connections }: { connections: Connection[] | null }) {
-  if (!connections) {
-    return <p role="status">Linked accounts are unavailable. Please try again later.</p>;
-  }
-
-  async function onConnect(key: Connection['key']) {
+  const [error, setError] = useState<string | null>(null);
+  const [connecting, setConnecting] = useState(false);
+  if (!connections)
+    return (
+      <section className="access-state" role="status">
+        <h2>Connections unavailable</h2>
+        <p>Linked accounts are unavailable. Please try again later.</p>
+      </section>
+    );
+  async function connect() {
+    setConnecting(true);
+    setError(null);
     try {
-      const { url } = await requestIntegrationConnect(key);
-      if (url) {
-        showToast(`Opening ${key} connect…`, 'success');
-        window.open(url, '_blank');
-      }
+      const { url } = await requestIntegrationConnect('lastfm');
+      if (!url || !/^https:\/\//.test(url)) throw new Error('Missing connection destination');
+      window.location.assign(url);
     } catch {
-      showToast(`Failed to start ${key} connect flow`, 'error');
+      setError('Could not start the Last.fm connection. Try connecting again.');
+      setConnecting(false);
     }
   }
-
   return (
-    <div className="grid gap-3 md:grid-cols-3">
+    <>
       {connections.map((account) => (
-        <div
-          key={account.name}
-          className="rounded-2xl border border-slate-800 bg-slate-900 p-4 text-sm text-slate-200"
-        >
-          <div className="flex items-center justify-between">
-            <p className="font-semibold text-white">{account.name}</p>
-            <span
-              className={`rounded-full px-2 py-1 text-[0.7rem] uppercase tracking-wide ${
-                account.linked
-                  ? 'bg-emerald-500/20 text-emerald-200'
-                  : 'bg-slate-800 text-slate-300'
-              }`}
-            >
-              {account.linked ? 'Linked' : 'Not linked'}
-            </span>
+        <section key={account.key} className="connection-row">
+          <h2>{account.name}</h2>
+          <div>
+            <strong>
+              {account.key === 'spotify'
+                ? 'Catalog metadata only'
+                : account.linked
+                  ? 'Linked'
+                  : 'Not linked'}
+            </strong>
+            <p>
+              {account.key === 'spotify'
+                ? 'Album details, cover art and links. Personal listening sync is unavailable.'
+                : account.status}
+            </p>
           </div>
-          <p className="mt-1 text-xs text-slate-400">{account.status}</p>
-          <button
-            onClick={() => onConnect(account.key)}
-            className="mt-3 w-full rounded-xl bg-slate-800 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-500/20 hover:text-emerald-100"
-          >
-            {account.cta}
-          </button>
-        </div>
+          {account.key === 'lastfm' ? (
+            <button className="button" type="button" disabled={connecting} onClick={connect}>
+              {connecting ? 'Connecting…' : account.cta}
+            </button>
+          ) : (
+            <span className="small muted">
+              {account.key === 'discord' ? 'Identity via sign-in' : 'No linking needed'}
+            </span>
+          )}
+        </section>
       ))}
-    </div>
+      {error && (
+        <p role="alert" className="inline-error">
+          {error}
+        </p>
+      )}
+    </>
   );
 }

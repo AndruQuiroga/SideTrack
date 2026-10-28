@@ -25,8 +25,11 @@ export async function completeLastfmLink(token: string, state: string): Promise<
   });
 }
 
-export async function searchSidetrack(query: string): Promise<SearchResult> {
-  const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`, { cache: 'no-store' });
+export async function searchSidetrack(query: string, signal?: AbortSignal): Promise<SearchResult> {
+  const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`, {
+    cache: 'no-store',
+    signal,
+  });
   return json<SearchResult>(res, 'Search');
 }
 

@@ -1,32 +1,30 @@
 'use client';
-
 import { useEffect, useState } from 'react';
 
-function applyTheme(theme: 'dark' | 'light') {
-  if (typeof document === 'undefined') return;
-  const root = document.documentElement;
-  root.classList.remove('theme-dark', 'theme-light');
-  root.classList.add(theme === 'dark' ? 'theme-dark' : 'theme-light');
-}
-
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
-    if (typeof window === 'undefined') return 'dark';
-    return (localStorage.getItem('sidetrack-theme') as 'dark' | 'light') || 'dark';
-  });
-
+  const [theme, setTheme] = useState<'dark' | 'light' | null>(null);
   useEffect(() => {
-    localStorage.setItem('sidetrack-theme', theme);
-    applyTheme(theme);
-  }, [theme]);
-
+    setTheme(document.documentElement.classList.contains('theme-dark') ? 'dark' : 'light');
+  }, []);
+  function toggle() {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.classList.remove('theme-dark', 'theme-light');
+    document.documentElement.classList.add(`theme-${next}`);
+    try {
+      localStorage.setItem('sidetrack-theme', next);
+    } catch {
+      /* Theme still works without storage. */
+    }
+    setTheme(next);
+  }
   return (
     <button
-      onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
-      className="ml-2 hidden items-center gap-2 rounded-full border border-slate-800/80 bg-slate-900/70 px-3 py-1.5 text-xs text-slate-300 shadow-soft transition hover:bg-slate-800/80 md:inline-flex"
-      aria-label="Toggle theme"
+      type="button"
+      className="text-button"
+      aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+      onClick={toggle}
     >
-      {theme === 'dark' ? 'Dark' : 'Light'} theme
+      {theme ? `${theme === 'dark' ? 'Light' : 'Dark'} appearance` : 'Change appearance'}
     </button>
   );
 }

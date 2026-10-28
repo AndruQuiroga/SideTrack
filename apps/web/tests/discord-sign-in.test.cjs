@@ -10,6 +10,49 @@ const parseProviders = require(path.join(authRoot, 'core/lib/providers.js')).def
 const { openidClient } = require(path.join(authRoot, 'core/lib/oauth/client.js'));
 const { authOptions } = require('../app/lib/auth.ts');
 const LoginPage = require('../app/login/page.tsx').default;
+const { safeReturnPath } = require('../app/lib/navigation.ts');
+
+test('sign-in preserves relative archive state and rejects unsafe destinations', () => {
+  assert.equal(
+    safeReturnPath('/club?q=ambient&sort=rating&view=list'),
+    '/club?q=ambient&sort=rating&view=list',
+  );
+  for (const path of [
+    'https://evil.example',
+    '//evil.example',
+    '/\\evil.example',
+    '/%5cevil.example',
+    '/%2f%2fevil.example',
+    '/bad%zz',
+    '/%0aevil',
+    null,
+  ])
+    assert.equal(safeReturnPath(path), '/');
+});
+
+test('Discord sign-in receives the normalized original destination', async (t) => {
+  const auth = require('next-auth/react');
+  const originalState = React.useState,
+    originalSignIn = auth.signIn;
+  t.after(() => {
+    React.useState = originalState;
+    auth.signIn = originalSignIn;
+  });
+  React.useState = (value) => [value, () => {}];
+  const calls = [];
+  auth.signIn = async (...args) => {
+    calls.push(args);
+  };
+  const { OAuthButtons } = require('../app/components/oauth-buttons.tsx');
+  for (const returnTo of ['/club?q=ambient&sort=rating&view=list', '//evil.example']) {
+    const tree = OAuthButtons({ returnTo });
+    await tree.props.children[0].props.onClick();
+  }
+  assert.deepEqual(calls, [
+    ['discord', { callbackUrl: '/club?q=ambient&sort=rating&view=list' }],
+    ['discord', { callbackUrl: '/' }],
+  ]);
+});
 
 async function discordClient() {
   const { provider } = parseProviders({
@@ -25,19 +68,27 @@ async function discordClient() {
 test('Discord issuer is accepted before handling provider denial', async () => {
   const client = await discordClient();
   await assert.rejects(
-    client.oauthCallback('https://example.test/api/auth/callback/discord', {
-      iss: 'https://discord.com', state: 'expected', error: 'access_denied',
-    }, { state: 'expected' }),
+    client.oauthCallback(
+      'https://example.test/api/auth/callback/discord',
+      {
+        iss: 'https://discord.com',
+        state: 'expected',
+        error: 'access_denied',
+      },
+      { state: 'expected' },
+    ),
     (error) => error.error === 'access_denied',
   );
 });
 
 test('Discord callbacks still reject foreign issuers and incorrect state', async () => {
   const client = await discordClient();
-  const callback = (iss, state) => client.oauthCallback(
-    'https://example.test/api/auth/callback/discord',
-    { iss, state, error: 'access_denied' }, { state: 'expected' },
-  );
+  const callback = (iss, state) =>
+    client.oauthCallback(
+      'https://example.test/api/auth/callback/discord',
+      { iss, state, error: 'access_denied' },
+      { state: 'expected' },
+    );
   await assert.rejects(callback('https://example.test', 'expected'), /iss mismatch/);
   await assert.rejects(callback('https://discord.com', 'wrong'), /state mismatch/);
 });

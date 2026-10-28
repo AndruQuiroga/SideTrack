@@ -35,14 +35,8 @@ export function ToastViewport() {
       {toasts.map((t) => (
         <div
           key={t.id}
-          className={
-            'pointer-events-auto w-full max-w-md rounded-xl border px-4 py-3 text-sm shadow-lg ' +
-            (t.type === 'success'
-              ? 'border-emerald-600/40 bg-emerald-600/15 text-emerald-100'
-              : t.type === 'error'
-              ? 'border-rose-600/40 bg-rose-600/15 text-rose-100'
-              : 'border-slate-800/80 bg-slate-900/80 text-slate-100')
-          }
+          role={t.type === 'error' ? 'alert' : 'status'}
+          className="toast pointer-events-auto w-full max-w-md"
         >
           {t.message}
         </div>
