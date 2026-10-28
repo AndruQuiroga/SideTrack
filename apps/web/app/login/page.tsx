@@ -9,31 +9,28 @@ export const metadata = {
   description: 'Sign in to unlock profiles, feeds, and linking flows.',
 };
 
-export default function LoginPage() {
+export default function LoginPage({
+  searchParams,
+}: {
+  searchParams?: { error?: string | string[] };
+}) {
   return (
     <PageShell
       title="Sign in"
       description="Authenticate to access your profile, follow friends, and enable live now-playing data."
-      accent="Auth preview"
-      actions={<Link href="/signup" className="rounded-full bg-slate-800 px-4 py-2 text-sm font-semibold text-white">Create account</Link>}
+      accent="Account"
     >
       <Card className="space-y-4">
-        <SectionHeading eyebrow="Welcome back" title="Choose a sign-in method" />
+        <SectionHeading eyebrow="Welcome back" title="Sign in with Discord" />
+        {searchParams?.error && (
+          <p role="alert" className="rounded-xl border border-rose-800 bg-rose-950/40 px-4 py-3 text-sm text-rose-200">
+            Discord sign-in did not finish. Please try again. If it keeps failing, contact the club administrator.
+          </p>
+        )}
         <OAuthButtons />
-        <div className="rounded-2xl border border-slate-800 bg-slate-900 px-4 py-3">
-          <label className="text-xs uppercase tracking-wide text-slate-400">Email</label>
-          <input
-            type="email"
-            placeholder="you@example.com"
-            className="mt-2 w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none focus:border-emerald-400"
-          />
-          <button className="mt-3 w-full rounded-xl bg-emerald-500 px-3 py-2 text-sm font-semibold text-slate-900 transition hover:bg-emerald-400">
-            Continue with email
-          </button>
-        </div>
         <p className="text-xs text-slate-400">
-          OAuth buttons connect to the backend API. You can also visit <Link href="/settings" className="text-emerald-200 hover:text-white">settings</Link>{' '}
-          to manage linked accounts.
+          Sign in with Discord first, then connect Last.fm from{' '}
+          <Link href="/settings" className="text-emerald-200 hover:text-white">Settings</Link>.
         </p>
       </Card>
     </PageShell>

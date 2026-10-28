@@ -68,10 +68,8 @@ interface OAuthButtonsProps {
 
 export function OAuthButtons({ className = '' }: OAuthButtonsProps) {
   return (
-    <div className={`grid gap-3 md:grid-cols-2 ${className}`}>
+    <div className={`grid gap-3 ${className}`}>
       <OAuthButton provider="discord" label="Continue with Discord" />
-      <OAuthButton provider="spotify" label="Continue with Spotify" />
-      <OAuthButton provider="lastfm" label="Continue with Last.fm" />
     </div>
   );
 }

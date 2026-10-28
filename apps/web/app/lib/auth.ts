@@ -9,6 +9,8 @@ const apiHeaders = serverApiHeaders;
 export const authOptions: AuthOptions = {
   providers: [
     DiscordProvider({
+      // Discord includes this issuer in OAuth authorization responses (RFC 9207).
+      issuer: 'https://discord.com',
       clientId: process.env.DISCORD_CLIENT_ID!,
       clientSecret: readSecret('DISCORD_CLIENT_SECRET')!,
     }),
