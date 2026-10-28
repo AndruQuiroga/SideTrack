@@ -10,6 +10,7 @@ from sidetrack.club.routes import (
     nominations,
     notifications,
     ratings,
+    singles,
     votes,
     weeks,
 )
@@ -33,6 +34,7 @@ def register_routes(app: FastAPI) -> None:
         nominations.router,
         votes.router,
         ratings.router,
+        singles.router,
         listen_events.router,
         taste_profiles.router,
         search.router,

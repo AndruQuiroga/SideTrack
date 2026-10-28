@@ -457,6 +457,7 @@ p {
 }
 .club-tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 26px;
   border-bottom: 1px solid color-mix(in srgb, var(--line) 45%, transparent);
   margin-bottom: 26px;
@@ -470,6 +471,93 @@ p {
 .club-tabs a[aria-current='page'] {
   border-bottom: 2px solid var(--accent);
   color: var(--ink);
+}
+.singles-sessions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 24px;
+}
+.singles-sessions article,
+.singles-songs article {
+  border-top: 1px solid var(--line);
+  padding: 24px 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.singles-sessions h2 {
+  font-size: 26px;
+  margin: 8px 0;
+}
+.singles-heading {
+  margin-bottom: 32px;
+}
+.singles-heading details {
+  margin-top: 18px;
+  color: var(--secondary);
+  font-size: 14px;
+}
+.singles-songs article {
+  display: grid;
+  grid-template-columns: minmax(200px, 1fr) minmax(0, 2fr);
+  gap: 36px;
+}
+.singles-song-heading h3 {
+  font-size: 28px;
+  margin: 8px 0;
+}
+.singles-song-heading p {
+  margin: 8px 0;
+  color: var(--secondary);
+}
+.singles-phases {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 28px;
+}
+.singles-phases h4 {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 20px;
+}
+.singles-phases ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.singles-phases li {
+  border-top: 1px solid color-mix(in srgb, var(--line) 30%, transparent);
+  padding: 14px 0;
+}
+.singles-phases li > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+}
+.singles-phases li span {
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.singles-phases li a {
+  font-size: 12px;
+}
+.singles-review {
+  white-space: pre-line;
+}
+@media (max-width: 760px) {
+  .singles-songs article {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+  }
+}
+@media (max-width: 480px) {
+  .singles-phases {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .club-tabs {
+    gap: 18px;
+  }
 }
 .archive-toolbar {
   display: flex;

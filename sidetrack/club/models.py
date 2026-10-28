@@ -6,7 +6,17 @@ import uuid
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    false,
+)
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -25,6 +35,7 @@ class Week(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     label: Mapped[str] = mapped_column(String(255), nullable=False)
     week_number: Mapped[int | None] = mapped_column(Integer)
+    historical: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
     discussion_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     nominations_close_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     poll_close_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

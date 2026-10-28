@@ -1,0 +1,419 @@
+{
+  "paths": {
+    "/club/singles-nights": {
+      "get": {
+        "operationId": "list_singles_nights_club_singles_nights_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SinglesSessionRead"
+                  },
+                  "title": "Response List Singles Nights Club Singles Nights Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Singles Nights",
+        "tags": [
+          "singles-nights"
+        ]
+      }
+    },
+    "/club/singles-nights/{session_id}": {
+      "get": {
+        "operationId": "get_singles_night_club_singles_nights__session_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Session Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SinglesSessionDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Singles Night",
+        "tags": [
+          "singles-nights"
+        ]
+      }
+    }
+  },
+  "schemas": {
+    "SinglesRatingRead": {
+      "properties": {
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "display_name": {
+          "title": "Display Name",
+          "type": "string"
+        },
+        "id": {
+          "format": "uuid",
+          "title": "Id",
+          "type": "string"
+        },
+        "phase": {
+          "enum": [
+            "first",
+            "final"
+          ],
+          "title": "Phase",
+          "type": "string"
+        },
+        "review": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Review"
+        },
+        "source_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Source Url"
+        },
+        "user_id": {
+          "format": "uuid",
+          "title": "User Id",
+          "type": "string"
+        },
+        "value": {
+          "title": "Value",
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "user_id",
+        "display_name",
+        "phase",
+        "value",
+        "review",
+        "created_at",
+        "source_url"
+      ],
+      "title": "SinglesRatingRead",
+      "type": "object"
+    },
+    "SinglesSessionDetail": {
+      "properties": {
+        "event_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Event At"
+        },
+        "event_date": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Event Date"
+        },
+        "id": {
+          "format": "uuid",
+          "title": "Id",
+          "type": "string"
+        },
+        "original_label": {
+          "title": "Original Label",
+          "type": "string"
+        },
+        "rating_count": {
+          "title": "Rating Count",
+          "type": "integer"
+        },
+        "song_count": {
+          "title": "Song Count",
+          "type": "integer"
+        },
+        "songs": {
+          "items": {
+            "$ref": "#/components/schemas/SinglesSongRead"
+          },
+          "title": "Songs",
+          "type": "array"
+        },
+        "source_url": {
+          "title": "Source Url",
+          "type": "string"
+        },
+        "week_number": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Week Number"
+        }
+      },
+      "required": [
+        "id",
+        "week_number",
+        "event_date",
+        "event_at",
+        "original_label",
+        "source_url",
+        "song_count",
+        "rating_count",
+        "songs"
+      ],
+      "title": "SinglesSessionDetail",
+      "type": "object"
+    },
+    "SinglesSessionRead": {
+      "properties": {
+        "event_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Event At"
+        },
+        "event_date": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Event Date"
+        },
+        "id": {
+          "format": "uuid",
+          "title": "Id",
+          "type": "string"
+        },
+        "original_label": {
+          "title": "Original Label",
+          "type": "string"
+        },
+        "rating_count": {
+          "title": "Rating Count",
+          "type": "integer"
+        },
+        "song_count": {
+          "title": "Song Count",
+          "type": "integer"
+        },
+        "source_url": {
+          "title": "Source Url",
+          "type": "string"
+        },
+        "week_number": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Week Number"
+        }
+      },
+      "required": [
+        "id",
+        "week_number",
+        "event_date",
+        "event_at",
+        "original_label",
+        "source_url",
+        "song_count",
+        "rating_count"
+      ],
+      "title": "SinglesSessionRead",
+      "type": "object"
+    },
+    "SinglesSongRead": {
+      "properties": {
+        "artist_name": {
+          "title": "Artist Name",
+          "type": "string"
+        },
+        "id": {
+          "format": "uuid",
+          "title": "Id",
+          "type": "string"
+        },
+        "ratings": {
+          "items": {
+            "$ref": "#/components/schemas/SinglesRatingRead"
+          },
+          "title": "Ratings",
+          "type": "array"
+        },
+        "source_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Source Url"
+        },
+        "submissions": {
+          "items": {
+            "$ref": "#/components/schemas/SinglesSubmissionRead"
+          },
+          "title": "Submissions",
+          "type": "array"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Url"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "artist_name",
+        "url",
+        "source_url",
+        "submissions",
+        "ratings"
+      ],
+      "title": "SinglesSongRead",
+      "type": "object"
+    },
+    "SinglesSubmissionRead": {
+      "properties": {
+        "display_name": {
+          "title": "Display Name",
+          "type": "string"
+        },
+        "submitted_at": {
+          "format": "date-time",
+          "title": "Submitted At",
+          "type": "string"
+        },
+        "user_id": {
+          "format": "uuid",
+          "title": "User Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "user_id",
+        "display_name",
+        "submitted_at"
+      ],
+      "title": "SinglesSubmissionRead",
+      "type": "object"
+    }
+  }
+}

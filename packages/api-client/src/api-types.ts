@@ -657,6 +657,40 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/club/singles-nights': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Singles Nights */
+    get: operations['list_singles_nights_club_singles_nights_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/club/singles-nights/{session_id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Singles Night */
+    get: operations['get_singles_night_club_singles_nights__session_id__get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/listen-events/': {
     parameters: {
       query?: never;
@@ -1621,6 +1655,118 @@ export interface components {
        * @default Taste profile recomputation enqueued.
        */
       detail: string;
+    };
+    /** SinglesRatingRead */
+    SinglesRatingRead: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /**
+       * User Id
+       * Format: uuid
+       */
+      user_id: string;
+      /** Display Name */
+      display_name: string;
+      /**
+       * Phase
+       * @enum {string}
+       */
+      phase: 'first' | 'final';
+      /** Value */
+      value: number;
+      /** Review */
+      review: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /** Source Url */
+      source_url: string | null;
+    };
+    /** SinglesSessionDetail */
+    SinglesSessionDetail: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Week Number */
+      week_number: number | null;
+      /** Event Date */
+      event_date: string | null;
+      /** Event At */
+      event_at: string | null;
+      /** Original Label */
+      original_label: string;
+      /** Source Url */
+      source_url: string;
+      /** Song Count */
+      song_count: number;
+      /** Rating Count */
+      rating_count: number;
+      /** Songs */
+      songs: components['schemas']['SinglesSongRead'][];
+    };
+    /** SinglesSessionRead */
+    SinglesSessionRead: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Week Number */
+      week_number: number | null;
+      /** Event Date */
+      event_date: string | null;
+      /** Event At */
+      event_at: string | null;
+      /** Original Label */
+      original_label: string;
+      /** Source Url */
+      source_url: string;
+      /** Song Count */
+      song_count: number;
+      /** Rating Count */
+      rating_count: number;
+    };
+    /** SinglesSongRead */
+    SinglesSongRead: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Title */
+      title: string;
+      /** Artist Name */
+      artist_name: string;
+      /** Url */
+      url: string | null;
+      /** Source Url */
+      source_url: string | null;
+      /** Submissions */
+      submissions: components['schemas']['SinglesSubmissionRead'][];
+      /** Ratings */
+      ratings: components['schemas']['SinglesRatingRead'][];
+    };
+    /** SinglesSubmissionRead */
+    SinglesSubmissionRead: {
+      /**
+       * User Id
+       * Format: uuid
+       */
+      user_id: string;
+      /** Display Name */
+      display_name: string;
+      /**
+       * Submitted At
+       * Format: date-time
+       */
+      submitted_at: string;
     };
     /** TasteProfileRead */
     TasteProfileRead: {
@@ -3318,6 +3464,69 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['RatingSummary'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  list_singles_nights_club_singles_nights_get: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SinglesSessionRead'][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  get_singles_night_club_singles_nights__session_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        session_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SinglesSessionDetail'];
         };
       };
       /** @description Validation Error */

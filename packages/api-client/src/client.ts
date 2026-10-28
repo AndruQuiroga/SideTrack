@@ -43,6 +43,7 @@ import {
   DeliveryEvent,
 } from './types';
 import { ApiError, toApiError } from './errors';
+import type { SinglesSessionRead, SinglesSessionDetail } from './types';
 
 export interface WeekListParams {
   discussion_start?: Date | string | null;
@@ -88,6 +89,17 @@ export interface TimelineParams {
 }
 
 export class SidetrackApiClient {
+  async listSinglesNights(params?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<SinglesSessionRead[]> {
+    return this.request({ method: 'GET', url: '/club/singles-nights', params });
+  }
+
+  async getSinglesNight(id: UUID): Promise<SinglesSessionDetail> {
+    return this.request({ method: 'GET', url: `/club/singles-nights/${encodeURIComponent(id)}` });
+  }
+
   /** A client sharing this one's settings that acts for `actor`. */
   withActor(actor: Actor): SidetrackApiClient {
     return new SidetrackApiClient({ ...this.options, actAs: actor });

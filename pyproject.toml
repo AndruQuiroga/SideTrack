@@ -123,7 +123,7 @@ exclude_type_checking_imports = true
 [[tool.importlinter.contracts]]
 name = "identity internals have one owner"
 type = "protected"
-protected_modules = ["sidetrack.identity.models", "sidetrack.identity.routes", "sidetrack.identity.link_state"]
+protected_modules = ["sidetrack.identity.models", "sidetrack.identity.routes", "sidetrack.identity.link_state", "sidetrack.identity.historical"]
 allowed_importers = ["sidetrack.identity", "services.api.tests"]
 ignore_imports = ["sidetrack.api.routes -> sidetrack.identity.routes.*"]
 unmatched_ignore_imports_alerting = "none"
@@ -131,7 +131,7 @@ unmatched_ignore_imports_alerting = "none"
 [[tool.importlinter.contracts]]
 name = "catalog internals have one owner"
 type = "protected"
-protected_modules = ["sidetrack.catalog.models", "sidetrack.catalog.routes", "sidetrack.catalog.metadata"]
+protected_modules = ["sidetrack.catalog.models", "sidetrack.catalog.routes", "sidetrack.catalog.metadata", "sidetrack.catalog.historical"]
 allowed_importers = ["sidetrack.catalog", "services.api.tests"]
 ignore_imports = ["sidetrack.api.routes -> sidetrack.catalog.routes.*"]
 unmatched_ignore_imports_alerting = "none"
@@ -147,7 +147,7 @@ unmatched_ignore_imports_alerting = "none"
 [[tool.importlinter.contracts]]
 name = "club internals have one owner"
 type = "protected"
-protected_modules = ["sidetrack.club.models", "sidetrack.club.routes", "sidetrack.club.notifications", "sidetrack.club.membership"]
+protected_modules = ["sidetrack.club.models", "sidetrack.club.routes", "sidetrack.club.notifications", "sidetrack.club.membership", "sidetrack.club.history_models", "sidetrack.club.history.parser", "sidetrack.club.history.sources", "sidetrack.club.history.report", "sidetrack.club.history.fields", "sidetrack.club.history.store", "sidetrack.club.history.check", "sidetrack.club.history.materialize", "sidetrack.club.history.application", "sidetrack.club.history.verification"]
 allowed_importers = ["sidetrack.club", "services.api.tests"]
 ignore_imports = ["sidetrack.api.routes -> sidetrack.club.routes.*"]
 unmatched_ignore_imports_alerting = "none"

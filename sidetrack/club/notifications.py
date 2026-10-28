@@ -17,6 +17,9 @@ from .models import Notification, Week
 
 def reconcile_week(db: Session, week: Week) -> None:
     db.flush()
+    if week.historical:
+        _silence_historical(db, week.id)
+        return
     deadlines = {
         "nominations-1h-reminder": week.nominations_close_at - timedelta(hours=1)
         if week.nominations_close_at
@@ -52,10 +55,43 @@ def reconcile_week(db: Session, week: Week) -> None:
     db.flush()
 
 
+def _silence_historical(db: Session, week_id: UUID) -> None:
+    """Disable stale delivery without creating schedules for imported weeks."""
+    schedules = db.scalars(
+        select(JobSchedule)
+        .where(
+            JobSchedule.id.startswith(f"club:{week_id}:"),
+        )
+        .with_for_update()
+    ).all()
+    for schedule in schedules:
+        if schedule.next_due_at is not None:
+            schedule.next_due_at = None
+            schedule.revision += 1
+    db.execute(
+        update(Notification)
+        .where(
+            Notification.week_id == week_id,
+            Notification.state.in_(["pending", "leased"]),
+        )
+        .values(state="skipped", error="historical_week", token=None, lease_until=None)
+    )
+    db.flush()
+
+
+def silence_historical_weeks(db: Session) -> None:
+    """Restart reconciliation must disable obsolete work before it is enqueued."""
+    for week_id in db.scalars(select(Week.id).where(Week.historical.is_(True))):
+        _silence_historical(db, week_id)
+
+
 def produce_notification(
     db: Session, *, week_id: str, kind: str, revision: int, deadline: str | None
 ) -> dict:
     week = db.get(Week, UUID(week_id))
+    if week is not None and week.historical:
+        _silence_historical(db, week.id)
+        return {"skipped": "historical_week"}
     key = f"club:{week_id}:{kind}"
     schedule = db.get(JobSchedule, key, with_for_update=True)
     if week is None or schedule is None or schedule.revision != revision:
@@ -122,7 +158,10 @@ def claim_notifications(db: Session, limit: int = 1) -> list[Notification]:
     claimed = []
     for row in rows:
         week = db.get(Week, row.week_id)
-        if row.kind == "nominations-1h-reminder" and (
+        if week is not None and week.historical:
+            row.state, row.error = "skipped", "historical_week"
+            row.token, row.lease_until = None, None
+        elif row.kind == "nominations-1h-reminder" and (
             not week or not week.nominations_close_at or week.nominations_close_at <= now
         ):
             row.state, row.error = "skipped", "reminder_expired"

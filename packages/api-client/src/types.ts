@@ -1,4 +1,7 @@
 export type UUID = string;
+export type SinglesSessionRead = import('./api-types').components['schemas']['SinglesSessionRead'];
+export type SinglesSessionDetail =
+  import('./api-types').components['schemas']['SinglesSessionDetail'];
 export type DeliveryEvent = import('./api-types').components['schemas']['DeliveryEvent'];
 export type IsoDateString = string;
 
