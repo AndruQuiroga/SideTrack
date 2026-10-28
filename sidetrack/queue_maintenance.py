@@ -7,12 +7,14 @@ from datetime import timedelta
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
+from sidetrack.club import silence_historical_weeks
 from sidetrack.db import database_now
 from sidetrack.queue_client import enqueue
 from sidetrack.queue_models import BackgroundJob, JobSchedule, ScheduleOccurrence
 
 
 def reconcile_schedules(db: Session) -> int:
+    silence_historical_weeks(db)
     now = database_now(db)
     schedules = db.scalars(
         select(JobSchedule).where(JobSchedule.next_due_at <= now).with_for_update(skip_locked=True)

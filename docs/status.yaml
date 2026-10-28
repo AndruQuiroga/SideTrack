@@ -40,21 +40,38 @@ groups:
         notes: "Client credentials, metadata only (external/spotify.py); untested"
       - capability: Web archive (weeks, winners)
         status: partial
-        notes: "Journal archive/detail use stored winner identity, URL-owned filters/sort/view and an independent latest winner. Local browser checks cover member/anonymous/non-member states and Back restoration; real Discord sign-in and redesign rollout remain unverified."
+        notes: "Journal archive/detail use stored winner identity, URL-owned filters/sort/view and an independent latest winner. Deployed merge 7be9d59 on 2026-10-28; the owner confirmed real Discord sign-in. Historical records are prepared in a separate import change and are not yet applied to production."
         evidence:
           - apps/web/app/no-fake-data.test.ts
           - apps/web/tests/authenticated-pages.test.cjs
           - apps/web/tests/club-read-models.test.cjs
           - apps/web/tests/club-archive-state.test.cjs
+      - capability: Discord history import
+        status: partial
+        notes: "Offline review, target checks, atomic apply, erasure-safe replay and verification are implemented. The private 522-message review yields 450 candidates; one missing-reference score is excluded and one repeated score is counted once. Production release/import remains pending."
+        evidence:
+          - docs/CLUB-HISTORY.md
+          - tests/test_club_history_apply.py
+          - tests/test_club_history_replay.py
+          - tests/test_club_history_verify.py
+          - tests/test_club_history_side_effects.py
+      - capability: Singles Night archive
+        status: partial
+        notes: "Member-only list/detail API, generated client and separate web pages pass local tests/build. Synthetic desktop/mobile layouts were inspected. Real historical data is rehearsed in disposable Postgres; production rollout remains pending."
+        evidence:
+          - services/api/tests/test_singles_nights.py
+          - apps/web/tests/singles-read-models.test.cjs
+          - apps/web/tests/singles-archive.test.cjs
 
   - name: Listening
     items:
       - capability: Last.fm account link
-        status: partial
-        notes: "Signed-state flow implemented and tested (harden-api-credentials); not yet verified end to end against real Last.fm"
+        status: works
+        notes: "Signed-state flow implemented and tested (harden-api-credentials); the owner confirmed successful real Last.fm linking on sidetrack.network on 2026-10-28."
         evidence:
           - services/api/tests/test_lastfm_link.py
           - services/api/tests/test_link_state.py
+          - docs/CLUB-HISTORY.md
       - capability: Last.fm scrobble import
         status: partial
         notes: "Durable per-account checkpoints and duplicate-safe retries; newest 200 only, no backfill; unresolved/album-less records can be dropped"
@@ -131,19 +148,20 @@ groups:
         notes: "Profile analytics are unavailable; /u/<id> explains the limitation without calling missing profile/timeline/now-playing endpoints. Listening-history links remain supported."
       - capability: Journal web interface
         status: partial
-        notes: "Responsive navigation, overview, club archive/detail, personal history, Account and search implemented in both themes. All 59 web tests and local production-build browser checks pass; not deployed, and real provider sign-in/linking remains unverified."
+        notes: "Responsive Journal interface deployed as merge 7be9d59 on 2026-10-28. All 59 web tests and local production-build browser checks pass; live welcome, filtered sign-in return and search keyboard checks pass. Real provider sign-in/linking remains unverified."
         evidence:
           - apps/web/tests/application-navigation.test.cjs
           - apps/web/tests/interface-presentation.test.cjs
           - apps/web/tests/listening-history.test.cjs
           - apps/web/tests/search-dialog.test.cjs
           - openspec/changes/rework-web-experience/verification.md
+          - deploy/JOURNAL-ROLLOUT-2026-10-28.md
 
   - name: Platform
     items:
       - capability: Auth
-        status: works
-        notes: "ADR 0009: per-client tokens (web, bot), X-Sidetrack-Act-As, club membership and roles, owner/club visibility on every route, default deny; verified against a live API on Postgres 2026-10-26. Provider tokens are not yet encrypted at rest; real Discord sign-in not yet verified"
+        status: partial
+        notes: "ADR 0009 API authorization verified on Postgres 2026-10-26. Discord issuer fix #297 is tested and deployed; Chrome Safe Browsing blocks the callback (public phishing report dated 2025-09-12). Google review submitted 2026-10-28; clearance and real sign-in/linking remain unverified. Provider tokens are not yet encrypted at rest."
         evidence:
           - services/api/tests/test_api_access.py
           - services/api/tests/test_principals.py
@@ -152,6 +170,8 @@ groups:
           - services/api/tests/test_personal_access.py
           - tests/test_club_membership.py
           - docs/AUTHORIZATION.md
+          - apps/web/tests/discord-sign-in.test.cjs
+          - deploy/SAFE-BROWSING-2026-10-28.md
       - capability: Health checks
         status: works
         notes: /health returns 503 within 2 s when the DB is unreachable (also verified live, 2026-10-25)
@@ -206,8 +226,9 @@ groups:
         evidence:
           - .github/workflows/ci.yml
       - capability: Deployment to Stache-Rack
-        status: partial
-        notes: deploy/stack.yml and runbook ready; never deployed. Local compose verified healthy
+        status: works
+        notes: "First deploy 2026-10-27: Portainer stack 23, sha-15a25c1, six running services, public health/auth-boundary checks and an isolated database restore passed. The owner subsequently confirmed Discord sign-in and Last.fm linking. Explicit image pre-pulls were required; Portainer cold pulls and a real GPU embedding job remain separate verification."
         evidence:
           - deploy/stack.yml
           - deploy/README.md
+          - docs/CLUB-HISTORY.md

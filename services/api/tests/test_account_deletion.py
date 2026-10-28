@@ -139,3 +139,38 @@ def test_deletion_is_refused_for_another_user(client, make_user, catalog, db):
     db.expire_all()
     assert db.get(User, target.id) is not None
     assert _count(db, ListenEvent, ListenEvent.user_id == target.id) == 1
+
+
+def test_singles_contributions_cascade_without_erasing_other_listeners(client, make_user, db):
+    from sidetrack.club import SinglesRating, SinglesSession, SinglesSong, SinglesSubmission
+
+    leaving, staying = make_user("Leaving submitter"), make_user("Staying listener")
+    event = SinglesSession(guild_id="1", source_thread_id="100", original_label="Session")
+    db.add(event)
+    db.flush()
+    song = SinglesSong(session_id=event.id, title="Song", artist_name="Band", position=101)
+    db.add(song)
+    db.flush()
+    db.add(
+        SinglesSubmission(
+            session_id=event.id, song_id=song.id, user_id=leaving.id, submitted_at=datetime.now(UTC)
+        )
+    )
+    for actor in (leaving, staying):
+        db.add(
+            SinglesRating(
+                session_id=event.id,
+                song_id=song.id,
+                user_id=actor.id,
+                phase="first",
+                value=4,
+                created_at=datetime.now(UTC),
+            )
+        )
+    db.flush()
+    assert client.delete(f"/users/{leaving.id}", headers=as_user(leaving)).status_code == 204
+    db.expire_all()
+    assert _count(db, SinglesSubmission) == 0
+    assert _count(db, SinglesRating, SinglesRating.user_id == leaving.id) == 0
+    assert _count(db, SinglesRating, SinglesRating.user_id == staying.id) == 1
+    assert db.get(SinglesSong, song.id) is not None

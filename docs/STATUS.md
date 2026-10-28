@@ -16,13 +16,15 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 | Ratings and summary | works | Submission stores every field including metadata; reads, one rating per member per week, summaries and member-only access are tested (fix-user-deletion-and-metadata-alias) | `services/api/tests/test_ratings.py`, `services/api/tests/test_club_access.py` |
 | Reminders and phase transitions | partial | Deadlines and leased delivery persist in Postgres; restart and send/ack behavior tested. Notices do not enforce phases; real Discord delivery not verified. | `tests/test_club_schedules.py`, `services/api/tests/test_club_notifications.py`, `apps/bot/tests/notification-delivery.test.ts`, `tests/test_jobs_end_to_end.py` |
 | Album metadata from Spotify | partial | Client credentials, metadata only (external/spotify.py); untested |  |
-| Web archive (weeks, winners) | partial | Journal archive/detail use stored winner identity, URL-owned filters/sort/view and an independent latest winner. Local browser checks cover member/anonymous/non-member states and Back restoration; real Discord sign-in and redesign rollout remain unverified. | `apps/web/app/no-fake-data.test.ts`, `apps/web/tests/authenticated-pages.test.cjs`, `apps/web/tests/club-read-models.test.cjs`, `apps/web/tests/club-archive-state.test.cjs` |
+| Web archive (weeks, winners) | partial | Journal archive/detail use stored winner identity, URL-owned filters/sort/view and an independent latest winner. Deployed merge 7be9d59 on 2026-10-28; the owner confirmed real Discord sign-in. Historical records are prepared in a separate import change and are not yet applied to production. | `apps/web/app/no-fake-data.test.ts`, `apps/web/tests/authenticated-pages.test.cjs`, `apps/web/tests/club-read-models.test.cjs`, `apps/web/tests/club-archive-state.test.cjs` |
+| Discord history import | partial | Offline review, target checks, atomic apply, erasure-safe replay and verification are implemented. The private 522-message review yields 450 candidates; one missing-reference score is excluded and one repeated score is counted once. Production release/import remains pending. | `docs/CLUB-HISTORY.md`, `tests/test_club_history_apply.py`, `tests/test_club_history_replay.py`, `tests/test_club_history_verify.py`, `tests/test_club_history_side_effects.py` |
+| Singles Night archive | partial | Member-only list/detail API, generated client and separate web pages pass local tests/build. Synthetic desktop/mobile layouts were inspected. Real historical data is rehearsed in disposable Postgres; production rollout remains pending. | `services/api/tests/test_singles_nights.py`, `apps/web/tests/singles-read-models.test.cjs`, `apps/web/tests/singles-archive.test.cjs` |
 
 ## Listening
 
 | Capability | Status | Notes | Evidence |
 | --- | --- | --- | --- |
-| Last.fm account link | partial | Signed-state flow implemented and tested (harden-api-credentials); not yet verified end to end against real Last.fm | `services/api/tests/test_lastfm_link.py`, `services/api/tests/test_link_state.py` |
+| Last.fm account link | works | Signed-state flow implemented and tested (harden-api-credentials); the owner confirmed successful real Last.fm linking on sidetrack.network on 2026-10-28. | `services/api/tests/test_lastfm_link.py`, `services/api/tests/test_link_state.py`, `docs/CLUB-HISTORY.md` |
 | Last.fm scrobble import | partial | Durable per-account checkpoints and duplicate-safe retries; newest 200 only, no backfill; unresolved/album-less records can be dropped | `tests/test_import_checkpoints.py`, `services/api/tests/test_jobs.py` |
 | Listen storage | works | listen_events.source matches the database enum, and the listen-event routes return stored rows with metadata. Before 2026-10-25 every listen insert failed on Postgres; before 2026-10-26 every listen-event response returned 500 | `services/api/tests/test_migrations.py`, `services/api/tests/test_listen_events.py` |
 | Spotify listen sync | absent | Legacy sync worker retired in Phase 2; Spotify remains metadata-only (ADR 0003) |  |
@@ -46,13 +48,13 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 | --- | --- | --- | --- |
 | Data honesty | works | No invented presence counts or rating distributions; missing data remains unavailable. Rendered club regressions, connection states and the source guard are tested. | `apps/web/app/no-fake-data.test.ts`, `apps/web/tests/connections.test.cjs`, `apps/web/tests/club-data-honesty.test.cjs` |
 | Profile pages | absent | Profile analytics are unavailable; /u/&lt;id&gt; explains the limitation without calling missing profile/timeline/now-playing endpoints. Listening-history links remain supported. |  |
-| Journal web interface | partial | Responsive navigation, overview, club archive/detail, personal history, Account and search implemented in both themes. All 59 web tests and local production-build browser checks pass; not deployed, and real provider sign-in/linking remains unverified. | `apps/web/tests/application-navigation.test.cjs`, `apps/web/tests/interface-presentation.test.cjs`, `apps/web/tests/listening-history.test.cjs`, `apps/web/tests/search-dialog.test.cjs`, `openspec/changes/rework-web-experience/verification.md` |
+| Journal web interface | partial | Responsive Journal interface deployed as merge 7be9d59 on 2026-10-28. All 59 web tests and local production-build browser checks pass; live welcome, filtered sign-in return and search keyboard checks pass. Real provider sign-in/linking remains unverified. | `apps/web/tests/application-navigation.test.cjs`, `apps/web/tests/interface-presentation.test.cjs`, `apps/web/tests/listening-history.test.cjs`, `apps/web/tests/search-dialog.test.cjs`, `openspec/changes/rework-web-experience/verification.md`, `deploy/JOURNAL-ROLLOUT-2026-10-28.md` |
 
 ## Platform
 
 | Capability | Status | Notes | Evidence |
 | --- | --- | --- | --- |
-| Auth | works | ADR 0009: per-client tokens (web, bot), X-Sidetrack-Act-As, club membership and roles, owner/club visibility on every route, default deny; verified against a live API on Postgres 2026-10-26. Provider tokens are not yet encrypted at rest; real Discord sign-in not yet verified | `services/api/tests/test_api_access.py`, `services/api/tests/test_principals.py`, `services/api/tests/test_route_policies.py`, `services/api/tests/test_club_access.py`, `services/api/tests/test_personal_access.py`, `tests/test_club_membership.py`, `docs/AUTHORIZATION.md` |
+| Auth | partial | ADR 0009 API authorization verified on Postgres 2026-10-26. Discord issuer fix #297 is tested and deployed; Chrome Safe Browsing blocks the callback (public phishing report dated 2025-09-12). Google review submitted 2026-10-28; clearance and real sign-in/linking remain unverified. Provider tokens are not yet encrypted at rest. | `services/api/tests/test_api_access.py`, `services/api/tests/test_principals.py`, `services/api/tests/test_route_policies.py`, `services/api/tests/test_club_access.py`, `services/api/tests/test_personal_access.py`, `tests/test_club_membership.py`, `docs/AUTHORIZATION.md`, `apps/web/tests/discord-sign-in.test.cjs`, `deploy/SAFE-BROWSING-2026-10-28.md` |
 | Health checks | works | /health returns 503 within 2 s when the DB is unreachable (also verified live, 2026-10-25) | `services/api/tests/test_health.py` |
 | Runtime secrets | works | API reads /run/secrets/&lt;name&gt;; web and bot read &lt;NAME&gt;_FILE | `services/api/tests/test_runtime_config.py`, `apps/web/app/lib/server-env.test.ts`, `apps/bot/src/secrets.test.ts` |
 | Schema migrations | works | Tests run on Postgres 16 + pgvector built by Alembic; model/migration drift fails CI | `services/api/tests/test_migrations.py` |
@@ -62,7 +64,7 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 | Python module boundaries | works | Canonical sidetrack package with five domain owners; import-linter enforced in CI; legacy imports share canonical objects | `tests/test_module_layout.py`, `tests/test_import_boundaries.py`, `tests/test_ingest_boundary.py` |
 | Status page | works | Generated from docs/status.yaml; CI fails if stale | `scripts/gen_status.py`, `services/api/tests/test_gen_status.py` |
 | CI | works | Lint, tests, OpenSpec validation, status check and image builds; main pushes ghcr.io/andruquiroga/sidetrack-{api,web,bot}; required for merging | `.github/workflows/ci.yml` |
-| Deployment to Stache-Rack | partial | deploy/stack.yml and runbook ready; never deployed. Local compose verified healthy | `deploy/stack.yml`, `deploy/README.md` |
+| Deployment to Stache-Rack | works | First deploy 2026-10-27: Portainer stack 23, sha-15a25c1, six running services, public health/auth-boundary checks and an isolated database restore passed. The owner subsequently confirmed Discord sign-in and Last.fm linking. Explicit image pre-pulls were required; Portainer cold pulls and a real GPU embedding job remain separate verification. | `deploy/stack.yml`, `deploy/README.md`, `docs/CLUB-HISTORY.md` |
 
 ## Facts from the repository
 
@@ -72,6 +74,7 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 - `deploy-on-stache-rack`: 13/13 tasks
 - `fix-web-data-honesty-regressions`: 4/4 tasks
 - `harden-api-credentials`: 10/11 tasks
+- `import-discord-club-history`: 19/22 tasks
 - `rework-web-experience`: 18/18 tasks
 
 ### Specs
@@ -95,7 +98,7 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 
 ### Migration head
 
-`0010_audio_embeddings`
+`0011_club_history`
 
 ### API routes
 
@@ -113,6 +116,8 @@ PUT /club/members/discord/{discord_id}
 POST /club/notifications/claim
 POST /club/notifications/{event_id}/ack
 POST /club/notifications/{event_id}/fail
+GET /club/singles-nights
+GET /club/singles-nights/{session_id}
 GET /feed
 GET /health
 POST /ingest/lastfm

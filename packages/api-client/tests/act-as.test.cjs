@@ -39,3 +39,25 @@ test('withActor adds the act-as header and keeps the token', async () => {
   assert.equal(seen[1]['X-Sidetrack-Act-As'], 'user:6f1c0e3e-0000-4000-8000-000000000000');
   assert.equal(seen[2]['X-Sidetrack-Act-As'], undefined, 'the base client is unchanged');
 });
+
+test('Singles Night read endpoints carry the session actor', async () => {
+  const calls = [];
+  const client = new SidetrackApiClient({
+    baseUrl: 'http://api',
+    authToken: 'test-web-token',
+    actAs: { user: 'session-user' },
+    axiosConfig: {
+      adapter: async (config) => {
+        calls.push(config);
+        return { data: [], status: 200, statusText: 'OK', headers: {}, config };
+      },
+    },
+  });
+  await client.listSinglesNights({ limit: 200, offset: 0 });
+  await client.getSinglesNight('session-id');
+  assert.deepEqual(
+    calls.map((c) => c.url),
+    ['/club/singles-nights', '/club/singles-nights/session-id'],
+  );
+  assert.ok(calls.every((c) => c.headers['X-Sidetrack-Act-As'] === 'user:session-user'));
+});

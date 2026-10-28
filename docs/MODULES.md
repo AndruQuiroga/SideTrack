@@ -8,7 +8,7 @@ processes share this code; the Next.js app and Discord bot call the HTTP API.
 | `identity`  | users, linked_accounts, follows                                     |
 | `catalog`   | albums, tracks                                                      |
 | `listening` | listen_events, import_checkpoints                                   |
-| `club`      | weeks, nominations, votes, ratings, club_notification_outbox, club_members |
+| `club`      | weeks, nominations, votes, ratings, club_notification_outbox, club_members, club_history_batches, club_history_sources, singles_sessions, singles_songs, singles_submissions, singles_ratings |
 | `analysis`  | track_features, taste_profiles, compatibility, user_recommendations, audio_assets, audio_embeddings |
 
 Import another domain's public package for operations or exported **read models**.
@@ -20,6 +20,13 @@ Domain route packages own their existing HTTP operations and persistence.
 `sidetrack.api` registers them and owns cross-domain read views (feed, search,
 trending). Search's metadata fallback calls the public catalog function. This
 preserves HTTP behavior; it does not introduce new API behavior or authorization.
+
+Historical operator composition calls `identity.find_historical_identity` /
+`ensure_historical_identity`, `catalog.find_historical_album` /
+`ensure_historical_album`, and the public `club.history` package. These operations
+share the caller's transaction, flush without committing, and perform no provider
+requests. They do not grant membership or change existing privacy settings.
+History parsing/reporting and historical identity/catalog internals remain protected.
 
 `config`, `db`, `types`, `schemas`, `external`, `queue_client`, `queue_models`,
 `queue_maintenance` and request pacing are shared

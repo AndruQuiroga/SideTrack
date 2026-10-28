@@ -31,6 +31,8 @@ dist/
 
 # Generated artifacts
 openapi.json
+# Local deployment screenshots and tool caches
+.tmp/
 
 # Generated progress page (scripts/gen_progress.py)
 build/

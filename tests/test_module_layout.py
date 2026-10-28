@@ -28,11 +28,13 @@ def test_phase0_routes_are_retained():
         "/club/notifications/{event_id}/ack",
         "/club/notifications/{event_id}/fail",
         "/club/members/discord/{discord_id}",
+        "/club/singles-nights",
+        "/club/singles-nights/{session_id}",
     }
 
 
-def test_openapi_matches_phase3_contract():
-    """The API contract is frozen at Phase 3 (add-per-user-authorization).
+def test_openapi_matches_phase3_and_reviewed_history_contract():
+    """Retain Phase 3 exactly, plus reviewed read-only Singles Night additions.
 
     Phase 3 made body ``user_id`` fields optional (the acting user owns writes), added
     ``listening_visibility`` to users and added club membership routes. Regenerate the
@@ -41,6 +43,11 @@ def test_openapi_matches_phase3_contract():
     print(json.dumps(create_app().openapi(), indent=1, sort_keys=True))"``.
     """
     expected = json.loads((FIXTURES / "phase3-openapi.json").read_text(encoding="utf-8"))
+    additions = json.loads((FIXTURES / "club-history-openapi.json").read_text(encoding="utf-8"))
+    assert not set(expected["paths"]) & set(additions["paths"])
+    assert not set(expected["components"]["schemas"]) & set(additions["schemas"])
+    expected["paths"].update(additions["paths"])
+    expected["components"]["schemas"].update(additions["schemas"])
     assert create_app().openapi() == expected
 
 
@@ -57,6 +64,12 @@ def test_each_table_has_one_canonical_owner():
             "ratings",
             "club_notification_outbox",
             "club_members",
+            "club_history_batches",
+            "club_history_sources",
+            "singles_sessions",
+            "singles_songs",
+            "singles_submissions",
+            "singles_ratings",
         },
         "analysis": {
             "track_features",

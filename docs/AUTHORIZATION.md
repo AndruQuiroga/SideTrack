@@ -73,6 +73,8 @@ Request logs record `client=` and `actor=` with the request ID, never tokens.
 | GET | `/nominations/{nomination_id}` | `club:read` | Member |
 | PATCH | `/nominations/{nomination_id}` | `club:write` | Nominator or admin |
 | GET | `/ratings` | `club:read` | Member |
+| GET | `/club/singles-nights` | `club:read` | Member; bot as itself |
+| GET | `/club/singles-nights/{session_id}` | `club:read` | Member; bot as itself |
 | GET | `/ratings/{rating_id}` | `club:read` | Member |
 | GET | `/recommendations` | `personal:read` | Owner |
 | GET | `/search` | `catalog:read` | People only for members, and only members are found |

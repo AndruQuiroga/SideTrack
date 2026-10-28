@@ -59,6 +59,14 @@ def test_policy_table_covers_the_api():
     assert _documented() == actual
 
 
+def test_singles_history_is_read_only_and_requires_club_scope():
+    actual = route_policies(create_app())
+    paths = {"/club/singles-nights", "/club/singles-nights/{session_id}"}
+    assert {method for method, path in actual if path in paths} == {"GET"}
+    for path in paths:
+        assert tuple(actual[("GET", path)]) == ("club:read",)
+
+
 def test_denied_request_is_logged_without_token(app, db, member, caplog):
     from fastapi.testclient import TestClient
 
