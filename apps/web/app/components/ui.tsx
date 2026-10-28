@@ -1,48 +1,21 @@
 import clsx from 'clsx';
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
+import { safeReturnPath, signInHref } from '../lib/navigation';
 
 export function Card({ children, className }: { children: ReactNode; className?: string }) {
-  return (
-    <div
-      className={clsx(
-        'relative overflow-hidden rounded-3xl border border-slate-800/80 bg-sidetrack-soft/70 p-5 shadow-soft backdrop-blur-sm',
-        className,
-      )}
-    >
-      <div className="pointer-events-none absolute inset-x-0 -top-24 h-32 bg-gradient-to-b from-purple-500/10 via-sky-400/5 to-transparent" />
-      <div className="relative">{children}</div>
-    </div>
-  );
+  return <section className={clsx('section', className)}>{children}</section>;
 }
-
 export function Pill({ children, className }: { children: ReactNode; className?: string }) {
-  return (
-    <span
-      className={clsx(
-        'inline-flex items-center gap-2 rounded-full border border-slate-700/60 bg-slate-900/80 px-3 py-1 text-[0.7rem] font-semibold uppercase tracking-wide text-slate-200',
-        className,
-      )}
-    >
-      {children}
-    </span>
-  );
+  return <span className={clsx('status-text', className)}>{children}</span>;
 }
-
-/**
- * Shown when the API can't provide what a page needs. Never replace this with sample
- * data (spec: web/data-honesty).
- */
 export function Unavailable({ what, className }: { what: string; className?: string }) {
   return (
-    <Card className={clsx('text-center', className)}>
-      <p className="text-sm font-semibold text-white">The {what} is unavailable right now.</p>
-      <p className="mt-1 text-xs text-slate-400">
-        Sidetrack couldn&apos;t reach its API. Try again in a few minutes.
-      </p>
-    </Card>
+    <section className={clsx('access-state', className)} role="status">
+      <h2>The {what} is unavailable right now.</h2>
+      <p>We couldn&apos;t load this information. Please try again later.</p>
+    </section>
   );
 }
-
 export function SectionHeading({
   eyebrow,
   title,
@@ -53,59 +26,50 @@ export function SectionHeading({
   aside?: ReactNode;
 }) {
   return (
-    <div className="flex items-start justify-between gap-3">
+    <div className="section-heading">
       <div>
-        {eyebrow && (
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-            <span className="mr-2 inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
-            {eyebrow}
-          </p>
-        )}
-        <h2 className="text-xl font-bold text-white sm:text-2xl">{title}</h2>
+        {eyebrow && <p className="eyebrow">{eyebrow}</p>}
+        <h2>{title}</h2>
       </div>
       {aside}
     </div>
   );
 }
-
-/**
- * Shown instead of data the visitor may not see (spec: web/authenticated-pages).
- * `signed-out` asks them to sign in; `forbidden` says the data is for club members or
- * its owner, which is a refusal, not an outage.
- */
 export function AccessNotice({
   state,
   what,
   audience = 'club members',
   className,
+  returnTo = '/',
 }: {
   state: 'signed-out' | 'forbidden' | 'unavailable';
   what: string;
   audience?: string;
   className?: string;
+  returnTo?: string;
 }) {
   if (state === 'unavailable') return <Unavailable what={what} className={className} />;
-  if (state === 'signed-out') {
-    return (
-      <Card className={clsx('text-center', className)}>
-        <p className="text-sm font-semibold text-white">Sign in to see the {what}.</p>
-        <p className="mt-1 text-xs text-slate-400">
-          <a href="/login" className="text-emerald-300 hover:text-white">
-            Sign in with Discord
-          </a>{' '}
-          to continue.
-        </p>
-      </Card>
-    );
-  }
   return (
-    <Card className={clsx('text-center', className)}>
-      <p className="text-sm font-semibold text-white">
-        The {what} is for {audience}.
-      </p>
-      <p className="mt-1 text-xs text-slate-400">
-        Your account doesn&apos;t have access. Join the club on Discord to take part.
-      </p>
-    </Card>
+    <section className={clsx('access-state', className)}>
+      <h2>
+        {state === 'signed-out' ? (
+          <>Sign in to see the {what}.</>
+        ) : (
+          <>
+            The {what} is for {audience}.
+          </>
+        )}
+      </h2>
+      {state === 'signed-out' ? (
+        <>
+          <p>Use your Discord account to continue. Club membership is managed separately.</p>
+          <a className="button button-primary" href={signInHref(safeReturnPath(returnTo))}>
+            Sign in with Discord
+          </a>
+        </>
+      ) : (
+        <p>Your account doesn&apos;t have access to this information.</p>
+      )}
+    </section>
   );
 }

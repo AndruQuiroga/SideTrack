@@ -9,18 +9,23 @@ import { AccessNotice } from '../../../components/ui';
 
 interface WeekDetailPageProps {
   params: { id: string };
+  searchParams?: { from?: string };
 }
 
-export default async function WeekDetailPage({ params }: WeekDetailPageProps) {
+export default async function WeekDetailPage({ params, searchParams }: WeekDetailPageProps) {
   const week = await loadAs(await sessionUserId(), (api) => fetchWeekDetail(api, params.id));
   if (week.state === 'not-found') notFound();
   if (week.state !== 'ok') {
     return (
       <PageShell title="Club week" accent="Club archive">
-        <AccessNotice state={week.state} what="club week" />
+        <AccessNotice
+          state={week.state}
+          what="club week"
+          returnTo={`/club/weeks/${encodeURIComponent(params.id)}${searchParams?.from ? `?from=${encodeURIComponent(searchParams.from)}` : ''}`}
+        />
       </PageShell>
     );
   }
 
-  return <WeekDetailPanel week={week.data} />;
+  return <WeekDetailPanel week={week.data} returnTo={searchParams?.from} />;
 }

@@ -1,196 +1,166 @@
 'use client';
-
-import clsx from 'clsx';
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
-
+import type { Route } from 'next';
+import { useEffect, useMemo, useState } from 'react';
 import type { WeekDetailWithRatings } from '../lib/api/weeks';
-import { Card, Pill, SectionHeading } from './ui';
-import { WeekList } from './week-list';
+import {
+  archiveUrl,
+  filterArchive,
+  formatUtc,
+  newestFirst,
+  parseArchiveState,
+  winnerTitle,
+} from '../lib/club';
+import type { ArchiveState } from '../lib/club';
+import { WeekCard } from './week-card';
 import { RatingBadge } from './rating-badge';
 
-interface ClubGalleryProps {
+export function ClubGallery({
+  weeks,
+  initialState,
+}: {
   weeks: WeekDetailWithRatings[];
-}
-
-function extractTags(weeks: WeekDetailWithRatings[]): string[] {
-  const tags = new Set<string>();
-  weeks.forEach((week) => {
-    week.nominations.forEach((nom) => {
-      [nom.genre, nom.decade, nom.country].forEach((tag) => {
-        if (tag) tags.add(tag);
-      });
-    });
-  });
-  return Array.from(tags).slice(0, 12);
-}
-
-function formatShortDate(date?: string | null) {
-  if (!date) return '';
-  const parsed = new Date(date);
-  if (Number.isNaN(parsed.getTime())) return '';
-  return parsed.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-}
-
-function livePresenceCopy(weeks: WeekDetailWithRatings[]) {
-  const activeListeners = 12 + weeks.length * 3;
-  const presence = activeListeners > 42 ? 'Club buzzing right now' : 'Listeners are live';
-  return `${presence} · ${activeListeners} online`;
-}
-
-export function ClubGallery({ weeks }: ClubGalleryProps) {
-  const [search, setSearch] = useState('');
-  const [tag, setTag] = useState<string | null>(null);
-  const [sort, setSort] = useState<'recent' | 'rating'>('recent');
-
-  const tags = useMemo(() => extractTags(weeks), [weeks]);
-
-  const filtered = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    const sorted = [...weeks].sort((a, b) => {
-      if (sort === 'rating') {
-        const aScore = a.rating_summary?.average ?? a.aggregates.rating_average ?? 0;
-        const bScore = b.rating_summary?.average ?? b.aggregates.rating_average ?? 0;
-        return bScore - aScore;
-      }
-      const aDate = new Date(a.discussion_at ?? a.created_at ?? '').getTime();
-      const bDate = new Date(b.discussion_at ?? b.created_at ?? '').getTime();
-      return bDate - aDate;
-    });
-
-    return sorted.filter((week) => {
-      const winner = week.nominations[0];
-      const tagMatch = tag
-        ? week.nominations.some(
-            (nom) => nom.genre === tag || nom.decade === tag || nom.country === tag,
-          )
-        : true;
-      const textMatch = query
-        ? [week.label, winner?.pitch, winner?.genre, winner?.country, winner?.decade]
-            .filter(Boolean)
-            .some((field) => field!.toLowerCase().includes(query))
-        : true;
-      return tagMatch && textMatch;
-    });
-  }, [weeks, search, tag, sort]);
-
-  const newest = filtered[0];
-
+  initialState?: ArchiveState;
+}) {
+  const [state, setState] = useState<ArchiveState>(
+    initialState ?? parseArchiveState(new URLSearchParams()),
+  );
+  useEffect(() => {
+    const restore = () => setState(parseArchiveState(new URLSearchParams(window.location.search)));
+    window.addEventListener('popstate', restore);
+    return () => window.removeEventListener('popstate', restore);
+  }, []);
+  function update(next: ArchiveState) {
+    setState(next);
+    window.history.replaceState(window.history.state, '', archiveUrl(next));
+  }
+  const filtered = useMemo(() => filterArchive(weeks, state), [weeks, state]);
+  const latest = [...weeks].filter((w) => w.winner_album_id).sort(newestFirst)[0];
+  const tags = [
+    ...new Set(
+      weeks
+        .flatMap((w) => w.nominations.flatMap((n) => [n.genre, n.decade, n.country]))
+        .filter((value): value is string => Boolean(value)),
+    ),
+  ].sort();
+  const returnTo = archiveUrl(state);
+  if (!weeks.length)
+    return (
+      <section className="access-state">
+        <h2>No archive weeks yet</h2>
+        <p>Recorded winners will appear here.</p>
+      </section>
+    );
   return (
-    <div className="space-y-6">
-      <Card className="space-y-5">
-        <SectionHeading
-          eyebrow="Live archive"
-          title="Winners gallery"
-          aside={<Pill>{livePresenceCopy(weeks)}</Pill>}
-        />
-        <div className="grid gap-4 lg:grid-cols-[1.4fr,1fr]">
-          <div className="rounded-2xl border border-slate-800/70 bg-slate-900/60 p-4">
-            <p className="text-xs uppercase tracking-wide text-slate-400">Search & filter</p>
-            <div className="mt-3 flex flex-col gap-3 sm:flex-row">
-              <input
-                type="search"
-                placeholder="Search by week, album, genre..."
-                className="w-full rounded-2xl border border-slate-800 bg-slate-900 px-4 py-2 text-sm text-slate-100 outline-none ring-emerald-500/40 focus:ring"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-              <select
-                value={sort}
-                onChange={(e) => setSort(e.target.value as 'recent' | 'rating')}
-                className="rounded-2xl border border-slate-800 bg-slate-900 px-4 py-2 text-sm text-slate-100 outline-none ring-emerald-500/40 focus:ring sm:w-40"
-              >
-                <option value="recent">Newest first</option>
-                <option value="rating">Highest rated</option>
-              </select>
-            </div>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {tags.map((option) => (
-                <button
-                  key={option}
-                  onClick={() => setTag((prev) => (prev === option ? null : option))}
-                  className={clsx(
-                    'rounded-full border px-3 py-1 text-[0.75rem] font-semibold transition-colors',
-                    tag === option
-                      ? 'border-emerald-400/80 bg-emerald-400/10 text-emerald-200'
-                      : 'border-slate-700/70 bg-slate-900/70 text-slate-200 hover:border-slate-500',
-                  )}
-                >
-                  {option}
-                </button>
-              ))}
-              {!tags.length && (
-                <span className="text-sm text-slate-400">
-                  Tags will appear when nominations include metadata.
-                </span>
-              )}
-              {tag && (
-                <button
-                  onClick={() => setTag(null)}
-                  className="rounded-full bg-slate-800 px-3 py-1 text-xs font-semibold text-slate-200 underline-offset-2 hover:text-white"
-                >
-                  Clear filter
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-slate-800/70 bg-gradient-to-br from-purple-500/15 via-sky-500/10 to-emerald-400/10 p-4 shadow-soft">
-            <p className="text-xs uppercase tracking-wide text-slate-300">Newest winner</p>
-            {newest ? (
-              <div className="mt-3 space-y-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-semibold text-white">
-                      {newest.nominations[0]?.pitch ?? 'Winner pending'}
-                    </p>
-                    <p className="text-xs text-slate-200/80">{newest.label}</p>
-                    <p className="text-xs text-slate-300">
-                      {formatShortDate(newest.discussion_at ?? newest.created_at)}
-                    </p>
-                  </div>
-                  <RatingBadge
-                    value={newest.rating_summary?.average ?? newest.aggregates.rating_average}
-                    count={newest.rating_summary?.count}
-                  />
-                </div>
-                <div className="flex flex-wrap gap-2 text-xs text-slate-200">
-                  {[
-                    newest.nominations[0]?.genre,
-                    newest.nominations[0]?.decade,
-                    newest.nominations[0]?.country,
-                  ]
-                    .filter(Boolean)
-                    .slice(0, 3)
-                    .map((chip) => (
-                      <span
-                        key={chip as string}
-                        className="rounded-full bg-slate-900/70 px-3 py-1 text-[0.7rem] uppercase tracking-wide text-slate-200"
-                      >
-                        {chip as string}
-                      </span>
-                    ))}
-                  <span className="rounded-full bg-slate-900/80 px-3 py-1 text-[0.7rem] text-slate-300">
-                    {newest.aggregates.vote_count} votes · {newest.aggregates.nomination_count}{' '}
-                    nominees
-                  </span>
-                </div>
-                <Link
-                  href={`/club/weeks/${newest.id}`}
-                  className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-200 hover:text-white"
-                >
-                  View full week
-                  <span aria-hidden>→</span>
-                </Link>
-              </div>
-            ) : (
-              <p className="text-sm text-slate-300">No weeks available yet.</p>
-            )}
-          </div>
+    <>
+      {latest && (
+        <p className="small muted">
+          Latest winner: <Link href={`/club/weeks/${latest.id}`}>{winnerTitle(latest)}</Link> ·{' '}
+          {formatUtc(latest.discussion_at ?? latest.created_at)}
+        </p>
+      )}
+      <div className="archive-toolbar">
+        <label className="field archive-search">
+          Search archive
+          <input
+            type="search"
+            placeholder="Album, artist or week"
+            value={state.q}
+            maxLength={160}
+            onChange={(e) => update({ ...state, q: e.target.value })}
+          />
+        </label>
+        <label className="field">
+          Nomination metadata
+          <select value={state.tag} onChange={(e) => update({ ...state, tag: e.target.value })}>
+            <option value="">All tags</option>
+            {tags.map((tag) => (
+              <option key={tag}>{tag}</option>
+            ))}
+          </select>
+        </label>
+        <label className="field">
+          Sort archive
+          <select
+            value={state.sort}
+            onChange={(e) => update({ ...state, sort: e.target.value as ArchiveState['sort'] })}
+          >
+            <option value="newest">Newest first</option>
+            <option value="rating">Highest rated</option>
+          </select>
+        </label>
+        <label className="field">
+          Archive view
+          <select
+            value={state.view}
+            onChange={(e) => update({ ...state, view: e.target.value as ArchiveState['view'] })}
+          >
+            <option value="grid">Grid</option>
+            <option value="list">List</option>
+          </select>
+        </label>
+      </div>
+      <p className="small muted" role="status">
+        {filtered.length} {filtered.length === 1 ? 'week' : 'weeks'}
+        {state.tag && ' · Tag matches nomination metadata'}
+      </p>
+      {!filtered.length ? (
+        <section className="access-state">
+          <h2>No weeks match these filters</h2>
+          <p>Try another album, artist, week, or tag.</p>
+          <button
+            className="button"
+            onClick={() => update(parseArchiveState(new URLSearchParams()))}
+          >
+            Clear filters
+          </button>
+        </section>
+      ) : state.view === 'grid' ? (
+        <div className="album-grid">
+          {filtered.map((week) => (
+            <WeekCard key={week.id} week={week} returnTo={returnTo} />
+          ))}
         </div>
-      </Card>
-
-      <WeekList weeks={filtered} emptyMessage="No weeks match these filters yet." />
-    </div>
+      ) : (
+        <table className="archive-table">
+          <thead>
+            <tr>
+              <th scope="col">Week</th>
+              <th scope="col">Album / artist</th>
+              <th scope="col" className="optional-column">
+                Discussion
+              </th>
+              <th scope="col">Rating</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((week) => (
+              <tr key={week.id}>
+                <td>{week.week_number ?? week.label}</td>
+                <td>
+                  <Link
+                    href={`/club/weeks/${week.id}?from=${encodeURIComponent(returnTo)}` as Route}
+                  >
+                    {winnerTitle(week)}
+                  </Link>
+                  {week.winner_album && (
+                    <span className="small muted">{week.winner_album.artist_name}</span>
+                  )}
+                </td>
+                <td className="small muted optional-column">
+                  {formatUtc(week.discussion_at ?? week.created_at)}
+                </td>
+                <td>
+                  <RatingBadge
+                    value={week.aggregates.rating_average}
+                    count={week.aggregates.rating_count}
+                  />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </>
   );
 }

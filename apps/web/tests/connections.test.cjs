@@ -57,3 +57,21 @@ test('account lookup distinguishes success, HTTP failure and network failure', a
   };
   assert.equal(await fetchLinkedAccounts('user'), null);
 });
+
+test('legacy Spotify linkage never enables personal connection or tracking promises', () => {
+  const html = renderToStaticMarkup(
+    React.createElement(ConnectionsGrid, {
+      connections: [
+        {
+          name: 'Spotify',
+          key: 'spotify',
+          status: 'Legacy record',
+          linked: true,
+          cta: 'Connect Spotify',
+        },
+      ],
+    }),
+  );
+  assert.match(html, /Catalog metadata only/);
+  assert.doesNotMatch(html, /Connect Spotify|now playing|taste metrics|<button/);
+});

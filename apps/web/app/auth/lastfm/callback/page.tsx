@@ -1,133 +1,74 @@
 'use client';
-
 import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-
 import { completeLastfmLink } from '../../../lib/browser-api';
 import { PageShell } from '../../../components/page-shell';
-import { Card, SectionHeading } from '../../../components/ui';
-
-type CallbackState = 'loading' | 'success' | 'error';
-
-interface CallbackResult {
-  status: string;
-  provider: string;
-  username: string;
-  message: string;
-}
 
 export default function LastFmCallbackPage() {
-  const searchParams = useSearchParams();
+  const params = useSearchParams();
   const router = useRouter();
-  const [state, setState] = useState<CallbackState>('loading');
-  const [result, setResult] = useState<CallbackResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
+  const [state, setState] = useState<'loading' | 'success' | 'error'>('loading');
+  const [username, setUsername] = useState<string | null>(null);
   useEffect(() => {
-    const token = searchParams.get('token');
-    const linkState = searchParams.get('state');
-
-    if (!token || !linkState) {
+    const token = params.get('token'),
+      signedState = params.get('state');
+    if (!token || !signedState) {
       setState('error');
-      setError('Missing Last.fm authorization details. Start linking again from Settings.');
       return;
     }
-
-    async function completeAuth(authToken: string, signedState: string) {
-      try {
-        const res = await completeLastfmLink(authToken, signedState);
-
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          throw new Error(data.detail || `Authentication failed with status ${res.status}`);
-        }
-
-        const data = (await res.json()) as CallbackResult;
-        setResult(data);
+    let active = true;
+    let redirectTimer: ReturnType<typeof setTimeout> | undefined;
+    completeLastfmLink(token, signedState)
+      .then(async (response) => {
+        if (!response.ok) throw new Error('Connection failed');
+        const data = await response.json();
+        if (!active) return;
+        setUsername(typeof data.username === 'string' ? data.username : null);
         setState('success');
-
-        // Redirect to settings after a short delay
-        setTimeout(() => {
-          router.push('/settings');
-        }, 3000);
-      } catch (err) {
-        setState('error');
-        setError(err instanceof Error ? err.message : 'Authentication failed');
-      }
-    }
-
-    completeAuth(token, linkState);
-  }, [searchParams, router]);
-
-  if (state === 'loading') {
-    return (
-      <PageShell
-        title="Connecting Last.fm"
-        description="Please wait while we complete the authentication..."
-        accent="Authentication"
-      >
-        <Card className="space-y-4">
-          <div className="flex items-center justify-center py-8">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700 border-t-emerald-400" />
-          </div>
-          <p className="text-center text-sm text-slate-400">Completing Last.fm authentication...</p>
-        </Card>
-      </PageShell>
-    );
-  }
-
-  if (state === 'error') {
-    return (
-      <PageShell
-        title="Connection Failed"
-        description="There was a problem connecting your Last.fm account."
-        accent="Error"
-      >
-        <Card className="space-y-4">
-          <SectionHeading eyebrow="Error" title="Authentication Failed" />
-          <p className="text-sm text-red-400">{error}</p>
-          <div className="flex gap-3">
-            <Link
-              href="/settings"
-              className="rounded-xl bg-slate-800 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700"
-            >
-              Back to Settings
-            </Link>
-            <button
-              onClick={() => window.location.reload()}
-              className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-emerald-400"
-            >
-              Try Again
-            </button>
-          </div>
-        </Card>
-      </PageShell>
-    );
-  }
-
+        redirectTimer = setTimeout(() => router.push('/settings'), 3000);
+      })
+      .catch(() => {
+        if (active) setState('error');
+      });
+    return () => {
+      active = false;
+      clearTimeout(redirectTimer);
+    };
+  }, [params, router]);
   return (
     <PageShell
-      title="Connected!"
-      description="Your Last.fm account has been successfully linked."
-      accent="Success"
+      title={
+        state === 'success'
+          ? 'Last.fm connected.'
+          : state === 'error'
+            ? 'Connection did not finish.'
+            : 'Connecting Last.fm…'
+      }
+      accent="Account / Last.fm"
     >
-      <Card className="space-y-4">
-        <SectionHeading eyebrow="Success" title="Last.fm Connected" />
-        <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4">
-          <p className="text-sm text-emerald-200">
-            Welcome, <span className="font-semibold">{result?.username}</span>!
-          </p>
-          <p className="mt-1 text-xs text-slate-400">{result?.message}</p>
-        </div>
-        <p className="text-sm text-slate-400">Redirecting you to settings in a moment...</p>
-        <Link
-          href="/settings"
-          className="inline-block rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-emerald-400"
-        >
-          Go to Settings Now
-        </Link>
-      </Card>
+      <section className="access-state">
+        {state === 'loading' ? (
+          <p role="status">Completing the Last.fm connection…</p>
+        ) : state === 'success' ? (
+          <>
+            <p>{username ? `Connected as ${username}.` : 'Your Last.fm account is linked.'}</p>
+            <p className="muted">Returning to Account in a moment.</p>
+            <Link className="button" href="/settings">
+              Open Account now
+            </Link>
+          </>
+        ) : (
+          <>
+            <p role="alert" className="inline-error">
+              We could not complete the Last.fm connection. Start linking again from Account.
+            </p>
+            <Link className="button button-primary" href="/settings">
+              Back to Account
+            </Link>
+          </>
+        )}
+      </section>
     </PageShell>
   );
 }

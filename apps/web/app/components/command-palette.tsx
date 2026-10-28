@@ -1,220 +1,179 @@
 'use client';
-
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import type { SearchResult } from '../lib/api/discover';
 import { searchSidetrack } from '../lib/browser-api';
-import { showToast } from './toast';
 
-interface CommandPaletteProps {
-  open: boolean;
-  onClose: () => void;
-}
-
-export function CommandPalette({ open, onClose }: CommandPaletteProps) {
-  const [query, setQuery] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState<SearchResult | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (open) {
-      setTimeout(() => inputRef.current?.focus(), 0);
-    } else {
-      setQuery('');
-      setResults(null);
-      setLoading(false);
-    }
-  }, [open]);
-
-  useEffect(() => {
-    const ctrl = new AbortController();
-    async function run() {
-      if (!query || query.trim().length < 2) {
-        setResults(null);
-        return;
-      }
-      setLoading(true);
-      try {
-        const r = await searchSidetrack(query.trim());
-        setResults(r);
-      } catch {
-        showToast('Search failed. Please try again.', 'error');
-      } finally {
-        setLoading(false);
-      }
-    }
-    run();
-    return () => ctrl.abort();
-  }, [query]);
-
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose();
-    }
-    if (open) window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
-
-  if (!open) return null;
-
+export function SearchResults({ results }: { results: SearchResult }) {
+  const count = results.users.length + results.albums.length + results.tracks.length;
+  if (!count)
+    return (
+      <p role="status" className="muted">
+        No matching records.
+      </p>
+    );
   return (
-    <div className="fixed inset-0 z-[100] flex items-start justify-center bg-black/40 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-2xl overflow-hidden rounded-2xl border border-slate-800 bg-slate-950 shadow-2xl">
-        <div className="flex items-center gap-2 border-b border-slate-800 bg-slate-900/60 px-3 py-2">
-          <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
-          <input
-            ref={inputRef}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search users, albums, tracks..."
-            className="w-full bg-transparent py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none"
-          />
-          <button
-            onClick={onClose}
-            className="rounded-md px-2 py-1 text-xs text-slate-300 hover:bg-slate-800"
-          >
-            Esc
-          </button>
-        </div>
-        <div className="max-h-[60vh] overflow-auto">
-          {!results && !loading && <DefaultShortcuts onClose={onClose} />}
-          {loading && <div className="p-4 text-sm text-slate-400">Searching…</div>}
-          {results && (
-            <div className="divide-y divide-slate-800">
-              <Section
-                title="Users"
-                emptyText="No users found"
-                items={results.users}
-                render={(u) => (
-                  <Link
-                    href={{ pathname: '/u/[id]', query: { id: u.id } }}
-                    onClick={onClose}
-                    className="block px-4 py-3 hover:bg-slate-900"
-                  >
-                    <div className="text-sm text-white">{u.display_name}</div>
-                    {u.handle && <div className="text-xs text-slate-400">@{u.handle}</div>}
-                  </Link>
-                )}
-              />
-              <Section
-                title="Albums"
-                emptyText="No albums found"
-                items={results.albums}
-                render={(a) => (
-                  <div className="px-4 py-3 text-sm text-slate-200">
-                    <div className="text-white">{a.title}</div>
-                    <div className="text-xs text-slate-400">
-                      {a.artist_name}
-                      {a.release_year ? ` • ${a.release_year}` : ''}
-                    </div>
-                  </div>
-                )}
-              />
-              <Section
-                title="Tracks"
-                emptyText="No tracks found"
-                items={results.tracks}
-                render={(t) => (
-                  <div className="px-4 py-3 text-sm text-slate-200">
-                    <div className="text-white">{t.title}</div>
-                    <div className="text-xs text-slate-400">
-                      {t.artist_name}
-                      {t.album_title ? ` — ${t.album_title}` : ''}
-                    </div>
-                  </div>
-                )}
-              />
+    <>
+      {results.users.length > 0 && (
+        <section>
+          <h3>People</h3>
+          {results.users.map((user) => (
+            <div className="search-result" key={user.id}>
+              <p>{user.display_name}</p>
+              {user.handle && <span className="small muted">@{user.handle}</span>}
+              <p className="small muted">Profile pages are unavailable.</p>
             </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Section<T>({
-  title,
-  items,
-  render,
-  emptyText,
-}: {
-  title: string;
-  items: T[];
-  render: (item: T) => React.ReactNode;
-  emptyText: string;
-}) {
-  return (
-    <div>
-      <div className="bg-slate-900/50 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-        {title}
-      </div>
-      {items.length === 0 ? (
-        <div className="px-4 py-3 text-sm text-slate-500">{emptyText}</div>
-      ) : (
-        <div>
-          {items.map((i, idx) => (
-            <div key={idx}>{render(i)}</div>
           ))}
-        </div>
+        </section>
       )}
-    </div>
+      {results.albums.length > 0 && (
+        <section>
+          <h3>Albums</h3>
+          {results.albums.map((album) => (
+            <div className="search-result" key={album.id}>
+              <p>{album.title}</p>
+              <span className="small muted">
+                {album.artist_name}
+                {album.release_year ? ` · ${album.release_year}` : ''}
+              </span>
+            </div>
+          ))}
+        </section>
+      )}
+      {results.tracks.length > 0 && (
+        <section>
+          <h3>Tracks</h3>
+          {results.tracks.map((track) => (
+            <div className="search-result" key={track.id}>
+              <p>{track.title}</p>
+              <span className="small muted">
+                {track.artist_name}
+                {track.album_title ? ` · ${track.album_title}` : ''}
+              </span>
+            </div>
+          ))}
+        </section>
+      )}
+    </>
   );
 }
-
-function DefaultShortcuts({ onClose }: { onClose: () => void }) {
-  const router = useRouter();
-
-  function handleNavigate(href: string) {
-    router.push(href as '/discover' | '/feed' | '/club' | '/settings' | '/blend');
-    onClose();
-  }
-
+export function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const { data: session, status } = useSession();
+  const [query, setQuery] = useState('');
+  const [state, setState] = useState<'idle' | 'loading' | 'error' | 'ok'>('idle');
+  const [results, setResults] = useState<SearchResult | null>(null);
+  const [retry, setRetry] = useState(0);
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!open || !dialog) return;
+    const invoker = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setQuery('');
+    setResults(null);
+    setState('idle');
+    dialog.showModal();
+    inputRef.current?.focus();
+    return () => {
+      dialog.close();
+      invoker?.focus();
+    };
+  }, [open]);
+  useEffect(() => {
+    const controller = new AbortController();
+    if (!open || !session?.user?.id || query.trim().length < 2) {
+      setResults(null);
+      setState('idle');
+      return;
+    }
+    setState('loading');
+    setResults(null);
+    const timer = setTimeout(() => {
+      searchSidetrack(query.trim(), controller.signal)
+        .then((data) => {
+          if (!controller.signal.aborted) {
+            setResults(data);
+            setState('ok');
+          }
+        })
+        .catch(() => {
+          if (!controller.signal.aborted) setState('error');
+        });
+    }, 200);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [query, open, session?.user?.id, retry]);
   return (
-    <div className="p-2">
-      <button
-        type="button"
-        onClick={() => handleNavigate('/discover')}
-        className="block w-full text-left rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-slate-900"
-      >
-        Go to Discover
-      </button>
-      <button
-        type="button"
-        onClick={() => handleNavigate('/feed')}
-        className="block w-full text-left rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-slate-900"
-      >
-        Open Feed
-      </button>
-      <button
-        type="button"
-        onClick={() => handleNavigate('/club')}
-        className="block w-full text-left rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-slate-900"
-      >
-        View Club Archive
-      </button>
-      <button
-        type="button"
-        onClick={() => handleNavigate('/settings')}
-        className="block w-full text-left rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-slate-900"
-      >
-        Open Settings
-      </button>
-      <button
-        type="button"
-        onClick={() => handleNavigate('/compare')}
-        className="block w-full text-left rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-slate-900"
-      >
-        Compare tastes
-      </button>
-      <button
-        type="button"
-        onClick={() => handleNavigate('/blend')}
-        className="block w-full text-left rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-slate-900"
-      >
-        Friend blend
-      </button>
-    </div>
+    <dialog
+      className="search-dialog"
+      ref={dialogRef}
+      aria-labelledby="search-heading"
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          event.stopPropagation();
+          onClose();
+        }
+      }}
+      onCancel={(event) => {
+        event.preventDefault();
+        onClose();
+      }}
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <div className="section-heading">
+        <h2 id="search-heading">Search SideTrack</h2>
+        <button type="button" className="button" onClick={onClose}>
+          Close
+        </button>
+      </div>
+      {status === 'loading' ? (
+        <p role="status">Checking your session…</p>
+      ) : !session?.user?.id ? (
+        <p>
+          Search is available after{' '}
+          <Link href="/login" onClick={onClose}>
+            signing in with Discord
+          </Link>
+          .
+        </p>
+      ) : (
+        <>
+          <label className="field">
+            Albums, artists and people
+            <input
+              ref={inputRef}
+              type="search"
+              value={query}
+              maxLength={160}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search your catalog"
+            />
+          </label>
+          <div aria-live="polite">
+            {state === 'idle' && <p className="muted">Enter at least two characters.</p>}
+            {state === 'loading' && <p>Searching…</p>}
+            {state === 'error' && (
+              <>
+                <p className="error-text">Search unavailable. Please try again.</p>
+                <button
+                  type="button"
+                  className="button"
+                  onClick={() => setRetry((value) => value + 1)}
+                >
+                  Retry search
+                </button>
+              </>
+            )}
+            {results && <SearchResults results={results} />}
+          </div>
+        </>
+      )}
+    </dialog>
   );
 }

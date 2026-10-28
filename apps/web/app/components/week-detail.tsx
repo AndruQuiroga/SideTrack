@@ -1,380 +1,166 @@
-import { RatingRead } from '@sidetrack/api-client';
-
-import { getDiscordGuildId } from '../lib/config';
+import Link from 'next/link';
+import type { Route } from 'next';
 import type { WeekDetailWithRatings } from '../lib/api/weeks';
-import { Card, Pill, SectionHeading } from './ui';
+import { formatUtc } from '../lib/club';
+import { safeReturnPath } from '../lib/navigation';
+import { getDiscordGuildId } from '../lib/config';
 import { PageShell } from './page-shell';
+import { AlbumFeature } from './album-feature';
 import { RatingBadge } from './rating-badge';
+import { SectionHeading } from './ui';
 
-interface WeekDetailPanelProps {
+export function DiscordLinks({
+  week,
+  guildId = getDiscordGuildId(),
+}: {
   week: WeekDetailWithRatings;
+  guildId?: string;
+}) {
+  const links = [
+    { name: 'ratings', id: week.ratings_thread_id },
+    { name: 'nominations', id: week.nominations_thread_id },
+    { name: 'poll', id: week.poll_thread_id },
+    { name: 'winner', id: week.winner_thread_id },
+  ].filter((link) => link.id);
+  if (!guildId || !links.length) return <p className="small muted">Discussion link unavailable</p>;
+  return (
+    <>
+      {links.map((link, index) => (
+        <a
+          className={index === 0 ? 'button button-primary' : ''}
+          key={link.name}
+          target="_blank"
+          rel="noreferrer"
+          href={`https://discord.com/channels/${encodeURIComponent(guildId)}/${encodeURIComponent(String(link.id))}`}
+        >
+          Open {link.name} in Discord ↗
+        </a>
+      ))}
+    </>
+  );
 }
-
-function formatDate(date?: string | null) {
-  if (!date) return 'Date TBC';
-  const parsed = new Date(date);
-  if (Number.isNaN(parsed.getTime())) return 'Date TBC';
-  return parsed.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+export function RatingDistribution({ week }: { week: WeekDetailWithRatings }) {
+  const bins = week.rating_summary?.histogram ?? [];
+  if (!bins.length)
+    return (
+      <p className="small muted">
+        {(week.rating_summary?.count ?? week.aggregates.rating_count) === 0
+          ? 'No ratings yet'
+          : 'Distribution unavailable'}
+      </p>
+    );
+  const max = Math.max(...bins.map((bin) => bin.count), 1);
+  return (
+    <div aria-label="Rating distribution">
+      {bins.map((bin) => (
+        <div className="histogram-row numeric" key={bin.value}>
+          <span>{bin.value.toFixed(1)}</span>
+          <div className="histogram-track" aria-hidden="true">
+            <div className="histogram-bar" style={{ width: `${(bin.count / max) * 100}%` }} />
+          </div>
+          <span>{bin.count}</span>
+        </div>
+      ))}
+    </div>
+  );
 }
-
-function gradientFromSeed(seed: string) {
-  const hash = seed.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  const hue = hash % 360;
-  const hue2 = (hash * 5) % 360;
-  return `linear-gradient(135deg, hsl(${hue}, 70%, 55%), hsl(${hue2}, 70%, 40%))`;
-}
-
-function buildHistogram(summary: WeekDetailWithRatings['rating_summary'], fallbackCount: number) {
-  if (summary?.histogram?.length) return summary.histogram;
-  if (!fallbackCount) return [];
-  return [2, 2.5, 3, 3.5, 4, 4.5, 5].map((value, idx) => ({
-    value,
-    count: Math.max(1, Math.round((fallbackCount - idx) / 2)),
-  }));
-}
-
-function albumAndArtist(pitch?: string | null) {
-  if (!pitch) return { album: 'Winner pending', artist: 'Nomination window still open' };
-  const [album, artist] = pitch.split('—').map((part) => part.trim());
-  return { album: album ?? pitch, artist: artist ?? '' };
-}
-
-function threadHref(threadId?: string | number | null) {
-  const guildId = getDiscordGuildId();
-  if (!guildId || !threadId) return null;
-  return `https://discord.com/channels/${guildId}/${threadId}`;
-}
-
-export function WeekDetailPanel({ week }: WeekDetailPanelProps) {
-  const winner = week.nominations[0];
-  const { album, artist } = albumAndArtist(winner?.pitch);
-  const ratingCopy = week.rating_summary
-    ? `${week.rating_summary.average?.toFixed(2) ?? '—'} (${week.rating_summary.count} ratings)`
-    : week.aggregates.rating_average
-      ? `${week.aggregates.rating_average?.toFixed(2)} avg · ${week.aggregates.rating_count} ratings`
-      : 'No ratings yet';
-
-  const sortedNominations = [...week.nominations].sort(
+export function WeekDetailPanel({
+  week,
+  returnTo = '/club',
+}: {
+  week: WeekDetailWithRatings;
+  returnTo?: string;
+}) {
+  const path = safeReturnPath(returnTo);
+  const back = path === '/club' || path.startsWith('/club?') ? path : '/club';
+  const sorted = [...week.nominations].sort(
     (a, b) => b.vote_summary.points - a.vote_summary.points,
   );
-  const histogram = buildHistogram(week.rating_summary, week.aggregates.rating_count);
-  const coverStyle = { backgroundImage: gradientFromSeed(winner?.album_id ?? week.id) };
-
   return (
     <PageShell
-      title={album}
-      description="Winner, poll results, ratings, and live club context."
-      accent={week.label}
-      actions={<Pill className="bg-emerald-500/15 text-emerald-200">Archive + live</Pill>}
+      title={week.label}
+      accent="Club / Week detail"
+      actions={<Link href={back as Route}>← Back to archive</Link>}
     >
-      <div className="grid gap-5 lg:grid-cols-[1.6fr,1fr]">
-        <Card className="h-full space-y-4">
-          <div className="grid gap-4 md:grid-cols-[1.2fr,1fr]">
-            <div className="space-y-3">
-              <div className="flex items-start gap-3">
-                <div
-                  className="relative aspect-square w-28 shrink-0 overflow-hidden rounded-2xl border border-slate-800/70 shadow-soft"
-                  style={coverStyle}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-black/50 via-transparent to-black/30" />
-                  <div className="absolute bottom-2 left-2 rounded-full bg-black/60 px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wide text-white">
-                    {formatDate(week.discussion_at ?? week.created_at)}
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs uppercase tracking-wide text-slate-400">{week.label}</p>
-                  <h2 className="text-2xl font-semibold text-white sm:text-3xl">{album}</h2>
-                  <p className="text-sm text-slate-300">{artist || 'Club winner'}</p>
-                  <div className="flex flex-wrap items-center gap-2 text-xs text-slate-200">
-                    {[winner?.genre, winner?.decade, winner?.country]
-                      .filter(Boolean)
-                      .map((chip) => (
-                        <span
-                          key={chip as string}
-                          className="rounded-full bg-slate-900/80 px-3 py-1 uppercase tracking-wide text-[0.7rem] text-slate-200"
-                        >
-                          {chip as string}
-                        </span>
-                      ))}
-                  </div>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <div className="rounded-2xl border border-slate-800/70 bg-slate-900/60 p-3">
-                  <p className="text-xs uppercase tracking-wide text-slate-400">Average rating</p>
-                  <div className="mt-2 flex items-center gap-2 text-lg font-semibold text-white">
-                    <RatingBadge
-                      value={week.rating_summary?.average ?? week.aggregates.rating_average}
-                    />
-                  </div>
-                  <p className="text-xs text-slate-400">{ratingCopy}</p>
-                </div>
-                <div className="rounded-2xl border border-slate-800/70 bg-slate-900/60 p-3">
-                  <p className="text-xs uppercase tracking-wide text-slate-400">Participation</p>
-                  <p className="mt-2 text-xl font-semibold text-white">
-                    {week.aggregates.vote_count} votes
-                  </p>
-                  <p className="text-xs text-slate-400">
-                    {week.aggregates.nomination_count} nominations
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-slate-800/70 bg-slate-900/60 p-3">
-                  <p className="text-xs uppercase tracking-wide text-slate-400">
-                    Ratings submitted
-                  </p>
-                  <p className="mt-2 text-xl font-semibold text-white">
-                    {week.rating_summary?.count ?? week.aggregates.rating_count}
-                  </p>
-                  <p className="text-xs text-slate-400">Listener reviews posted</p>
-                </div>
-              </div>
-            </div>
-            <div className="space-y-3 rounded-2xl border border-slate-800/70 bg-slate-900/60 p-4">
-              <SectionHeading eyebrow="Club links" title="Discord context" />
-              <div className="space-y-2 text-sm text-slate-300">
-                <p>Jump into the live Discord threads to see how the discussion unfolded.</p>
-                <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-200">
-                  {[
-                    { label: 'Nominations', href: threadHref(week.nominations_thread_id) },
-                    { label: 'Poll', href: threadHref(week.poll_thread_id) },
-                    { label: 'Winner', href: threadHref(week.winner_thread_id) },
-                    { label: 'Ratings', href: threadHref(week.ratings_thread_id) },
-                  ].map((link) =>
-                    link.href ? (
-                      <a
-                        key={link.label}
-                        href={link.href}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="rounded-full bg-slate-800 px-3 py-1 text-[0.7rem] uppercase tracking-wide text-emerald-200 hover:text-white"
-                      >
-                        {link.label}
-                      </a>
-                    ) : (
-                      <span
-                        key={link.label}
-                        className="rounded-full bg-slate-900 px-3 py-1 text-[0.7rem] uppercase tracking-wide text-slate-500"
-                      >
-                        {link.label}
-                      </span>
-                    ),
-                  )}
-                </div>
-                <p className="text-xs text-slate-400">
-                  Presence: <span className="text-emerald-200">live listeners spotted</span>.
-                  Ratings update in real time as they come in.
-                </p>
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="space-y-4">
-          <SectionHeading title="Week recap" />
-          <div className="space-y-2 text-sm text-slate-300">
-            <p>
-              Ranked votes decide the winner, backed by a ratings thread that keeps updating as club
-              members finish their listens. This page mixes the public archive with live context so
-              newcomers can catch up fast.
+      <AlbumFeature week={week} label="Club selection" detail>
+        <DiscordLinks week={week} />
+      </AlbumFeature>
+      <div className="two-columns">
+        <section className="section">
+          <SectionHeading
+            title="Listener notes"
+            aside={
+              <RatingBadge
+                value={week.rating_summary?.average ?? week.aggregates.rating_average}
+                count={week.rating_summary?.count ?? week.aggregates.rating_count}
+              />
+            }
+          />
+          {week.ratings_state === 'unavailable' ? (
+            <p role="status" className="muted">
+              Ratings unavailable
             </p>
-            <p className="text-xs text-slate-400">
-              Hosting a listening party? Use the Discord links to jump straight into the active
-              threads and share your thoughts.
-            </p>
-          </div>
-        </Card>
-      </div>
-
-      <Card className="space-y-4">
-        <SectionHeading
-          title="Poll results"
-          aside={<p className="text-sm text-slate-400">{sortedNominations.length} nominees</p>}
-        />
-        <div className="space-y-3">
-          {sortedNominations.map((nomination, idx) => {
-            const votePoints = nomination.vote_summary.points;
-            const maxPoints = Math.max(...sortedNominations.map((n) => n.vote_summary.points), 1);
-            const voteWidth = Math.min(100, (votePoints / maxPoints) * 100);
-            return (
-              <div
-                key={nomination.id}
-                className="space-y-3 rounded-2xl border border-slate-800/80 bg-slate-900/60 p-4"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <p className="text-sm font-semibold text-white">
-                      #{idx + 1} · {nomination.pitch ?? 'Nomination'}
-                    </p>
-                    <p className="text-xs text-slate-400">
-                      {nomination.genre ?? 'Genre'} · {nomination.decade ?? 'Decade'} ·{' '}
-                      {nomination.country ?? 'Country'}
-                    </p>
-                  </div>
-                  <Pill className="text-[0.65rem]">
-                    {votePoints} pts · {nomination.vote_summary.total_votes} votes
-                  </Pill>
+          ) : week.ratings?.length ? (
+            week.ratings.map((rating) => (
+              <article className="review" key={rating.id}>
+                <div className="review-meta">
+                  <span>Listener rating · {formatUtc(rating.created_at)}</span>
+                  <RatingBadge value={rating.value} />
                 </div>
-                <div className="h-2 rounded-full bg-slate-800">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-sky-400 via-purple-500 to-emerald-400"
-                    style={{ width: `${voteWidth}%`, minWidth: '8%' }}
-                  />
-                </div>
-                <p className="text-xs text-slate-300">
-                  Ratings: {nomination.rating_summary.count} · Avg:{' '}
-                  {nomination.rating_summary.average?.toFixed(2) ?? '—'}
-                </p>
-              </div>
-            );
-          })}
-        </div>
-      </Card>
-
-      <Card className="space-y-4">
-        <SectionHeading
-          title="Nominations & pitches"
-          aside={
-            <p className="text-sm text-slate-400">{week.aggregates.nomination_count} submissions</p>
-          }
-        />
-        <div className="grid gap-3 md:grid-cols-2">
-          {week.nominations.map((nomination) => (
-            <div
-              key={nomination.id}
-              className="rounded-2xl border border-slate-800/70 bg-slate-900/60 p-4"
-            >
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-white">
-                  {nomination.pitch ?? 'Nomination'}
-                </p>
-                <span className="rounded-full bg-slate-800 px-3 py-1 text-[0.7rem] text-slate-300">
-                  {nomination.vote_summary.points} pts
-                </span>
-              </div>
-              <p className="mt-1 text-xs text-slate-400">
-                {nomination.genre ?? 'Genre'} · {nomination.decade ?? 'Decade'} ·{' '}
-                {nomination.country ?? 'Country'}
-              </p>
-              <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-300">
-                {nomination.pitch_track_url ? (
-                  <a
-                    href={nomination.pitch_track_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="rounded-full bg-slate-800 px-3 py-1 text-[0.7rem] font-semibold text-emerald-200 hover:text-white"
-                  >
-                    Pitch track
-                  </a>
-                ) : (
-                  <span className="rounded-full bg-slate-900 px-3 py-1 text-[0.7rem] text-slate-400">
-                    Track link pending
-                  </span>
+                {rating.favorite_track && (
+                  <p className="small muted">Favorite track: {rating.favorite_track}</p>
                 )}
-                <span className="rounded-full bg-slate-900 px-3 py-1 text-[0.7rem] text-slate-400">
-                  First-place votes: {nomination.vote_summary.first_place}
-                </span>
-                <span className="rounded-full bg-slate-900 px-3 py-1 text-[0.7rem] text-slate-400">
-                  Second-place votes: {nomination.vote_summary.second_place}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </Card>
-
-      <Card className="space-y-4">
-        <SectionHeading
-          title="Listener ratings"
-          aside={<p className="text-sm text-slate-400">{week.ratings?.length ?? 0} submissions</p>}
-        />
-        <div className="grid gap-4 lg:grid-cols-[1fr,1.5fr]">
-          <div className="space-y-3 rounded-2xl border border-slate-800/70 bg-slate-900/60 p-4">
-            <p className="text-xs uppercase tracking-wide text-slate-400">Distribution</p>
-            {histogram.length ? (
-              <div className="space-y-2">
-                {histogram.map((bin) => {
-                  const max = Math.max(...histogram.map((b) => b.count), 1);
-                  return (
-                    <div key={bin.value} className="flex items-center gap-2">
-                      <span className="w-8 text-right text-xs text-slate-300">
-                        {bin.value.toFixed(1)}
-                      </span>
-                      <div className="h-2 flex-1 rounded-full bg-slate-800">
-                        <div
-                          className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-sky-400 to-purple-500"
-                          style={{ width: `${(bin.count / max) * 100}%`, minWidth: '8%' }}
-                        />
-                      </div>
-                      <span className="w-8 text-xs text-slate-400 text-right">{bin.count}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="text-sm text-slate-300">
-                Histogram will appear as soon as ratings arrive.
-              </p>
-            )}
-            <p className="text-xs text-slate-400">
-              {week.rating_summary?.count ?? week.aggregates.rating_count} total · live updates as
-              listeners finish the album.
-            </p>
-          </div>
-          <div className="space-y-3">
-            {week.ratings?.length ? (
-              <div className="grid gap-3 md:grid-cols-2">
-                {week.ratings.slice(0, 6).map((rating: RatingRead) => (
-                  <div
-                    key={rating.id}
-                    className="rounded-2xl border border-slate-800/70 bg-slate-900/60 p-4"
-                  >
-                    <div className="flex items-center justify-between">
-                      <RatingBadge value={rating.value} />
-                      <p className="text-xs text-slate-400">
-                        {rating.created_at
-                          ? new Date(rating.created_at).toLocaleDateString()
-                          : 'Recently'}
-                      </p>
-                    </div>
-                    {rating.favorite_track && (
-                      <p className="mt-2 text-xs text-slate-300">
-                        Fav track: {rating.favorite_track}
-                      </p>
-                    )}
-                    {rating.review && (
-                      <p className="mt-2 text-sm text-slate-200 leading-relaxed">{rating.review}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-slate-300">
-                No ratings yet. Share yours to kick things off.
-              </p>
-            )}
-          </div>
-        </div>
-      </Card>
-
-      <Card className="space-y-4">
-        <SectionHeading title="If you enjoyed this" />
-        <div className="grid gap-3 md:grid-cols-3">
-          {['Follow the nominator', 'Queue the pitch track', 'Invite a friend to vote'].map(
-            (idea) => (
-              <div
-                key={idea}
-                className="rounded-2xl border border-slate-800/70 bg-slate-900/60 p-4 text-sm text-slate-200"
-              >
-                <p className="font-semibold text-white">{idea}</p>
-                <p className="mt-1 text-slate-400">
-                  Keep the momentum going with a quick action — recommendations and presence surface
-                  right here when linked accounts are live.
-                </p>
-              </div>
-            ),
+                {rating.review &&
+                  (rating.review.length > 320 ? (
+                    <>
+                      <p>{rating.review.slice(0, 320)}…</p>
+                      <details>
+                        <summary>Read full review</summary>
+                        <p>{rating.review}</p>
+                      </details>
+                    </>
+                  ) : (
+                    <p>{rating.review}</p>
+                  ))}
+              </article>
+            ))
+          ) : (
+            <p className="muted">No ratings yet</p>
           )}
-        </div>
-      </Card>
+        </section>
+        <section className="section">
+          <h2>Rating distribution</h2>
+          <RatingDistribution week={week} />
+          <p className="small muted">
+            {week.aggregates.vote_count} votes · {week.aggregates.nomination_count} nominations
+          </p>
+        </section>
+      </div>
+      <section className="section">
+        <h2>Nomination results</h2>
+        {sorted.length ? (
+          sorted.map((nomination, index) => {
+            const album = week.nomination_albums?.[nomination.album_id];
+            return (
+              <article className="data-row" key={nomination.id}>
+                <span className="row-mark numeric">{String(index + 1).padStart(2, '0')}</span>
+                <div>
+                  <strong>{album?.title ?? 'Album details unavailable'}</strong>
+                  {album && <p className="small muted">{album.artist_name}</p>}
+                  {nomination.pitch && <p className="small">{nomination.pitch}</p>}
+                  <p className="small muted">
+                    {nomination.vote_summary.first_place} first-place ·{' '}
+                    {nomination.vote_summary.second_place} second-place
+                  </p>
+                </div>
+                <span className="small numeric">{nomination.vote_summary.points} points</span>
+              </article>
+            );
+          })
+        ) : (
+          <p className="muted">No nominations recorded.</p>
+        )}
+      </section>
     </PageShell>
   );
 }

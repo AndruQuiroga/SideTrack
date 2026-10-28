@@ -2,7 +2,7 @@
 # Statuses: works | partial | broken | stub | absent.
 # "works" needs at least one evidence path (a test, preferably) that exists in the repo.
 
-reviewed: 2026-10-26
+reviewed: 2026-10-28
 
 groups:
   - name: Club (Discord album club)
@@ -40,10 +40,12 @@ groups:
         notes: "Client credentials, metadata only (external/spotify.py); untested"
       - capability: Web archive (weeks, winners)
         status: partial
-        notes: "Members only since Phase 3: anonymous visitors get a sign-in prompt, non-members a members-only notice; not verified with real Discord sign-in"
+        notes: "Journal archive/detail use stored winner identity, URL-owned filters/sort/view and an independent latest winner. Local browser checks cover member/anonymous/non-member states and Back restoration; real Discord sign-in and redesign rollout remain unverified."
         evidence:
           - apps/web/app/no-fake-data.test.ts
           - apps/web/tests/authenticated-pages.test.cjs
+          - apps/web/tests/club-read-models.test.cjs
+          - apps/web/tests/club-archive-state.test.cjs
 
   - name: Listening
     items:
@@ -119,13 +121,23 @@ groups:
     items:
       - capability: Data honesty
         status: works
-        notes: "No sample, demo or random data; pages show an 'unavailable' state on API failure"
+        notes: "No invented presence counts or rating distributions; missing data remains unavailable. Rendered club regressions, connection states and the source guard are tested."
         evidence:
           - apps/web/app/no-fake-data.test.ts
           - apps/web/tests/connections.test.cjs
+          - apps/web/tests/club-data-honesty.test.cjs
       - capability: Profile pages
         status: absent
-        notes: "The web app calls /users/{id}/profile, timeline and now-playing endpoints the API doesn't implement, so /u/<id> is a 404"
+        notes: "Profile analytics are unavailable; /u/<id> explains the limitation without calling missing profile/timeline/now-playing endpoints. Listening-history links remain supported."
+      - capability: Journal web interface
+        status: partial
+        notes: "Responsive navigation, overview, club archive/detail, personal history, Account and search implemented in both themes. All 59 web tests and local production-build browser checks pass; not deployed, and real provider sign-in/linking remains unverified."
+        evidence:
+          - apps/web/tests/application-navigation.test.cjs
+          - apps/web/tests/interface-presentation.test.cjs
+          - apps/web/tests/listening-history.test.cjs
+          - apps/web/tests/search-dialog.test.cjs
+          - openspec/changes/rework-web-experience/verification.md
 
   - name: Platform
     items:

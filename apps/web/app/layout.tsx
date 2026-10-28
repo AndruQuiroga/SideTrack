@@ -13,7 +13,7 @@ const fontClassName = 'font-sans';
 
 export const metadata: Metadata = {
   title: 'Sidetrack Club',
-  description: 'Discord-powered album club, public archive, and social music tracker.',
+  description: 'Your listening history and your album club, in one place.',
   manifest: '/manifest.json',
 };
 
@@ -24,9 +24,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className={fontClassName}>
         <SessionProvider session={session}>
           <ThemeScript />
-          <div className="flex min-h-screen flex-col bg-sidetrack-bg">
+          <a href="#main-content" className="skip-link">
+            Skip to content
+          </a>
+          <div className="app-layout">
             <Navbar />
-            <div className="flex-1">{children}</div>
+            <div className="app-content">{children}</div>
           </div>
           <ToastViewport />
           <PwaRegister />
@@ -41,7 +44,7 @@ function ThemeScript() {
   const code = `(() => { try {
     const saved = localStorage.getItem('sidetrack-theme');
     const systemDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const theme = saved || (systemDark ? 'dark' : 'light');
+    const theme = (saved === 'dark' || saved === 'light') ? saved : (systemDark ? 'dark' : 'light');
     const root = document.documentElement;
     root.classList.remove('theme-dark','theme-light');
     root.classList.add(theme === 'dark' ? 'theme-dark' : 'theme-light');
