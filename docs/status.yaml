@@ -148,20 +148,20 @@ groups:
         notes: "Profile analytics are unavailable; /u/<id> explains the limitation without calling missing profile/timeline/now-playing endpoints. Listening-history links remain supported."
       - capability: Journal web interface
         status: partial
-        notes: "Responsive Journal interface deployed as merge 7be9d59 on 2026-10-28. All 59 web tests and local production-build browser checks pass; live welcome, filtered sign-in return and search keyboard checks pass. Real provider sign-in/linking remains unverified."
+        notes: "Responsive Journal interface deployed as merge 7be9d59 on 2026-10-28. Web tests and local production-build browser checks pass; live welcome, filtered sign-in return and search keyboard checks pass. The owner confirmed Discord sign-in and Last.fm linking; historical data rollout is still pending."
         evidence:
           - apps/web/tests/application-navigation.test.cjs
           - apps/web/tests/interface-presentation.test.cjs
           - apps/web/tests/listening-history.test.cjs
           - apps/web/tests/search-dialog.test.cjs
           - openspec/changes/rework-web-experience/verification.md
-          - deploy/JOURNAL-ROLLOUT-2026-10-28.md
+          - docs/CLUB-HISTORY.md
 
   - name: Platform
     items:
       - capability: Auth
         status: partial
-        notes: "ADR 0009 API authorization verified on Postgres 2026-10-26. Discord issuer fix #297 is tested and deployed; Chrome Safe Browsing blocks the callback (public phishing report dated 2025-09-12). Google review submitted 2026-10-28; clearance and real sign-in/linking remain unverified. Provider tokens are not yet encrypted at rest."
+        notes: "ADR 0009 API authorization verified on Postgres 2026-10-26. Discord issuer fix #297 is tested and deployed; the owner confirmed real Discord sign-in and Last.fm linking on 2026-10-28. A Google Safe Browsing review was submitted earlier; its current classification has not been independently rechecked. Provider tokens are not yet encrypted at rest."
         evidence:
           - services/api/tests/test_api_access.py
           - services/api/tests/test_principals.py
@@ -171,7 +171,7 @@ groups:
           - tests/test_club_membership.py
           - docs/AUTHORIZATION.md
           - apps/web/tests/discord-sign-in.test.cjs
-          - deploy/SAFE-BROWSING-2026-10-28.md
+          - docs/CLUB-HISTORY.md
       - capability: Health checks
         status: works
         notes: /health returns 503 within 2 s when the DB is unreachable (also verified live, 2026-10-25)
