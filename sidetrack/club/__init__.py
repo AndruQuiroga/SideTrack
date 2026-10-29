@@ -1,5 +1,11 @@
 """Public club interface. Exported ORM models are for cross-domain reads."""
 
+from .artwork import (
+    SinglesSongArtwork,
+    reverse_song_artwork,
+    song_artwork_target,
+    write_song_artwork,
+)
 from .history_models import (
     HistoryBatch,
     HistorySource,
@@ -20,6 +26,10 @@ from .notifications import (
 )
 
 __all__ = [
+    "SinglesSongArtwork",
+    "song_artwork_target",
+    "write_song_artwork",
+    "reverse_song_artwork",
     "HistoryBatch",
     "HistorySource",
     "SinglesSession",

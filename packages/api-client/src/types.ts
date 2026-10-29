@@ -290,6 +290,7 @@ export interface AlbumUpdate {
 
 export interface AlbumRead extends AlbumBase {
   id: UUID;
+  artwork_source_url?: string | null;
 }
 
 export interface AlbumResolveRequest {

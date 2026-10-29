@@ -48,6 +48,15 @@ def test_openapi_matches_phase3_and_reviewed_history_contract():
     assert not set(expected["components"]["schemas"]) & set(additions["schemas"])
     expected["paths"].update(additions["paths"])
     expected["components"]["schemas"].update(additions["schemas"])
+    artwork = json.loads((FIXTURES / "artwork-openapi.json").read_text(encoding="utf-8"))
+    before_album = expected["components"]["schemas"]["AlbumRead"]
+    assert set(artwork["AlbumRead"]["properties"]) - set(before_album["properties"]) == {
+        "artwork_source_url"
+    }
+    assert {
+        k: v for k, v in artwork["AlbumRead"]["properties"].items() if k != "artwork_source_url"
+    } == before_album["properties"]
+    expected["components"]["schemas"].update(artwork)
     assert create_app().openapi() == expected
 
 
@@ -55,7 +64,8 @@ def test_each_table_has_one_canonical_owner():
     configure_mappers()
     expected = {
         "identity": {"users", "linked_accounts", "follows"},
-        "catalog": {"albums", "tracks"},
+        "catalog": {"albums", "tracks", "album_artwork"},
+        "artwork_models": {"artwork_recoveries"},
         "listening": {"listen_events", "import_checkpoints"},
         "club": {
             "weeks",
@@ -70,6 +80,7 @@ def test_each_table_has_one_canonical_owner():
             "singles_songs",
             "singles_submissions",
             "singles_ratings",
+            "singles_song_artwork",
         },
         "analysis": {
             "track_features",

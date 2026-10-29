@@ -19,6 +19,8 @@ if TYPE_CHECKING:
     from sidetrack.club.models import Nomination, Rating, Week
     from sidetrack.listening.models import ListenEvent
 
+    from .artwork import AlbumArtwork
+
 
 class Album(Base):
     __tablename__ = "albums"
@@ -32,6 +34,13 @@ class Album(Base):
     cover_url: Mapped[str | None] = mapped_column(Text)
     spotify_url: Mapped[str | None] = mapped_column(Text)
     genres: Mapped[list[str] | None] = mapped_column(JSON)
+    artwork: Mapped[AlbumArtwork | None] = relationship(
+        lazy="selectin", uselist=False, passive_deletes="all"
+    )
+
+    @property
+    def artwork_source_url(self) -> str | None:
+        return self.artwork.provider_url if self.artwork else self.spotify_url
 
     tracks: Mapped[list[Track]] = relationship(back_populates="album", cascade="all, delete-orphan")
     nominations: Mapped[list[Nomination]] = relationship(back_populates="album")

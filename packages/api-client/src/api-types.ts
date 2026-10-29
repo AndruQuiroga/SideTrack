@@ -1091,6 +1091,8 @@ export interface components {
        * Format: uuid
        */
       id: string;
+      /** Artwork Source Url */
+      artwork_source_url?: string | null;
     };
     /**
      * AlbumResolveRequest
@@ -1746,6 +1748,10 @@ export interface components {
       artist_name: string;
       /** Url */
       url: string | null;
+      /** Cover Url */
+      cover_url?: string | null;
+      /** Artwork Source Url */
+      artwork_source_url?: string | null;
       /** Source Url */
       source_url: string | null;
       /** Submissions */

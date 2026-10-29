@@ -139,6 +139,50 @@ def test_member_sees_an_honest_empty_list_before_any_sessions_exist(client, memb
     assert response.json() == []
 
 
+def test_artwork_is_optional_member_only_and_keeps_evidence_private(
+    client, member, session_history, db
+):
+    from sqlalchemy import select
+
+    from sidetrack.artwork_recovery import apply, check, seal
+    from sidetrack.club import SinglesSong, song_artwork_target
+
+    session, _, _ = session_history
+    song = db.scalar(
+        select(SinglesSong)
+        .where(SinglesSong.session_id == session.id)
+        .order_by(SinglesSong.position)
+    )
+    target = song_artwork_target(db, song.id)
+    checked = check(
+        db,
+        seal(
+            {
+                "type": "artwork-preview",
+                "entries": [
+                    {
+                        "target": target,
+                        "status": "ready",
+                        "provider_url": "https://open.spotify.com/track/" + "A" * 22,
+                        "cover_url": "https://i.scdn.co/image/synthetic",
+                        "image_sha256": "a" * 64,
+                        "evidence_digest": "b" * 64,
+                        "bytes": 100,
+                    }
+                ],
+            }
+        ),
+    )
+    apply(db, checked, checked["digest"])
+    response = client.get(f"/club/singles-nights/{session.id}", headers=as_user(member))
+    assert response.status_code == 200
+    result = response.json()
+    assert result["songs"][0]["cover_url"] == "https://i.scdn.co/image/synthetic"
+    assert result["songs"][1]["cover_url"] is None
+    assert result["songs"][0]["artwork_source_url"].startswith("https://open.spotify.com/track/")
+    assert "evidence_digest" not in str(result) and "plan_digest" not in str(result)
+
+
 def test_deleted_submitter_disappears_while_other_song_rating_remains(
     client,
     member,

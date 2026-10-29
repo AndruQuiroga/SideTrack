@@ -868,6 +868,16 @@ p {
     min-height: 44px;
   }
 }
+.singles-song-artwork {
+  float: right;
+  width: clamp(72px, 18vw, 105px);
+  margin: 0 0 16px 16px;
+}
+.singles-song-heading::after {
+  content: '';
+  display: block;
+  clear: both;
+}
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

@@ -8,6 +8,21 @@ const { ClubTabs } = require('../app/components/club-tabs.tsx');
 const { session } = require('./fixtures/singles.cjs');
 const render = (component, props) => renderToStaticMarkup(React.createElement(component, props));
 
+test('verified song covers link to provider while absent covers remain unavailable', () => {
+  const event = structuredClone(session);
+  event.songs[0].cover_url = 'https://i.scdn.co/image/synthetic';
+  event.songs[0].artwork_source_url = 'https://open.spotify.com/track/' + 'A'.repeat(22);
+  const html = render(SinglesDetail, { session: { state: 'ok', data: event }, id: event.id });
+  assert.match(html, /https:\/\/i.scdn.co\/image\/synthetic/);
+  assert.match(html, /Cover of Night Transit by The Paper Satellites/);
+  assert.match(html, /Artwork source for Night Transit/);
+  event.songs[0].cover_url = null;
+  assert.match(
+    render(SinglesDetail, { session: { state: 'ok', data: event }, id: event.id }),
+    /Artwork unavailable/,
+  );
+});
+
 test('independent session links and active Singles navigation', () => {
   const html = render(SinglesArchive, { archive: { state: 'ok', data: [session] } });
   assert.match(html, /Singles Night 7/);

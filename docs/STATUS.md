@@ -16,6 +16,7 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 | Ratings and summary | works | Submission stores every field including metadata; reads, one rating per member per week, summaries and member-only access are tested (fix-user-deletion-and-metadata-alias) | `services/api/tests/test_ratings.py`, `services/api/tests/test_club_access.py` |
 | Reminders and phase transitions | partial | Deadlines and leased delivery persist in Postgres; restart and send/ack behavior tested. Notices do not enforce phases; real Discord delivery not verified. | `tests/test_club_schedules.py`, `services/api/tests/test_club_notifications.py`, `apps/bot/tests/notification-delivery.test.ts`, `tests/test_jobs_end_to_end.py` |
 | Album metadata from Spotify | partial | Client credentials, metadata only (external/spotify.py); untested |  |
+| Club artwork recovery | partial | Artwork-only recovery, guarded retry/reversal and optional Singles Night covers pass focused Postgres/API/web tests. Private provider preview has 49 verified candidates including all eight winning albums and 38 singles; production rollout/backfill pending. Spotify credentials were not found in the checked local configurations. | `tests/test_artwork_discovery.py`, `tests/test_artwork_apply.py`, `tests/test_artwork_history_compatibility.py`, `services/api/tests/test_singles_nights.py`, `apps/web/tests/singles-archive.test.cjs`, `docs/ARTWORK.md` |
 | Web archive (weeks, winners) | works | Journal archive/detail use stored winner identity and URL-owned browsing state. Release 73e9435 and the approved history import are live: 10 weeks, eight with winners. Member API reads and shared web view tests pass; the owner confirmed real Discord sign-in. Incomplete source weeks remain explicit. | `apps/web/app/no-fake-data.test.ts`, `apps/web/tests/authenticated-pages.test.cjs`, `apps/web/tests/club-read-models.test.cjs`, `apps/web/tests/club-archive-state.test.cjs` |
 | Discord history import | works | Approved production import applied 450 candidates from 522 source messages on 2026-10-28. Verification found zero mismatches; retry added no duplicates. Existing profile, links, membership and schedule were preserved, with no historical notifications/jobs. One missing-reference score is excluded and one duplicate is counted once. | `docs/CLUB-HISTORY.md`, `tests/test_club_history_apply.py`, `tests/test_club_history_replay.py`, `tests/test_club_history_verify.py`, `tests/test_club_history_side_effects.py` |
 | Singles Night archive | works | Member-only API and web pages are deployed in 73e9435 with seven sessions, 44 songs and 235 first-listen ratings. Live 200/403/401 access checks, corrected date and named attribution passed. Synthetic desktop/mobile layouts and web build/tests pass. Final ratings remain absent where the source has none. | `services/api/tests/test_singles_nights.py`, `apps/web/tests/singles-read-models.test.cjs`, `apps/web/tests/singles-archive.test.cjs` |
@@ -75,6 +76,7 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 - `fix-web-data-honesty-regressions`: 4/4 tasks
 - `harden-api-credentials`: 10/11 tasks
 - `import-discord-club-history`: 22/22 tasks
+- `recover-club-artwork`: 9/13 tasks
 - `rework-web-experience`: 18/18 tasks
 
 ### Specs
@@ -98,7 +100,7 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 
 ### Migration head
 
-`0011_club_history`
+`0012_artwork_recovery`
 
 ### API routes
 

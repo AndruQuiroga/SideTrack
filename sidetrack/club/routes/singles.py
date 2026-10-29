@@ -10,6 +10,7 @@ from sidetrack.db import get_db
 from sidetrack.identity import Principal, User, auth, policy
 from sidetrack.schemas.singles import SinglesSessionDetail, SinglesSessionRead
 
+from ..artwork import SinglesSongArtwork
 from ..history.sources import safe_url, snowflake
 from ..history_models import (
     HistorySource,
@@ -133,12 +134,22 @@ def get_singles_night(
     for marker in markers:
         links.setdefault(marker.target_id, _source(session, marker.message_id))
     result = _summary(*row)
+    artwork = {
+        art.song_id: art
+        for art in db.scalars(
+            select(SinglesSongArtwork).where(SinglesSongArtwork.song_id.in_([s.id for s in songs]))
+        )
+    }
     result["songs"] = [
         {
             "id": song.id,
             "title": song.title,
             "artist_name": song.artist_name,
             "url": safe_url(song.url),
+            "cover_url": safe_url(artwork[song.id].cover_url) if song.id in artwork else None,
+            "artwork_source_url": safe_url(artwork[song.id].provider_url)
+            if song.id in artwork
+            else None,
             "source_url": links.get(song.id),
             "submissions": [
                 {

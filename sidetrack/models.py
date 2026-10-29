@@ -1,6 +1,7 @@
 """Composition-only registry for Alembic and mapper initialization."""
 
 from sidetrack.analysis import Compatibility, TasteProfile, TrackFeature, UserRecommendation
+from sidetrack.artwork_models import ArtworkRecovery
 from sidetrack.catalog import Album, Track
 from sidetrack.club import Nomination, Rating, Vote, Week
 from sidetrack.db import Base
@@ -13,6 +14,7 @@ metadata = Base.metadata
 all_metadata = [metadata]
 
 __all__ = [
+    "ArtworkRecovery",
     "BackgroundJob",
     "JobSchedule",
     "ScheduleOccurrence",
