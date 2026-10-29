@@ -131,7 +131,7 @@ unmatched_ignore_imports_alerting = "none"
 [[tool.importlinter.contracts]]
 name = "catalog internals have one owner"
 type = "protected"
-protected_modules = ["sidetrack.catalog.models", "sidetrack.catalog.routes", "sidetrack.catalog.metadata", "sidetrack.catalog.historical"]
+protected_modules = ["sidetrack.catalog.models", "sidetrack.catalog.routes", "sidetrack.catalog.metadata", "sidetrack.catalog.historical", "sidetrack.catalog.artwork"]
 allowed_importers = ["sidetrack.catalog", "services.api.tests"]
 ignore_imports = ["sidetrack.api.routes -> sidetrack.catalog.routes.*"]
 unmatched_ignore_imports_alerting = "none"

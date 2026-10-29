@@ -20,6 +20,16 @@ export function AlbumFeature({
     <div className="album-feature">
       <div>
         <AlbumArt url={week.winner_album?.cover_url} title={title} />
+        {week.winner_album?.artwork_source_url && (
+          <a
+            className="small"
+            href={week.winner_album.artwork_source_url}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Artwork source ↗
+          </a>
+        )}
         <p className="cover-caption">
           {week.label} · {formatUtc(week.discussion_at ?? week.created_at)}
         </p>

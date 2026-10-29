@@ -50,6 +50,15 @@ def _mb_request(method: str, path: str, *, params: dict[str, str] | None = None)
 # --- Public API -------------------------------------------------------------
 
 
+def get_release_group(mbid: str) -> dict[str, Any]:
+    """Fetch a reviewed release-group identity through the shared request pacing."""
+    from uuid import UUID
+
+    return _mb_request(
+        "GET", f"release-group/{UUID(mbid)}", params={"fmt": "json", "inc": "artists"}
+    )
+
+
 def search_release_groups(
     artist_name: str | None,
     album_title: str,

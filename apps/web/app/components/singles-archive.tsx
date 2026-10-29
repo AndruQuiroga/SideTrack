@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { SinglesSessionRead, SinglesSessionDetail } from '@sidetrack/api-client';
 import type { Access } from '../lib/server-api';
 import { AccessNotice } from './ui';
+import { AlbumArt } from './album-art';
 
 export function singlesDate(value: string | null): string {
   if (!value) return 'Date unavailable';
@@ -105,6 +106,20 @@ export function SinglesDetail({
         {event.songs.map((song, index) => (
           <article key={song.id}>
             <div className="singles-song-heading">
+              <div className="singles-song-artwork">
+                {song.artwork_source_url ? (
+                  <a
+                    href={song.artwork_source_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label={`Artwork source for ${song.title}`}
+                  >
+                    <AlbumArt url={song.cover_url} title={`${song.title} by ${song.artist_name}`} />
+                  </a>
+                ) : (
+                  <AlbumArt url={song.cover_url} title={`${song.title} by ${song.artist_name}`} />
+                )}
+              </div>
               <span className="eyebrow">Track {index + 1}</span>
               <h3>{song.title}</h3>
               <p>{song.artist_name}</p>

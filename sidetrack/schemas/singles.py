@@ -40,6 +40,8 @@ class SinglesSongRead(BaseModel):
     title: str
     artist_name: str
     url: str | None
+    cover_url: str | None = None
+    artwork_source_url: str | None = None
     source_url: str | None
     submissions: list[SinglesSubmissionRead]
     ratings: list[SinglesRatingRead]

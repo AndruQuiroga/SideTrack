@@ -5,6 +5,15 @@ const path = require('node:path');
 const React = require('react');
 const { renderToStaticMarkup } = require('react-dom/server');
 const { session } = require('./fixtures/singles.cjs');
+// Synthetic bitmap for local visual QA; no provider artwork or participant data.
+const withArtwork = structuredClone(session);
+withArtwork.songs[0].cover_url = 'http://127.0.0.1:8766/cover.svg';
+withArtwork.songs[0].artwork_source_url = 'https://open.spotify.com/track/' + 'A'.repeat(22);
+withArtwork.songs.push({
+  ...structuredClone(session.songs[0]),
+  id: 'song-without-artwork',
+  title: 'Cover unavailable',
+});
 const { PageShell } = require('../app/components/page-shell.tsx');
 const { ClubTabs } = require('../app/components/club-tabs.tsx');
 const { NavigationLinks } = require('../app/components/navbar.tsx');
@@ -17,6 +26,10 @@ const css = fs
   .join('\n');
 const output = path.resolve(__dirname, '../../../.tmp/club-history/ui-preview');
 fs.mkdirSync(output, { recursive: true });
+fs.writeFileSync(
+  path.join(output, 'cover.svg'),
+  '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="#8d4638"/><circle cx="100" cy="85" r="45" fill="#e3c89d"/><text x="100" y="165" text-anchor="middle" fill="#fff" font-size="16">Synthetic cover</text></svg>',
+);
 for (const [file, component, props] of [
   [
     'archive.html',
@@ -38,7 +51,7 @@ for (const [file, component, props] of [
       },
     },
   ],
-  ['detail.html', SinglesDetail, { session: { state: 'ok', data: session }, id: session.id }],
+  ['detail.html', SinglesDetail, { session: { state: 'ok', data: withArtwork }, id: session.id }],
 ]) {
   const content = React.createElement(
     'div',

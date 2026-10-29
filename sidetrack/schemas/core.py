@@ -296,6 +296,7 @@ class AlbumUpdate(OrmSchema):
 
 class AlbumRead(AlbumBase):
     id: UUID
+    artwork_source_url: str | None = None
 
 
 class TrackBase(OrmSchema):

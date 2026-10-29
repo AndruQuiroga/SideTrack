@@ -38,6 +38,16 @@ groups:
       - capability: Album metadata from Spotify
         status: partial
         notes: "Client credentials, metadata only (external/spotify.py); untested"
+      - capability: Club artwork recovery
+        status: partial
+        notes: "Artwork-only recovery, guarded retry/reversal and optional Singles Night covers pass focused Postgres/API/web tests. Private provider preview has 49 verified candidates including all eight winning albums and 38 singles; production rollout/backfill pending. Spotify credentials were not found in the checked local configurations."
+        evidence:
+          - tests/test_artwork_discovery.py
+          - tests/test_artwork_apply.py
+          - tests/test_artwork_history_compatibility.py
+          - services/api/tests/test_singles_nights.py
+          - apps/web/tests/singles-archive.test.cjs
+          - docs/ARTWORK.md
       - capability: Web archive (weeks, winners)
         status: works
         notes: "Journal archive/detail use stored winner identity and URL-owned browsing state. Release 73e9435 and the approved history import are live: 10 weeks, eight with winners. Member API reads and shared web view tests pass; the owner confirmed real Discord sign-in. Incomplete source weeks remain explicit."

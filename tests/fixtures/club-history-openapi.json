@@ -332,6 +332,28 @@
           "title": "Artist Name",
           "type": "string"
         },
+        "artwork_source_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Artwork Source Url"
+        },
+        "cover_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Cover Url"
+        },
         "id": {
           "format": "uuid",
           "title": "Id",
