@@ -53,6 +53,44 @@ Detailed evidence and source digests are retained privately.
    attribution, and unchanged pre-existing links/listens/memberships plus zero
    historical delivery/acquisition work. Update honest status evidence.
 
+## Release checkpoint, 2026-10-28
+
+[PR #299](https://github.com/AndruQuiroga/SideTrack/pull/299) merged as
+`73e94353ca57c8f9b5d137f45cf888978764164d`.
+[PR CI](https://github.com/AndruQuiroga/SideTrack/actions/runs/40777799980)
+and [publishing CI](https://github.com/AndruQuiroga/SideTrack/actions/runs/40778840606)
+passed all jobs. Both eligible amd64 nodes verified the image revision and
+pre-pulled the API/web/bot digests.
+
+Migration `0011_club_history` is applied. Portainer stack 23 completed two
+staged updates with all 10 environment entries preserved: API/default worker
+first, then web/bot. All six services are 1/1; API health and public web routes
+return 200. The existing GPU image is retained as described above.
+
+The fresh production backup passed isolated restoration with the existing user,
+both provider links and membership. Protected source/review copies and encrypted
+Portainer snapshots are retained outside `.tmp`. The production data check has
+450 new candidates and zero conflicts, reusing the existing user and proposing
+six private historical users plus 52 catalog albums.
+
+The owner approved the exact production digest and application completed.
+Read-only verification returned zero mismatches; retry returned the same batch
+without duplicate growth. Live member/non-member/anonymous archive reads
+returned 200/403/401. The stored result is 10 album weeks (eight winners),
+55 nominations, 47 album ratings, seven Singles Night sessions, 44 songs and
+235 first-listen ratings. Corrected dates and sampled attribution/catalog
+identities passed their checks.
+
+The existing profile, both provider links, membership and schedule were
+preserved. The six historical accounts remain private without roles or
+credentials. Notification/application/queue job counts remain zero. Detailed
+source/digest/backup/verification reports are retained in protected operator
+storage; actual participant data is excluded from this document and Git.
+
+A separate protected post-import backup also passed isolated restoration at
+schema 0011 with seven users, eight provider links, one membership and 10 weeks.
+Both pre-import and post-import recovery checkpoints are retained.
+
 ## Recovery
 
 Follow `docs/CLUB-HISTORY.md`: a failed transaction rolls back atomically.

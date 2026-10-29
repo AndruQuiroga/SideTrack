@@ -1,8 +1,9 @@
 # Historical club imports
 
-The historical import workflow is being implemented under
-`openspec/changes/import-discord-club-history`. Production import is not enabled
-by this document. Never put actual Discord exports or review plans in Git.
+The historical import workflow is implemented under
+`openspec/changes/import-discord-club-history`. Operators use hash-verified
+sources, reviewed mappings and an exact checked target digest. Actual Discord
+exports and review plans stay in protected storage outside Git.
 
 ## Source manifest
 
@@ -168,6 +169,26 @@ document widths matched the viewport at both sizes, with no horizontal overflow.
 the web build. The fixture renderer and data live under `tests/`; private real
 participant data is excluded from visual artifacts. Member/access and deletion
 behavior are covered by the API and web integration tests listed in the change.
+
+The approved production import completed on 2026-10-28 in release `73e9435`,
+schema `0011_club_history`. Read-only verification found zero mismatches;
+identical retry returned the same batch with unchanged persisted counts.
+The database contains 10 album weeks (eight with winners), 55 nominations,
+47 album ratings, seven Singles Night sessions, 44 songs/submissions and
+235 first-listen ratings. Member/non-member/anonymous API reads returned
+200/403/401 for both archive types. The January date corrections, named
+submitter exception and corrected winner catalog identities were checked live.
+
+The existing profile fingerprint, Discord/Last.fm links, membership and existing
+schedule were preserved. Six historical accounts are private and have no roles
+or OAuth credentials. Notifications, application jobs and actual queue jobs
+remain zero. Protected verification, backup/restore and source evidence are
+retained independently of disposable tool storage.
+
+One 2.5 score remains excluded because its referenced message is missing; an
+identical repeated 4.5 score is counted once through its explicit reply.
+Album weeks 9/10 have no source-backed winner/ratings and week 10 has no known
+date. These source gaps remain explicit.
 
 ## Persistence
 
