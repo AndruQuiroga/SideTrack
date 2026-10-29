@@ -72,3 +72,46 @@ erased target. A reversed receipt cannot be used to reapply artwork automaticall
 Artwork reversal preserves history, accounts and subsequent activity. A full database
 restore is separate disaster recovery requiring review of newer data. See the
 deployment runbook for backup, rehearsal and rollout requirements.
+
+## Production verification, 2026-10-28
+
+[PR 301](https://github.com/AndruQuiroga/SideTrack/pull/301) is merged and release
+`c97d3901e3e8bef7981842b15389c8e3291ac747` is deployed for API/default worker
+and web through maintained Portainer stack 23. Bot/GPU pins remain compatible.
+Both eligible nodes verified identical immutable image digests and the release's
+OCI source revision before rollout. The schema is `0012_artwork_recovery`.
+
+The applied recovery contains **49 verified covers: 11 albums and 38 singles**.
+All eight album-club winners have covers. The exact production checked digest is
+`071beed39cfa2b491ef5a9943300c59e9d6bb7fa3a6ab7b3d64d6c627872b7b1`, identical
+to the successful restored-data rehearsal. Forty-one albums lack a verified usable
+provider identity/artwork candidate and six singles still need exact song identities;
+they remain explicit gaps. No Spotify credentials were found in the checked local
+project/provider configuration or likely credential files, and none were transferred.
+The verified selections used public exact-link artwork and independently reviewed
+music-identity evidence.
+
+Read-only production verification found zero artwork/history mismatches. An identical
+apply added no duplicates. Fingerprints and counts across 30 protected data sets
+matched the pre-rollout baseline, including accounts, provider links, membership,
+original source markers, ratings, schedules and delivery/job state. Member reads
+returned all seven sessions and 38 song covers; anonymous/non-member/member detail
+requests returned 401/403/200. Album reads returned 11 covers with provider links.
+All six services are 1/1, API health is healthy, and public health/archive routes
+returned 200. Synthetic desktop 1440x900 and mobile 390x844 checks showed cover-present
+and unavailable states without horizontal overflow.
+
+Focused provider/CLI/Postgres/schema/history replay/erasure tests, all 67 web tests,
+three API-client tests, production web build/lint, seven import contracts and mypy
+on the six new source modules passed. The unrelated repository mypy backlog remains
+39 errors. [PR CI](https://github.com/AndruQuiroga/SideTrack/actions/runs/40816235060)
+and the [release publishing run](https://github.com/AndruQuiroga/SideTrack/actions/runs/40816761299)
+retain public code/build evidence; private music mappings and reports are excluded.
+
+Root-only HDD backups before and after recovery both restored successfully in isolated
+Postgres 16+pgvector containers. The post-recovery restore confirmed schema 0012,
+seven users, eight provider links, one membership, 10 weeks and the 11/38 covers.
+Protected operator reports retain backup paths/checksums, source plans, checked
+digest, rehearsal/reversal evidence and the live audit. They are independent of the
+disposable test database. Use the guarded reversal above rather than restoring an
+old full backup over newer activity.
