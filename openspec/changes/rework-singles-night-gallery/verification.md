@@ -1,7 +1,10 @@
 # Singles Night gallery verification
 
-Implementation inspected on 2026-10-28. Production rollout is separate and has not
-been performed for this change. No historical records were imported or modified.
+Implementation inspected on 2026-10-28. The owner subsequently approved merge and
+production deployment on 2026-10-29. Release `3d83256` is live; the
+[rollout report](../../../deploy/SINGLES-GALLERY-2026-10-29.md) records its CI,
+images, backup and signed-in browser/API checks. No historical records were
+imported or modified.
 
 ## Acceptance matrix
 
@@ -61,5 +64,6 @@ and displayed the member-access notice. No browser console errors were recorded.
 
 No migration, provider lookup, new service, persistent browser cache or production
 write is introduced. Rating aggregation uses already-loaded rows and the API test
-asserts unchanged data/job/schedule counts and forbids provider calls. Review this
-implementation before a separate rollout, applying the additive API before web.
+asserts unchanged data/job/schedule counts and forbids provider calls. The reviewed
+production rollout applied the additive API before web and verified all 44
+summaries and unchanged protected records.
