@@ -39,12 +39,13 @@ groups:
         status: partial
         notes: "Client credentials, metadata only (external/spotify.py); untested"
       - capability: Club artwork recovery
-        status: partial
-        notes: "Artwork-only recovery, guarded retry/reversal and optional Singles Night covers pass focused Postgres/API/web tests. Private provider preview has 49 verified candidates including all eight winning albums and 38 singles; production rollout/backfill pending. Spotify credentials were not found in the checked local configurations."
+        status: works
+        notes: "Release c97d390 is live with 49 verified covers: 11 albums (all eight winners) and 38 singles. Production check matched the restored-data rehearsal; verification/retry found no mismatches or duplicates, and 30 protected data sets were unchanged. Both pre/post backups restored successfully. 41 albums and six singles remain unavailable/unresolved; no covers were guessed."
         evidence:
           - tests/test_artwork_discovery.py
           - tests/test_artwork_apply.py
           - tests/test_artwork_history_compatibility.py
+          - apps/web/tests/album-art.test.cjs
           - services/api/tests/test_singles_nights.py
           - apps/web/tests/singles-archive.test.cjs
           - docs/ARTWORK.md
@@ -237,7 +238,7 @@ groups:
           - .github/workflows/ci.yml
       - capability: Deployment to Stache-Rack
         status: works
-        notes: "Portainer stack 23 runs release 73e9435 for API/default worker, web and bot, with the compatible original GPU image retained. All six services are 1/1; schema 0011, public health, approved archive import and a fresh real-data backup/restore are verified. Owner-confirmed Discord/Last.fm links are preserved. Portainer cold pulls and a real GPU embedding job remain separate verification."
+        notes: "Portainer stack 23 runs artwork release c97d390 for API/default worker and web, bot release 73e9435, and the compatible original GPU image. All six services are 1/1; schema 0012, public health, history/artwork verification and fresh pre/post backup restores pass. Existing Discord/Last.fm links and all 10 environment entries are preserved. Portainer cold pulls and a real GPU embedding job remain separate verification."
         evidence:
           - deploy/stack.yml
           - deploy/README.md
