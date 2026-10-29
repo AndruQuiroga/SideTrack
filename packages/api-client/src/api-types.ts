@@ -1658,6 +1658,13 @@ export interface components {
        */
       detail: string;
     };
+    /** SinglesPhaseSummary */
+    SinglesPhaseSummary: {
+      /** Count */
+      count: number;
+      /** Average */
+      average: number | null;
+    };
     /** SinglesRatingRead */
     SinglesRatingRead: {
       /**
@@ -1688,6 +1695,11 @@ export interface components {
       created_at: string;
       /** Source Url */
       source_url: string | null;
+    };
+    /** SinglesRatingSummary */
+    SinglesRatingSummary: {
+      first: components['schemas']['SinglesPhaseSummary'];
+      final: components['schemas']['SinglesPhaseSummary'];
     };
     /** SinglesSessionDetail */
     SinglesSessionDetail: {
@@ -1758,6 +1770,7 @@ export interface components {
       submissions: components['schemas']['SinglesSubmissionRead'][];
       /** Ratings */
       ratings: components['schemas']['SinglesRatingRead'][];
+      rating_summary: components['schemas']['SinglesRatingSummary'];
     };
     /** SinglesSubmissionRead */
     SinglesSubmissionRead: {

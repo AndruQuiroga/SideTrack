@@ -15,6 +15,7 @@ const session = {
       artist_name: 'The Paper Satellites',
       url: 'https://example.test/song',
       source_url: 'https://discord.com/channels/1/100/101',
+      rating_summary: { first: { count: 1, average: 3.5 }, final: { count: 1, average: 4.5 } },
       submissions: [
         {
           user_id: 'user-1',

@@ -35,6 +35,16 @@ class SinglesRatingRead(BaseModel):
     source_url: str | None
 
 
+class SinglesPhaseSummary(BaseModel):
+    count: int
+    average: float | None
+
+
+class SinglesRatingSummary(BaseModel):
+    first: SinglesPhaseSummary
+    final: SinglesPhaseSummary
+
+
 class SinglesSongRead(BaseModel):
     id: UUID
     title: str
@@ -45,6 +55,7 @@ class SinglesSongRead(BaseModel):
     source_url: str | None
     submissions: list[SinglesSubmissionRead]
     ratings: list[SinglesRatingRead]
+    rating_summary: SinglesRatingSummary
 
 
 class SinglesSessionDetail(SinglesSessionRead):

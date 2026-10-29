@@ -868,6 +868,161 @@ p {
     min-height: 44px;
   }
 }
+.singles-gallery-night {
+  margin-bottom: 64px;
+}
+.singles-gallery-night-heading {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: end;
+  gap: 16px;
+  border-top: 1px solid var(--line);
+  padding-top: 25px;
+  margin-bottom: 24px;
+}
+.singles-gallery-night-heading h2 {
+  font-size: 30px;
+  margin: 6px 0 0;
+}
+.singles-night-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  font-size: 12px;
+  color: var(--secondary);
+}
+.singles-pick-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+  gap: 38px 24px;
+}
+.singles-pick {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.singles-pick > a {
+  display: block;
+}
+.singles-pick-identity {
+  margin-top: 16px;
+}
+.singles-pick h3 {
+  font-size: 21px;
+  line-height: 1.25;
+  margin: 0 0 5px;
+}
+.singles-pick-artist {
+  color: var(--secondary);
+  margin: 0;
+  font-size: 15px;
+}
+.singles-pick-submitter {
+  color: var(--secondary);
+  font-size: 12px;
+  margin: 10px 0 0;
+}
+.singles-pick-score {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 5px 10px;
+  margin: 14px 0 8px;
+  font-size: 12px;
+  color: var(--secondary);
+}
+.singles-pick-score strong {
+  color: var(--accent);
+  font-size: 20px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.singles-pick-score strong span {
+  font-size: 12px;
+}
+.singles-impressions {
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+}
+.singles-impressions > summary {
+  color: var(--accent);
+  padding: 13px 0;
+  min-height: 44px;
+}
+.singles-impressions-body {
+  padding: 0 0 16px;
+}
+.singles-impressions h4 {
+  margin: 16px 0 12px;
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+}
+.singles-impressions ul {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.singles-impressions li {
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+}
+.singles-listener-score {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.singles-listener-score strong {
+  font-weight: 500;
+}
+.singles-listener-score span {
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.singles-pick-links {
+  display: flex;
+  gap: 10px 15px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  font-size: 12px;
+}
+.singles-night-unavailable {
+  padding: 20px 0;
+}
+.singles-older {
+  text-align: center;
+  border-top: 1px solid var(--line);
+  padding: 28px 0;
+}
+.singles-older p {
+  color: var(--secondary);
+}
+@media (max-width: 1050px) {
+  .singles-pick-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .singles-pick-grid {
+    gap: 30px 16px;
+  }
+  .singles-pick h3 {
+    font-size: 18px;
+  }
+  .singles-pick-artist {
+    font-size: 14px;
+  }
+  .singles-gallery-night {
+    margin-bottom: 42px;
+  }
+}
+@media (max-width: 360px) {
+  .singles-pick-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
 .singles-song-artwork {
   float: right;
   width: clamp(72px, 18vw, 105px);

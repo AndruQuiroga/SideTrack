@@ -105,6 +105,31 @@
     }
   },
   "schemas": {
+    "SinglesPhaseSummary": {
+      "properties": {
+        "average": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Average"
+        },
+        "count": {
+          "title": "Count",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "count",
+        "average"
+      ],
+      "title": "SinglesPhaseSummary",
+      "type": "object"
+    },
     "SinglesRatingRead": {
       "properties": {
         "created_at": {
@@ -172,6 +197,22 @@
         "source_url"
       ],
       "title": "SinglesRatingRead",
+      "type": "object"
+    },
+    "SinglesRatingSummary": {
+      "properties": {
+        "final": {
+          "$ref": "#/components/schemas/SinglesPhaseSummary"
+        },
+        "first": {
+          "$ref": "#/components/schemas/SinglesPhaseSummary"
+        }
+      },
+      "required": [
+        "first",
+        "final"
+      ],
+      "title": "SinglesRatingSummary",
       "type": "object"
     },
     "SinglesSessionDetail": {
@@ -359,6 +400,9 @@
           "title": "Id",
           "type": "string"
         },
+        "rating_summary": {
+          "$ref": "#/components/schemas/SinglesRatingSummary"
+        },
         "ratings": {
           "items": {
             "$ref": "#/components/schemas/SinglesRatingRead"
@@ -407,7 +451,8 @@
         "url",
         "source_url",
         "submissions",
-        "ratings"
+        "ratings",
+        "rating_summary"
       ],
       "title": "SinglesSongRead",
       "type": "object"
