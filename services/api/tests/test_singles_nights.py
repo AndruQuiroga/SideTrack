@@ -194,3 +194,78 @@ def test_deleted_submitter_disappears_while_other_song_rating_remains(
     assert result["songs"][0]["submissions"] == []
     assert [r["user_id"] for r in result["songs"][0]["ratings"]] == [str(other.id)]
     assert "Historical submitter" not in str(result)
+    assert result["songs"][0]["rating_summary"] == {
+        "first": {"count": 0, "average": None},
+        "final": {"count": 1, "average": 4},
+    }
+
+
+def test_phase_summaries_preserve_precision_and_do_not_multiply_contributions(
+    client, member, session_history, db, monkeypatch
+):
+    from sqlalchemy import func, select
+
+    from sidetrack.club import Notification
+    from sidetrack.external import musicbrainz, spotify
+    from sidetrack.queue_models import BackgroundJob, JobSchedule
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("Archive reads must not request providers")
+
+    monkeypatch.setattr(spotify, "get_track", forbidden)
+    monkeypatch.setattr(musicbrainz, "search_recordings", forbidden)
+    session, author, other = session_history
+    song = db.scalar(
+        select(SinglesSong)
+        .where(SinglesSong.session_id == session.id)
+        .order_by(SinglesSong.position)
+    )
+    stamp = datetime(2026, 1, 15, tzinfo=UTC)
+    db.add(
+        SinglesRating(
+            session_id=session.id,
+            song_id=song.id,
+            user_id=other.id,
+            phase="first",
+            value=4,
+            created_at=stamp,
+        )
+    )
+    db.add(
+        SinglesSubmission(
+            session_id=session.id, song_id=song.id, user_id=other.id, submitted_at=stamp
+        )
+    )
+    # A repeated title in another session cannot contribute to this song's summary.
+    different = SinglesSession(guild_id="1", source_thread_id="500", original_label="Other")
+    db.add(different)
+    db.flush()
+    repeated = SinglesSong(
+        session_id=different.id, title=song.title, artist_name=song.artist_name, position=1
+    )
+    db.add(repeated)
+    db.flush()
+    db.add(
+        SinglesRating(
+            session_id=different.id,
+            song_id=repeated.id,
+            user_id=author.id,
+            phase="first",
+            value=1,
+            created_at=stamp,
+        )
+    )
+    db.flush()
+    models = (SinglesRating, SinglesSubmission, BackgroundJob, JobSchedule, Notification)
+    before = {m: db.scalar(select(func.count()).select_from(m)) for m in models}
+    result = client.get(f"/club/singles-nights/{session.id}", headers=as_user(member)).json()
+    assert result["songs"][0]["rating_summary"] == {
+        "first": {"count": 2, "average": 3.75},
+        "final": {"count": 1, "average": 4},
+    }
+    assert result["songs"][1]["rating_summary"] == {
+        "first": {"count": 0, "average": None},
+        "final": {"count": 0, "average": None},
+    }
+    assert sorted(r["value"] for r in result["songs"][0]["ratings"]) == [3.5, 4, 4]
+    assert before == {m: db.scalar(select(func.count()).select_from(m)) for m in models}

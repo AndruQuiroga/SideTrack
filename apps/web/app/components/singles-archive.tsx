@@ -2,7 +2,7 @@ import Link from 'next/link';
 import type { SinglesSessionRead, SinglesSessionDetail } from '@sidetrack/api-client';
 import type { Access } from '../lib/server-api';
 import { AccessNotice } from './ui';
-import { AlbumArt } from './album-art';
+import { SinglesSongGrid } from './singles-song-gallery';
 
 export function singlesDate(value: string | null): string {
   if (!value) return 'Date unavailable';
@@ -101,81 +101,7 @@ export function SinglesDetail({
           <p>{event.original_label}</p>
         </details>
       </header>
-      {!event.songs.length && <p>No songs were recorded for this session.</p>}
-      <div className="singles-songs">
-        {event.songs.map((song, index) => (
-          <article key={song.id}>
-            <div className="singles-song-heading">
-              <div className="singles-song-artwork">
-                {song.artwork_source_url ? (
-                  <a
-                    href={song.artwork_source_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    aria-label={`Artwork source for ${song.title}`}
-                  >
-                    <AlbumArt url={song.cover_url} title={`${song.title} by ${song.artist_name}`} />
-                  </a>
-                ) : (
-                  <AlbumArt url={song.cover_url} title={`${song.title} by ${song.artist_name}`} />
-                )}
-              </div>
-              <span className="eyebrow">Track {index + 1}</span>
-              <h3>{song.title}</h3>
-              <p>{song.artist_name}</p>
-              <p>
-                {song.submissions.length
-                  ? `Submitted by ${song.submissions.map((s) => s.display_name).join(', ')}`
-                  : 'Submitter unavailable'}
-              </p>
-              <div className="actions">
-                {song.url && (
-                  <a href={song.url} target="_blank" rel="noreferrer">
-                    Song link ↗
-                  </a>
-                )}
-                {song.source_url && (
-                  <a href={song.source_url} target="_blank" rel="noreferrer">
-                    Source message ↗
-                  </a>
-                )}
-              </div>
-            </div>
-            <div className="singles-phases">
-              {(['first', 'final'] as const).map((phase) => {
-                const ratings = song.ratings.filter((rating) => rating.phase === phase);
-                return (
-                  <section key={phase} aria-label={`${phase} ratings for ${song.title}`}>
-                    <h4>{phase === 'first' ? 'First listen' : 'Final ratings'}</h4>
-                    {ratings.length ? (
-                      <ul>
-                        {ratings.map((rating) => (
-                          <li key={rating.id}>
-                            <div>
-                              <strong>{rating.display_name}</strong>
-                              <span>{rating.value} / 5</span>
-                            </div>
-                            {rating.review && <p className="singles-review">{rating.review}</p>}
-                            {rating.source_url && (
-                              <a href={rating.source_url} target="_blank" rel="noreferrer">
-                                Source ↗
-                              </a>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="muted">
-                        No {phase === 'first' ? 'first-listen' : 'final'} ratings recorded.
-                      </p>
-                    )}
-                  </section>
-                );
-              })}
-            </div>
-          </article>
-        ))}
-      </div>
+      <SinglesSongGrid event={event} />
     </>
   );
 }

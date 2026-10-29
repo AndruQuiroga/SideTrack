@@ -48,6 +48,7 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 | Capability | Status | Notes | Evidence |
 | --- | --- | --- | --- |
 | Data honesty | works | No invented presence counts or rating distributions; missing data remains unavailable. Rendered club regressions, connection states and the source guard are tested. | `apps/web/app/no-fake-data.test.ts`, `apps/web/tests/connections.test.cjs`, `apps/web/tests/club-data-honesty.test.cjs` |
+| Singles Night home gallery | works | Implemented and locally verified; not deployed. The home page exposes songs across nights with inline impressions, eight-night batches, three concurrent detail reads and session-authorized retries. All 77 web tests, 20 focused API/contract tests, client build/tests and light/dark browser inspections at 320/390/768/1440 pass. Review precedes a separate API-then-web rollout. | `apps/web/tests/singles-gallery.test.cjs`, `apps/web/tests/singles-gallery-actions.test.cjs`, `apps/web/tests/singles-gallery-interactions.test.cjs`, `apps/web/tests/singles-read-models.test.cjs`, `services/api/tests/test_singles_nights.py`, `openspec/changes/rework-singles-night-gallery/verification.md`, `docs/SINGLES-GALLERY.md` |
 | Profile pages | absent | Profile analytics are unavailable; /u/&lt;id&gt; explains the limitation without calling missing profile/timeline/now-playing endpoints. Listening-history links remain supported. |  |
 | Journal web interface | works | Responsive Journal interface and Singles Night extension are deployed in 73e9435. All 65 web tests, production build and synthetic desktop/mobile inspections pass. Historical records and member API reads are verified live; the owner confirmed Discord sign-in and Last.fm linking. | `apps/web/tests/application-navigation.test.cjs`, `apps/web/tests/interface-presentation.test.cjs`, `apps/web/tests/listening-history.test.cjs`, `apps/web/tests/search-dialog.test.cjs`, `openspec/changes/rework-web-experience/verification.md`, `docs/CLUB-HISTORY.md` |
 
@@ -77,6 +78,7 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 - `harden-api-credentials`: 10/11 tasks
 - `import-discord-club-history`: 22/22 tasks
 - `recover-club-artwork`: 13/13 tasks
+- `rework-singles-night-gallery`: 10/10 tasks
 - `rework-web-experience`: 18/18 tasks
 
 ### Specs

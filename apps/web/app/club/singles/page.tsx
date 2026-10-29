@@ -1,21 +1,27 @@
 import { PageShell } from '../../components/page-shell';
 import { ClubTabs } from '../../components/club-tabs';
-import { SinglesArchive } from '../../components/singles-archive';
+import { SinglesGallery } from '../../components/singles-gallery';
 import { loadAs } from '../../lib/server-api';
 import { sessionUserId } from '../../lib/session';
-import { fetchSinglesNights } from '../../lib/api/singles';
+import { fetchSinglesGallery } from '../../lib/api/singles';
+import { loadOlderSinglesNights, retrySinglesNight } from './actions';
 
 export const metadata = { title: 'Singles Night — SideTrack' };
 export default async function SinglesPage() {
-  const archive = await loadAs(await sessionUserId(), fetchSinglesNights);
+  const userId = await sessionUserId();
+  const gallery = await loadAs(userId, (api) => fetchSinglesGallery(api));
   return (
     <PageShell
-      title="One song at a time."
-      description="Singles Night sessions, first impressions, and final ratings."
+      title="Singles Night."
+      description="Every pick, night by night."
       accent="Club / Singles Night"
     >
       <ClubTabs singles />
-      <SinglesArchive archive={archive} />
+      <SinglesGallery
+        key={userId ?? 'signed-out'}
+        initial={gallery}
+        actions={{ older: loadOlderSinglesNights, retry: retrySinglesNight }}
+      />
     </PageShell>
   );
 }

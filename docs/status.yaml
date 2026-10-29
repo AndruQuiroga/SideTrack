@@ -154,6 +154,17 @@ groups:
           - apps/web/app/no-fake-data.test.ts
           - apps/web/tests/connections.test.cjs
           - apps/web/tests/club-data-honesty.test.cjs
+      - capability: Singles Night home gallery
+        status: works
+        notes: "Implemented and locally verified; not deployed. The home page exposes songs across nights with inline impressions, eight-night batches, three concurrent detail reads and session-authorized retries. All 77 web tests, 20 focused API/contract tests, client build/tests and light/dark browser inspections at 320/390/768/1440 pass. Review precedes a separate API-then-web rollout."
+        evidence:
+          - apps/web/tests/singles-gallery.test.cjs
+          - apps/web/tests/singles-gallery-actions.test.cjs
+          - apps/web/tests/singles-gallery-interactions.test.cjs
+          - apps/web/tests/singles-read-models.test.cjs
+          - services/api/tests/test_singles_nights.py
+          - openspec/changes/rework-singles-night-gallery/verification.md
+          - docs/SINGLES-GALLERY.md
       - capability: Profile pages
         status: absent
         notes: "Profile analytics are unavailable; /u/<id> explains the limitation without calling missing profile/timeline/now-playing endpoints. Listening-history links remain supported."

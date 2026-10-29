@@ -1,5 +1,6 @@
 """Member/bot reads of independently numbered historical Singles Night sessions."""
 
+from math import fsum
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -151,6 +152,20 @@ def get_singles_night(
             if song.id in artwork
             else None,
             "source_url": links.get(song.id),
+            "rating_summary": {
+                phase: {
+                    "count": len(values),
+                    "average": fsum(values) / len(values) if values else None,
+                }
+                for phase in ("first", "final")
+                for values in [
+                    [
+                        rating.value
+                        for rating, _ in ratings
+                        if rating.song_id == song.id and rating.phase == phase
+                    ]
+                ]
+            },
             "submissions": [
                 {
                     "user_id": contribution.user_id,
