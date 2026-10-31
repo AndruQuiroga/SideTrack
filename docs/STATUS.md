@@ -72,7 +72,9 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 
 ### In-flight changes
 
-- `add-muq-mulan-embeddings`: 16/19 tasks
+- `add-muq-mulan-embeddings`: 17/19 tasks
+- `automate-database-backups`: 0/13 tasks
+- `import-audio-manifest`: 0/11 tasks
 
 ### Specs
 
