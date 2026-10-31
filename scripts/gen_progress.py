@@ -99,6 +99,21 @@ PHASES: list[dict[str, Any]] = [
         "adrs": ["0002", "0004", "0010"],
         "changes": ["measure-audio-models-on-1070ti", "add-muq-mulan-embeddings"],
     },
+    {
+        "id": "production",
+        "title": "Production and club history",
+        "label": "Track",
+        "summary": "Journal web interface, Discord history import, artwork recovery and the "
+        "Singles Night gallery, after the first rack rollout.",
+        "adrs": ["0006"],
+        "changes": [
+            "rework-web-experience",
+            "fix-web-data-honesty-regressions",
+            "import-discord-club-history",
+            "recover-club-artwork",
+            "rework-singles-night-gallery",
+        ],
+    },
 ]
 
 # System map: each node lists the status.yaml capabilities it is made of.

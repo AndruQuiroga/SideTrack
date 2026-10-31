@@ -1,4 +1,4 @@
-"""Spec: platform/health (openspec/changes/deploy-on-stache-rack)."""
+"""Spec: platform/health (openspec/changes/archive/2026-10-31-deploy-on-stache-rack)."""
 
 from __future__ import annotations
 

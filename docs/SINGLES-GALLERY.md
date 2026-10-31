@@ -39,7 +39,7 @@ and all seven import contracts pass. Browser inspection covers the real hydrated
 components in both themes at 320, 390, 768 and 1440 px, including long reviews,
 keyboard disclosure, failed images, preserved expansion and access loss.
 
-The [acceptance matrix](../openspec/changes/rework-singles-night-gallery/verification.md)
+The [acceptance matrix](../openspec/changes/archive/2026-10-31-rework-singles-night-gallery/verification.md)
 records the evidence and synthetic preview command. Production verification also
 confirmed all seven nights/44 cards, inline impressions and direct night links in
 the signed-in browser. The additive API deployed before web; schema 0012 and all

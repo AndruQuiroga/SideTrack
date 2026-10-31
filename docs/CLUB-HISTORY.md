@@ -1,7 +1,7 @@
 # Historical club imports
 
 The historical import workflow is implemented under
-`openspec/changes/import-discord-club-history`. Operators use hash-verified
+`openspec/changes/archive/2026-10-31-import-discord-club-history`. Operators use hash-verified
 sources, reviewed mappings and an exact checked target digest. Actual Discord
 exports and review plans stay in protected storage outside Git.
 
