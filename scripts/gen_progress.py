@@ -97,7 +97,11 @@ PHASES: list[dict[str, Any]] = [
         "summary": "MuQ-MuLan embeddings in pgvector on the gpu queue, after the GTX 1070 Ti "
         "timing run.",
         "adrs": ["0002", "0004", "0010"],
-        "changes": ["measure-audio-models-on-1070ti", "add-muq-mulan-embeddings"],
+        "changes": [
+            "measure-audio-models-on-1070ti",
+            "import-audio-manifest",
+            "add-muq-mulan-embeddings",
+        ],
     },
     {
         "id": "production",
@@ -112,6 +116,7 @@ PHASES: list[dict[str, Any]] = [
             "import-discord-club-history",
             "recover-club-artwork",
             "rework-singles-night-gallery",
+            "automate-database-backups",
         ],
     },
 ]

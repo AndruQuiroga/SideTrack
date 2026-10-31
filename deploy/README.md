@@ -217,27 +217,83 @@ mount before copying assets or running a full backfill (ADR 0005).
 Recheck free disk and RAM before pulling the roughly 12 GB image and downloading
 weights; node storage labels do not prove attached capacity.
 
-An empty rack database also needs asset metadata, not just copied audio files.
-The explicit `fetch` workflow creates rows in its configured database. Transferring
-an existing benchmark/library's metadata needs a reviewed procedure before backfill;
-do not restore a benchmark database over live club data. Queue `embed` from an
-operator environment that sees both the files and the rack database; the API has
-no audio mount and the GPU worker's mount is read-only.
+An empty rack database also needs asset metadata, not just copied audio files. Never
+restore a benchmark database over live club data. Use `import-manifest` instead:
+
+1. Take a database backup, and update only the `gpu-worker` image through Portainer to a
+   release containing `import-manifest`. Pull the image on docker-0 first because of the
+   cold-pull limitation.
+2. Export a manifest locally, then copy the audio files and the manifest to
+   `/srv/sidetrack/audio` on docker-0, keeping their names. Check every SHA-256 on arrival.
+3. Run the check, review its counts, then apply. On docker-0:
+   ```bash
+   worker=$(docker ps -qf name=sidetrack_gpu-worker)
+   docker exec "$worker" python -m sidetrack.audio import-manifest --manifest /audio/manifest.csv
+   docker exec "$worker" python -m sidetrack.audio import-manifest --manifest /audio/manifest.csv --apply
+   ```
+4. Queue one asset as a smoke job with `embed --limit 1`, then run the full `embed`.
+
+The GPU worker can do all of this because it has the audio mount, the database secret and the
+package. The API has no audio mount, and the worker's mount is read-only.
 
 ## Backups
 
-Not automated yet; it's an open question in the `deploy-on-stache-rack` design.
-Choose and verify an HDD-backed destination, create the directory, and set
-`SIDETRACK_BACKUP_DIR` to `/srv/sidetrack/backups` on docker-1. The existing
-`/srv/backups` directory remains on SSD; it is not the new HDD destination.
-Run on the DB task's node before risky changes:
+`deploy/backups/` holds host-level jobs. They aren't Swarm services, so Portainer doesn't manage
+them and the stack doesn't change.
+
+| Job | Runs | What it does |
+| --- | --- | --- |
+| `sidetrack-backup` | Daily, 10:30 UTC | Dumps the database, records a checksum and schema head, applies retention |
+| `sidetrack-backup-copy` | Daily, 11:00 UTC | Copies anything missing to the second host, checks hashes there, applies retention |
+| `sidetrack-restore-check` | Sundays, 11:30 UTC | Restores the newest backup into a disposable database with no network, checks head and records |
+
+Retention keeps the newest backup of each of the last 7 days, 4 weeks and 6 months. It only
+touches `sidetrack-daily-*.dump` files, so manual dumps stay until you remove them.
+
+Each job calls its Uptime Kuma push URL only after succeeding, so a failed, disabled or
+never-started job raises the same alert. Failure details are in the journal:
+`journalctl -u sidetrack-backup`.
+
+### Install
+
+Copy `deploy/backups` to each host, then run these in your own terminal, because they need
+`sudo`. On docker-1:
+
+```bash
+sudo ./install.sh sender
+```
+
+That prints the copy key. On docker-0, with the HDD mounted:
+
+```bash
+sudo ./install.sh receiver /mnt/sidetrack-hdd/database-backups 'PUBLIC_KEY'
+```
+
+Back on docker-1:
+
+1. Fill in `/etc/sidetrack/backup.env`. `SIDETRACK_BACKUP_MOUNT` is the output of
+   `findmnt -n -o TARGET -T /srv/sidetrack/backups`.
+2. Trust the second host for root: `sudo ssh -i /etc/sidetrack/backup-copy-key sidetrack-backup@docker-0 list`.
+3. Run each job once and check its journal: `sudo systemctl start sidetrack-backup`, then
+   `sidetrack-backup-copy`, then `sidetrack-restore-check`.
+4. Enable the timers as `install.sh` printed.
+
+In Uptime Kuma, add HTTP monitors for `https://api.sidetrack.network/health` and
+`http://sidetrack.stache.lan`, plus one push monitor per job: about 26 hours for the two daily
+jobs and 8 days for the restore check. Put the push URLs in `backup.env`.
+
+Dumps hold members' data and stored provider tokens, so keep them root-only. To remove the jobs,
+disable the timers and delete the units and `/usr/local/lib/sidetrack-backup`. Backups stay.
+
+### Manual backup and restore
+
+Take a manual backup before risky changes. Use a name other than `sidetrack-daily-` so
+retention leaves it alone. On docker-1, as root:
 
 ```bash
 set -o pipefail
-: "${SIDETRACK_BACKUP_DIR:?set the verified backup directory}"
-docker exec $(docker ps -qf name=sidetrack_db) pg_dump -U sidetrack sidetrack | gzip > "$SIDETRACK_BACKUP_DIR/sidetrack-$(date +%F).sql.gz"
+docker exec $(docker ps -qf name=sidetrack_db) pg_dump -U sidetrack -d sidetrack -Fc > "/srv/sidetrack/backups/sidetrack-pre-change-$(date -u +%Y%m%dT%H%M%SZ).dump"
 ```
 
-Check gzip integrity and test restoration into a separate disposable Postgres 16
-database with pgvector. Record the restore result and retention plan before calling
-backups verified; never test by restoring over the live database.
+To recover, stop the API and workers, then restore into an empty database with `pg_restore`.
+Rehearse in a disposable database first, and never test by restoring over the live one.

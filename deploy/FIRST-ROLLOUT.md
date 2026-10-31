@@ -202,8 +202,8 @@ remain pending.
   [AUDIO.md](../docs/AUDIO.md), which creates the asset row in that database.
   If acquisition runs elsewhere, copy its files to docker-0, retaining their
   `<sha256>.<ext>` names. Copying existing benchmark files alone does not create
-  asset rows; an existing-library metadata transfer still needs its own reviewed
-  procedure before the backfill. Do not point a benchmark database dump at the
+  asset rows; move an existing library with the `import-manifest` procedure in
+  the [runbook](README.md). Do not point a benchmark database dump at the
   live club database. The API container does not mount `/audio`, and the GPU
   worker's audio mount is read-only, so neither is an acquisition environment.
 - [ ] **[you]** From that configured CLI environment, queue a smoke job with

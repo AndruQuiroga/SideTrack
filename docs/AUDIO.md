@@ -104,6 +104,13 @@ uv run --frozen --extra api python -m sidetrack.audio neighbours <sha256 or asse
   `<sha256>.<ext>` names. Nothing fetches or syncs audio automatically (ADR 0007). Assets
   whose file is missing there are reported per asset as `missing_file`, and the next
   `embed` picks them up.
+- **`import-manifest`** creates rows for files you copied, so another database can embed them
+  without fetching again. It's a check by default and writes only with `--apply`. Each file's
+  SHA-256 must match the manifest and its file name. Any rejected row blocks `--apply` unless
+  you add `--skip-rejected`, and a conflict with an existing asset always stops the run.
+  Re-running it adds nothing. It drops catalog track links, which belong to the other
+  database, and makes no network requests. Keep manifests out of the repo: they list what you
+  listen to.
 - **Pruning** a file keeps its embedding, so the asset still shows up in neighbour lists.
 - **Licence:** MuQ-MuLan's weights are CC BY-NC 4.0, so the stored vectors are for this
   personal, non-commercial project only.

@@ -2,6 +2,7 @@
 
     python -m sidetrack.audio fetch --seeds seeds.csv [--cookies PATH] [--only full|preview]
     python -m sidetrack.audio manifest --out manifest.csv
+    python -m sidetrack.audio import-manifest --manifest manifest.csv [--apply] [--skip-rejected]
     python -m sidetrack.audio verify
     python -m sidetrack.audio prune
     python -m sidetrack.audio embed [--model muq-mulan] [--limit N]
@@ -9,7 +10,8 @@
 
 Fetching runs only with SIDETRACK_AUDIO_FETCH_ENABLED=true. Files go to
 SIDETRACK_AUDIO_DIR; rows go to the configured database. `embed` only queues gpu jobs for
-the dedicated GPU worker; nothing schedules it.
+the dedicated GPU worker; nothing schedules it. `import-manifest` creates rows for files
+already in SIDETRACK_AUDIO_DIR, makes no network requests, and writes only with --apply.
 """
 
 from __future__ import annotations
@@ -34,9 +36,12 @@ from sidetrack.analysis.audio import (
     SourceError,
     VerifyUnavailable,
     YouTubeMusicSource,
+    apply_manifest_import,
     export_manifest,
     fetch_seed,
+    plan_manifest_import,
     prune_assets,
+    read_manifest,
     read_seeds,
     reverify_assets,
 )
@@ -82,6 +87,12 @@ def _parser() -> argparse.ArgumentParser:
     fetch.add_argument("--only", choices=[k.value for k in AudioKind])
     manifest = commands.add_parser("manifest", help="Export stored assets as CSV.")
     manifest.add_argument("--out", type=Path, required=True)
+    imports = commands.add_parser(
+        "import-manifest", help="Create asset rows for files already in the audio directory."
+    )
+    imports.add_argument("--manifest", type=Path, required=True)
+    imports.add_argument("--apply", action="store_true", help="Write rows; default only checks.")
+    imports.add_argument("--skip-rejected", action="store_true", help="Apply the valid rows.")
     commands.add_parser("verify", help="Re-check unverified assets with AcoustID.")
     commands.add_parser("prune", help="Delete files past SIDETRACK_AUDIO_RETENTION_DAYS.")
     default_model = next(iter(ENABLED))
@@ -128,6 +139,37 @@ def run_neighbours(db: Session, args: argparse.Namespace, out: IO[str]) -> int:
             f"{n.sha256[:12]}",
             file=out,
         )
+    return 0
+
+
+def run_import(db: Session, args: argparse.Namespace, audio_dir: Path, out: IO[str]) -> int:
+    try:
+        with args.manifest.open(encoding="utf-8", newline="") as handle:
+            rows = read_manifest(handle)
+    except (OSError, ValueError) as exc:
+        print(f"Can't read the manifest: {exc}", file=sys.stderr)
+        return 2
+    plan = plan_manifest_import(db, audio_dir, rows)
+    print(
+        f"{len(plan.new)} new, {plan.existing} existing, {len(plan.rejected)} rejected, "
+        f"{len(plan.conflicts)} conflicting",
+        file=out,
+    )
+    for issue in plan.rejected:
+        print(f"  rejected {issue.path}: {issue.reason}", file=out)
+    for issue in plan.conflicts:
+        print(f"  conflict {issue.path}: {issue.reason}", file=out)
+    if plan.conflicts:
+        return 1
+    if not args.apply:
+        print("Check only: nothing written. Use --apply to write.", file=out)
+        return 0
+    if plan.rejected and not args.skip_rejected:
+        print("Nothing written: fix the rejected rows or use --skip-rejected.", file=out)
+        return 1
+    created = apply_manifest_import(db, plan)
+    db.commit()
+    print(f"Imported {created} assets.", file=out)
     return 0
 
 
@@ -241,6 +283,8 @@ def main(
         assert audio_dir is not None
         if args.command == "embed":
             return run_embed(db, args, audio_dir, out)
+        if args.command == "import-manifest":
+            return run_import(db, args, audio_dir, out)
         if args.command == "manifest":
             with args.out.open("w", encoding="utf-8", newline="") as handle:
                 rows = export_manifest(db, audio_dir, handle)

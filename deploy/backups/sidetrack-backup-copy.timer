@@ -1,0 +1,10 @@
+[Unit]
+Description=Sidetrack backup copy to the second host schedule
+
+[Timer]
+OnCalendar=*-*-* 11:00:00 UTC
+Persistent=true
+RandomizedDelaySec=5min
+
+[Install]
+WantedBy=timers.target

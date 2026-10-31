@@ -1,4 +1,4 @@
-"""Public audio-asset operations: fetch a seed, export a manifest, prune old files."""
+"""Public audio-asset operations: fetch a seed, export or import a manifest, prune old files."""
 
 from __future__ import annotations
 
@@ -8,8 +8,8 @@ from collections import Counter
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
-from pathlib import Path
-from typing import IO
+from pathlib import Path, PurePosixPath
+from typing import IO, Any
 from uuid import UUID
 
 from sqlalchemy import select
@@ -19,7 +19,7 @@ from sidetrack.analysis.models import AudioAsset
 from sidetrack.types import AudioKind, AudioSource, AudioVerification
 
 from .sources import Seed, Source, SourceError
-from .store import store_file
+from .store import sha256_of, store_file
 from .verify import AcoustIdClient, verify
 
 logger = logging.getLogger(__name__)
@@ -36,7 +36,11 @@ MANIFEST_COLUMNS = (
     "track_id",
     "artist",
     "title",
+    "acoustid_score",
+    "recording_mbid",
 )
+# Manifests exported before these columns existed still import.
+_OPTIONAL_MANIFEST_COLUMNS = {"acoustid_score", "recording_mbid"}
 
 TrackResolver = Callable[[Session, Seed], UUID | None]
 
@@ -191,10 +195,112 @@ def export_manifest(db: Session, audio_dir: Path, out: IO[str]) -> int:
                 asset.track_id or "",
                 asset.seed_artist,
                 asset.seed_title,
+                "" if asset.acoustid_score is None else asset.acoustid_score,
+                asset.recording_mbid or "",
             ]
         )
         rows += 1
     return rows
+
+
+@dataclass(frozen=True)
+class ManifestIssue:
+    path: str  # as written in the manifest, relative to the audio directory
+    reason: str
+
+
+@dataclass
+class ManifestImportPlan:
+    new: list[dict[str, Any]] = field(default_factory=list)  # AudioAsset values
+    existing: int = 0
+    rejected: list[ManifestIssue] = field(default_factory=list)
+    conflicts: list[ManifestIssue] = field(default_factory=list)
+
+
+def read_manifest(handle: IO[str]) -> list[dict[str, str]]:
+    reader = csv.DictReader(handle)
+    required = set(MANIFEST_COLUMNS) - _OPTIONAL_MANIFEST_COLUMNS
+    missing = required - set(reader.fieldnames or ())
+    if missing:
+        raise ValueError(f"Manifest is missing columns: {', '.join(sorted(missing))}")
+    return list(reader)
+
+
+def _manifest_values(row: dict[str, str]) -> dict[str, Any]:
+    """AudioAsset values for one row; never the row's track link, which is another database's."""
+
+    score = row.get("acoustid_score") or None
+    return {
+        "sha256": row["sha256"],
+        "seed_artist": row["artist"],
+        "seed_title": row["title"],
+        "source": AudioSource(row["source"]),
+        "source_ref": row["source_id"],
+        "kind": AudioKind(row["kind"]),
+        "path": row["path"],
+        "format": PurePosixPath(row["path"]).suffix.removeprefix(".").lower(),
+        "duration_s": float(row["duration_s"]) if row["duration_s"] else None,
+        "verification": AudioVerification(row["verification"]),
+        "acoustid_score": None if score is None else float(score),
+        "recording_mbid": row.get("recording_mbid") or None,
+    }
+
+
+def _rejection(values: dict[str, Any], audio_dir: Path) -> str | None:
+    relative = PurePosixPath(values["path"])
+    if values["verification"] is AudioVerification.MISMATCH:
+        return "verification is mismatch"
+    if relative.is_absolute() or len(relative.parts) != 1 or relative.stem != values["sha256"]:
+        return "file name does not match its hash"
+    if not values["seed_artist"] or not values["seed_title"] or not values["source_ref"]:
+        return "missing artist, title or source id"
+    file = audio_dir / relative.name
+    if not file.is_file():
+        return "file is missing"
+    if sha256_of(file) != values["sha256"]:
+        return "file does not match its hash"
+    return None
+
+
+def plan_manifest_import(
+    db: Session, audio_dir: Path, rows: Iterable[dict[str, str]]
+) -> ManifestImportPlan:
+    """Sort rows into new, existing, rejected and conflicting. Writes nothing."""
+
+    plan = ManifestImportPlan()
+    known = db.execute(select(AudioAsset.sha256, AudioAsset.source, AudioAsset.source_ref)).all()
+    by_hash = {sha256: (source, ref) for sha256, source, ref in known}
+    by_source = {(source, ref): sha256 for sha256, source, ref in known}
+    for row in rows:
+        path = row["path"]
+        try:
+            values = _manifest_values(row)
+        except ValueError:
+            plan.rejected.append(ManifestIssue(path, "row has an invalid value"))
+            continue
+        sha256, identity = values["sha256"], (values["source"], values["source_ref"])
+        if by_hash.get(sha256, identity) != identity:
+            plan.conflicts.append(ManifestIssue(path, "hash belongs to another source"))
+        elif by_source.get(identity, sha256) != sha256:
+            plan.conflicts.append(ManifestIssue(path, "source belongs to another hash"))
+        elif sha256 in by_hash:
+            plan.existing += 1
+        elif (reason := _rejection(values, audio_dir)) is not None:
+            plan.rejected.append(ManifestIssue(path, reason))
+        else:
+            plan.new.append(values)
+            by_hash[sha256] = identity
+            by_source[identity] = sha256
+    return plan
+
+
+def apply_manifest_import(db: Session, plan: ManifestImportPlan) -> int:
+    """Add the plan's new assets to the caller's transaction; return how many."""
+
+    now = datetime.now(UTC)  # so retention can't delete files on the day they arrive
+    db.add_all(AudioAsset(fetched_at=now, **values) for values in plan.new)
+    db.flush()
+    return len(plan.new)
 
 
 @dataclass

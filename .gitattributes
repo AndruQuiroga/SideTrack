@@ -2,3 +2,4 @@
 *.sh text eol=lf
 # Preserve audited upstream bytes and their checksum on Windows checkouts.
 migrations/vendor/** -text
+deploy/backups/* text eol=lf

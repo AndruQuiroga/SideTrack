@@ -1,0 +1,8 @@
+[Unit]
+Description=Sidetrack backup copy to the second host
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/lib/sidetrack-backup/sidetrack-backup-copy.sh
