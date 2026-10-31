@@ -143,3 +143,17 @@ uv run --extra models pytest -m gpu  # real models on a CUDA GPU
 
 Checking the report by hand: open a run's `report.html`, answer a few duels, reload the
 page (they persist), then export and confirm `duels.json` contains them with the run ID.
+
+## Mood probes
+
+`emotion-manifest` turns a local emotion dataset into a normal manifest plus `mood-labels.csv`,
+so `embed` runs on it unchanged. `mood-probe` then fits linear valence and arousal probes on a
+run, and writes `mood.json` with out-of-sample R², a mean-only baseline and paired comparisons.
+The audio stays out of the repo, and only aggregate scores belong in the docs.
+
+```bash
+uv run audio-lab emotion-manifest --ratings E:/sidetrack/mood/deam/ratings.csv --audio-dir E:/sidetrack/mood/deam/audio --metadata E:/sidetrack/mood/deam/metadata.csv --out E:/sidetrack/mood/prepared
+uv run --extra models audio-lab embed --manifest E:/sidetrack/mood/prepared/manifest.csv --audio-dir E:/sidetrack/mood/deam/audio --out E:/sidetrack/audio-lab-runs --model muq-mulan --model muq
+uv run audio-lab mood-probe RUN --labels E:/sidetrack/mood/prepared/mood-labels.csv --predict-run LIBRARY_RUN --predict-out E:/sidetrack/mood/predictions.csv --predict-manifest MANIFEST
+```
+

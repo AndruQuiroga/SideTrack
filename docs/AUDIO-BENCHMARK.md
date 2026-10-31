@@ -46,6 +46,25 @@ Integration also requires timing on the rack's GPU. That's a GTX 1070, recorded 
 12.8+ builds dropped Pascal. It was measured in run `20261027-172855-0c32766-dirty`
 (below).
 
+## Mood gate
+
+The duel gate chose a model for neighbours. This one asks whether embeddings can predict
+perceived mood, using DEAM's static ratings and linear probes (`audio-lab mood-probe`). Fixed on
+2026-10-31, before any mood result existed. A model passes only when **all** of these hold on
+one run:
+
+1. **Arousal:** cross-validated R² of at least **0.50**, above the mean-only baseline.
+2. **Valence:** cross-validated R² of at least **0.35**, above the mean-only baseline.
+3. **Owner's listening check:** the top and bottom 20 of the owner's library on each dimension
+   sound broadly right.
+4. **Owner's decision:** recorded below with the run ID.
+
+A model counts as ahead of another only when the 95% interval of their paired difference excludes
+zero. A tie keeps the model already in production. If nothing passes, weekly profiles must not
+present mood as a measured value.
+
+Change these thresholds here with a dated note, never silently.
+
 ## Runs
 
 ### 2026-10-26: pipeline check on the 5-seed smoke manifest

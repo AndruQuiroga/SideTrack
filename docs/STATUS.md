@@ -74,7 +74,7 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 
 ### In-flight changes
 
-- `add-mood-probe-benchmark`: 0/11 tasks
+- `add-mood-probe-benchmark`: 6/11 tasks
 - `automate-database-backups`: 9/13 tasks
 
 ### Specs
