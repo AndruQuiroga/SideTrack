@@ -43,7 +43,7 @@ The newest backup of each day, ISO week and month falls in the 7-daily, 4-weekly
 
 ### 4. Off-host copy to docker-0
 
-Copy over SSH, using a dedicated key that may only write into one directory on `/mnt/sidetrack-hdd`, with a forced `rrsync`-style command. The destination recomputes the SHA-256.
+Copy over SSH with a dedicated key tied to a forced command, `sidetrack-backup-receive.sh`, which can only list, store and expire scheduled backups in one directory on `/mnt/sidetrack-hdd`. It runs as a dedicated system user. The receiver recomputes the SHA-256 before publishing a file, which `rrsync` could not do. Copying runs as its own job, so a failed copy never marks the backup as failed.
 
 Alternatives: pushing to the workstation depends on it being on. A Proxmox vzdump covers the VM rather than the database and already exists as a manual recovery point. docker-0 is the cheapest copy that survives losing the docker-1 host, its HDD or stache-1. Both hosts share a building and power, so this is not an off-site copy.
 
@@ -51,7 +51,7 @@ Alternatives: pushing to the workstation depends on it being on. A Proxmox vzdum
 
 ### 5. Weekly restore check in a disposable container
 
-Run `pgvector/pgvector:pg16` with `--network none`, restore into it, and assert the `alembic_version` matches the expected head and `weeks` and `users` are non-empty. The expected head comes from the live database at check time, so migrations need no script change, while the restored data still has to match what production runs. A `trap` removes the container on every exit path.
+Run `pgvector/pgvector:pg16` with `--network none`, restore into it, and assert that `alembic_version` matches the head recorded in a `.head` file when the backup was taken, and that `weeks` and `users` are non-empty. Recording the head with the backup means the check never touches production, and a migration landing between a backup and its check can't raise a false alarm. A `trap` removes the container on every exit path.
 
 ### 6. Heartbeats through Uptime Kuma push monitors
 
@@ -59,7 +59,7 @@ Each job calls its own Kuma push URL only after succeeding. Push monitors catch 
 
 ### 7. Bash, tested with fake commands
 
-The scripts are POSIX-tool bash, so docker-1 needs nothing installed. `tests/test_database_backups.py` runs them on Linux CI against a temporary directory, with fake `docker`, `findmnt` and `curl` first on `PATH`, covering each spec scenario. A true restore is proved by a test using the suite's Postgres image, plus a real run on the rack.
+The scripts are POSIX-tool bash, so docker-1 needs nothing installed. `tests/test_database_backups.py` runs them on Linux CI against a temporary directory, with fake `docker`, `findmnt`, `curl` and `ssh` first on `PATH`, covering each spec scenario. The fake `ssh` runs the real receiver. A true backup and restore is proved by a test that runs both scripts with real Docker and the production Postgres image, plus a real run on the rack.
 
 ## Risks / Trade-offs
 

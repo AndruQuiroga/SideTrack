@@ -6,23 +6,23 @@
 
 ## 2. Backup and retention
 
-- [ ] 2.1 Add `deploy/backups/sidetrack-backup.sh` (mount check, `.partial` dump, checksum, root-only permissions, rename). Verify with `tests/test_database_backups.py::test_scheduled_run_succeeds`, `::test_dump_failure_leaves_no_backup`, `::test_unmounted_storage_writes_nothing`, `::test_backup_permissions` and `::test_failure_log_has_no_secrets`.
-- [ ] 2.2 Add calendar-bucket retention. Verify with `::test_retention_removes_only_expired`, `::test_manual_dumps_are_preserved` and `::test_no_new_backup_removes_nothing`.
-- [ ] 2.3 Add `sidetrack-backup.service`, `sidetrack-backup.timer` (`Persistent=true`) and an example env file. Verify with `systemd-analyze verify` in `::test_units_are_valid`, skipped with a reason where systemd is absent.
+- [x] 2.1 Add `deploy/backups/sidetrack-backup.sh` (mount check, `.partial` dump, checksum, root-only permissions, rename). Verify with `tests/test_database_backups.py::test_scheduled_run_succeeds`, `::test_dump_failure_leaves_no_backup`, `::test_unmounted_storage_writes_nothing`, `::test_backup_permissions` and `::test_failure_log_has_no_secrets`.
+- [x] 2.2 Add calendar-bucket retention. Verify with `::test_retention_removes_only_expired`, `::test_manual_dumps_are_preserved` and `::test_no_new_backup_removes_nothing`.
+- [x] 2.3 Add `sidetrack-backup.service`, `sidetrack-backup.timer` (`Persistent=true`) and an example env file. Verify with `systemd-analyze verify` in `::test_units_are_valid`, skipped with a reason where systemd is absent.
 
 ## 3. Restore check
 
-- [ ] 3.1 Add `deploy/backups/sidetrack-restore-check.sh` with its weekly units (checksum, `--network none` restore, schema-head and record checks, trap cleanup). Verify with `::test_restore_check_passes`, `::test_corrupt_backup_fails` and `::test_empty_restore_fails`, and that each asserts the disposable container is removed.
-- [ ] 3.2 Prove one real custom-format dump restores with the expected head in a Postgres-backed test, `::test_real_dump_restores`, using the suite's Postgres image.
+- [x] 3.1 Add `deploy/backups/sidetrack-restore-check.sh` with its weekly units (checksum, `--network none` restore, schema-head and record checks, trap cleanup). Verify with `::test_restore_check_passes`, `::test_corrupt_backup_fails` and `::test_empty_restore_fails`, and that each asserts the disposable container is removed.
+- [x] 3.2 Prove a real backup and restore with real Docker and the production Postgres image in `::test_real_backup_restores`.
 
 ## 4. Off-host copy
 
-- [ ] 4.1 Get the owner's confirmation of Decision 4, then add the copy step and retention at the destination. Verify with `::test_copy_verifies_checksum` and `::test_failed_copy_keeps_local_and_retries`.
+- [x] 4.1 Get the owner's confirmation of Decision 4, then add the copy step and retention at the destination. Verify with `::test_copy_verifies_checksum` and `::test_failed_copy_keeps_local_and_retries`.
 
 ## 5. Heartbeats and monitors
 
-- [ ] 5.1 Add heartbeat calls sent only after success, with URLs read from the env file. Verify with `::test_heartbeat_only_after_success`, `::test_heartbeat_failure_keeps_backup` and that the URL never appears in captured output.
-- [ ] 5.2 Document in `deploy/README.md`: install, configuration, manual run, restore steps and rollback. Replace the "Not automated yet" text. Verify `scripts/check_stack_docs.py` still passes and the documented paths match `deploy/backups/`.
+- [x] 5.1 Add heartbeat calls sent only after success, with URLs read from the env file. Verify with `::test_heartbeat_only_after_success`, `::test_heartbeat_failure_keeps_backup` and that the URL never appears in captured output.
+- [x] 5.2 Document in `deploy/README.md`: install, configuration, manual run, restore steps and rollback. Replace the "Not automated yet" text. Verify `scripts/check_stack_docs.py` still passes and the documented paths match `deploy/backups/`.
 
 ## 6. Rollout
 

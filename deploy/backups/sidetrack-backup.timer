@@ -1,0 +1,10 @@
+[Unit]
+Description=Sidetrack database backup schedule
+
+[Timer]
+OnCalendar=*-*-* 10:30:00 UTC
+Persistent=true
+RandomizedDelaySec=5min
+
+[Install]
+WantedBy=timers.target
