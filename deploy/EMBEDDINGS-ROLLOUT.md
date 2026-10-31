@@ -25,7 +25,7 @@ ten stack environment entries were preserved, and the stack's other images are u
   track's nearest results included its own preview.
 - The model loads with Hugging Face access disabled, so offline mode is safe to set.
 
-## Still open
+## Offline mode
 
-`SIDETRACK_HF_OFFLINE` is still 0 on the stack, because setting it needs a Portainer login. It
-only affects whether the worker can reach Hugging Face.
+`SIDETRACK_HF_OFFLINE=1` was set through Portainer after the model loaded with Hugging Face
+access disabled. The other nine environment entries are unchanged, and all six services are 1/1.
