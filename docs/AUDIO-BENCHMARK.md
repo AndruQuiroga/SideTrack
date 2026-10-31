@@ -326,3 +326,32 @@ The owner's library is embedded in production: 862 of 862 assets, on the rack's 
 revision `2e01c796b71dca71b45251384c04cd7b237c9020`. The 861 assets of the main backfill took 21
 minutes in 7 jobs, with no failures or retries. Spot checks returned same-genre neighbours. See
 [the rollout record](../deploy/EMBEDDINGS-ROLLOUT.md).
+
+### 2026-10-31: mood probes on DEAM
+
+Run `20261031-204732-9b07ff0`: all 1,802 DEAM clips, with 0 failures. Environment: RTX 5070,
+torch 2.11.0+cu128, 118 audio-s/s for each model. Five repeats of 5-fold nested cross-validation.
+
+| Model | Valence R² | Arousal R² | Mean R² |
+| --- | --- | --- | --- |
+| `muq-mulan` | 0.615 | 0.688 | 0.652 |
+| `muq` | 0.564 | 0.658 | 0.611 |
+| Mean-only baseline | -0.001 | -0.001 | -0.001 |
+
+MuQ-MuLan is ahead of MuQ by 0.040 mean R² (95% interval 0.028 to 0.054). Both models clear the
+gate's two numeric thresholds. The owner's listening check and decision are still to come.
+
+- **Data source:** DEAM's official site (Aljanaki, Yazdani and Soleymani, 2017) timed out, so the
+  owner downloaded the audio from a Kaggle copy and the ratings from a separate copy. All 1,802
+  rated clips matched an audio file, and the count and columns match the published dataset. The
+  dataset's licence is non-commercial Creative Commons. Nothing from it is in this repo.
+- **No artist grouping:** the metadata file wasn't available, so each clip is its own group. Clips
+  by one artist can sit on both sides of a split, which may flatter these scores. Both models get
+  the same benefit, so the comparison is fairer than the absolute numbers.
+- **Valence and arousal are less separate than the scores suggest.** Human ratings correlate at
+  0.57, MuQ-MuLan's held-out predictions at 0.83, and its predictions on the owner's library at
+  0.92. It still predicts 27% of the valence that arousal doesn't explain, and 34% of the arousal
+  that valence doesn't explain (MuQ: 17% and 26%), so the two aren't the same signal, but dark and
+  calm tracks will often be hard to tell apart. A two-axis mood chart will tend to run along a
+  diagonal.
+

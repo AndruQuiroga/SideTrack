@@ -2,7 +2,7 @@
 
 ## 1. Dataset
 
-- [ ] 1.1 Confirm DEAM's current download location and licence, and record both in `docs/AUDIO-BENCHMARK.md`. With the owner's approval of the source and size, download it to `E:/sidetrack/mood/deam`. Verify the clip count and annotation columns against the manual; if DEAM is unavailable, stop and review the PMEmo fallback in design.md with the owner.
+- [x] 1.1 Confirm DEAM's current download location and licence, and record both in `docs/AUDIO-BENCHMARK.md`. With the owner's approval of the source and size, download it to `E:/sidetrack/mood/deam`. Verify the clip count and annotation columns against the manual; if DEAM is unavailable, stop and review the PMEmo fallback in design.md with the owner. (Done from Kaggle and owner-supplied copies because the official site timed out. The metadata file wasn't available, so clips aren't grouped by artist; see docs/AUDIO-BENCHMARK.md.)
 
 ## 2. Dataset preparation
 
@@ -18,7 +18,7 @@
 
 ## 4. Benchmark
 
-- [ ] 4.1 Run `embed` on DEAM with `muq-mulan` and `muq` on the RTX 5070, then `mood-probe`. Verify `run.json` shows both models ok, and record the run ID, clip count, R² and comparison in `docs/AUDIO-BENCHMARK.md`, aggregates only.
+- [x] 4.1 Run `embed` on DEAM with `muq-mulan` and `muq` on the RTX 5070, then `mood-probe`. Verify `run.json` shows both models ok, and record the run ID, clip count, R² and comparison in `docs/AUDIO-BENCHMARK.md`, aggregates only.
 - [ ] 4.2 Write predictions for run `20261027-031711-c7c3698`, and give the owner the top and bottom 20 per dimension to listen to. Verify the file is outside the repo.
 - [ ] 4.3 Add the mood gate to `docs/AUDIO-BENCHMARK.md` before opening the results in 4.1, then record the gate result and the owner's decision with the run ID.
 
