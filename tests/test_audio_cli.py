@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ast
 import csv
+import hashlib
 import io
 import json
 from pathlib import Path
@@ -12,7 +13,7 @@ import pytest
 from audio_doubles import FakeAcoustId, fake_sources
 from sqlalchemy import func, select
 
-from sidetrack.analysis.audio import Match
+from sidetrack.analysis.audio import MANIFEST_COLUMNS, Match
 from sidetrack.analysis.models import AudioAsset
 from sidetrack.audio import main
 from sidetrack.config import Settings
@@ -134,11 +135,144 @@ def _imports(source: Path) -> set[str]:
     return found
 
 
+def _manifest(tmp_path: Path, *, count: int = 2, columns=MANIFEST_COLUMNS) -> tuple[Path, Path]:
+    """A library of `count` files already on disk, plus its manifest."""
+
+    audio_dir = tmp_path / "audio"
+    audio_dir.mkdir()
+    manifest = tmp_path / "manifest.csv"
+    with manifest.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, columns, restval="")
+        writer.writeheader()
+        for index in range(count):
+            data = f"audio {index}".encode()
+            sha256 = hashlib.sha256(data).hexdigest()
+            (audio_dir / f"{sha256}.webm").write_bytes(data)
+            writer.writerow(
+                {
+                    "path": f"{sha256}.webm",
+                    "sha256": sha256,
+                    "kind": "full",
+                    "source": "youtube_music",
+                    "source_id": f"video-{index}",
+                    "duration_s": "",
+                    "verification": "unverified",
+                    "track_id": "",
+                    "artist": "Broadcast",
+                    "title": f"Song {index}",
+                }
+            )
+    return audio_dir, manifest
+
+
+def _import(db, tmp_path, manifest: Path, *flags: str) -> tuple[int, str]:
+    out = io.StringIO()
+    code = _run(db, tmp_path, ["import-manifest", "--manifest", str(manifest), *flags], out=out)
+    return code, out.getvalue()
+
+
+def _count_assets(db) -> int:
+    return db.scalar(select(func.count()).select_from(AudioAsset))
+
+
+def test_import_manifest_check(db, tmp_path):
+    _, manifest = _manifest(tmp_path)
+
+    code, output = _import(db, tmp_path, manifest)
+
+    assert code == 0
+    assert "2 new, 0 existing, 0 rejected, 0 conflicting" in output
+    assert "nothing written" in output
+    assert _count_assets(db) == 0
+
+
+def test_import_manifest_apply(db, tmp_path):
+    _, manifest = _manifest(tmp_path)
+
+    assert _import(db, tmp_path, manifest, "--apply")[0] == 0
+    assert _count_assets(db) == 2
+
+    code, output = _import(db, tmp_path, manifest, "--apply")
+    assert code == 0
+    assert "0 new, 2 existing" in output
+    assert _count_assets(db) == 2
+
+
+def test_import_manifest_old_columns(db, tmp_path):
+    columns = [c for c in MANIFEST_COLUMNS if c not in ("acoustid_score", "recording_mbid")]
+    _, manifest = _manifest(tmp_path, columns=columns)
+
+    assert _import(db, tmp_path, manifest, "--apply")[0] == 0
+    assert _count_assets(db) == 2
+
+
+def test_rejected_row_blocks_apply(db, tmp_path):
+    audio_dir, manifest = _manifest(tmp_path)
+    next(audio_dir.iterdir()).unlink()
+
+    code, output = _import(db, tmp_path, manifest, "--apply")
+
+    assert code == 1
+    assert "file is missing" in output
+    assert _count_assets(db) == 0
+
+
+def test_skip_rejected_applies_valid_rows(db, tmp_path):
+    audio_dir, manifest = _manifest(tmp_path)
+    next(audio_dir.iterdir()).unlink()
+
+    code, output = _import(db, tmp_path, manifest, "--apply", "--skip-rejected")
+
+    assert code == 0
+    assert "file is missing" in output
+    assert _count_assets(db) == 1
+
+
+def test_skip_rejected_never_skips_conflicts(db, tmp_path):
+    _, manifest = _manifest(tmp_path)
+    text = manifest.read_text("utf-8").replace("video-1", "video-0")
+    manifest.write_text(text, "utf-8")
+
+    code, output = _import(db, tmp_path, manifest, "--apply", "--skip-rejected")
+
+    assert code == 1
+    assert "source belongs to another hash" in output
+    assert _count_assets(db) == 0
+
+
+def test_import_summary_has_no_absolute_paths(db, tmp_path):
+    audio_dir, manifest = _manifest(tmp_path)
+    next(audio_dir.iterdir()).unlink()
+
+    _, output = _import(db, tmp_path, manifest)
+
+    assert str(tmp_path) not in output
+
+
+def test_import_manifest_needs_a_readable_manifest(db, tmp_path, capsys):
+    (tmp_path / "bad.csv").write_text("path\na.webm\n", "utf-8")
+
+    assert _import(db, tmp_path, tmp_path / "absent.csv")[0] == 2
+    assert _import(db, tmp_path, tmp_path / "bad.csv")[0] == 2
+    assert "missing columns" in capsys.readouterr().err
+
+
+def test_embed_queues_imported_assets(db, tmp_path):
+    _, manifest = _manifest(tmp_path)
+    assert _import(db, tmp_path, manifest, "--apply")[0] == 0
+    out = io.StringIO()
+
+    assert _run(db, tmp_path, ["embed"], out=out) == 0
+
+    assert "2 assets" in out.getvalue()
+
+
 def test_no_task_fetches_audio(database_url):
     from sidetrack.worker import create_worker_app
 
     tasks = set(create_worker_app(database_url).tasks)
     assert {t for t in tasks if "procrastinate.builtin_tasks" not in t} == {"sidetrack.execute"}
+    assert "import_manifest" not in (ROOT / "sidetrack" / "job_runner.py").read_text("utf-8")
 
     allowed = {ROOT / "sidetrack" / "audio.py"}
     package = ROOT / "sidetrack" / "analysis" / "audio"

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import io
 import sys
 import types
@@ -18,9 +19,12 @@ from sidetrack.analysis.audio import (
     DeezerPreviewSource,
     Match,
     Seed,
+    apply_manifest_import,
     export_manifest,
     fetch_seed,
+    plan_manifest_import,
     prune_assets,
+    read_manifest,
     read_seeds,
 )
 from sidetrack.analysis.audio.sources import RedactingLogger
@@ -272,6 +276,176 @@ def test_manifest_lists_existing_files(db, tmp_path):
 
     (tmp_path / rows[0]["path"]).unlink()
     assert export_manifest(db, tmp_path, io.StringIO()) == 5
+
+
+def test_manifest_includes_verification_detail(db, tmp_path):
+    verifier = FakeAcoustId([Match(0.97, "mbid-1", SEED.artist, SEED.title)])
+    _fetch(db, tmp_path, verifier=verifier)
+    out = io.StringIO()
+    export_manifest(db, tmp_path, out)
+
+    confirmed = [
+        row
+        for row in csv.DictReader(io.StringIO(out.getvalue()))
+        if row["verification"] == "confirmed"
+    ]
+    assert confirmed
+    assert {row["recording_mbid"] for row in confirmed} == {"mbid-1"}
+    assert {float(row["acoustid_score"]) for row in confirmed} == {0.97}
+
+
+def _library(tmp_path, count=2):
+    """Files and manifest rows for a library that this database has never seen."""
+
+    audio_dir = tmp_path / "library"
+    audio_dir.mkdir()
+    rows = []
+    for index in range(count):
+        data = f"audio {index}".encode()
+        sha256 = hashlib.sha256(data).hexdigest()
+        (audio_dir / f"{sha256}.webm").write_bytes(data)
+        rows.append(
+            {
+                "path": f"{sha256}.webm",
+                "sha256": sha256,
+                "kind": "full",
+                "source": "youtube_music",
+                "source_id": f"video-{index}",
+                "duration_s": "180.50",
+                "verification": "unverified",
+                "track_id": "",
+                "artist": "Broadcast",
+                "title": f"Song {index}",
+            }
+        )
+    return audio_dir, rows
+
+
+def _import(db, audio_dir, rows):
+    plan = plan_manifest_import(db, audio_dir, rows)
+    apply_manifest_import(db, plan)
+    return plan
+
+
+def _asset_count(db):
+    return db.scalar(select(func.count()).select_from(AudioAsset))
+
+
+def test_import_check_writes_nothing(db, tmp_path):
+    audio_dir, rows = _library(tmp_path)
+
+    plan = plan_manifest_import(db, audio_dir, rows)
+
+    assert (len(plan.new), plan.existing, plan.rejected, plan.conflicts) == (2, 0, [], [])
+    assert _asset_count(db) == 0
+
+
+def test_import_rejects_missing_file(db, tmp_path):
+    audio_dir, rows = _library(tmp_path)
+    (audio_dir / rows[0]["path"]).unlink()
+
+    plan = plan_manifest_import(db, audio_dir, rows)
+
+    assert [(i.path, i.reason) for i in plan.rejected] == [(rows[0]["path"], "file is missing")]
+    assert len(plan.new) == 1
+
+
+def test_import_rejects_hash_mismatch(db, tmp_path):
+    audio_dir, rows = _library(tmp_path)
+    file = audio_dir / rows[0]["path"]
+    file.write_bytes(b"something else")
+
+    plan = plan_manifest_import(db, audio_dir, rows)
+
+    assert [i.reason for i in plan.rejected] == ["file does not match its hash"]
+    assert file.read_bytes() == b"something else"
+
+
+@pytest.mark.parametrize("path", ["other.webm", "../outside.webm", "/etc/passwd"])
+def test_import_rejects_path_not_named_by_hash(db, tmp_path, path):
+    audio_dir, rows = _library(tmp_path, 1)
+    rows[0]["path"] = path
+
+    plan = plan_manifest_import(db, audio_dir, rows)
+
+    assert [i.reason for i in plan.rejected] == ["file name does not match its hash"]
+
+
+def test_import_rejects_invalid_value(db, tmp_path):
+    audio_dir, rows = _library(tmp_path, 1)
+    rows[0]["kind"] = "bootleg"
+
+    plan = plan_manifest_import(db, audio_dir, rows)
+
+    assert [i.reason for i in plan.rejected] == ["row has an invalid value"]
+
+
+def test_import_rejects_mismatched_asset(db, tmp_path):
+    audio_dir, rows = _library(tmp_path, 1)
+    rows[0]["verification"] = "mismatch"
+
+    plan = plan_manifest_import(db, audio_dir, rows)
+
+    assert [i.reason for i in plan.rejected] == ["verification is mismatch"]
+
+
+def test_import_reports_conflict(db, tmp_path):
+    audio_dir, rows = _library(tmp_path)
+    _import(db, audio_dir, rows[:1])
+    rows[1]["source_id"] = rows[0]["source_id"]
+
+    plan = plan_manifest_import(db, audio_dir, rows)
+
+    assert plan.existing == 1
+    assert [i.reason for i in plan.conflicts] == ["source belongs to another hash"]
+
+    rows[1]["source_id"], rows[1]["sha256"] = "other-video", rows[0]["sha256"]
+    plan = plan_manifest_import(db, audio_dir, rows[1:])
+    assert [i.reason for i in plan.conflicts] == ["hash belongs to another source"]
+
+
+def test_import_creates_assets(db, tmp_path):
+    audio_dir, rows = _library(tmp_path)
+    rows[0]["acoustid_score"], rows[0]["recording_mbid"] = "0.91", "mbid-1"
+
+    _import(db, audio_dir, rows)
+
+    asset = db.scalar(select(AudioAsset).where(AudioAsset.sha256 == rows[0]["sha256"]))
+    assert asset.source is AudioSource.YOUTUBE_MUSIC
+    assert asset.source_ref == "video-0"
+    assert asset.kind is AudioKind.FULL
+    assert asset.path == rows[0]["path"]
+    assert asset.format == "webm"
+    assert asset.duration_s == 180.5
+    assert asset.verification is AudioVerification.UNVERIFIED
+    assert (asset.seed_artist, asset.seed_title) == ("Broadcast", "Song 0")
+    assert (asset.acoustid_score, asset.recording_mbid) == (0.91, "mbid-1")
+    assert asset.fetched_at.date() == datetime.now(UTC).date()
+    assert _asset_count(db) == 2
+
+
+def test_import_drops_track_link(db, tmp_path):
+    audio_dir, rows = _library(tmp_path, 1)
+    rows[0]["track_id"] = str(uuid4())
+
+    _import(db, audio_dir, rows)
+
+    assert db.scalar(select(AudioAsset.track_id)) is None
+
+
+def test_import_retry_adds_nothing(db, tmp_path):
+    audio_dir, rows = _library(tmp_path)
+    _import(db, audio_dir, rows)
+
+    plan = _import(db, audio_dir, rows)
+
+    assert (plan.new, plan.existing, plan.rejected, plan.conflicts) == ([], 2, [], [])
+    assert _asset_count(db) == 2
+
+
+def test_read_manifest_requires_columns():
+    with pytest.raises(ValueError, match="sha256"):
+        read_manifest(io.StringIO("path,kind\na.webm,full\n"))
 
 
 def test_read_seeds_requires_columns():
