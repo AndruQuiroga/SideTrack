@@ -300,3 +300,10 @@ benchmark had numpy 2.3.5.
 - **Result:** every production vector matched the benchmark run's MuQ-MuLan vector for the
   same SHA-256, with a minimum cosine of 1.000000 at six decimals. The spec's threshold is
   0.999. The test took 99 s, including the weight download.
+
+## Rack backfill, 2026-10-31
+
+The owner's library is embedded in production: 862 of 862 assets, on the rack's GTX 1070, at
+revision `2e01c796b71dca71b45251384c04cd7b237c9020`. The 861 assets of the main backfill took 21
+minutes in 7 jobs, with no failures or retries. Spot checks returned same-genre neighbours. See
+[the rollout record](../deploy/EMBEDDINGS-ROLLOUT.md).

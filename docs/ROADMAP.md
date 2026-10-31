@@ -120,8 +120,11 @@ archived on 2026-10-31:
 - `recover-club-artwork`: verified covers, with no guessed artwork.
 - `rework-singles-night-gallery`: Singles Night songs in the home gallery.
 
-Still open: automated backups, monitoring, the Portainer cold-pull limitation, and
-a real GPU embedding job and backfill (`add-muq-mulan-embeddings`).
+`automate-database-backups` installed scheduled, verified backups on 2026-10-31.
+`import-audio-manifest` and `add-muq-mulan-embeddings` put the owner's 862 assets and their
+embeddings in production the same day.
+
+Still open: Uptime Kuma monitors and backup heartbeats, and the Portainer cold-pull limitation.
 
 ## Audio analysis
 

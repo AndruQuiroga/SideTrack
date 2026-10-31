@@ -36,6 +36,13 @@ install_receiver() {
   id -u sidetrack-backup >/dev/null 2>&1 ||
     useradd --system --home-dir "$home" --create-home --shell /bin/bash sidetrack-backup
   install -d -m 0700 -o sidetrack-backup -g sidetrack-backup "$dir" "$home/.ssh"
+  # The HDD's mount is root-only, so grant traversal without letting the user list it.
+  command -v setfacl >/dev/null || apt-get install -y -qq acl
+  local parent="$dir"
+  while [ "$parent" != "/" ]; do
+    parent="$(dirname "$parent")"
+    setfacl -m u:sidetrack-backup:x "$parent"
+  done
   local command="SIDETRACK_RECEIVE_DIR=$dir $LIB/sidetrack-backup-receive.sh"
   echo "command=\"$command\",restrict $key" >"$home/.ssh/authorized_keys"
   chown sidetrack-backup:sidetrack-backup "$home/.ssh/authorized_keys"
