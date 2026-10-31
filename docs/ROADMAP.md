@@ -11,16 +11,14 @@ tests, and a generated status report. The follow-up
 `remove-fabricated-connection-status` removes an overlooked default linked account
 and distinguishes unavailable account data from an empty successful lookup.
 
-Two operational checks remain explicitly visible:
+Two operational checks stayed open while later phases proceeded, as authorized by
+the owner on 2026-10-25. Both are now closed, and both changes were archived on
+2026-10-31:
 
-- `harden-api-credentials` task 3.4: the owner deferred the real Last.fm account
-  test on 2026-10-25. Automated credential tests and the web build pass; linking
-  stays **partial** until the real flow succeeds.
-- `deploy-on-stache-rack`: first rack rollout and its infrastructure records are
-  still pending. Preparation tasks being complete does not mean deployment works.
-
-These checks remain open while Phase 1 code work proceeds, as authorized by the
-owner on 2026-10-25. Neither change should be archived as fully verified yet.
+- `harden-api-credentials` task 3.4: the owner confirmed real Last.fm linking on
+  sidetrack.network on 2026-10-28.
+- `deploy-on-stache-rack`: the first rack rollout finished on 2026-10-27; Portainer
+  stack 23 runs all six services.
 
 ## Phase 1: module boundaries
 
@@ -42,7 +40,7 @@ Phase 1 merged in PR #284 (5/5 tracked tasks); the change was archived on
 2026-10-25 passed all 87 Python tests against migrated Postgres, 11 web tests,
 4 bot tests, six import contracts, Python and TypeScript lint, TypeScript builds,
 strict OpenSpec validation and the generated-status check. Existing mypy errors remain the
-recorded backlog; the Phase 0 operational checks above remain deferred.
+recorded backlog.
 
 ## Phase 2: durable background work
 
@@ -73,7 +71,7 @@ The pre-existing user-deletion ORM cascade defect found during checkpoint testin
 (GitHub issue #286) was fixed by `fix-user-deletion-and-metadata-alias` (PR #291).
 Mypy retained 39 existing errors (38 after #291); the
 new modules add none. GPU analysis, import backfill and phase enforcement remain
-later work. Real OAuth verification and first rack deployment remain deferred.
+later work.
 
 ## Phase 3: per-user API authorization
 
@@ -97,11 +95,10 @@ and ballots only to the voter.
 Verification on 2026-10-26: the Python suite on migrated Postgres, 15 HTTP checks
 against a live API, and the TypeScript lint, build and test runs.
 
-Still open:
+The first rack rollout covered Phases 1–3, and the owner confirmed real Discord
+sign-in on 2026-10-28.
 
-- The change hasn't been deployed; the first rack rollout covers Phases 1–3.
-- Real Discord sign-in hasn't been verified.
-- Encrypting stored provider tokens at rest is separate Phase 3 work.
+Still open: encrypting stored provider tokens at rest is separate Phase 3 work.
 
 ## Pre-rollout fixes
 
@@ -110,6 +107,21 @@ Still open:
 every rating or listen-event response returned 500, because of the `metadata`
 alias (`docs/issues/metadata-alias-crashes.md`). User deletion failed whenever the
 user had dependent rows (#286). Postgres-backed regressions cover both.
+
+## Production rollout and club history
+
+Portainer stack 23 went live on 2026-10-27. These changes followed it and were
+archived on 2026-10-31:
+
+- `rework-web-experience`: the responsive Journal interface.
+- `fix-web-data-honesty-regressions`: rendered club data stays honest.
+- `import-discord-club-history`: the approved import of club and Singles Night
+  history from Discord.
+- `recover-club-artwork`: verified covers, with no guessed artwork.
+- `rework-singles-night-gallery`: Singles Night songs in the home gallery.
+
+Still open: automated backups, monitoring, the Portainer cold-pull limitation, and
+a real GPU embedding job and backfill (`add-muq-mulan-embeddings`).
 
 ## Audio analysis
 

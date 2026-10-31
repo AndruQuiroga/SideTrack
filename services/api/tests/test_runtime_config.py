@@ -1,4 +1,4 @@
-"""Spec: platform/runtime-config (openspec/changes/deploy-on-stache-rack)."""
+"""Spec: platform/runtime-config (openspec/changes/archive/2026-10-31-deploy-on-stache-rack)."""
 
 from __future__ import annotations
 

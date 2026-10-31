@@ -12,4 +12,4 @@ The browser calls only this site's server routes. Credentialed API requests and 
 
 Verify with `pnpm --filter @sidetrack/web lint`, `pnpm --filter @sidetrack/web build`, then `pnpm --filter @sidetrack/web test` (the bundle-boundary test needs a build). Behavioral fixtures and browser harnesses live under `tests/` only.
 
-After building, `node apps/web/tests/browser-harness.cjs` from the repository root starts an isolated loopback review server and prints its URL. Review accounts and artwork are test fixtures; real provider accounts are not connected. See `openspec/changes/rework-web-experience/verification.md` for scenario evidence and screenshots.
+After building, `node apps/web/tests/browser-harness.cjs` from the repository root starts an isolated loopback review server and prints its URL. Review accounts and artwork are test fixtures; real provider accounts are not connected. See `openspec/changes/archive/2026-10-31-rework-web-experience/verification.md` for scenario evidence and screenshots.

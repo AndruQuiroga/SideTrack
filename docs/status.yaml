@@ -2,7 +2,7 @@
 # Statuses: works | partial | broken | stub | absent.
 # "works" needs at least one evidence path (a test, preferably) that exists in the repo.
 
-reviewed: 2026-10-28
+reviewed: 2026-10-31
 
 groups:
   - name: Club (Discord album club)
@@ -130,7 +130,7 @@ groups:
           - docs/AUDIO-BENCHMARK.md
       - capability: Audio embeddings
         status: partial
-        notes: "MuQ-MuLan vectors in pgvector (audio_embeddings), embedded by `analysis.embed_audio` jobs on the gpu queue, which `python -m sidetrack.audio embed` queues; `neighbours` ranks similar audio within one model and revision (ADR 0010). The sidetrack-gpu image builds and its worker runs; a model that can't load reports unavailable. Not yet run on the rack: Sidetrack isn't deployed there, so no real backfill has happened. No HTTP route or page uses embeddings"
+        notes: "MuQ-MuLan vectors in pgvector (audio_embeddings), embedded by `analysis.embed_audio` jobs on the gpu queue, which `python -m sidetrack.audio embed` queues; `neighbours` ranks similar audio within one model and revision (ADR 0010). The sidetrack-gpu image builds and its worker runs; a model that can't load reports unavailable. The GPU worker is deployed on the rack, but no real embedding job or backfill has run there yet. No HTTP route or page uses embeddings"
         evidence:
           - tests/test_audio_embeddings_store.py
           - tests/test_audio_embeddings_pipeline.py
@@ -156,15 +156,16 @@ groups:
           - apps/web/tests/club-data-honesty.test.cjs
       - capability: Singles Night home gallery
         status: works
-        notes: "Implemented and locally verified; not deployed. The home page exposes songs across nights with inline impressions, eight-night batches, three concurrent detail reads and session-authorized retries. All 77 web tests, 20 focused API/contract tests, client build/tests and light/dark browser inspections at 320/390/768/1440 pass. Review precedes a separate API-then-web rollout."
+        notes: "Release 3d83256 is live after owner-approved PR #303 merge and API-then-web rollout. The signed-in browser shows seven nights/44 cards with inline impressions and working direct links. All 44 API summaries match stored scores; 401/403/200 access and fourteen history/account fingerprints are preserved. All 77 web tests, 20 focused API/contract tests, client build/tests and light/dark inspections pass."
         evidence:
           - apps/web/tests/singles-gallery.test.cjs
           - apps/web/tests/singles-gallery-actions.test.cjs
           - apps/web/tests/singles-gallery-interactions.test.cjs
           - apps/web/tests/singles-read-models.test.cjs
           - services/api/tests/test_singles_nights.py
-          - openspec/changes/rework-singles-night-gallery/verification.md
+          - openspec/changes/archive/2026-10-31-rework-singles-night-gallery/verification.md
           - docs/SINGLES-GALLERY.md
+          - deploy/SINGLES-GALLERY-2026-10-29.md
       - capability: Profile pages
         status: absent
         notes: "Profile analytics are unavailable; /u/<id> explains the limitation without calling missing profile/timeline/now-playing endpoints. Listening-history links remain supported."
@@ -176,7 +177,7 @@ groups:
           - apps/web/tests/interface-presentation.test.cjs
           - apps/web/tests/listening-history.test.cjs
           - apps/web/tests/search-dialog.test.cjs
-          - openspec/changes/rework-web-experience/verification.md
+          - openspec/changes/archive/2026-10-31-rework-web-experience/verification.md
           - docs/CLUB-HISTORY.md
 
   - name: Platform
@@ -249,8 +250,9 @@ groups:
           - .github/workflows/ci.yml
       - capability: Deployment to Stache-Rack
         status: works
-        notes: "Portainer stack 23 runs artwork release c97d390 for API/default worker and web, bot release 73e9435, and the compatible original GPU image. All six services are 1/1; schema 0012, public health, history/artwork verification and fresh pre/post backup restores pass. Existing Discord/Last.fm links and all 10 environment entries are preserved. Portainer cold pulls and a real GPU embedding job remain separate verification."
+        notes: "Portainer stack 23 runs gallery release 3d83256 for API/default worker and web, bot release 73e9435, and the compatible original GPU image. All six services are 1/1; schema 0012, public health, live gallery/API checks and a fresh isolated backup restore pass. Fourteen history/account fingerprints and all ten environment entries are preserved. Portainer cold pulls and a real GPU embedding job remain separate verification."
         evidence:
           - deploy/stack.yml
+          - deploy/SINGLES-GALLERY-2026-10-29.md
           - deploy/README.md
           - docs/CLUB-HISTORY.md

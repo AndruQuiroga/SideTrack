@@ -17,7 +17,7 @@
 - [x] 3.1 Add state sign/verify helpers (HMAC-SHA256, 15-minute expiry). Verify with `tests/test_link_state.py` covering round-trip, tampered signature, expiry and malformed input.
 - [x] 3.2 Make `POST /integrations/lastfm/connect` take `{user_id, callback_url}`, return `{url}` with `state` embedded in the callback. Verify with `tests/test_lastfm_link.py::test_connect_returns_url_with_state`.
 - [x] 3.3 Convert the callback to `POST {token, state}`, link to the user in `state`, ignore any `user_id`, and check for conflicts before writing. Mock Last.fm `auth.getSession` with respx. Verify with `::test_callback_links_state_user`, `::test_callback_rejects_tampered_state`, `::test_callback_rejects_expired_state`, `::test_callback_ignores_user_id_param`, `::test_conflict_leaves_existing_credential`, `::test_relink_same_user_replaces_credential`.
-- [ ] 3.4 Update the web connect flow (`apps/web/app/lib/api/discover.ts`, settings page) to start linking server-side for the session user, and make the callback page POST `{token, state}`. Verify `pnpm --filter @sidetrack/web build` passes, then manually link a Last.fm account in `docker compose up`.
+- [x] 3.4 Update the web connect flow (`apps/web/app/lib/api/discover.ts`, settings page) to start linking server-side for the session user, and make the callback page POST `{token, state}`. Verify `pnpm --filter @sidetrack/web build` passes, then manually link a Last.fm account in `docker compose up`. (The owner confirmed a real Last.fm link on sidetrack.network on 2026-10-28, in place of the `docker compose up` check; see docs/CLUB-HISTORY.md.)
 
   Verification reviewed 2026-10-25: the existing web route derives the user from the
   server session, the connect helper calls that route, and the callback POSTs

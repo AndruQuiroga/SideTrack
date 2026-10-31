@@ -2,6 +2,41 @@
 
 `stack.yml` is a Docker Swarm stack for Portainer, following the rack conventions in stache-infra (Traefik on `traefik-public`, node-pinned `/srv/<app>` data, secrets outside Git). Decision record: [ADR 0006](../docs/decisions/0006-deploy-on-stache-rack.md).
 
+For the first deployment onto an empty database, follow
+[FIRST-ROLLOUT.md](FIRST-ROLLOUT.md). It covers release selection, rack evidence,
+the six current services, migration `0010_audio_embeddings`, real sign-in checks,
+GPU verification and backups. The Phase 2/3 cutovers below are historical update
+procedures; they do not apply to a fresh installation.
+
+Live preflight, 2026-10-27: docker-0 has 33 GiB free
+and docker-1 18 GiB. Both `/srv` and existing backup directories use root disks;
+neither guest sees an HDD. Swarm and the GPU are available, but provisioning,
+routing and storage preparation remain pending.
+
+Subsequent completed storage preparation supersedes
+that storage snapshot: docker-1 now has 94 GiB root free, its DB label/directory
+are ready, `/srv/sidetrack/audio` on docker-0 uses the 4 TB HDD, and
+`/srv/sidetrack/backups` on docker-1 uses a separate healthy 1 TB HDD (613 GiB free).
+Both UUID mounts preserve existing data. Set `SIDETRACK_BACKUP_DIR` to
+`/srv/sidetrack/backups` for manual dumps on docker-1. A VM recovery archive was
+verified; Sidetrack database dumps/restores and recurring backups remain pending.
+Selected release: `sha-15a25c1`; four registry manifests/digests were verified from the rack.
+
+On 2026-10-28 the web service alone was updated through Portainer to the CI-tested
+Discord issuer fix, revision `915315a`, pinned to digest
+`sha256:4a3b4b994ddbb9d939293e95b3cc7c244396dff3bb562d3a311f3d6eecaa0c23`.
+The remaining services retain the initial release. Chrome Safe Browsing blocks
+the OAuth callback with a phishing classification whose public report predates
+this deployment. A Google review was submitted with owner approval; receipt was
+confirmed, clearance is pending. See [evidence](SAFE-BROWSING-2026-10-28.md).
+
+Production launch: Portainer stack 23 is live
+with all six services, schema 0010, active public DNS and verified auth boundaries.
+The initial database backup passed an isolated restore. Real-user Discord/Last.fm
+flows, monitoring and a real GPU embedding job still need verification. This
+rollout required explicit per-node image pulls; the report records the unresolved
+Portainer cold-pull limitation and safe recovery procedure.
+
 CI publishes images on every push to `main`:
 
 - `ghcr.io/andruquiroga/sidetrack-api:sha-<short>` (also the Postgres worker)
@@ -15,7 +50,9 @@ A `main` tag also follows the latest build. Deploy a `sha-` tag so rollbacks are
 
 Verify each step against live state first, as the stache-infra change rules require.
 
-1. **Pick the DB node and label it.** docker-1 reportedly has the most free disk (unverified in stache-infra):
+1. **Pick the DB node and label it.** docker-1 was selected and labelled on
+   2026-10-27 after expanding its SSD-backed root to 200 GiB (about 94 GiB free).
+   Recheck capacity before deploying. Exactly one node should carry the DB label:
    ```bash
    docker node update --label-add sidetrack.db=true docker-1
    ```
@@ -23,8 +60,10 @@ Verify each step against live state first, as the stache-infra change rules requ
    ```bash
    sudo mkdir -p /srv/sidetrack/postgres
    ```
-   On docker-0, create the GPU worker's audio and model-cache directories too (see
-   [GPU services on docker-0](#gpu-services-on-docker-0)):
+   On docker-0, establish the audio directory's backing storage before creating
+   the GPU worker's audio and model-cache directories (see
+   [GPU services on docker-0](#gpu-services-on-docker-0)). Creating a directory
+   does not attach the HDD:
    ```bash
    sudo mkdir -p /srv/sidetrack/audio /srv/sidetrack/models
    ```
@@ -170,12 +209,35 @@ Pascal image: it reported the GTX 1070 at capability (6, 1) and was removed afte
   first job downloads the pinned weights; then set `SIDETRACK_HF_OFFLINE=1`.
 - **`sidetrack_database_url`**, its only secret.
 
-Both directories sit on docker-0's root disk: the 4 TB HDD isn't attached to it yet.
+After storage preparation on 2026-10-27, `/srv/sidetrack/audio` points to the
+preserved 4 TB HDD mounted by UUID at `/mnt/sidetrack-hdd`; models remain on SSD.
+The audio source is unavailable if the HDD is absent, preventing root-disk
+fallback. Root-only access protects the old disk contents. Verify the backing
+mount before copying assets or running a full backfill (ADR 0005).
+Recheck free disk and RAM before pulling the roughly 12 GB image and downloading
+weights; node storage labels do not prove attached capacity.
+
+An empty rack database also needs asset metadata, not just copied audio files.
+The explicit `fetch` workflow creates rows in its configured database. Transferring
+an existing benchmark/library's metadata needs a reviewed procedure before backfill;
+do not restore a benchmark database over live club data. Queue `embed` from an
+operator environment that sees both the files and the rack database; the API has
+no audio mount and the GPU worker's mount is read-only.
 
 ## Backups
 
-Not automated yet; it's an open question in the `deploy-on-stache-rack` design. Until then, before risky changes:
+Not automated yet; it's an open question in the `deploy-on-stache-rack` design.
+Choose and verify an HDD-backed destination, create the directory, and set
+`SIDETRACK_BACKUP_DIR` to `/srv/sidetrack/backups` on docker-1. The existing
+`/srv/backups` directory remains on SSD; it is not the new HDD destination.
+Run on the DB task's node before risky changes:
 
 ```bash
-docker exec $(docker ps -qf name=sidetrack_db) pg_dump -U sidetrack sidetrack | gzip > /srv/backups/sidetrack-$(date +%F).sql.gz
+set -o pipefail
+: "${SIDETRACK_BACKUP_DIR:?set the verified backup directory}"
+docker exec $(docker ps -qf name=sidetrack_db) pg_dump -U sidetrack sidetrack | gzip > "$SIDETRACK_BACKUP_DIR/sidetrack-$(date +%F).sql.gz"
 ```
+
+Check gzip integrity and test restoration into a separate disposable Postgres 16
+database with pgvector. Record the restore result and retention plan before calling
+backups verified; never test by restoring over the live database.
