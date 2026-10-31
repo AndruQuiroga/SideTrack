@@ -36,10 +36,10 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 
 | Capability | Status | Notes | Evidence |
 | --- | --- | --- | --- |
-| Audio acquisition | works | Opt-in `python -m sidetrack.audio` (ADR 0007): YouTube Music full tracks and Deezer previews, content-addressed storage, AcoustID verification, manifest, verify and prune. Real 5-seed run on 2026-10-26: 10 assets stored, all 5 full tracks AcoustID-confirmed (0.96-1.00); previews stay unverified as expected | `tests/test_audio_assets.py`, `tests/test_audio_cli.py`, `docs/AUDIO.md` |
+| Audio acquisition | works | Opt-in `python -m sidetrack.audio` (ADR 0007): YouTube Music full tracks and Deezer previews, content-addressed storage, AcoustID verification, manifest, verify and prune. `import-manifest` creates rows for files copied to another machine, with no fetching. Real 5-seed run on 2026-10-26: 10 assets stored, all 5 full tracks AcoustID-confirmed (0.96-1.00); previews stay unverified as expected. 862 assets were imported to production on 2026-10-31. | `deploy/EMBEDDINGS-ROLLOUT.md`, `tests/test_audio_assets.py`, `tests/test_audio_cli.py`, `docs/AUDIO.md` |
 | Audio feature extraction | partial | services/audio-lab benchmark CLI (ADR 0004) embeds acquired audio into versioned Parquet runs with a blind-duel report, automatic neighbour metrics and duel scoring; plus a seed builder for ListenBrainz exports and a Deezer genre control set. Benchmark only, not integrated into Sidetrack (docs/AUDIO-BENCHMARK.md) | `services/audio-lab/tests/test_runs.py`, `services/audio-lab/tests/test_neighbours.py`, `services/audio-lab/tests/test_report_and_score.py` |
 | Embedding models (any) | partial | MuQ-MuLan passed the v2 benchmark gate as the lead model, with MuQ kept as a second (run 20261027-031711-c7c3698, 703 assets, 103 owner duels, 2026-10-27). Both also run on the rack's GTX 1070 on docker-0 (run 20261027-172855-0c32766-dirty: torch 2.11 cu126, 77 audio-s/s, MuQ-MuLan peak 2.8 GB, MuQ 5.3 GB), and their vectors match the RTX 5070's to a cosine of at least 0.99998. MuQ-MuLan is integrated as Sidetrack's only enabled model (ADR 0010); MuQ is not | `services/audio-lab/tests/test_adapters_gpu.py`, `services/audio-lab/tests/test_gpu_compat.py`, `services/audio-lab/tests/test_parity.py`, `docs/AUDIO-BENCHMARK.md` |
-| Audio embeddings | partial | MuQ-MuLan vectors in pgvector (audio_embeddings), embedded by `analysis.embed_audio` jobs on the gpu queue, which `python -m sidetrack.audio embed` queues; `neighbours` ranks similar audio within one model and revision (ADR 0010). The sidetrack-gpu image builds and its worker runs; a model that can't load reports unavailable. The GPU worker is deployed on the rack, but no real embedding job or backfill has run there yet. No HTTP route or page uses embeddings | `tests/test_audio_embeddings_store.py`, `tests/test_audio_embeddings_pipeline.py`, `tests/test_audio_embeddings_job.py`, `tests/test_audio_embeddings_neighbours.py`, `services/gpu-worker/tests/test_parity.py`, `docs/AUDIO.md` |
+| Audio embeddings | works | MuQ-MuLan vectors in pgvector, embedded by `analysis.embed_audio` jobs on the gpu queue, which `python -m sidetrack.audio embed` queues; `neighbours` ranks similar audio within one model and revision (ADR 0010). Production holds all 862 of the owner's imported assets, embedded on the rack's GTX 1070 on 2026-10-31 with no failures, and spot checks returned same-genre neighbours. No HTTP route or page uses embeddings yet. | `deploy/EMBEDDINGS-ROLLOUT.md`, `tests/test_audio_embeddings_store.py`, `tests/test_audio_embeddings_pipeline.py`, `tests/test_audio_embeddings_job.py`, `tests/test_audio_embeddings_neighbours.py`, `services/gpu-worker/tests/test_parity.py`, `docs/AUDIO.md` |
 | Spotify audio features | broken | Endpoint returns 403 for apps created after 2024-11-27 (ADR 0003) |  |
 | Taste profiles, compatibility, recommendations | stub | Tables exist; values derive from empty features |  |
 
@@ -66,20 +66,21 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 | Python module boundaries | works | Canonical sidetrack package with five domain owners; import-linter enforced in CI; legacy imports share canonical objects | `tests/test_module_layout.py`, `tests/test_import_boundaries.py`, `tests/test_ingest_boundary.py` |
 | Status page | works | Generated from docs/status.yaml; CI fails if stale | `scripts/gen_status.py`, `services/api/tests/test_gen_status.py` |
 | CI | works | Lint, tests, OpenSpec validation, status check and image builds; main pushes ghcr.io/andruquiroga/sidetrack-{api,web,bot}; required for merging | `.github/workflows/ci.yml` |
-| Deployment to Stache-Rack | works | Portainer stack 23 runs gallery release 3d83256 for API/default worker and web, bot release 73e9435, and the compatible original GPU image. All six services are 1/1; schema 0012, public health, live gallery/API checks and a fresh isolated backup restore pass. Fourteen history/account fingerprints and all ten environment entries are preserved. Portainer cold pulls and a real GPU embedding job remain separate verification. | `deploy/stack.yml`, `deploy/SINGLES-GALLERY-2026-10-29.md`, `deploy/README.md`, `docs/CLUB-HISTORY.md` |
+| Database backups | partial | Daily backup and second-host copy, a weekly isolated restore check and tiered retention run from host timers (deploy/backups). The first manual and unattended runs passed on 2026-10-31. Failures don't alert anyone until Uptime Kuma heartbeats are configured, and the first unattended restore check is pending. | `tests/test_database_backups.py`, `deploy/BACKUPS-ROLLOUT.md` |
+| Service monitoring | absent | Uptime Kuma runs on the rack, but it has no Sidetrack monitors yet. |  |
+| Deployment to Stache-Rack | works | Portainer stack 23 runs gallery release 3d83256 for API/default worker and web, bot release 73e9435, and GPU worker release e9f03e0. All six services are 1/1, with schema 0012 and all ten environment entries preserved. Portainer cold pulls remain unverified: updates use explicit node pulls. | `deploy/EMBEDDINGS-ROLLOUT.md`, `deploy/stack.yml`, `deploy/SINGLES-GALLERY-2026-10-29.md`, `deploy/README.md`, `docs/CLUB-HISTORY.md` |
 
 ## Facts from the repository
 
 ### In-flight changes
 
-- `add-muq-mulan-embeddings`: 17/19 tasks
-- `automate-database-backups`: 8/13 tasks
-- `import-audio-manifest`: 6/11 tasks
+- `automate-database-backups`: 9/13 tasks
 
 ### Specs
 
 - `analysis/audio-assets`
 - `analysis/audio-benchmark`
+- `analysis/audio-embeddings`
 - `analysis/benchmark-seeds`
 - `catalog/artwork-recovery`
 - `club/durable-notifications`

@@ -146,6 +146,10 @@ web app no longer calls the API from browsers.
    Members who only use the website appear after their first bot interaction, or
    when an admin runs the grant command.
 
+Update the Sidetrack stack through Portainer so its stored environment is kept. stache-infra's
+`deploy-portainer-stack.ps1` sends an empty environment list, which would wipe the stack's ten
+values, so don't use it for this stack.
+
 ## Rollback
 
 Redeploy the previous `sha-` tag. Postgres data stays in `/srv/sidetrack/postgres`. If a migration was applied, take a dump first and check that the old code tolerates the newer schema; there are no down-migration guarantees yet.
@@ -233,12 +237,16 @@ restore a benchmark database over live club data. Use `import-manifest` instead:
    ```
 4. Queue one asset as a smoke job with `embed --limit 1`, then run the full `embed`.
 
+Leave out assets marked `mismatch` before copying: the import rejects them, and they aren't the
+track they claim to be. The [2026-10-31 rollout](EMBEDDINGS-ROLLOUT.md) records a real run.
+
 The GPU worker can do all of this because it has the audio mount, the database secret and the
 package. The API has no audio mount, and the worker's mount is read-only.
 
 ## Backups
 
-`deploy/backups/` holds host-level jobs. They aren't Swarm services, so Portainer doesn't manage
+`deploy/backups/` holds host-level jobs, [installed on 2026-10-31](BACKUPS-ROLLOUT.md). They
+aren't Swarm services, so Portainer doesn't manage
 them and the stack doesn't change.
 
 | Job | Runs | What it does |
@@ -263,7 +271,8 @@ Copy `deploy/backups` to each host, then run these in your own terminal, because
 sudo ./install.sh sender
 ```
 
-That prints the copy key. On docker-0, with the HDD mounted:
+That prints the copy key. On docker-0, with the HDD mounted (this also gives the receiver's user
+pass-through access to the root-only mount with ACLs):
 
 ```bash
 sudo ./install.sh receiver /mnt/sidetrack-hdd/database-backups 'PUBLIC_KEY'

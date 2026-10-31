@@ -29,11 +29,11 @@
 
 - [x] 5.1 Create `services/gpu-worker` (its own `pyproject.toml` and lock: root package by path plus torch, torchaudio and torchvision from the CUDA 12.6 index and the `muq`/`transformers` pins, as in design.md Decision 4) and a Dockerfile with ffmpeg, the build-time `torch.ops.torchvision.nms` check and `USER` set; verify the image builds and `python -m sidetrack.worker --queues gpu --once` starts in it and exits cleanly with an empty queue
 - [x] 5.2 Add the `sidetrack-gpu` image to the GHCR build workflow; verify the workflow builds it on a branch push (the `images (gpu, ...)` job passed on PR #305, 2026-10-31)
-- [ ] 5.3 Add the `gpu-worker` service to `deploy/stack.yml` (`node.hostname == docker-0`, `NVIDIA_VISIBLE_DEVICES=all` and `NVIDIA_DRIVER_CAPABILITIES=compute,utility` as in deploy/README.md, `/srv/sidetrack/audio` read-only, `HF_HOME` under `/srv/sidetrack/models`, database secret) and document it in the deploy docs; verify the stack validates with `docker stack config` and the service embeds one real asset on the rack
+- [x] 5.3 Add the `gpu-worker` service to `deploy/stack.yml` (`node.hostname == docker-0`, `NVIDIA_VISIBLE_DEVICES=all` and `NVIDIA_DRIVER_CAPABILITIES=compute,utility` as in deploy/README.md, `/srv/sidetrack/audio` read-only, `HF_HOME` under `/srv/sidetrack/models`, database secret) and document it in the deploy docs; verify the stack validates with `docker stack config` and the service embeds one real asset on the rack
 
 ## 6. Integration and records
 
-- [ ] 6.1 Run a real backfill of the owner's assets on docker-0 and spot-check `neighbours` for a few known tracks; verify every asset with a file has a current MuQ-MuLan row or a listed failure reason, and record counts and wall time in docs/AUDIO-BENCHMARK.md
+- [x] 6.1 Run a real backfill of the owner's assets on docker-0 and spot-check `neighbours` for a few known tracks; verify every asset with a file has a current MuQ-MuLan row or a listed failure reason, and record counts and wall time in docs/AUDIO-BENCHMARK.md
 - [x] 6.2 Write the new ADR (MuQ-MuLan in production, CC BY-NC consequence, separate GPU environment, model-keyed table) and update ADR 0004's consequences to point at it; verify `docs/decisions/` lists it
 - [x] 6.3 Update `docs/status.yaml` ("Embedding models (any)" and a new audio-embeddings capability with test evidence), then run `python scripts/gen_status.py` and `uv run --frozen python scripts/gen_progress.py`; verify the CI staleness check passes, then run `make lint` and `make test.unit`
 

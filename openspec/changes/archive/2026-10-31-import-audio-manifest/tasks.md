@@ -14,14 +14,14 @@
 ## 3. Docs and release
 
 - [x] 3.1 Document the rack procedure in `docs/AUDIO.md` and `deploy/README.md` (copy with checksums, update only the GPU image, check, apply, smoke job, backfill), and replace the "needs a reviewed procedure" text and the matching `deploy/FIRST-ROLLOUT.md` note. Verify `scripts/check_stack_docs.py` passes and that the documented command runs against a local database.
-- [ ] 3.2 Run `make lint`, `make test.unit` and `lint-imports`, and merge through CI. Verify the published `sidetrack-gpu` tag contains `import-manifest`.
+- [x] 3.2 Run `make lint`, `make test.unit` and `lint-imports`, and merge through CI. Verify the published `sidetrack-gpu` tag contains `import-manifest`. (`make` is absent on this workstation, so its underlying commands ran directly. CI passed, and `import-manifest` ran from image e9f03e0 on the rack.)
 
 ## 4. Rack run
 
-- [ ] 4.1 `/srv/sidetrack/audio` is root-only and `aqui` has no passwordless `sudo`, so the owner confirms the HDD mount and free space in an interactive terminal and creates the staging path the copy uses. Copy the 883 files and a fresh manifest, and verify every SHA-256 on arrival. Verify with a checksum pass recording counts only in `deploy/EMBEDDINGS-ROLLOUT.md`.
-- [ ] 4.2 With a fresh database backup taken, update only the `gpu-worker` image through Portainer and run `import-manifest` as a check. Verify the service returns to 1/1 and review the counts with the owner before applying.
-- [ ] 4.3 Apply, then retry. Verify the row count equals the accepted rows, the retry reports all rows as existing, and a read-only count confirms no other table changed.
+- [x] 4.1 `/srv/sidetrack/audio` is root-only and `aqui` has no passwordless `sudo`, so the owner confirms the HDD mount and free space in an interactive terminal and creates the staging path the copy uses. Copy the 883 files and a fresh manifest, and verify every SHA-256 on arrival. Verify with a checksum pass recording counts only in `deploy/EMBEDDINGS-ROLLOUT.md`.
+- [x] 4.2 With a fresh database backup taken, update only the `gpu-worker` image through Portainer and run `import-manifest` as a check. Verify the service returns to 1/1 and review the counts with the owner before applying.
+- [x] 4.3 Apply, then retry. Verify the row count equals the accepted rows, the retry reports all rows as existing, and a read-only count confirms no other table changed.
 
 ## 5. Records
 
-- [ ] 5.1 Update `docs/status.yaml` (Audio acquisition and Audio embeddings notes), regenerate `docs/STATUS.md`, and hand off to `add-muq-mulan-embeddings` tasks 5.3 and 6.1. Verify `scripts/gen_status.py --check` and `pnpm exec openspec validate import-audio-manifest --strict` pass. No ADR change is expected.
+- [x] 5.1 Update `docs/status.yaml` (Audio acquisition and Audio embeddings notes), regenerate `docs/STATUS.md`, and hand off to `add-muq-mulan-embeddings` tasks 5.3 and 6.1. Verify `scripts/gen_status.py --check` and `pnpm exec openspec validate import-audio-manifest --strict` pass. No ADR change is expected.

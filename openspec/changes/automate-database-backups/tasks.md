@@ -26,7 +26,7 @@
 
 ## 6. Rollout
 
-- [ ] 6.1 Take a manual backup, then the owner runs the reviewed install script with `sudo` in an interactive terminal on docker-1, followed by one backup, one copy and one restore check. Verify the dump, checksum, destination hash and restore result in `deploy/BACKUPS-ROLLOUT.md`, with no IDs, serials or secrets in that file.
+- [x] 6.1 Take a manual backup, then the owner runs the reviewed install script with `sudo` in an interactive terminal on docker-1, followed by one backup, one copy and one restore check. Verify the dump, checksum, destination hash and restore result in `deploy/BACKUPS-ROLLOUT.md`, with no IDs, serials or secrets in that file.
 - [ ] 6.2 Owner creates the two HTTP monitors and the three push monitors in Kuma and stores the push URLs in the root-only env file. Verify each by forcing a missed heartbeat on a short interval and confirming an alert arrives, then restore the real intervals.
 - [ ] 6.3 Confirm the timers fire unattended for at least two days. Verify from the journal, new backup files and Kuma history, and record the result.
 

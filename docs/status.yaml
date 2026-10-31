@@ -108,8 +108,9 @@ groups:
     items:
       - capability: Audio acquisition
         status: works
-        notes: "Opt-in `python -m sidetrack.audio` (ADR 0007): YouTube Music full tracks and Deezer previews, content-addressed storage, AcoustID verification, manifest, verify and prune. Real 5-seed run on 2026-10-26: 10 assets stored, all 5 full tracks AcoustID-confirmed (0.96-1.00); previews stay unverified as expected"
+        notes: "Opt-in `python -m sidetrack.audio` (ADR 0007): YouTube Music full tracks and Deezer previews, content-addressed storage, AcoustID verification, manifest, verify and prune. `import-manifest` creates rows for files copied to another machine, with no fetching. Real 5-seed run on 2026-10-26: 10 assets stored, all 5 full tracks AcoustID-confirmed (0.96-1.00); previews stay unverified as expected. 862 assets were imported to production on 2026-10-31."
         evidence:
+          - deploy/EMBEDDINGS-ROLLOUT.md
           - tests/test_audio_assets.py
           - tests/test_audio_cli.py
           - docs/AUDIO.md
@@ -129,9 +130,10 @@ groups:
           - services/audio-lab/tests/test_parity.py
           - docs/AUDIO-BENCHMARK.md
       - capability: Audio embeddings
-        status: partial
-        notes: "MuQ-MuLan vectors in pgvector (audio_embeddings), embedded by `analysis.embed_audio` jobs on the gpu queue, which `python -m sidetrack.audio embed` queues; `neighbours` ranks similar audio within one model and revision (ADR 0010). The sidetrack-gpu image builds and its worker runs; a model that can't load reports unavailable. The GPU worker is deployed on the rack, but no real embedding job or backfill has run there yet. No HTTP route or page uses embeddings"
+        status: works
+        notes: "MuQ-MuLan vectors in pgvector, embedded by `analysis.embed_audio` jobs on the gpu queue, which `python -m sidetrack.audio embed` queues; `neighbours` ranks similar audio within one model and revision (ADR 0010). Production holds all 862 of the owner's imported assets, embedded on the rack's GTX 1070 on 2026-10-31 with no failures, and spot checks returned same-genre neighbours. No HTTP route or page uses embeddings yet."
         evidence:
+          - deploy/EMBEDDINGS-ROLLOUT.md
           - tests/test_audio_embeddings_store.py
           - tests/test_audio_embeddings_pipeline.py
           - tests/test_audio_embeddings_job.py
@@ -248,10 +250,20 @@ groups:
         notes: "Lint, tests, OpenSpec validation, status check and image builds; main pushes ghcr.io/andruquiroga/sidetrack-{api,web,bot}; required for merging"
         evidence:
           - .github/workflows/ci.yml
+      - capability: Database backups
+        status: partial
+        notes: "Daily backup and second-host copy, a weekly isolated restore check and tiered retention run from host timers (deploy/backups). The first manual and unattended runs passed on 2026-10-31. Failures don't alert anyone until Uptime Kuma heartbeats are configured, and the first unattended restore check is pending."
+        evidence:
+          - tests/test_database_backups.py
+          - deploy/BACKUPS-ROLLOUT.md
+      - capability: Service monitoring
+        status: absent
+        notes: "Uptime Kuma runs on the rack, but it has no Sidetrack monitors yet."
       - capability: Deployment to Stache-Rack
         status: works
-        notes: "Portainer stack 23 runs gallery release 3d83256 for API/default worker and web, bot release 73e9435, and the compatible original GPU image. All six services are 1/1; schema 0012, public health, live gallery/API checks and a fresh isolated backup restore pass. Fourteen history/account fingerprints and all ten environment entries are preserved. Portainer cold pulls and a real GPU embedding job remain separate verification."
+        notes: "Portainer stack 23 runs gallery release 3d83256 for API/default worker and web, bot release 73e9435, and GPU worker release e9f03e0. All six services are 1/1, with schema 0012 and all ten environment entries preserved. Portainer cold pulls remain unverified: updates use explicit node pulls."
         evidence:
+          - deploy/EMBEDDINGS-ROLLOUT.md
           - deploy/stack.yml
           - deploy/SINGLES-GALLERY-2026-10-29.md
           - deploy/README.md
