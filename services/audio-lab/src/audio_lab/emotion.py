@@ -45,18 +45,21 @@ def _rows(path: Path) -> list[dict[str, str]]:
     return [{(k or "").strip().casefold(): (v or "").strip() for k, v in r.items()} for r in rows]
 
 
-def _ratings(path: Path, scale: Scale) -> tuple[dict[str, tuple[float, float]], int]:
-    rows = _rows(path)
-    if rows and not {"song_id", "valence_mean", "arousal_mean"} <= rows[0].keys():
-        raise EmotionDataError(f"{path.name} needs song_id, valence_mean and arousal_mean")
+def _ratings(paths: list[Path], scale: Scale) -> tuple[dict[str, tuple[float, float]], int]:
     ratings, unusable = {}, 0
-    for row in rows:
-        try:
-            valence, arousal = float(row["valence_mean"]), float(row["arousal_mean"])
-        except ValueError:
-            unusable += 1
-            continue
-        ratings[row["song_id"]] = (scale.rescale(valence), scale.rescale(arousal))
+    for path in paths:
+        rows = _rows(path)
+        if rows and not {"song_id", "valence_mean", "arousal_mean"} <= rows[0].keys():
+            raise EmotionDataError(f"{path.name} needs song_id, valence_mean and arousal_mean")
+        for row in rows:
+            try:
+                valence, arousal = float(row["valence_mean"]), float(row["arousal_mean"])
+            except ValueError:
+                unusable += 1
+                continue
+            if row["song_id"] in ratings:
+                raise EmotionDataError(f"song {row['song_id']} is rated twice")
+            ratings[row["song_id"]] = (scale.rescale(valence), scale.rescale(arousal))
     return ratings, unusable
 
 
@@ -70,7 +73,7 @@ def _artists(paths: list[Path]) -> dict[str, str]:
 
 
 def prepare_dataset(
-    ratings_path: Path,
+    ratings_paths: list[Path],
     audio_dir: Path,
     out: Path,
     *,
@@ -81,7 +84,7 @@ def prepare_dataset(
     """Write manifest.csv, mood-labels.csv and emotion-report.json into `out`."""
 
     ensure_outside_repo(out)
-    ratings, unusable = _ratings(ratings_path, scale or Scale())
+    ratings, unusable = _ratings(ratings_paths, scale or Scale())
     artists = _artists(metadata or [])
     audio = {p.stem: p for p in audio_dir.iterdir() if p.suffix.lower() in AUDIO_SUFFIXES}
 

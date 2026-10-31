@@ -152,7 +152,7 @@ run, and writes `mood.json` with out-of-sample R², a mean-only baseline and pai
 The audio stays out of the repo, and only aggregate scores belong in the docs.
 
 ```bash
-uv run audio-lab emotion-manifest --ratings E:/sidetrack/mood/deam/ratings.csv --audio-dir E:/sidetrack/mood/deam/audio --metadata E:/sidetrack/mood/deam/metadata.csv --out E:/sidetrack/mood/prepared
+uv run audio-lab emotion-manifest --ratings E:/sidetrack/mood/deam/ratings-1.csv --ratings E:/sidetrack/mood/deam/ratings-2.csv --audio-dir E:/sidetrack/mood/deam/audio --metadata E:/sidetrack/mood/deam/metadata.csv --out E:/sidetrack/mood/prepared
 uv run --extra models audio-lab embed --manifest E:/sidetrack/mood/prepared/manifest.csv --audio-dir E:/sidetrack/mood/deam/audio --out E:/sidetrack/audio-lab-runs --model muq-mulan --model muq
 uv run audio-lab mood-probe RUN --labels E:/sidetrack/mood/prepared/mood-labels.csv --predict-run LIBRARY_RUN --predict-out E:/sidetrack/mood/predictions.csv --predict-manifest MANIFEST
 ```

@@ -37,7 +37,7 @@ def test_prepares_three_clips(tmp_path):
     path, audio_dir = _dataset(tmp_path, ratings, ["2", "3", "4"])
     out = tmp_path / "out"
 
-    summary = prepare_dataset(path, audio_dir, out)
+    summary = prepare_dataset([path], audio_dir, out)
 
     assert summary["clips"] == 3
     assets = read_manifest(out / "manifest.csv")
@@ -51,7 +51,7 @@ def test_rating_is_rescaled(tmp_path):
     path, audio_dir = _dataset(tmp_path, {"2": ("5", "1"), "3": ("9", "7")}, ["2", "3"])
     out = tmp_path / "out"
 
-    prepare_dataset(path, audio_dir, out)
+    prepare_dataset([path], audio_dir, out)
 
     rows = _labels(out)
     assert [(float(r["valence"]), float(r["arousal"])) for r in rows] == [(0, -1), (1, 0.5)]
@@ -62,7 +62,7 @@ def test_clip_without_audio_is_counted(tmp_path):
     path, audio_dir = _dataset(tmp_path, {"2": ("5", "5"), "3": ("5", "5")}, ["2", "9"])
     out = tmp_path / "out"
 
-    summary = prepare_dataset(path, audio_dir, out)
+    summary = prepare_dataset([path], audio_dir, out)
 
     assert summary["clips"] == 1
     assert summary["rated_without_audio"] == 1
@@ -74,7 +74,7 @@ def test_unusable_rating_is_not_filled_in(tmp_path):
     path, audio_dir = _dataset(tmp_path, {"2": ("", "5"), "3": ("5", "5")}, ["2", "3"])
     out = tmp_path / "out"
 
-    summary = prepare_dataset(path, audio_dir, out)
+    summary = prepare_dataset([path], audio_dir, out)
 
     assert summary["unusable_ratings"] == 1
     assert summary["clips"] == 1
@@ -88,7 +88,7 @@ def test_artist_metadata_groups_clips(tmp_path):
     metadata.write_text("song_id, Artist, Song title\n2, Band, A\n3, BAND, B\n", "utf-8")
     out = tmp_path / "out"
 
-    summary = prepare_dataset(path, audio_dir, out, metadata=[metadata])
+    summary = prepare_dataset([path], audio_dir, out, metadata=[metadata])
 
     assert summary["groups"] == 2
     assert [r["group"] for r in _labels(out)] == ["artist:band", "artist:band", "clip:4"]
@@ -101,7 +101,30 @@ def test_wrong_columns_are_refused(tmp_path):
     audio_dir.mkdir()
 
     with pytest.raises(EmotionDataError, match="valence_mean"):
-        prepare_dataset(path, audio_dir, tmp_path / "out")
+        prepare_dataset([path], audio_dir, tmp_path / "out")
+
+
+def test_ratings_can_span_files(tmp_path):
+    path, audio_dir = _dataset(tmp_path, {"2": ("5", "5")}, ["2", "2001"])
+    second = tmp_path / "later.csv"
+    second.write_text(
+        "song_id, valence_mean, valence_std, valence_ max_mean, arousal_mean\n"
+        "2001, 3.2, 0.98, 5.0, 7\n",
+        "utf-8",
+    )
+    out = tmp_path / "out"
+
+    summary = prepare_dataset([path, second], audio_dir, out)
+
+    assert summary["clips"] == 2
+    assert float(_labels(out)[1]["arousal"]) == 0.5
+
+
+def test_song_rated_twice_is_refused(tmp_path):
+    path, audio_dir = _dataset(tmp_path, {"2": ("5", "5")}, ["2"])
+
+    with pytest.raises(EmotionDataError, match="rated twice"):
+        prepare_dataset([path, path], audio_dir, tmp_path / "out")
 
 
 def test_refuses_output_in_repo(tmp_path):
@@ -110,7 +133,7 @@ def test_refuses_output_in_repo(tmp_path):
     assert root is not None
 
     with pytest.raises(OutputInRepo):
-        prepare_dataset(path, audio_dir, root / "mood-output")
+        prepare_dataset([path], audio_dir, root / "mood-output")
 
     assert not (root / "mood-output").exists()
 

@@ -62,7 +62,9 @@ def _parser() -> argparse.ArgumentParser:
     emotion = commands.add_parser(
         "emotion-manifest", help="Manifest and mood labels from a local emotion dataset."
     )
-    emotion.add_argument("--ratings", type=Path, required=True, help="Per-song ratings CSV.")
+    emotion.add_argument(
+        "--ratings", type=Path, action="append", required=True, help="Repeatable; per-song CSV."
+    )
     emotion.add_argument("--audio-dir", type=Path, required=True)
     emotion.add_argument("--out", type=Path, required=True, help="Outside the repo.")
     emotion.add_argument("--metadata", type=Path, action="append", help="Repeatable; has artists.")
