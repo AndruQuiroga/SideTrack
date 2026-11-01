@@ -29,4 +29,4 @@
 
 ## 4. Status and decisions
 
-- [ ] 4.1 Add an "Analysis evaluation gates" item to `docs/status.yaml` (status `partial` until a first gate is approved; evidence `services/audio-lab/tests/test_gate.py`, `tests/test_check_evaluations.py`), run `python scripts/gen_status.py`, and verify the CI staleness check passes; no ADR changes (ADR 0004 is extended, not altered, and is linked from `docs/evaluations/README.md`)
+- [x] 4.1 Add an "Analysis evaluation gates" item to `docs/status.yaml` (status `partial` until a first gate is approved; evidence `services/audio-lab/tests/test_gate.py`, `tests/test_check_evaluations.py`), run `python scripts/gen_status.py`, and verify the CI staleness check passes; no ADR changes (ADR 0004 is extended, not altered, and is linked from `docs/evaluations/README.md`)
