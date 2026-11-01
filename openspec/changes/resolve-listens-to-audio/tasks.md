@@ -7,7 +7,7 @@
 
 ## 2. Matchers
 
-- [ ] 2.1 Add `listening.track_video_ids()` read model returning `(track_id, youtube_id)` pairs from listen metadata, exported from the public listening package; verify `tests/test_track_video_ids.py` passes and `lint-imports` allows the analysis import
+- [x] 2.1 Add `listening.track_video_ids()` read model returning `(track_id, youtube_id)` pairs from listen metadata, exported from the public listening package; verify `tests/test_track_video_ids.py` passes and `lint-imports` allows the analysis import
 - [ ] 2.2 Implement the `recording_mbid`, `youtube_id` and `seed_identity` matchers and the `seed` copy in `sidetrack/analysis/links.py`, reusing the import's normaliser; verify `tests/test_audio_links_matcher.py` covers confirmed recording, upload video, same artist/title, title-only (no link), acquisition-time link, run-twice and manual-kept scenarios
 - [ ] 2.3 Add a drift test that normalises a fixture through the import and the matcher; verify `tests/test_audio_links_matcher.py::test_normaliser_shared_with_import` passes
 - [ ] 2.4 Store `evidence` and `ambiguous` on links, add `track_audio_link_corrections`, and honour rejections and confirmations on every run; verify `tests/test_audio_links_matcher.py` covers evidence-on-a-seed-identity-link, two-tracks-share-a-key, reject-a-wrong-link and close-neighbour-different-metadata
