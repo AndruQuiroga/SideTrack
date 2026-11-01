@@ -17,7 +17,7 @@
 
 ## 4. Owner gate
 
-- [ ] 4.1 Owner reviews their own list on the production import, records precision (real past favourites / listed), autoplay and duplicate artefacts and any rule changes; verify the review is recorded in the docs with the rule version and the decision to link the page in navigation
+- [ ] 4.1 (owner) Owner reviews their own list on the production import, records precision (real past favourites / listed), autoplay and duplicate artefacts and any rule changes; verify the review is recorded in the docs with the rule version and the decision to link the page in navigation
 
 ## 5. Integration and status
 
