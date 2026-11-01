@@ -14,13 +14,13 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from sidetrack.catalog import Track
 from sidetrack.identity import timezone_resolver
 from sidetrack.listening.listenbrainz import coverage_state
-from sidetrack.listening.models import ImportCoverage, ListenEvent
+from sidetrack.listening.models import ImportCoverage, ListenEvent, RediscoveryDismissal
 from sidetrack.listening.sessions import effective_kind, list_sessions
 
 RULE_VERSION = "forgotten-v1"
@@ -200,6 +200,7 @@ def forgotten_favourites(
         "recent_days": None,
         "excluded_autoplay_plays": 0,
         "unknown_session_plays": 0,
+        "dismissed_hidden": 0,
         "tracks": [],
     }
     if coverage is None:
@@ -221,14 +222,85 @@ def forgotten_favourites(
         return result
 
     found = find_forgotten(included.plays, now, rules)
-    tracks = db.scalars(select(Track).where(Track.id.in_([row["track_id"] for row in found])))
+    hidden = set(
+        db.scalars(
+            select(RediscoveryDismissal.track_key).where(RediscoveryDismissal.user_id == user_id)
+        )
+    )
+    shown = [row for row in found if str(row["track_id"]) not in hidden]
+    result["dismissed_hidden"] = len(found) - len(shown)
+    tracks = db.scalars(select(Track).where(Track.id.in_([row["track_id"] for row in shown])))
     by_id = {track.id: track for track in tracks}
-    for row in found:
+    for row in shown:
         track = by_id[row["track_id"]]
         row.update(title=track.title, artist_name=track.artist_name)
-    result["tracks"] = found
-    result["state"] = FOUND if found else NONE_FOUND
+    result["tracks"] = shown
+    result["state"] = FOUND if shown else NONE_FOUND
     return result
+
+
+DISMISSAL_REASONS = ("not_a_favourite", "not_now")
+
+
+class TrackUnavailable(ValueError):
+    """The track to dismiss does not exist."""
+
+
+def dismiss(db: Session, user_id: UUID, track_id: UUID, reason: str) -> RediscoveryDismissal:
+    """Hide a track from the user's list, or change why. The caller owns the transaction.
+
+    Dismissals do not expire: `not_now` stays until the user removes it.
+    """
+
+    if reason not in DISMISSAL_REASONS:
+        raise ValueError("reason_unknown")
+    if db.get(Track, track_id) is None:
+        raise TrackUnavailable("track_unavailable")
+    key = str(track_id)
+    row = db.scalar(
+        select(RediscoveryDismissal).where(
+            RediscoveryDismissal.user_id == user_id, RediscoveryDismissal.track_key == key
+        )
+    )
+    if row is None:
+        row = RediscoveryDismissal(user_id=user_id, track_key=key, reason=reason)
+        db.add(row)
+    else:
+        row.reason = reason
+    db.flush()
+    return row
+
+
+def list_dismissals(db: Session, user_id: UUID) -> list[tuple[RediscoveryDismissal, Track | None]]:
+    """Newest first, each with its track when that still exists."""
+
+    rows = db.scalars(
+        select(RediscoveryDismissal)
+        .where(RediscoveryDismissal.user_id == user_id)
+        .order_by(RediscoveryDismissal.created_at.desc(), RediscoveryDismissal.track_key)
+    ).all()
+    ids = [UUID(row.track_key) for row in rows]
+    tracks = {t.id: t for t in db.scalars(select(Track).where(Track.id.in_(ids)))}
+    return [(row, tracks.get(UUID(row.track_key))) for row in rows]
+
+
+def remove_dismissal(db: Session, user_id: UUID, track_id: UUID) -> bool:
+    """Restore one track to the list; False if it was not dismissed."""
+
+    result = db.execute(
+        delete(RediscoveryDismissal).where(
+            RediscoveryDismissal.user_id == user_id,
+            RediscoveryDismissal.track_key == str(track_id),
+        )
+    )
+    return result.rowcount > 0
+
+
+def clear_dismissals(db: Session, user_id: UUID) -> int:
+    """Restore every dismissed track; returns how many."""
+
+    result = db.execute(delete(RediscoveryDismissal).where(RediscoveryDismissal.user_id == user_id))
+    return result.rowcount
 
 
 def _coverage_range(db: Session, user_id: UUID) -> tuple[datetime, datetime] | None:

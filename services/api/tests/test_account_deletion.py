@@ -11,7 +11,7 @@ from sidetrack.analysis import Compatibility, TasteProfile
 from sidetrack.catalog import Album, Track
 from sidetrack.club import ClubMember, Nomination, Rating, Vote, Week
 from sidetrack.identity import Follow, LinkedAccount, User
-from sidetrack.listening import ImportCheckpoint, ListenEvent
+from sidetrack.listening import ImportCheckpoint, ListenEvent, RediscoveryDismissal
 from sidetrack.types import ClubRole, ListenSource
 
 from .conftest import as_user, snowflake
@@ -69,6 +69,22 @@ def test_user_with_listening_history(client, make_user, catalog, db):
     assert db.get(User, user.id) is None
     assert _count(db, ListenEvent, ListenEvent.user_id == user.id) == 0
     assert _count(db, ImportCheckpoint, ImportCheckpoint.user_id == user.id) == 0
+
+
+def test_rediscovery_dismissals_are_deleted_with_the_account(client, make_user, catalog, db):
+    _, track, _ = catalog
+    user = make_user("Listener")
+    other = make_user("Other")
+    for owner in (user, other):
+        db.add(RediscoveryDismissal(user_id=owner.id, track_key=str(track.id), reason="not_now"))
+    db.flush()
+
+    assert client.delete(f"/users/{user.id}", headers=as_user(user)).status_code == 204
+
+    db.expire_all()
+    where = RediscoveryDismissal.user_id == user.id
+    assert _count(db, RediscoveryDismissal, where) == 0
+    assert _count(db, RediscoveryDismissal, RediscoveryDismissal.user_id == other.id) == 1
 
 
 def test_user_with_club_activity_and_social_links(client, make_user, catalog, db):
