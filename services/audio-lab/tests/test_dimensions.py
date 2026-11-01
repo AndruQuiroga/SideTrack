@@ -9,11 +9,14 @@ from pathlib import Path
 import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
+import pytest
 
 from audio_lab.dimensions import (
+    analyse,
     load_selection,
     parallel_analysis,
     principal_components,
+    rotate,
     select_tracks,
 )
 from audio_lab.manifest import COLUMNS, Asset, read_manifest
@@ -128,7 +131,10 @@ def planted(rng, tracks=300, dim=32, strengths=(6.0, 4.0, 3.0), noise=1.0):
     """Gaussian noise plus one orthogonal planted direction per strength."""
 
     basis = np.linalg.qr(rng.normal(size=(dim, len(strengths))))[0].T
-    scores = rng.normal(size=(tracks, len(strengths))) * np.array(strengths)
+    raw = rng.normal(size=(tracks, len(strengths)))
+    raw -= raw.mean(axis=0)
+    # Whitened, so equal strengths give exactly equal variances.
+    scores = np.linalg.qr(raw)[0] * np.sqrt(tracks - 1) * np.array(strengths)
     return scores @ basis + rng.normal(scale=noise, size=(tracks, dim)), basis
 
 
@@ -151,3 +157,74 @@ def test_pure_noise_keeps_no_dimensions():
     kept, _ = parallel_analysis(x, np.random.default_rng(0))
 
     assert kept == 0
+
+
+def test_strong_axis_is_stable():
+    x, _ = planted(np.random.default_rng(3))
+
+    components = analyse(x, seed=0)
+
+    assert components.kept == 3
+    assert components.stability[0] >= 0.95
+    assert 0 in components.stable
+
+
+def test_weak_axis_is_unstable():
+    # Two planted directions of equal strength, few tracks for many dimensions: they rotate into
+    # each other between resamples.
+    x, _ = planted(np.random.default_rng(3), tracks=80, dim=64, strengths=(10.0, 5.0, 5.0))
+
+    components = analyse(x, seed=0)
+
+    assert components.kept == 3
+    assert components.stability[0] >= 0.95
+    assert components.stability[1] < 0.80 and components.stability[2] < 0.80
+    assert components.stable == [0]
+
+
+def test_results_are_repeatable():
+    x, _ = planted(np.random.default_rng(3))
+
+    first, second = analyse(x, seed=7), analyse(x, seed=7)
+
+    assert first.kept == second.kept
+    assert np.array_equal(first.stability, second.stability)
+    assert np.array_equal(first.threshold, second.threshold)
+    assert not np.array_equal(first.stability, analyse(x, seed=8).stability)
+
+
+def blocks(rng, tracks=400, per_block=4, strengths=(5.0, 5.0, 5.0), noise=0.3):
+    """Latent factors that each drive their own block of variables: simple structure."""
+
+    count = len(strengths)
+    raw = rng.normal(size=(tracks, count))
+    raw -= raw.mean(axis=0)
+    scores = np.linalg.qr(raw)[0] * np.sqrt(tracks - 1) * np.array(strengths)
+    loadings = np.kron(np.eye(count), np.ones(per_block))  # (count, count * per_block)
+    x = scores @ loadings + rng.normal(scale=noise, size=(tracks, count * per_block))
+    return x, loadings / np.linalg.norm(loadings, axis=1, keepdims=True)
+
+
+def test_varimax_recovers_rotated_axes():
+    x, truth = blocks(np.random.default_rng(1))
+    eigenvalues, axes = principal_components(x)
+
+    rotated, _ = rotate(axes[:3], eigenvalues[:3])
+
+    # Equal-strength factors leave PCA free to mix them; varimax finds the blocks again.
+    match = np.abs(rotated @ truth.T)
+    assert match.max(axis=1).min() > 0.95
+    assert sorted(match.argmax(axis=1)) == [0, 1, 2]
+
+
+def test_rotation_keeps_total_variance():
+    x, _ = blocks(np.random.default_rng(1), strengths=(6.0, 4.0, 3.0))
+    eigenvalues, axes = principal_components(x)
+
+    rotated, variances = rotate(axes[:3], eigenvalues[:3])
+
+    assert variances.sum() == pytest.approx(eigenvalues[:3].sum())
+    assert np.allclose(rotated @ rotated.T, np.eye(3), atol=1e-9)
+    scores = (x - x.mean(axis=0)) @ rotated.T
+    assert np.allclose(scores.var(axis=0, ddof=1), variances)
+    assert list(variances) == sorted(variances, reverse=True)

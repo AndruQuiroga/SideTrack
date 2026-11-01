@@ -148,3 +148,86 @@ def parallel_analysis(
     beaten = eigenvalues > threshold
     kept = len(beaten) if beaten.all() else int(np.argmin(beaten))
     return kept, threshold
+
+
+RESAMPLES = 200
+STABLE_AT = 0.80
+
+
+def stability(
+    x: np.ndarray, axes: np.ndarray, rng: np.random.Generator, resamples: int = RESAMPLES
+) -> np.ndarray:
+    """Median absolute cosine between each full-fit axis and the same-rank axis of a resample.
+
+    Matching by rank, not by best fit, is deliberate: two axes with near-equal variance trade
+    places and rotate into each other between resamples, and that is exactly the instability a
+    listener would meet. The sign of a principal axis is arbitrary, hence the absolute value.
+    """
+
+    kept = len(axes)
+    cosines = np.zeros((resamples, kept))
+    for trial in range(resamples):
+        rows = rng.integers(len(x), size=len(x))
+        _, resampled = principal_components(x[rows])
+        cosines[trial] = np.abs(np.einsum("kd,kd->k", axes, resampled[:kept]))
+    return np.median(cosines, axis=0)
+
+
+@dataclass
+class Components:
+    """Principal components of the tracks, the kept ones and how stable each kept one is."""
+
+    eigenvalues: np.ndarray
+    axes: np.ndarray  # every component, as rows
+    threshold: np.ndarray  # the shuffled baseline per component
+    kept: int
+    stability: np.ndarray  # length ``kept``
+
+    @property
+    def stable(self) -> list[int]:
+        return [i for i in range(self.kept) if self.stability[i] >= STABLE_AT]
+
+
+def analyse(x: np.ndarray, seed: int = 0) -> Components:
+    """Same input and seed give the same result: every random draw comes from one generator."""
+
+    rng = np.random.default_rng(seed)
+    eigenvalues, axes = principal_components(x)
+    kept, threshold = parallel_analysis(x, rng)
+    robust = stability(x, axes[:kept], rng) if kept else np.zeros(0)
+    return Components(eigenvalues, axes, threshold, kept, robust)
+
+
+def varimax_rotation(
+    loadings: np.ndarray, iterations: int = 500, tolerance: float = 1e-9
+) -> np.ndarray:
+    """The orthogonal matrix that makes each column of ``loadings`` load on few variables."""
+
+    variables, count = loadings.shape
+    rotation = np.eye(count)
+    total = 0.0
+    for _ in range(iterations):
+        rotated = loadings @ rotation
+        spread = rotated**3 - rotated @ np.diag((rotated**2).sum(axis=0)) / variables
+        u, singular, vt = np.linalg.svd(loadings.T @ spread)
+        rotation = u @ vt
+        previous, total = total, float(singular.sum())
+        if previous and total < previous * (1 + tolerance):
+            break
+    return rotation
+
+
+def rotate(axes: np.ndarray, eigenvalues: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Varimax over the given principal axes (rows) and their eigenvalues.
+
+    Returns unit axes as rows and each axis's variance, largest first. An orthogonal rotation
+    of an orthonormal basis keeps their total variance.
+    """
+
+    if len(axes) < 2:
+        return axes.copy(), eigenvalues.copy()
+    rotation = varimax_rotation(axes.T * np.sqrt(eigenvalues))
+    coordinates = rotation.T  # rows: the rotated axes written in the principal-axis basis
+    variances = (coordinates**2) @ eigenvalues  # principal scores are uncorrelated
+    order = np.argsort(-variances, kind="stable")
+    return _orient((coordinates @ axes)[order]), variances[order]

@@ -7,8 +7,8 @@
 ## 2. Dimensions
 
 - [x] 2.1 Add centred SVD and parallel analysis over shuffled columns; verify `test_dimensions.py::test_planted_dimensions_found` and `::test_pure_noise_keeps_no_dimensions`
-- [ ] 2.2 Add bootstrap stability with sign-free alignment and the `stable` label; verify `::test_strong_axis_is_stable`, `::test_weak_axis_is_unstable` and `::test_results_are_repeatable`
-- [ ] 2.3 Add numpy varimax on stable components; verify `::test_varimax_recovers_rotated_axes` and `::test_rotation_keeps_total_variance`
+- [x] 2.2 Add bootstrap stability with sign-free alignment and the `stable` label; verify `::test_strong_axis_is_stable`, `::test_weak_axis_is_unstable` and `::test_results_are_repeatable`
+- [x] 2.3 Add numpy varimax on stable components; verify `::test_varimax_recovers_rotated_axes` and `::test_rotation_keeps_total_variance`
 - [ ] 2.4 Add mood overlap from a predictions file, including the embedding variance mood explains; verify `::test_axis_restating_mood_correlates` and `::test_predictions_for_other_tracks_are_counted`
 - [ ] 2.5 Add `audio-lab dimensions RUN --manifest M --predictions P --out DIR` writing `dimensions.json` and per-track scores, refusing paths in the repo; verify `::test_command_writes_provenance` and `::test_output_refused_in_repo`
 
