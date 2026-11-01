@@ -571,3 +571,63 @@ def test_summaries_may_go_to_the_summary_directory(tmp_path):
         gate.ensure_output_allowed(allowed, summary=False)
     with pytest.raises(gate.OutputInRepo):
         gate.ensure_output_allowed(REPO / "docs" / "elsewhere.json", summary=True)
+
+
+def personal_record() -> dict:
+    record = mood()
+    record["items"] = [
+        {"id": "Secret Title.flac", "fold": 0, "audio_sha256": "h1", "artist": "Secret Artist"},
+        {"id": "/home/owner/music/b.flac", "fold": 1, "audio_sha256": "h2"},
+    ]
+    record["grouping"] = {"mode": "artist", "reason": "see /home/owner/notes.txt"}
+    record["examples"] = [{"id": "1", "label": "Secret Artist - Secret Title", "audio": "a/b.flac"}]
+    record["mood"]["per_track"] = {"Secret Title": {"valence": 0.3}}
+    return gate.import_decision(
+        record,
+        decision("correct", notes="Secret Title felt wrong", corrections=[{"example_id": "1"}]),
+    )
+
+
+def test_summary_has_no_titles_or_paths():
+    text = json.dumps(gate.summarize(personal_record()))
+    for leaked in ("Secret", "/home/owner", ".flac", "felt wrong", 'valence": 0.3'):
+        assert leaked not in text
+    summary = json.loads(text)
+    assert summary["claim"] == "synthetic-claim"
+    assert summary["revisions"]["checkpoint_revision"] == "abc123"
+    assert summary["decision"]["corrections"] == 1
+    assert {"name": "axes.valence.r2", "value": 0.6} == {
+        k: v for k, v in summary["metrics"][0].items() if k in ("name", "value")
+    }
+
+
+def test_summary_refuses_a_path_in_a_revision_field():
+    record = mood()
+    record["probe_revision"] = "/home/owner/probe.joblib"
+    with pytest.raises(gate.GateError, match="probe_revision"):
+        gate.summarize(record)
+    record["probe_revision"] = "../probe"
+    with pytest.raises(gate.GateError, match="probe_revision"):
+        gate.summarize(record)
+
+
+def test_summary_of_an_incomplete_record_says_so():
+    record = mood()
+    del record["pipeline"]
+    summary = gate.summarize(record)
+    assert summary["status"] == "incomplete"
+    assert summary["missing"] == ["pipeline"]
+
+
+def test_one_rater_summary_is_scoped_to_the_owner():
+    assert gate.summarize(mood())["scope"] == "owner library only"
+    record = mood()
+    record["raters"] = 3
+    assert gate.summarize(record)["scope"] is None
+
+
+def test_summarize_command(tmp_path):
+    record, out = tmp_path / "record.json", tmp_path / "summary.json"
+    record.write_text(json.dumps(personal_record()), encoding="utf-8")
+    assert main(["gate", "summarize", str(record), "--out", str(out)]) == 0
+    assert json.loads(out.read_text())["record_id"] == "rec-001"
