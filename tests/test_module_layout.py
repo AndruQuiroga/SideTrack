@@ -102,6 +102,8 @@ def test_each_table_has_one_canonical_owner():
             "user_recommendations",
             "audio_assets",
             "audio_embeddings",
+            "track_audio_links",
+            "track_audio_link_corrections",
         },
         "queue_models": {
             "background_jobs",

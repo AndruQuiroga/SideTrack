@@ -2,7 +2,7 @@
 
 ## 1. Storage
 
-- [ ] 1.1 Add the `TrackAudioLink` model and migration 0014 (unique `(track_id, asset_id)`, cascades, confidence check 0–1); verify `services/api/tests/test_migrations.py` passes and `tests/test_track_audio_links.py::test_duplicate_link_rejected` and `::test_cascades` pass on Postgres
+- [x] 1.1 Add the `TrackAudioLink` model and migration 0014 (unique `(track_id, asset_id)`, cascades, confidence check 0–1); verify `services/api/tests/test_migrations.py` passes and `tests/test_track_audio_links.py::test_duplicate_link_rejected` and `::test_cascades` pass on Postgres
 - [ ] 1.2 Register `track_audio_links` as analysis-owned in docs/MODULES.md and the ownership test; verify `tests/test_module_layout.py` and `lint-imports` pass
 
 ## 2. Matchers
