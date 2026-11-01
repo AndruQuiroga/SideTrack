@@ -59,7 +59,7 @@ claims:
         Owner listening check passed on 2026-10-31 (the top and bottom 20 of the owner's
         library on each dimension).
       - >-
-        Axis correlation: predictions on the owner's library 0.88, human ratings 0.57. The
+        Axis correlation: predictions 0.91 on the owner's 233 tracks, human ratings 0.57. The
         axes may not be distinguished.
     missing:
       - artist-grouped splits; the run is not artist-grouped, so its scores may be optimistic

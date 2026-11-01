@@ -139,6 +139,17 @@ groups:
           - services/audio-lab/tests/test_gpu_compat.py
           - services/audio-lab/tests/test_parity.py
           - docs/AUDIO-BENCHMARK.md
+      - capability: Listens linked to audio
+        status: works
+        notes: >-
+          `python -m sidetrack.audio link` links tracks to assets from stored evidence, and
+          `coverage` reports what share of plays have audio. Production links 392 tracks. That
+          covers 9.3% of the owner's plays, because the audio library is a benchmark sample.
+        evidence:
+          - docs/AUDIO.md
+          - tests/test_audio_links_matcher.py
+          - tests/test_audio_for_track.py
+          - tests/test_audio_coverage.py
       - capability: Audio embeddings
         status: works
         notes: "MuQ-MuLan vectors in pgvector, embedded by `analysis.embed_audio` jobs on the gpu queue, which `python -m sidetrack.audio embed` queues; `neighbours` ranks similar audio within one model and revision (ADR 0010). Production holds all 862 of the owner's imported assets, embedded on the rack's GTX 1070 on 2026-10-31 with no failures, and spot checks returned same-genre neighbours. No HTTP route or page uses embeddings yet."
@@ -279,7 +290,7 @@ groups:
         notes: "Uptime Kuma runs on the rack, but it has no Sidetrack monitors yet."
       - capability: Deployment to Stache-Rack
         status: works
-        notes: "Portainer stack 23 runs release cfe7804 for API/default worker, gallery release 3d83256 for web, bot release 73e9435, and GPU worker release e9f03e0. All six services are 1/1, with schema 0013 and all ten environment entries preserved. Portainer cold pulls remain unverified: updates use explicit node pulls."
+        notes: "Portainer stack 23 runs release a54ccb3 for API/default worker, gallery release 3d83256 for web, bot release 73e9435, and GPU worker release e9f03e0. All six services are 1/1, with schema 0014 and all ten environment entries preserved. Portainer cold pulls remain unverified: updates use explicit node pulls."
         evidence:
           - deploy/EMBEDDINGS-ROLLOUT.md
           - deploy/stack.yml
