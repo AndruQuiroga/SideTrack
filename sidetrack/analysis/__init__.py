@@ -5,7 +5,7 @@ from .constants import FEATURE_FIELDS
 from .embeddings import Neighbours, embed_assets, similar_assets
 from .links import LinkReport, correct_link, link_audio, link_manually
 from .models import Compatibility, TasteProfile, TrackFeature, UserRecommendation
-from .resolution import TrackAudio, audio_for_track
+from .resolution import Coverage, TrackAudio, audio_coverage, audio_for_track
 from .taste import (
     TasteFingerprint,
     compute_genre_histogram,
@@ -22,7 +22,9 @@ __all__ = [
     "embed_assets",
     "similar_assets",
     "LinkReport",
+    "Coverage",
     "TrackAudio",
+    "audio_coverage",
     "audio_for_track",
     "correct_link",
     "link_audio",

@@ -3,17 +3,19 @@ analysis/listen-audio-resolution). Read models: nothing here writes."""
 
 from __future__ import annotations
 
-from collections import defaultdict
+from collections import Counter, defaultdict
 from collections.abc import Iterable
 from dataclasses import dataclass, field
+from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session
 
 from sidetrack.analysis.embeddings import ENABLED, is_current
 from sidetrack.analysis.embeddings.registry import EmbeddingModel, enabled_model
 from sidetrack.analysis.models import AudioAsset, AudioEmbedding, TrackAudioLink
+from sidetrack.listening import ListenEvent, ListenSession, ListenSessionOverride
 from sidetrack.types import AudioKind, AudioVerification
 
 DEFAULT_MODEL = next(iter(ENABLED))
@@ -114,3 +116,99 @@ def audio_for_track(db: Session, track_id: UUID, model: str = DEFAULT_MODEL) -> 
     """
 
     return resolve_tracks(db, [track_id], model)[track_id]
+
+
+REASONS = ("no_link", "ambiguous", "no_embedding", "file_missing")
+# Effective session classifications whose plays are not chosen listening. `unclassified`,
+# `unknown` and a `keep` review count as included.
+AUTOPLAY = frozenset({"night_autoplay", "autoplay"})
+
+
+@dataclass
+class Coverage:
+    """Exact counts. Shares come from them, never the other way round."""
+
+    start: datetime
+    end: datetime
+    model: str
+    plays: int = 0
+    covered: int = 0
+    included_plays: int = 0
+    covered_included: int = 0
+    reasons: Counter[str] = field(default_factory=Counter)
+    reasons_included: Counter[str] = field(default_factory=Counter)
+
+    @staticmethod
+    def share(part: int, whole: int) -> float | None:
+        """None when there are no plays: no share is invented."""
+
+        return part / whole if whole else None
+
+    @property
+    def share_all(self) -> float | None:
+        return self.share(self.covered, self.plays)
+
+    @property
+    def share_included(self) -> float | None:
+        return self.share(self.covered_included, self.included_plays)
+
+
+def _reason(audio: TrackAudio) -> str:
+    if audio.status == NO_AUDIO:
+        return "no_link"
+    if audio.status == AMBIGUOUS:
+        return "ambiguous"
+    return "file_missing" if audio.files_missing else "no_embedding"
+
+
+def audio_coverage(
+    db: Session, user_id: UUID, start: datetime, end: datetime, model: str = DEFAULT_MODEL
+) -> Coverage:
+    """What share of a user's plays in ``[start, end)`` resolve to an embedded asset.
+
+    Counts all plays and the included ones (effective session classification not autoplay,
+    where a ``keep`` review overrides the rule's flag), and buckets the rest by reason:
+    ``no_link``, ``ambiguous``, ``no_embedding`` and ``file_missing`` (every linked asset
+    has been pruned). Every figure derived from audio should print this.
+    """
+
+    enabled_model(model)
+    plays = db.execute(
+        select(
+            ListenEvent.track_id,
+            ListenSession.kind,
+            ListenSessionOverride.override,
+            func.count(),
+        )
+        .select_from(ListenEvent)
+        .outerjoin(ListenSession, ListenSession.id == ListenEvent.session_id)
+        .outerjoin(
+            ListenSessionOverride,
+            and_(
+                ListenSessionOverride.user_id == ListenSession.user_id,
+                ListenSessionOverride.started_at == ListenSession.started_at,
+                ListenSessionOverride.ended_at == ListenSession.ended_at,
+            ),
+        )
+        .where(
+            ListenEvent.user_id == user_id,
+            ListenEvent.played_at >= start,
+            ListenEvent.played_at < end,
+        )
+        .group_by(ListenEvent.track_id, ListenSession.kind, ListenSessionOverride.override)
+    ).all()
+    audio = resolve_tracks(db, {row[0] for row in plays}, model)
+    report = Coverage(start=start, end=end, model=model)
+    for track_id, kind, override, count in plays:
+        included = (override or kind) not in AUTOPLAY
+        resolved = audio[track_id]
+        report.plays += count
+        report.included_plays += count if included else 0
+        if resolved.status == OK:
+            report.covered += count
+            report.covered_included += count if included else 0
+            continue
+        report.reasons[_reason(resolved)] += count
+        if included:
+            report.reasons_included[_reason(resolved)] += count
+    return report
