@@ -9,9 +9,9 @@
 
 ## 2. Tangent detection
 
-- [ ] 2.1 Add `lab/tangents.py` session positions and skip counts; verify `services/audio-lab/tests/test_tangents.py::test_session_is_play_weighted`, `::test_short_autoplay_and_doubtful_sessions_skipped` and `::test_no_baseline_is_skipped`
-- [ ] 2.2 Add the trailing baseline, deviation and tangent and drift runs; verify `::test_tangent_returns`, `::test_single_session_is_not_a_tangent`, `::test_move_that_stays_is_a_drift`, `::test_baseline_catches_up_after_drift` and `::test_silence_ends_as_gap`
-- [ ] 2.3 Describe each branch by its most-moved axis, named from the decision file, and its top tracks; verify `::test_branch_names_the_moved_axis` and `::test_top_tracks_are_play_ranked`
+- [x] 2.1 Add `lab/tangents.py` session positions and skip counts; verify `services/audio-lab/tests/test_tangents.py::test_session_is_play_weighted`, `::test_short_autoplay_and_doubtful_sessions_skipped` and `::test_no_baseline_is_skipped`
+- [x] 2.2 Add the trailing baseline, deviation and tangent and drift runs; verify `::test_tangent_returns`, `::test_single_session_is_not_a_tangent`, `::test_move_that_stays_is_a_drift`, `::test_baseline_catches_up_after_drift` and `::test_silence_ends_as_gap`
+- [x] 2.3 Describe each branch by its most-moved axis, named from the decision file, and its top tracks; verify `::test_branch_names_the_moved_axis` and `::test_top_tracks_are_play_ranked`
 
 ## 3. Demos
 
