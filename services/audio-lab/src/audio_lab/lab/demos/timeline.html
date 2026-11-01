@@ -1,0 +1,235 @@
+<style>
+  .controls { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; align-items: center; }
+  .controls .group { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
+  .chart-wrap { position: relative; }
+  svg.timeline { width: 100%; height: auto; display: block; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+  svg.timeline text { fill: var(--fg); font: 12px system-ui, sans-serif; }
+  svg.timeline .tick { stroke: var(--line); stroke-width: 1; }
+  svg.timeline .tick-label, svg.timeline .gap-label { fill: var(--muted); }
+  svg.timeline .branch { cursor: pointer; }
+  svg.timeline .branch:focus { outline: none; }
+  svg.timeline .branch:focus-visible .shape, svg.timeline .branch:hover .shape { stroke-width: 5; }
+  svg.timeline .branch:focus-visible .hit { stroke: var(--accent); stroke-opacity: 0.35; }
+  .tip { position: absolute; z-index: 2; max-width: 22rem; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 0.5rem 0.75rem; font-size: 0.9rem; pointer-events: none; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25); }
+  .tip p, .tip ul { margin: 0.15rem 0; }
+  .tip ul, #detail ul { padding-left: 1.1rem; }
+  .legend { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; margin: 0.5rem 0; }
+  .swatch { display: inline-block; width: 0.9rem; height: 0.9rem; border-radius: 3px; vertical-align: -0.1rem; margin-right: 0.3rem; }
+  .track { margin: 0.5rem 0; }
+</style>
+
+<div class="card controls">
+  <div class="group" role="group" aria-label="Setting"><span class="muted">Setting</span><span id="presets"></span></div>
+  <div class="group" role="group" aria-label="Zoom">
+    <button type="button" id="pan-left" aria-label="Earlier">&larr;</button>
+    <button type="button" id="zoom-in">Zoom in</button>
+    <button type="button" id="zoom-out">Zoom out</button>
+    <button type="button" id="pan-right" aria-label="Later">&rarr;</button>
+    <button type="button" id="zoom-reset">Whole span</button>
+  </div>
+</div>
+<p class="muted" id="note"></p>
+<p class="muted" id="range"></p>
+<div class="chart-wrap">
+  <svg id="chart" class="timeline" viewBox="0 0 1000 380" role="img" aria-label="Timeline of listening with branches for tangents and drifts"></svg>
+  <div id="tip" class="tip" role="status" hidden></div>
+</div>
+<div class="legend" id="legend"></div>
+<p class="muted">The trunk is your usual sound. A branch above it means higher scores on the axis it moved most, below means lower. A branch that closes back onto the trunk is a tangent. An arrow that stays away is a drift. A dashed end is open: listening stopped, or the data did.</p>
+<h2>Gaps</h2>
+<div id="gaps" class="muted"></div>
+<h2>Sessions</h2>
+<div id="coverage" class="muted"></div>
+<h2>Selected branch</h2>
+<div id="detail" class="card"><span class="muted">Click a branch, or focus it and press Enter, to see its tracks.</span></div>
+
+<script>
+(function () {
+  const demo = labData().demo;
+  const W = 1000, H = 380, PAD = 40, MID = 190, AXIS_Y = H - 28;
+  const svg = document.getElementById("chart");
+  const tip = document.getElementById("tip");
+  const detail = document.getElementById("detail");
+  document.getElementById("note").textContent = demo.note;
+  if (!demo.span.start) {
+    svg.replaceWith(el("p", { text: "No session has enough played audio to place on your axes." }));
+    return;
+  }
+  const t0 = Date.parse(demo.span.start);
+  const t1 = Math.max(Date.parse(demo.span.end), t0 + 86400000);
+  const DAY = 86400000;
+  let view = [t0, t1];
+  let preset = demo.default_preset;
+  let selected = null;
+
+  const day = (t) => new Date(t).toISOString().slice(0, 10);
+  const colour = (axisId) => {
+    const index = demo.axes.findIndex((a) => a.id === axisId);
+    return "var(--a" + ((index % 6) + 1) + ")";
+  };
+  const x = (t) => PAD + ((t - view[0]) / (view[1] - view[0])) * (W - 2 * PAD);
+  const endings = {
+    returned: "Came back to the usual sound.",
+    not_returned: "Did not come back within 45 days. A candidate era.",
+    gap: "Ended by a gap in listening. That is not a return.",
+    data_end: "Still away when the data ends.",
+  };
+
+  function ticks() {
+    const out = [];
+    const years = (view[1] - view[0]) / DAY / 365 > 2;
+    const start = new Date(view[0]);
+    let year = start.getUTCFullYear(), month = years ? 0 : start.getUTCMonth();
+    for (let guard = 0; guard < 400; guard += 1) {
+      const t = Date.UTC(year, month, 1);
+      if (t > view[1]) break;
+      if (t >= view[0]) out.push({ t: t, label: years ? String(year) : day(t).slice(0, 7) });
+      if (years) year += 1;
+      else { month += 1; if (month > 11) { month = 0; year += 1; } }
+    }
+    return out;
+  }
+
+  function branchPath(branch, h, s) {
+    const xs = x(Date.parse(branch.start));
+    const xe = Math.max(x(Date.parse(branch.end)), xs + 8);
+    const r = Math.min(24, (xe - xs) / 2);
+    const top = MID - s * h;
+    const out = "M" + xs + " " + MID + " Q" + xs + " " + top + " " + (xs + r) + " " + top;
+    if (branch.kind === "tangent") {
+      return out + " L" + (xe - r) + " " + top + " Q" + xe + " " + top + " " + xe + " " + MID;
+    }
+    return out + " L" + xe + " " + top;
+  }
+
+  function describe(branch) {
+    const box = el("div");
+    const kind = branch.kind === "open" ? "open branch" : branch.kind;
+    box.append(el("p", { text: day(Date.parse(branch.start)) + " to " + day(Date.parse(branch.end)) + ", " + kind }));
+    box.append(el("p", { text: endings[branch.ended] }));
+    box.append(el("p", { text: "Moved most: " + branch.axis_name + (branch.side > 0 ? ", higher" : ", lower") }));
+    box.append(el("p", { class: "muted", text: branch.sessions + " sessions, " + branch.plays + " plays, peak " + branch.peak_deviation + " baseline spreads away" }));
+    box.append(el("p", { class: "muted", text: "Shift by axis, in library spreads: " + branch.shifts.map((s) => s.name + " " + (s.shift >= 0 ? "+" : "") + s.shift).join(", ") }));
+    return box;
+  }
+
+  function showTip(branch, clientX, clientY, fallback) {
+    tip.replaceChildren(describe(branch));
+    const list = el("ul");
+    branch.top_tracks.forEach((t) => list.append(el("li", { text: t.artist + " - " + t.title + " (" + t.plays + ")" })));
+    tip.append(el("p", { class: "muted", text: "Most played" }), list);
+    tip.hidden = false;
+    const wrap = tip.parentElement.getBoundingClientRect();
+    const px = clientX === null ? fallback.left + fallback.width / 2 : clientX;
+    const py = clientY === null ? fallback.bottom : clientY;
+    tip.style.left = Math.max(0, Math.min(px - wrap.left + 12, wrap.width - tip.offsetWidth)) + "px";
+    tip.style.top = Math.max(0, py - wrap.top + 12) + "px";
+  }
+
+  function select(branch) {
+    selected = branch;
+    detail.replaceChildren(describe(branch));
+    detail.append(el("h3", { text: "Tracks" }));
+    branch.top_tracks.forEach((t) => {
+      const row = el("div", { class: "track" }, [el("div", { text: t.artist + " - " + t.title + ", " + t.plays + " plays" })]);
+      if (t.audio) {
+        const audio = el("audio", { controls: "", preload: "none" });
+        audio.src = t.audio;
+        row.append(audio);
+      } else {
+        row.append(el("div", { class: "muted", text: "audio unavailable" }));
+      }
+      detail.append(row);
+    });
+  }
+
+  function draw() {
+    const result = demo.presets[preset];
+    svg.replaceChildren();
+    svg.append(svgEl("defs", {}, [svgEl("clipPath", { id: "plot" }, [svgEl("rect", { x: PAD, y: 0, width: W - 2 * PAD, height: H })])]));
+    ticks().forEach((tick) => {
+      svg.append(svgEl("line", { class: "tick", x1: x(tick.t), x2: x(tick.t), y1: 10, y2: AXIS_Y - 8 }));
+      svg.append(svgEl("text", { class: "tick-label", x: x(tick.t) + 3, y: AXIS_Y + 8, text: tick.label }));
+    });
+    const plot = svgEl("g", { "clip-path": "url(#plot)" });
+    // The trunk, drawn solid between gaps and dashed across them.
+    let from = t0;
+    result.gaps.forEach((gap) => {
+      const gs = Date.parse(gap.start), ge = Date.parse(gap.end);
+      plot.append(svgEl("line", { x1: x(from), x2: x(gs), y1: MID, y2: MID, stroke: "var(--muted)", "stroke-width": 4 }));
+      plot.append(svgEl("line", { x1: x(gs), x2: x(ge), y1: MID, y2: MID, stroke: "var(--muted)", "stroke-width": 2, "stroke-dasharray": "3 6" }));
+      plot.append(svgEl("text", { class: "gap-label", x: (x(gs) + x(ge)) / 2, y: MID + 18, "text-anchor": "middle", text: "gap, " + gap.days + " days" }));
+      from = ge;
+    });
+    plot.append(svgEl("line", { x1: x(from), x2: x(t1), y1: MID, y2: MID, stroke: "var(--muted)", "stroke-width": 4 }));
+    const peak = Math.max(1, ...result.branches.map((b) => b.peak_deviation));
+    result.branches.forEach((branch) => {
+      const s = branch.side;
+      const h = 40 + 110 * Math.min(1, branch.peak_deviation / peak);
+      const d = branchPath(branch, h, s);
+      const label = branch.axis_name + (s > 0 ? " +" : " -") + (branch.kind === "tangent" ? "" : ", " + (branch.kind === "drift" ? "drift" : "open"));
+      const group = svgEl("g", { class: "branch", tabindex: 0, role: "button", "aria-label": label + ", " + day(Date.parse(branch.start)) + " to " + day(Date.parse(branch.end)) });
+      group.append(svgEl("path", { class: "hit", d: d, fill: "none", stroke: "transparent", "stroke-width": 16 }));
+      const shape = svgEl("path", { class: "shape", d: d, fill: "none", stroke: colour(branch.axis), "stroke-width": 3, "stroke-linecap": "round" });
+      if (branch.kind === "open") shape.setAttribute("stroke-dasharray", "7 5");
+      group.append(shape);
+      if (branch.kind !== "tangent") {
+        const xe = Math.max(x(Date.parse(branch.end)), x(Date.parse(branch.start)) + 8), ye = MID - s * h;
+        group.append(svgEl("path", { d: "M" + xe + " " + ye + " l-9 -6 l0 12 z", fill: colour(branch.axis) }));
+      }
+      const mid = (x(Date.parse(branch.start)) + Math.max(x(Date.parse(branch.end)), x(Date.parse(branch.start)) + 8)) / 2;
+      group.append(svgEl("text", { x: mid, y: MID - s * (h + 8) + (s > 0 ? 0 : 12), "text-anchor": "middle", text: label }));
+      group.addEventListener("mousemove", (event) => showTip(branch, event.clientX, event.clientY));
+      group.addEventListener("mouseleave", () => { tip.hidden = true; });
+      group.addEventListener("focus", () => showTip(branch, null, null, group.getBoundingClientRect()));
+      group.addEventListener("blur", () => { tip.hidden = true; });
+      group.addEventListener("click", () => select(branch));
+      group.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); select(branch); } });
+      plot.append(group);
+    });
+    svg.append(plot);
+    document.getElementById("range").textContent = "Showing " + day(view[0]) + " to " + day(view[1]) + ". " + result.branches.length + (result.branches.length === 1 ? " branch" : " branches") + " at the " + preset + " setting (threshold " + result.threshold + ").";
+    const gaps = document.getElementById("gaps");
+    gaps.replaceChildren();
+    if (!result.gaps.length) gaps.textContent = "None: no 30 days without a usable session.";
+    result.gaps.forEach((gap) => gaps.append(el("div", { text: day(Date.parse(gap.start)) + " to " + day(Date.parse(gap.end)) + ", " + gap.days + " days with no usable sessions" })));
+    const skips = result.skips;
+    document.getElementById("coverage").textContent =
+      skips.sessions + " sessions in the snapshot. Used " + skips.used + ". Skipped: " + skips.autoplay + " autoplay, " + skips.doubtful +
+      " with doubtful timing, " + skips.too_few_plays + " with fewer than 3 plays that have audio, " + skips.no_baseline +
+      " without enough earlier sessions to compare. Plays: " + demo.coverage.plays + ", of which " + demo.coverage.scored + " sit on your axes, " +
+      demo.coverage.no_audio + " have no linked audio and " + demo.coverage.unmatched + " have audio that was not analysed.";
+  }
+
+  const presetBox = document.getElementById("presets");
+  Object.keys(demo.presets).forEach((name) => {
+    const button = el("button", { type: "button", text: name + " (" + demo.presets[name].threshold + ")" });
+    button.dataset.name = name;
+    button.addEventListener("click", () => { preset = name; paintPresets(); draw(); });
+    presetBox.append(button, document.createTextNode(" "));
+  });
+  function paintPresets() {
+    presetBox.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.name === preset)));
+  }
+  function setView(a, b) {
+    const span = Math.max(b - a, 7 * DAY);
+    a = Math.max(t0, Math.min(a, t1 - span));
+    view = [a, Math.min(t1, a + span)];
+    draw();
+  }
+  document.getElementById("zoom-in").addEventListener("click", () => { const c = (view[0] + view[1]) / 2, q = (view[1] - view[0]) / 4; setView(c - q, c + q); });
+  document.getElementById("zoom-out").addEventListener("click", () => { const c = (view[0] + view[1]) / 2, q = (view[1] - view[0]); setView(c - q, c + q); });
+  document.getElementById("pan-left").addEventListener("click", () => { const q = (view[1] - view[0]) / 4; setView(view[0] - q, view[1] - q); });
+  document.getElementById("pan-right").addEventListener("click", () => { const q = (view[1] - view[0]) / 4; setView(view[0] + q, view[1] + q); });
+  document.getElementById("zoom-reset").addEventListener("click", () => { view = [t0, t1]; draw(); });
+
+  const legend = document.getElementById("legend");
+  demo.axes.forEach((axis) => {
+    const swatch = el("span", { class: "swatch" });
+    swatch.style.background = colour(axis.id);
+    legend.append(el("span", {}, [swatch, document.createTextNode(axis.name)]));
+  });
+  paintPresets();
+  draw();
+})();
+</script>

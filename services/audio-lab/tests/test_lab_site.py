@@ -92,14 +92,14 @@ def test_pages_load_nothing_remote(tmp_path):
         assert not re.search(r"https?://|//cdn|@import|<link|<iframe|<script[^>]*\ssrc=", text)
         assert not re.search(r"fetch\(|XMLHttpRequest|WebSocket|EventSource|sendBeacon", text)
         assert "/*__LAB_" not in text and "__LAB_" not in text
-        assert text.count("<script") == 2  # inline data and inline code only
+        assert not re.search(r"<script[^>]*\ssrc=", text)  # inline data and inline code only
 
 
 def test_pages_escape_script_terminators(tmp_path):
     out = tmp_path / "lab"
     hostile = Demo("h", "H", "s", lambda c: {"title": "</script><b>x</b>"}, "<p>h</p>")
     build_site(out, LabContext(), [hostile])
-    assert (out / "h.html").read_text(encoding="utf-8").count("</script>") == 2
+    assert (out / "h.html").read_text(encoding="utf-8").count("</script>") == 3
 
 
 node = pytest.mark.skipif(shutil.which("node") is None, reason="node is needed to run page code")

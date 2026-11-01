@@ -15,9 +15,9 @@
 
 ## 3. Demos
 
-- [ ] 3.1 Add the Tangent timeline: trunk, branches, drifts, gaps, zoom, hover, playable tracks and presets; verify `test_lab_demos.py::test_timeline_data_has_every_preset`, `::test_gaps_are_marked`, `::test_tracks_play_from_file_uris` and `::test_no_claim_wording`
-- [ ] 3.2 Add Sound signature: each named axis by year, with track and play counts for each year; verify `::test_signature_by_year` and `::test_sparse_year_is_marked`
-- [ ] 3.3 Add Track explorer: searchable tracks, nearest tracks by cosine, axis positions and audio; verify `::test_neighbours_exclude_the_track_itself` and `::test_track_without_audio_shows_unavailable`
+- [x] 3.1 Add the Tangent timeline: trunk, branches, drifts, gaps, zoom, hover, playable tracks and presets; verify `test_lab_demos.py::test_timeline_data_has_every_preset`, `::test_gaps_are_marked`, `::test_tracks_play_from_file_uris` and `::test_no_claim_wording`
+- [x] 3.2 Add Sound signature: each named axis by year, with track and play counts for each year; verify `::test_signature_by_year` and `::test_sparse_year_is_marked`
+- [x] 3.3 Add Track explorer: searchable tracks, nearest tracks by cosine, axis positions and audio; verify `::test_neighbours_exclude_the_track_itself` and `::test_track_without_audio_shows_unavailable`
 
 ## 4. Docs
 

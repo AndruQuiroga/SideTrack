@@ -226,7 +226,7 @@ def detect(
         mean = window.mean(axis=0)
         spread = float(np.sqrt(((window - mean) ** 2).sum(axis=1).mean()))
         distance = float(np.linalg.norm(session.position - mean))
-        deviation = distance / spread if spread > _EPS else (np.inf if distance > _EPS else 0.0)
+        deviation = distance / max(spread, _EPS)
 
         if deviation >= threshold:
             if run is None:

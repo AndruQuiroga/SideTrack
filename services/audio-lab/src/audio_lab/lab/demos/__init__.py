@@ -3,5 +3,6 @@
 from __future__ import annotations
 
 from ..site import Demo
+from . import explorer, signature, timeline
 
-DEMOS: list[Demo] = []
+DEMOS: list[Demo] = [timeline.demo(), signature.demo(), explorer.demo()]

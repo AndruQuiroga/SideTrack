@@ -62,6 +62,28 @@ def write_axes(
     return root, path
 
 
+def write_plays(path: Path, plays: list) -> Path:
+    """Write ``Play`` objects as the snapshot CSV that ``scripts/lab_snapshot.sql`` produces."""
+
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.writer(handle, lineterminator="\n")
+        writer.writerow(SNAPSHOT_COLUMNS)
+        for p in plays:
+            writer.writerow(
+                [
+                    p.at.isoformat(sep=" "),
+                    p.artist,
+                    p.title,
+                    p.session_start.isoformat(sep=" "),
+                    p.session_end.isoformat(sep=" "),
+                    p.kind,
+                    p.sha256,
+                    "t" if p.doubtful else "f",
+                ]
+            )
+    return path
+
+
 def write_snapshot(path: Path, rows: list[dict]) -> Path:
     """Rows hold ``at`` (datetime), ``track`` (index into the axes file, or None) and optionals.
 
