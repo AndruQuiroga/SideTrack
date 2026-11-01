@@ -8,7 +8,7 @@
 ## 2. Sessions and command
 
 - [x] 2.1 Make `sessionize` read the zone at each session's start through the resolver, with one periods query per run; verify `tests/test_listen_sessions.py::test_night_uses_zone_at_session_start`, `::test_same_clock_time_differs_across_a_move`, `::test_rebuild_keeps_boundaries_and_overrides` and that the existing session tests still pass
-- [ ] 2.2 Add the `timezone` subcommand to `python -m sidetrack.listening`; verify `tests/test_listening_cli.py::test_timezone_add_list_remove`, `::test_timezone_prints_rebuild_reminder` and `::test_timezone_does_not_rebuild`
+- [x] 2.2 Add the `timezone` subcommand to `python -m sidetrack.listening`; verify `tests/test_listening_cli.py::test_timezone_add_list_remove`, `::test_timezone_prints_rebuild_reminder` and `::test_timezone_does_not_rebuild`
 - [ ] 2.3 Document periods in docs/LISTENING.md, and add a line on `timezone_resolver` to `add-weekly-listening-profile` and `add-listening-visuals` design.md; verify the documented command runs against a local database
 
 ## 3. Production
