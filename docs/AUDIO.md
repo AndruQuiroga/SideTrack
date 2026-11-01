@@ -115,6 +115,62 @@ uv run --frozen --extra api python -m sidetrack.audio neighbours <sha256 or asse
 - **Licence:** MuQ-MuLan's weights are CC BY-NC 4.0, so the stored vectors are for this
   personal, non-commercial project only.
 
+## Linking listens to audio
+
+Assets fetched for a seed list aren't tied to catalog tracks, so a play can't yet be traced
+to the sound it was a play of. `link` ties them from evidence already stored (openspec
+`analysis/listen-audio-resolution`). It makes no network requests, needs no audio
+directory, and nothing schedules it: you run it, usually after a ListenBrainz import.
+
+```bash
+uv run --frozen --extra api python -m sidetrack.audio link
+uv run --frozen --extra api python -m sidetrack.audio link --user <user id>
+uv run --frozen --extra api python -m sidetrack.audio link --queue
+uv run --frozen --extra api python -m sidetrack.audio link --manual <track id> <sha256 or asset id>
+uv run --frozen --extra api python -m sidetrack.audio link --reject <track id> <sha256 or asset id> --note "a cover"
+uv run --frozen --extra api python -m sidetrack.audio link --confirm <track id> <sha256 or asset id>
+uv run --frozen --extra api python -m sidetrack.audio coverage --user <user id> --weeks 4
+```
+
+- **`link`** runs the matchers in order and prints exact counts: links per method (with how
+  many were new this run), links replaced by a newer matcher version, ambiguous links,
+  unlinked assets, unlinked tracks, and the rejected pairs it skipped. Running it twice
+  adds nothing. `--user` limits the YouTube evidence and the unlinked-track count to one
+  user's listens. `--queue` queues an `analysis.link_audio` job on the `default` queue
+  instead, so the rack can run it; its result holds the same counts. It prints the job ID.
+- **The methods**, from most to least trusted. `seed` copies the track an asset was fetched
+  for. `recording_mbid` joins a track and an AcoustID-confirmed asset that share a recording
+  MBID. `youtube_id` joins a track and a YouTube Music asset when one of the track's
+  listens was played from that video. `seed_identity` (confidence 0.9) joins an asset's seed
+  artist and title to a track's artist and title after the same normalisation the import
+  uses: case, accents and punctuation ignored, and upload noise such as "(Official Video)"
+  removed from the track's title. `manual` is your own link. A match on the title alone or
+  the artist alone is never a link, and neither is a similar sound.
+- **Ambiguous links.** When one artist and title key fits more than one track, or more than
+  one asset of the same kind (full or preview), the links are written but marked
+  `ambiguous`. A normalised name can't tell the album, live and remastered versions apart,
+  so the audio-for-track read reports `ambiguous` with the candidates instead of choosing.
+  `--confirm` clears the mark for one pair; `--reject` removes the link and stops the
+  matcher recreating it. Both are kept with the time, and survive reruns. `--manual`
+  overrides an earlier rejection of the same pair.
+- **`coverage`** reads only. For the user's last `--weeks` it prints the plays and the
+  included plays (those in a session not classified as autoplay, after your `keep` and
+  `autoplay` reviews), how many of each have an embedded asset, and the rest by reason.
+  Every audio-derived figure should print this number.
+
+What the reasons mean:
+
+| Reason         | The play's track has                                                      |
+| -------------- | ------------------------------------------------------------------------- |
+| `no_link`      | no linked asset. This list is the next seed list                          |
+| `ambiguous`    | only ambiguous links, until you `--confirm` or `--reject`                 |
+| `no_embedding` | an asset, but none with an embedding at the current revision. Run `embed` |
+| `file_missing` | only assets whose files were pruned, so they can't be embedded again      |
+
+A play counts as covered only when its track's preferred asset has a current embedding. The
+preferred asset is the embedded one, then a full track over a preview, then an
+AcoustID-confirmed asset over an unverified one.
+
 ## Reading the summary
 
 ```
@@ -140,11 +196,11 @@ Run against a local Postgres 16 (migrated to `0009_audio_assets`) with
 "Come On Let's Go", Radiohead "Reckoner", Portishead "Roads", Aphex Twin "Avril 14th"
 (each with album) and Stereolab "French Disko" (no album).
 
-| Run | New assets | Already stored | Missing | Notes |
-| --- | --- | --- | --- | --- |
-| 1 | 5 (all full) | 0 | 5 previews | Deezer's `artist:"…" track:"…"` search now returns nothing; fixed to plain-text search filtered by artist and title |
-| 2 | 5 (all previews) | 4 | 1 full | Reruns reused identical audio. Radiohead failed once deno was present without the solver scripts; fixed by pinning `yt-dlp-ejs` |
-| 3 | 0 | 10 | 0 | Clean, with no yt-dlp warnings |
+| Run | New assets       | Already stored | Missing    | Notes                                                                                                                           |
+| --- | ---------------- | -------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | 5 (all full)     | 0              | 5 previews | Deezer's `artist:"…" track:"…"` search now returns nothing; fixed to plain-text search filtered by artist and title             |
+| 2   | 5 (all previews) | 4              | 1 full     | Reruns reused identical audio. Radiohead failed once deno was present without the solver scripts; fixed by pinning `yt-dlp-ejs` |
+| 3   | 0                | 10             | 0          | Clean, with no yt-dlp warnings                                                                                                  |
 
 - All 10 files exist under the audio directory. `fpcalc` durations match the tracks
   (full tracks 125 to 303 s, previews 29 s).
