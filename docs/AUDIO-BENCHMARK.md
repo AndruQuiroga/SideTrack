@@ -352,8 +352,9 @@ needed. The owner also asked for more than these two axes, which later changes w
 
 - **Data source:** DEAM's official site (Aljanaki, Yazdani and Soleymani, 2017) timed out, so the
   owner downloaded the audio from a Kaggle copy and the ratings from a separate copy. All 1,802
-  rated clips matched an audio file, and the count and columns match the published dataset. The
-  dataset's licence is non-commercial Creative Commons. Nothing from it is in this repo.
+  rated clips matched an audio file, and the count and columns match the published dataset. The dataset's licence is non-commercial Creative Commons. The owner accepted it for personal,
+  non-commercial use on 2026-10-31, and its exact terms remain unconfirmed
+  (`docs/evaluations/datasets.yaml`). Nothing from it is in this repo.
 - **No artist grouping:** the metadata file wasn't available, so each clip is its own group. Clips
   by one artist can sit on both sides of a split, which may flatter these scores. Both models get
   the same benefit, so the comparison is fairer than the absolute numbers.
