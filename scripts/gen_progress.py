@@ -88,7 +88,12 @@ PHASES: list[dict[str, Any]] = [
         "label": "Track",
         "summary": "Benchmark extractors before building analysis (separate track).",
         "adrs": ["0004", "0005", "0007"],
-        "changes": ["add-audio-acquisition", "add-audio-lab-benchmark", "add-audio-benchmark-v2"],
+        "changes": [
+            "add-audio-acquisition",
+            "add-audio-lab-benchmark",
+            "add-audio-benchmark-v2",
+            "add-mood-probe-benchmark",
+        ],
     },
     {
         "id": "audio-embeddings",

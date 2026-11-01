@@ -10,6 +10,8 @@ from pathlib import Path
 
 from .adapters import ADAPTERS, get_adapter
 from .control import DEFAULT_GENRES, ControlUnavailable, deezer_fetch, write_control
+from .emotion import EmotionDataError, Scale, prepare_dataset
+from .mood import MoodError, mood_probe, predict_run
 from .parity import ParityError, parity
 from .report import UnknownModel, write_report
 from .runs import RUN_JSON, embed_run
@@ -56,6 +58,29 @@ def _parser() -> argparse.ArgumentParser:
     control.add_argument("--out", type=Path, required=True)
     control.add_argument("--per-genre", type=int, default=10)
     control.add_argument("--genre", action="append", help="Repeatable; default 15 genres.")
+
+    emotion = commands.add_parser(
+        "emotion-manifest", help="Manifest and mood labels from a local emotion dataset."
+    )
+    emotion.add_argument(
+        "--ratings", type=Path, action="append", required=True, help="Repeatable; per-song CSV."
+    )
+    emotion.add_argument("--audio-dir", type=Path, required=True)
+    emotion.add_argument("--out", type=Path, required=True, help="Outside the repo.")
+    emotion.add_argument("--metadata", type=Path, action="append", help="Repeatable; has artists.")
+    emotion.add_argument("--scale-low", type=float, default=1.0)
+    emotion.add_argument("--scale-high", type=float, default=9.0)
+
+    probe = commands.add_parser("mood-probe", help="Cross-validated valence and arousal probes.")
+    probe.add_argument("run_dir", type=Path)
+    probe.add_argument("--labels", type=Path, required=True, help="From emotion-manifest.")
+    probe.add_argument("--model", action="append", help="Repeatable; default every model.")
+    probe.add_argument("--folds", type=int, default=5)
+    probe.add_argument("--repeats", type=int, default=5)
+    probe.add_argument("--seed", type=int, default=0)
+    probe.add_argument("--predict-run", type=Path, help="Also predict this run's assets.")
+    probe.add_argument("--predict-out", type=Path, help="Predictions CSV, outside the repo.")
+    probe.add_argument("--predict-manifest", type=Path, help="Adds artists and titles.")
 
     compare = commands.add_parser("parity", help="One model's vectors in two runs, per asset.")
     compare.add_argument("run_a", type=Path)
@@ -126,6 +151,53 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(str(exc), file=sys.stderr)
             return 1
         print(json.dumps(summary, indent=2))
+        return 0
+
+    if args.command == "emotion-manifest":
+        try:
+            summary = prepare_dataset(
+                args.ratings,
+                args.audio_dir,
+                args.out,
+                metadata=args.metadata,
+                scale=Scale(args.scale_low, args.scale_high),
+            )
+        except (EmotionDataError, OutputInRepo) as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+        print(json.dumps(summary, indent=2))
+        return 0
+
+    if args.command == "mood-probe":
+        if bool(args.predict_run) != bool(args.predict_out):
+            print("--predict-run and --predict-out go together.", file=sys.stderr)
+            return 2
+        try:
+            report = mood_probe(
+                args.run_dir,
+                args.labels,
+                args.model,
+                folds=args.folds,
+                repeats=args.repeats,
+                seed=args.seed,
+            )
+            predicted = None
+            if args.predict_run:
+                predicted = predict_run(
+                    args.run_dir,
+                    args.labels,
+                    args.predict_run,
+                    args.predict_out,
+                    args.model,
+                    manifest=args.predict_manifest,
+                    seed=args.seed,
+                )
+        except (MoodError, OutputInRepo) as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+        print(json.dumps({k: report[k] for k in ("clips", "models", "comparisons")}, indent=2))
+        if predicted is not None:
+            print(f"Wrote {predicted} predictions to {args.predict_out}")
         return 0
 
     if args.command == "control-seeds":
