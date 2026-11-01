@@ -20,8 +20,8 @@
 
 - [x] 4.1 Run `embed` on DEAM with `muq-mulan` and `muq` on the RTX 5070, then `mood-probe`. Verify `run.json` shows both models ok, and record the run ID, clip count, R² and comparison in `docs/AUDIO-BENCHMARK.md`, aggregates only.
 - [x] 4.2 Write predictions for run `20261027-031711-c7c3698`, and give the owner the top and bottom 20 per dimension to listen to. Verify the file is outside the repo.
-- [ ] 4.3 Add the mood gate to `docs/AUDIO-BENCHMARK.md` before opening the results in 4.1, then record the gate result and the owner's decision with the run ID.
+- [x] 4.3 Add the mood gate to `docs/AUDIO-BENCHMARK.md` before opening the results in 4.1, then record the gate result and the owner's decision with the run ID.
 
 ## 5. Records
 
-- [ ] 5.1 Update `services/audio-lab/README.md`, `docs/PRODUCT-VISION.md` where results change the plan, and the embedding rows in `docs/status.yaml`, and regenerate `docs/STATUS.md`. Write an ADR only if the owner changes the production model. Verify `uv run pytest` and `ruff check` in `services/audio-lab`, `scripts/gen_status.py --check`, and `pnpm exec openspec validate add-mood-probe-benchmark --strict`.
+- [x] 5.1 Update `services/audio-lab/README.md`, `docs/PRODUCT-VISION.md` where results change the plan, and the embedding rows in `docs/status.yaml`, and regenerate `docs/STATUS.md`. Write an ADR only if the owner changes the production model. Verify `uv run pytest` and `ruff check` in `services/audio-lab`, `scripts/gen_status.py --check`, and `pnpm exec openspec validate add-mood-probe-benchmark --strict`.

@@ -5,7 +5,7 @@
 Sidetrack is about to turn audio embeddings into claims a person reads about their own
 music (mood, themes, neighbours, eras), and the research notes show how easily such claims
 outrun their evidence: the mood probe's DEAM scores were not artist-grouped, its two axes
-correlate at 0.88 on the owner's library, and the owner's listening check is still pending
+correlate at 0.88 on the owner's library, and only the owner's listening check has passed
 (docs/research/MUSIC-ANALYSIS-RESEARCH-NOTES.md, section 3). The project has a benchmark
 for choosing an embedding model, but no rule for when *any* analysis result is good enough
 to show a user. This change writes that rule down, with the evaluation-data rights it
@@ -46,7 +46,7 @@ Out of scope:
   passes. The first register entries record the evidence that already exists, honestly
   marked `gate_pending` or `incomplete`.
 - Changing the model-selection benchmark (`analysis/audio-benchmark`) or the mood-probe
-  work on `feat/mood-probe-benchmark`; those keep their own specs.
+  work merged from `add-mood-probe-benchmark`; those keep their own specs.
 - Production code, routes, pages or database changes. Each analysis feature's own change
   enforces its gate status in the product.
 - Downloading, mirroring or committing any dataset audio, annotation file or per-track
@@ -71,11 +71,11 @@ Current state:
 - **Observed:** `services/audio-lab/src/audio_lab/cli.py` offers `embed`, `report`, `seeds`,
   `control-seeds`, `parity` and `score`; nothing records a per-claim evaluation or an
   owner decision beyond blind duel votes (`duels.py`, `score.py`).
-- **Observed:** branch `feat/mood-probe-benchmark` adds `mood-probe` and emotion-dataset
+- **Observed:** `add-mood-probe-benchmark` added `mood-probe` and emotion-dataset
   preparation (`services/audio-lab/src/audio_lab/mood.py`, `emotion.py`) and modifies
   `analysis/audio-benchmark` in its own change `add-mood-probe-benchmark`. Run
   `20261031-204732-9b07ff0` reports DEAM valence R² 0.615 and arousal R² 0.688, not
-  artist-grouped, with the owner gate pending (`docs/AUDIO-BENCHMARK.md` on that branch).
+  artist-grouped, and the owner passed the listening check on 2026-10-31 (`docs/AUDIO-BENCHMARK.md`).
 - **Observed:** production holds 862 MuQ-MuLan 512-d vectors, one mean-pooled vector per
   asset over at most the first 180 s (`sidetrack/analysis/embeddings/registry.py`,
   `PIPELINE = "w10-t3-cap180-fp32-mean-l2-v1"`); no HTTP route uses them (docs/STATUS.md,

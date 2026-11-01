@@ -43,4 +43,5 @@ rules:
     - Every scenario must be testable and name the observable outcome.
   tasks:
     - Each implementation task names the test that proves it.
+    - Mark a task that needs the rack, production or the owner with `(owner)`.
     - End with a task to update docs/STATUS.md or ADRs if the change alters them.

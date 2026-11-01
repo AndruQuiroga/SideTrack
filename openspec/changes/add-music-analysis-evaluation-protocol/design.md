@@ -10,7 +10,7 @@ states from section 4. Constraints that shape the approach:
 - `services/audio-lab` is the benchmark CLI with its own lock and PyTorch (ADR 0004);
   production code must not import it, and it must not read the production database.
 - The model-selection benchmark (`analysis/audio-benchmark`) is being extended on
-  `feat/mood-probe-benchmark` by `add-mood-probe-benchmark`. This change must not collide
+  `add-mood-probe-benchmark`. This change must not collide
   with that delta.
 - Personal benchmark data already has to stay outside the repo (`analysis/benchmark-seeds`).
 - `docs/status.yaml` is the source of truth for what works, regenerated into
