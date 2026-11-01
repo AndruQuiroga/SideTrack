@@ -15,7 +15,7 @@ from sidetrack.club.routes import (
     weeks,
 )
 from sidetrack.identity.routes import integrations, social, users
-from sidetrack.listening.routes import ingest, listen_events, sessions
+from sidetrack.listening.routes import ingest, listen_events, rediscovery, sessions
 
 from . import feed, jobs, search, trending
 
@@ -37,6 +37,7 @@ def register_routes(app: FastAPI) -> None:
         singles.router,
         listen_events.router,
         sessions.router,
+        rediscovery.router,
         taste_profiles.router,
         search.router,
         recommendations.router,

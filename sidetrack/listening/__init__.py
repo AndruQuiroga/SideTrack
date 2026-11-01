@@ -20,7 +20,9 @@ from .models import (
     ListeningImportRun,
     ListenSession,
     ListenSessionOverride,
+    RediscoveryDismissal,
 )
+from .rediscovery import forgotten_favourites
 from .sessions import effective_kind, list_sessions, sessionize, set_override
 from .video_ids import track_video_ids
 
@@ -32,11 +34,13 @@ __all__ = [
     "ListeningImportRun",
     "ListenSession",
     "ListenSessionOverride",
+    "RediscoveryDismissal",
     "ListenSource",
     "clean_title",
     "coverage_state",
     "effective_kind",
     "import_export",
+    "forgotten_favourites",
     "ingest_lastfm",
     "ingest_listenbrainz",
     "linked_account",

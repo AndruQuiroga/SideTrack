@@ -32,6 +32,9 @@ def test_phase0_routes_are_retained():
         "/club/singles-nights/{session_id}",
         "/users/{user_id}/listening/sessions",
         "/users/{user_id}/listening/sessions/{session_id}/override",
+        "/users/{user_id}/listening/rediscovery",
+        "/users/{user_id}/listening/rediscovery/dismissals",
+        "/users/{user_id}/listening/rediscovery/dismissals/{track_id}",
     }
 
 
@@ -79,6 +82,7 @@ def test_each_table_has_one_canonical_owner():
             "import_coverage",
             "listen_sessions",
             "listen_session_overrides",
+            "rediscovery_dismissals",
         },
         "club": {
             "weeks",
