@@ -1,6 +1,6 @@
 # Development environment
 
-Sidetrack is developed on a Windows 11 workstation, but **the default environment for
+Sidetrack is developed on a Windows 10 workstation, but **the default environment for
 running anything in this repo is WSL 2 (Ubuntu 22.04)**, not native Windows. Agents and
 humans should run commands there unless a task is docs-only.
 
