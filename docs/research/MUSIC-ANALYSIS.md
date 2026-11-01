@@ -8,6 +8,9 @@ agent findings, checked sources, licensing caveats and follow-ups to the proposa
 Re-check the exact checkpoint, dataset terms and product behavior before relying on
 them; the notes distinguish evidence from hypotheses.
 
+None of the claims below may reach a user until it passes its gate: the register and dataset
+rights are in [docs/evaluations/](../evaluations/README.md).
+
 ## 1. The constraint that shapes everything
 
 About half the owner's tracks are unknown to AcoustID/MusicBrainz

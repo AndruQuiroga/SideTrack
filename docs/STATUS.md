@@ -40,6 +40,7 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 | Audio feature extraction | partial | services/audio-lab benchmark CLI (ADR 0004) embeds acquired audio into versioned Parquet runs with a blind-duel report, automatic neighbour metrics and duel scoring; plus a seed builder for ListenBrainz exports and a Deezer genre control set. Benchmark only, not integrated into Sidetrack (docs/AUDIO-BENCHMARK.md) | `services/audio-lab/tests/test_runs.py`, `services/audio-lab/tests/test_neighbours.py`, `services/audio-lab/tests/test_report_and_score.py` |
 | Embedding models (any) | partial | MuQ-MuLan passed the v2 benchmark gate as the lead model, with MuQ kept as a second (run 20261027-031711-c7c3698, 703 assets, 103 owner duels, 2026-10-27). Both also run on the rack's GTX 1070 on docker-0 (run 20261027-172855-0c32766-dirty: torch 2.11 cu126, 77 audio-s/s, MuQ-MuLan peak 2.8 GB, MuQ 5.3 GB), and their vectors match the RTX 5070's to a cosine of at least 0.99998. MuQ-MuLan also passed the mood gate (run 20261031-204732-9b07ff0, owner check 2026-10-31). MuQ-MuLan is integrated as Sidetrack's only enabled model (ADR 0010); MuQ is not | `services/audio-lab/tests/test_adapters_gpu.py`, `services/audio-lab/tests/test_gpu_compat.py`, `services/audio-lab/tests/test_parity.py`, `docs/AUDIO-BENCHMARK.md` |
 | Audio embeddings | works | MuQ-MuLan vectors in pgvector, embedded by `analysis.embed_audio` jobs on the gpu queue, which `python -m sidetrack.audio embed` queues; `neighbours` ranks similar audio within one model and revision (ADR 0010). Production holds all 862 of the owner's imported assets, embedded on the rack's GTX 1070 on 2026-10-31 with no failures, and spot checks returned same-genre neighbours. No HTTP route or page uses embeddings yet. | `deploy/EMBEDDINGS-ROLLOUT.md`, `tests/test_audio_embeddings_store.py`, `tests/test_audio_embeddings_pipeline.py`, `tests/test_audio_embeddings_job.py`, `tests/test_audio_embeddings_neighbours.py`, `services/gpu-worker/tests/test_parity.py`, `docs/AUDIO.md` |
+| Analysis evaluation gates | partial | `audio-lab gate` checks a claim's evaluation record, writes an aggregate-only summary, builds the offline owner review page and imports the owner's decision; `scripts/check_evaluations.py` checks the claim register and the dataset rights register against this file. Both seeded claims (`muq-mulan-neighbours`, `mood-estimate`) are `incomplete`, so no analysis claim is approved yet; partial until a first gate is approved. See docs/evaluations/. | `services/audio-lab/tests/test_gate.py`, `services/audio-lab/tests/test_gate_review.py`, `tests/test_check_evaluations.py`, `docs/evaluations/README.md` |
 | Spotify audio features | broken | Endpoint returns 403 for apps created after 2024-11-27 (ADR 0003) |  |
 | Taste profiles, compatibility, recommendations | stub | Tables exist; values derive from empty features |  |
 
@@ -79,7 +80,7 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 - `add-library-text-search`: 0/20 tasks
 - `add-listening-journey`: 0/19 tasks
 - `add-listening-visuals`: 0/5 tasks
-- `add-music-analysis-evaluation-protocol`: 0/19 tasks
+- `add-music-analysis-evaluation-protocol`: 18/19 tasks
 - `add-share-consent`: 0/20 tasks
 - `add-sound-bridge`: 0/14 tasks
 - `add-sound-compatibility`: 0/3 tasks

@@ -150,6 +150,14 @@ groups:
           - tests/test_audio_embeddings_neighbours.py
           - services/gpu-worker/tests/test_parity.py
           - docs/AUDIO.md
+      - capability: Analysis evaluation gates
+        status: partial
+        notes: "`audio-lab gate` checks a claim's evaluation record, writes an aggregate-only summary, builds the offline owner review page and imports the owner's decision; `scripts/check_evaluations.py` checks the claim register and the dataset rights register against this file. Both seeded claims (`muq-mulan-neighbours`, `mood-estimate`) are `incomplete`, so no analysis claim is approved yet; partial until a first gate is approved. See docs/evaluations/."
+        evidence:
+          - services/audio-lab/tests/test_gate.py
+          - services/audio-lab/tests/test_gate_review.py
+          - tests/test_check_evaluations.py
+          - docs/evaluations/README.md
       - capability: Spotify audio features
         status: broken
         notes: Endpoint returns 403 for apps created after 2024-11-27 (ADR 0003)
