@@ -80,7 +80,7 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 - `add-forgotten-favourites`: 9/11 tasks
 - `add-library-text-search`: 0/20 tasks
 - `add-listening-journey`: 0/19 tasks
-- `add-listening-lab`: 0/15 tasks
+- `add-listening-lab`: 11/15 tasks
 - `add-listening-visuals`: 0/5 tasks
 - `add-share-consent`: 0/20 tasks
 - `add-sound-bridge`: 0/14 tasks

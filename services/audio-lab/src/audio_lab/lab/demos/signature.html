@@ -1,0 +1,61 @@
+<style>
+  .axis-row { display: grid; grid-template-columns: 9rem 1fr; gap: 0.75rem; align-items: center; margin: 0.5rem 0; }
+  .axis-row svg { width: 100%; height: auto; display: block; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; }
+  .axis-row svg text { fill: var(--muted); font: 11px system-ui, sans-serif; }
+  table.years { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+  table.years th, table.years td { border-bottom: 1px solid var(--line); padding: 0.2rem 0.5rem; text-align: right; }
+  table.years th:first-child, table.years td:first-child { text-align: left; }
+  @media (max-width: 40rem) { .axis-row { grid-template-columns: 1fr; } }
+</style>
+<p class="muted" id="rule"></p>
+<div id="rows"></div>
+<h2>Counts behind each year</h2>
+<div style="overflow-x: auto"><table class="years" id="table"></table></div>
+<p class="muted" id="coverage"></p>
+
+<script>
+(function () {
+  const demo = labData().demo;
+  document.getElementById("rule").textContent = "Values are in spreads of your analysed library; zero is its average. A hollow point with a dashed line marks a sparse year (" + demo.sparse_rule + ").";
+  const rows = document.getElementById("rows");
+  if (!demo.years.length) {
+    rows.textContent = "No plays in the snapshot sit on your axes.";
+    return;
+  }
+  const W = 600, H = 90, PAD = 28;
+  const limit = Math.max(1, ...demo.years.flatMap((y) => y.values.map(Math.abs)));
+  const first = demo.years[0].year, last = demo.years[demo.years.length - 1].year;
+  const px = (year) => PAD + (last === first ? (W - 2 * PAD) / 2 : ((year - first) / (last - first)) * (W - 2 * PAD));
+  const py = (value) => H / 2 - (value / limit) * (H / 2 - 10);
+  demo.axes.forEach((axis, index) => {
+    const colour = "var(--a" + ((index % 6) + 1) + ")";
+    const svg = svgEl("svg", { viewBox: "0 0 " + W + " " + H, role: "img", "aria-label": axis.name + " by year" });
+    svg.append(svgEl("line", { x1: PAD, x2: W - PAD, y1: H / 2, y2: H / 2, stroke: "var(--line)" }));
+    demo.years.forEach((entry, i) => {
+      if (i > 0) {
+        const before = demo.years[i - 1];
+        const line = svgEl("line", { x1: px(before.year), y1: py(before.values[index]), x2: px(entry.year), y2: py(entry.values[index]), stroke: colour, "stroke-width": 2 });
+        if (before.sparse || entry.sparse) line.setAttribute("stroke-dasharray", "4 4");
+        svg.append(line);
+      }
+    });
+    demo.years.forEach((entry) => {
+      const point = svgEl("circle", { cx: px(entry.year), cy: py(entry.values[index]), r: 4, stroke: colour, "stroke-width": 2, fill: entry.sparse ? "none" : colour });
+      point.append(svgEl("title", { text: entry.year + ": " + entry.values[index] + (entry.sparse ? " (sparse)" : "") + ", " + entry.plays + " plays" }));
+      svg.append(point);
+      svg.append(svgEl("text", { x: px(entry.year), y: H - 4, "text-anchor": "middle", text: String(entry.year) }));
+    });
+    const row = el("div", { class: "axis-row" }, [el("strong", { text: axis.name }), svg]);
+    rows.append(row);
+  });
+  const table = document.getElementById("table");
+  const head = el("tr", {}, ["Year", "Plays", "Tracks", "Note"].concat(demo.axes.map((a) => a.name)).map((t) => el("th", { text: t })));
+  table.append(head);
+  demo.years.forEach((entry) => {
+    const cells = [String(entry.year), String(entry.plays), String(entry.tracks), entry.sparse ? "sparse" : ""].concat(entry.values.map((v) => (v >= 0 ? "+" : "") + v));
+    table.append(el("tr", {}, cells.map((t) => el("td", { text: t }))));
+  });
+  const c = demo.coverage;
+  document.getElementById("coverage").textContent = c.plays + " plays in the snapshot; " + c.scored + " sit on your axes, " + c.no_audio + " have no linked audio, " + c.unmatched + " have audio that was not analysed. " + c.autoplay_or_doubtful_left_out + " more were left out as autoplay or doubtful timing.";
+})();
+</script>

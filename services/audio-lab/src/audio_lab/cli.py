@@ -16,6 +16,7 @@ from .dimensions_review import validate_decision
 from .dimensions_review import write_review as write_dimensions_review
 from .emotion import EmotionDataError, Scale, prepare_dataset
 from .gate_review import write_review
+from .lab.site import LabContext, build_site
 from .mood import MoodError, mood_probe, predict_run
 from .parity import ParityError, parity
 from .report import UnknownModel, write_report
@@ -119,6 +120,20 @@ def _parser() -> argparse.ArgumentParser:
     decision.add_argument("dimensions_dir", type=Path)
     decision.add_argument("decision", type=Path)
 
+    lab = commands.add_parser("lab", help="The Listening Lab: local demos on your own listening.")
+    lab_steps = lab.add_subparsers(dest="lab_command", required=True)
+    lab_build = lab_steps.add_parser("build", help="Build the lab's pages into a folder.")
+    lab_build.add_argument("--out", type=Path, required=True, help="Outside the repo.")
+    lab_build.add_argument("--snapshot", type=Path, help="CSV from scripts/lab_snapshot.sql.")
+    lab_build.add_argument("--dimensions", type=Path, help="The --out of `dimensions`.")
+    lab_build.add_argument(
+        "--decision", type=Path, help="Default: dimensions-decision.json in --dimensions."
+    )
+    lab_build.add_argument("--manifest", type=Path, help="Audio manifest, for playable tracks.")
+    lab_build.add_argument("--audio-dir", type=Path, help="Where the manifest's files are.")
+    lab_build.add_argument("--run-dir", type=Path, help="An `embed` run, for the Track explorer.")
+    lab_build.add_argument("--model", default="muq-mulan")
+
     compare = commands.add_parser("parity", help="One model's vectors in two runs, per asset.")
     compare.add_argument("run_a", type=Path)
     compare.add_argument("run_b", type=Path)
@@ -190,10 +205,37 @@ def _gate(args: argparse.Namespace) -> int:
         return 1
 
 
+def _lab(args: argparse.Namespace) -> int:
+    decision = args.decision
+    if decision is None and args.dimensions is not None:
+        decision = args.dimensions / "dimensions-decision.json"
+    context = LabContext(
+        snapshot=args.snapshot,
+        dimensions_dir=args.dimensions,
+        decision=decision,
+        manifest=args.manifest,
+        audio_dir=args.audio_dir,
+        run_dir=args.run_dir,
+        model=args.model,
+    )
+    try:
+        entries = build_site(args.out, context)
+    except OutputInRepo as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    for entry in entries:
+        detail = f" ({entry['reason']})" if entry["status"] == "unavailable" else ""
+        print(f"  {entry['name']}: {entry['status']}{detail}")
+    print(f"Wrote {args.out / 'index.html'}")
+    return 0
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     if args.command == "gate":
         return _gate(args)
+    if args.command == "lab":
+        return _lab(args)
     if args.command == "embed":
         adapters = [get_adapter(name) for name in (args.model or list(ADAPTERS))]
         run = embed_run(

@@ -160,6 +160,46 @@ uv run audio-lab dimensions-review DIR --manifest MANIFEST --audio-dir AUDIO --o
 uv run audio-lab dimensions-decision DIR DECISION.json
 ```
 
+## Listening Lab
+
+`lab build` writes a small local site of demos on your own listening (spec
+`analysis/listening-lab`): an `index.html` that lists them and one page per demo, with its data
+embedded. Open `index.html` from disk. There is no server, the pages make no network request, and
+audio plays from `file://` paths of files you already hold. The output goes outside the repo, and
+a path inside it is refused before anything is written.
+
+```bash
+psql -q --csv -v user_id=USER_UUID -f scripts/lab_snapshot.sql > E:/sidetrack/lab/snapshot.csv
+uv run audio-lab lab build --out E:/sidetrack/lab/site --snapshot E:/sidetrack/lab/snapshot.csv --dimensions DIR --manifest MANIFEST --audio-dir AUDIO --run-dir RUN
+```
+
+- **Snapshot:** `scripts/lab_snapshot.sql` is the only contact with the database, and it only reads.
+  It writes one row per play of one user: time, artist, title, session start and end, the
+  effective session kind (your keep or autoplay review, else the rule's flag), the SHA-256 of the
+  preferred linked asset (a full track before a preview, empty when none is linked) and
+  `doubtful_timing` (a session of 20 or more listens at over 30 an hour). audio-lab itself never
+  reads the database. The CSV is personal data: keep it outside the repo.
+- **Axes:** `--dimensions` is the `--out` of `dimensions`. Only axes marked `keep` in
+  `dimensions-decision.json` (looked for in that folder, or pass `--decision`) are used, under
+  the names you gave them.
+- **Demos:** Tangent timeline (needs the snapshot, axes and decision), Sound signature (the same),
+  and Track explorer (axes, decision and `--run-dir`, an `embed` run with `--model`, default
+  `muq-mulan`). `--manifest` with `--audio-dir` makes tracks playable; a track without a file is
+  shown as `audio unavailable`.
+- **Missing inputs:** a demo whose input is absent or unreadable is listed as `unavailable` with the
+  reason, and the others still build. There is no sample or demo-data mode: nothing is invented.
+- **Tangents:** each session is placed on the kept axes (the play-weighted mean of its tracks) and
+  compared with the previous 90 days of sessions, which needs 10 or more. A run of at least 2
+  sessions and 8 plays beyond the threshold is a tangent if 3 sessions in a row come back, and a
+  drift if it is still away after 45 days. 30 days with no usable sessions ends a run as a gap, never
+  as a return. Sessions with under 3 plays that have audio, autoplay sessions and doubtful-timing
+  sessions are skipped, and the page counts them. The strict, normal and loose thresholds (2.5, 2.0,
+  1.5) are working values chosen to look at. A branch is an estimated change in sound, not a mood or
+  a cause.
+- **Verdicts:** each demo has keep, rework and drop with a note. The home page exports them as
+  `lab-verdicts.json`, which holds those and no track data. Drafts use `localStorage` where the
+  browser allows it, and the pages work without it.
+
 ## Mood probes
 
 `emotion-manifest` turns a local emotion dataset into a normal manifest plus `mood-labels.csv`,

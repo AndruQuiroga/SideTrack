@@ -49,12 +49,16 @@ sessions and doubtful sessions are skipped, and the skip counts are reported.
 ### Decision 5: Baseline, tangent and drift
 
 - **Baseline:** the mean position of the previous 90 days of included sessions, needing 10 or more.
-- **Deviation:** distance from the baseline, in units of the baseline's own spread.
+- **Deviation:** distance from the baseline, in units of the baseline's own spread. Axes are first
+  scaled by their spread across the library, so no axis dominates. Sessions in an open run or a
+  returned tangent stay out of the baseline.
 - **Tangent:** a run of at least 2 sessions and 8 plays above the threshold, ending when 3 sessions in
   a row come back below it.
 - **Drift:** a run still away after 45 days. It's marked as not having returned, and the baseline
   catches up. A drift is a candidate era for `add-listening-journey`.
 - **Gaps:** 30 days with no usable sessions ends any open run, marked `gap`. A gap is never a return.
+- **Open branches:** a run ended by a gap, or still going when the data ends, is kind `open`. It's
+  drawn with a dashed end, and it isn't counted as a tangent.
 - **Presets:** strict, normal and loose thresholds of 2.5, 2.0 and 1.5. All are working values,
   chosen to look at, and the demo says so.
 
