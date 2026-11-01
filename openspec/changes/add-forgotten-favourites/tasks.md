@@ -21,5 +21,5 @@
 
 ## 5. Integration and status
 
-- [ ] 5.1 Document ownership in `docs/MODULES.md`; verify `uv run --frozen --extra api --extra dev lint-imports` passes
+- [x] 5.1 Document ownership in `docs/MODULES.md`; verify `uv run --frozen --extra api --extra dev lint-imports` passes
 - [ ] 5.2 Add "Forgotten favourites" to `docs/status.yaml` with evidence paths to the tests above, run `python scripts/gen_status.py` and `uv run --frozen python scripts/gen_progress.py`, then `make lint` and `make test.unit`; verify the STATUS check in CI passes

@@ -7,7 +7,7 @@ processes share this code; the Next.js app and Discord bot call the HTTP API.
 | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `identity`  | users, linked_accounts, follows, user_timezone_periods                                                                                                                                        |
 | `catalog`   | albums, tracks                                                                                                                                                                                |
-| `listening` | listen_events, import_checkpoints, listening_import_runs, import_coverage, listen_sessions, listen_session_overrides                                                                          |
+| `listening` | listen_events, import_checkpoints, listening_import_runs, import_coverage, listen_sessions, listen_session_overrides, rediscovery_dismissals                                                  |
 | `club`      | weeks, nominations, votes, ratings, club_notification_outbox, club_members, club_history_batches, club_history_sources, singles_sessions, singles_songs, singles_submissions, singles_ratings |
 | `analysis`  | track_features, taste_profiles, compatibility, user_recommendations, audio_assets, audio_embeddings, track_audio_links, track_audio_link_corrections                                          |
 
@@ -33,6 +33,16 @@ History parsing/reporting and historical identity/catalog internals remain prote
 infrastructure. Shared enums and one Base registry avoid duplicate types.
 `sidetrack.models` composes mappings for Alembic and mapper initialization; domain
 code must not import that registry or HTTP composition.
+
+## Rediscovery
+
+`listening` owns `rediscovery_dismissals` and the forgotten-favourites read model
+(`sidetrack.listening.rediscovery`, exported as `forgotten_favourites`). It reads
+`listen_events`, `import_coverage` and session classifications through listening's own
+`list_sessions`, `effective_kind` and `coverage_state`, and track titles and the local
+timezone through `catalog` and `identity`'s public packages. Counts are computed on read
+and never stored; the only stored state is a user's private dismissals, keyed by track id
+and removed with the account. The routes are owner-only (AUTHORIZATION.md).
 
 ## Enforcement and verification
 
