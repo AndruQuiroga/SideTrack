@@ -222,7 +222,7 @@ def test_owner_acceptance_needs_a_scope(tmp_path):
         status={"audio": "owner_accepted", "annotations": "recorded"},
         acceptance={"date": "2026-10-31", "by": "owner"},
     )
-    root = build(tmp_path, [claim(status="incomplete")], datasets=[musav])
+    root = build(tmp_path, [claim(status="incomplete")], datasets=[musav], works=False)
     errors, _ = run(root)
     assert errors == ["datasets.yaml: musav: acceptance needs scope"]
 
