@@ -14,7 +14,7 @@
 
 ## 3. Read models
 
-- [ ] 3.1 Implement `audio_for_track()` with the preference order and `ok | no_audio | ambiguous | no_embedding` statuses, exported from `sidetrack.analysis`; verify `tests/test_audio_for_track.py` covers full-over-preview, confirmed-over-unverified, embedded-over-not, no links, ambiguous-only and no embedding
+- [x] 3.1 Implement `audio_for_track()` with the preference order and `ok | no_audio | ambiguous | no_embedding` statuses, exported from `sidetrack.analysis`; verify `tests/test_audio_for_track.py` covers full-over-preview, confirmed-over-unverified, embedded-over-not, no links, ambiguous-only and no embedding
 - [ ] 3.2 Implement `audio_coverage()` over plays, included plays and reasons, using the session effective classification; verify `tests/test_audio_coverage.py` covers the partial-coverage and nothing-linked scenarios, and that a `keep` override includes a `night_autoplay` session
 
 ## 4. Operator command and records
