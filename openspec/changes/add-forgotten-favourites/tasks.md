@@ -6,7 +6,7 @@
 
 ## 2. Storage and API
 
-- [ ] 2.1 Add `rediscovery_dismissals` model and migration with cascade from `users`; verify `services/api/tests/test_migrations.py`
+- [x] 2.1 Add `rediscovery_dismissals` model and migration with cascade from `users`; verify `services/api/tests/test_migrations.py`
 - [ ] 2.2 Add owner-only list, dismiss, list-dismissals and delete endpoints returning rule values, coverage range and counts; verify `services/api/tests/test_rediscovery.py`, `services/api/tests/test_personal_access.py` (404 for other members, club visibility included) and `services/api/tests/test_account_deletion.py`
 - [ ] 2.3 Regenerate `packages/api-client`; verify `pnpm build` passes
 

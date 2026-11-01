@@ -79,6 +79,7 @@ def test_each_table_has_one_canonical_owner():
             "import_coverage",
             "listen_sessions",
             "listen_session_overrides",
+            "rediscovery_dismissals",
         },
         "club": {
             "weeks",

@@ -32,7 +32,9 @@ def _secret_file_url() -> str | None:
 def get_url() -> str:
     """Return the database URL: env var, then secret file, then alembic.ini."""
 
-    raw = os.getenv("DATABASE_URL") or _secret_file_url() or config.get_main_option("sqlalchemy.url")
+    raw = (
+        os.getenv("DATABASE_URL") or _secret_file_url() or config.get_main_option("sqlalchemy.url")
+    )
     if not raw:
         raise RuntimeError("Set DATABASE_URL (or a database_url secret) to run migrations")
     return str(raw)
