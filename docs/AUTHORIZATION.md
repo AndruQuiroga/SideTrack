@@ -96,6 +96,11 @@ Request logs record `client=` and `actor=` with the request ID, never tokens.
 | POST | `/users/{user_id}/linked-accounts` | `identity:provision \| identity:self` | Owner, or provisioning a first Discord account |
 | DELETE | `/users/{user_id}/linked-accounts/{provider}/{provider_user_id}` | `identity:self` | Owner |
 | GET | `/users/{user_id}/listening/recent` | `personal:read` | Owner, or member if shared |
+| GET | `/users/{user_id}/listening/rediscovery` | `personal:read` | Owner |
+| DELETE | `/users/{user_id}/listening/rediscovery/dismissals` | `personal:write` | Owner |
+| GET | `/users/{user_id}/listening/rediscovery/dismissals` | `personal:read` | Owner |
+| DELETE | `/users/{user_id}/listening/rediscovery/dismissals/{track_id}` | `personal:write` | Owner |
+| PUT | `/users/{user_id}/listening/rediscovery/dismissals/{track_id}` | `personal:write` | Owner |
 | GET | `/users/{user_id}/listening/sessions` | `personal:read` | Owner |
 | DELETE | `/users/{user_id}/listening/sessions/{session_id}/override` | `personal:write` | Owner |
 | PUT | `/users/{user_id}/listening/sessions/{session_id}/override` | `personal:write` | Owner |

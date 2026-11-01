@@ -774,6 +774,59 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/users/{user_id}/listening/rediscovery": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Rediscovery */
+        get: operations["read_rediscovery_users__user_id__listening_rediscovery_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/{user_id}/listening/rediscovery/dismissals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Dismissals */
+        get: operations["read_dismissals_users__user_id__listening_rediscovery_dismissals_get"];
+        put?: never;
+        post?: never;
+        /** Delete Dismissals */
+        delete: operations["delete_dismissals_users__user_id__listening_rediscovery_dismissals_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/{user_id}/listening/rediscovery/dismissals/{track_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Put Dismissal */
+        put: operations["put_dismissal_users__user_id__listening_rediscovery_dismissals__track_id__put"];
+        post?: never;
+        /** Delete Dismissal */
+        delete: operations["delete_dismissal_users__user_id__listening_rediscovery_dismissals__track_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/users/{user_id}/taste-profiles/": {
         parameters: {
             query?: never;
@@ -1238,6 +1291,33 @@ export interface components {
              */
             retry_after: number;
         };
+        /** DismissalRead */
+        DismissalRead: {
+            /**
+             * Track Id
+             * Format: uuid
+             */
+            track_id: string;
+            /** Title */
+            title: string | null;
+            /** Artist Name */
+            artist_name: string | null;
+            /** Reason */
+            reason: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** DismissalWrite */
+        DismissalWrite: {
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "not_a_favourite" | "not_now";
+        };
         /**
          * FeedEventType
          * @enum {string}
@@ -1270,6 +1350,37 @@ export interface components {
             timestamp: string;
             /** Metadata */
             metadata?: Record<string, never> | null;
+        };
+        /** ForgottenTrack */
+        ForgottenTrack: {
+            /**
+             * Track Id
+             * Format: uuid
+             */
+            track_id: string;
+            /** Title */
+            title: string;
+            /** Artist Name */
+            artist_name: string;
+            /** Peak Plays */
+            peak_plays: number;
+            /**
+             * Peak Start
+             * Format: date-time
+             */
+            peak_start: string;
+            /**
+             * Peak End
+             * Format: date-time
+             */
+            peak_end: string;
+            /**
+             * Last Played At
+             * Format: date-time
+             */
+            last_played_at: string;
+            /** Total Plays */
+            total_plays: number;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -1728,6 +1839,48 @@ export interface components {
              * @default Taste profile recomputation enqueued.
              */
             detail: string;
+        };
+        /** RediscoveryRead */
+        RediscoveryRead: {
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "found" | "none_found" | "not_imported" | "coverage_gap" | "insufficient_history";
+            rules: components["schemas"]["RuleValues"];
+            /** Include Autoplay */
+            include_autoplay: boolean;
+            /** Coverage Start */
+            coverage_start: string | null;
+            /** Coverage End */
+            coverage_end: string | null;
+            /** Recent Plays */
+            recent_plays: number | null;
+            /** Recent Days */
+            recent_days: number | null;
+            /** Excluded Autoplay Plays */
+            excluded_autoplay_plays: number;
+            /** Unknown Session Plays */
+            unknown_session_plays: number;
+            /** Dismissed Hidden */
+            dismissed_hidden: number;
+            /** Tracks */
+            tracks: components["schemas"]["ForgottenTrack"][];
+        };
+        /** RuleValues */
+        RuleValues: {
+            /** Rule Version */
+            rule_version: string;
+            /** Min Plays */
+            min_plays: number;
+            /** Window Days */
+            window_days: number;
+            /** Forgotten Days */
+            forgotten_days: number;
+            /** Min Recent Plays */
+            min_recent_plays: number;
+            /** Min Recent Days */
+            min_recent_days: number;
         };
         /** SinglesPhaseSummary */
         SinglesPhaseSummary: {
@@ -3828,6 +3981,165 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ListenSessionRead"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_rediscovery_users__user_id__listening_rediscovery_get: {
+        parameters: {
+            query?: {
+                include_autoplay?: boolean;
+            };
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RediscoveryRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_dismissals_users__user_id__listening_rediscovery_dismissals_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DismissalRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_dismissals_users__user_id__listening_rediscovery_dismissals_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_dismissal_users__user_id__listening_rediscovery_dismissals__track_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+                track_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DismissalWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DismissalRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_dismissal_users__user_id__listening_rediscovery_dismissals__track_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+                track_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

@@ -210,6 +210,30 @@ def test_recompute_for_another_user(client, make_user):
     assert response.status_code == 403
 
 
+def test_rediscovery_is_hidden_from_other_members_even_when_shared(client, make_user, db, track):
+    owner = make_user("Owner", role=ClubRole.MEMBER)
+    viewer = make_user("Viewer", role=ClubRole.MEMBER)
+    _share(db, owner)
+    base = f"/users/{owner.id}/listening/rediscovery"
+    for path in (base, f"{base}/dismissals"):
+        assert client.get(path, headers=as_user(viewer)).status_code == 404, path
+    dismissal = f"{base}/dismissals/{track.id}"
+    body = {"reason": "not_now"}
+    assert client.put(dismissal, json=body, headers=as_user(viewer)).status_code == 404
+    assert client.delete(dismissal, headers=as_user(viewer)).status_code == 404
+    assert client.delete(f"{base}/dismissals", headers=as_user(viewer)).status_code == 404
+    assert client.get(base, headers=as_user(owner)).status_code == 200
+
+
+def test_bot_never_reads_rediscovery(bot_client, make_user):
+    discord_id = snowflake()
+    user = make_user("Bot user", role=ClubRole.MEMBER, discord_id=discord_id)
+    response = bot_client.get(
+        f"/users/{user.id}/listening/rediscovery", headers=as_discord(discord_id)
+    )
+    assert response.status_code == 403
+
+
 def test_bot_never_reads_listening(bot_client, make_user, db):
     discord_id = snowflake()
     user = make_user("Bot user", role=ClubRole.MEMBER, discord_id=discord_id)
