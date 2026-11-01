@@ -65,7 +65,6 @@ claims:
       - artist-grouped splits; the run is not artist-grouped, so its scores may be optimistic
       - a gate record with calibration of any displayed range and rankings per axis
       - coverage and robustness records, and a probe and pipeline revision for the feature
-      - rights for the DEAM files used: audio and annotations are rights_unconfirmed
     notes: >-
-      Not approved. The listening check passed, but the dataset evidence is incomplete and
-      DEAM's rights for the exact files used are unconfirmed.
+      Not approved. The listening check passed, but the dataset evidence is incomplete. The
+      owner accepted DEAM for personal, non-commercial use; its terms remain unconfirmed.

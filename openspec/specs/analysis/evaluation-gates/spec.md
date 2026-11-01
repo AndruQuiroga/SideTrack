@@ -142,6 +142,14 @@ Every dataset an evaluation record cites SHALL appear in `docs/evaluations/datas
 - **WHEN** the register marks MusAV's previews `rights_unconfirmed` and an approved entry cites MusAV audio
 - **THEN** the check exits non-zero naming MusAV and the claim
 
+#### Scenario: Owner accepts unconfirmed terms
+- **WHEN** the register marks a dataset's audio `owner_accepted` with a date, an acceptor and a scope, and an approved entry cites that audio
+- **THEN** the register check reports no rights error for that entry
+
+#### Scenario: Acceptance without a scope
+- **WHEN** the register marks a dataset `owner_accepted` with no acceptance scope
+- **THEN** the register check fails naming the dataset and `acceptance`
+
 ### Requirement: Dataset audio is never acquired automatically
 Evaluation tooling SHALL NOT invoke yt-dlp, download from YouTube or schedule any acquisition. Datasets whose audio exists only as YouTube references SHALL be registered as annotation-only unless the owner manually holds the audio, and the register SHALL say which.
 

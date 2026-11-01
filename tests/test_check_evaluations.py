@@ -127,7 +127,8 @@ def test_seed_datasets_registered():
         assert "outside" in entry["storage"]
     for youtube_only in ("musiccaps", "harmonix"):
         assert entries[youtube_only]["status"]["audio"] == "annotation_only"
-    assert entries["deam"]["status"]["audio"] == "rights_unconfirmed"
+    assert entries["deam"]["status"]["audio"] == "owner_accepted"
+    assert "non-commercial" in entries["deam"]["acceptance"]["scope"]
     assert entries["musav"]["status"]["audio"] == "rights_unconfirmed"
     assert not any("cleared" in str(e).lower() for e in entries.values())
 
@@ -199,6 +200,31 @@ def test_rights_unconfirmed_blocks_approval(tmp_path):
     assert len(errors) == 1
     assert "MUSAV" in errors[0] and "mood-estimate" in errors[0]
     assert "rights_unconfirmed" in errors[0]
+
+
+ACCEPTANCE = {"date": "2026-10-31", "by": "owner", "scope": "Personal, non-commercial use."}
+
+
+def test_owner_acceptance_allows_approval(tmp_path):
+    musav = dataset(
+        "musav",
+        status={"audio": "owner_accepted", "annotations": "recorded"},
+        acceptance=ACCEPTANCE,
+    )
+    cites = [{"id": "musav", "use": "audio"}]
+    root = build(tmp_path, [claim(datasets=cites)], datasets=[musav], summary_data=summary())
+    assert run(root)[0] == []
+
+
+def test_owner_acceptance_needs_a_scope(tmp_path):
+    musav = dataset(
+        "musav",
+        status={"audio": "owner_accepted", "annotations": "recorded"},
+        acceptance={"date": "2026-10-31", "by": "owner"},
+    )
+    root = build(tmp_path, [claim(status="incomplete")], datasets=[musav], works=False)
+    errors, _ = run(root)
+    assert errors == ["datasets.yaml: musav: acceptance needs scope"]
 
 
 def test_recorded_annotations_do_not_need_audio_rights(tmp_path):

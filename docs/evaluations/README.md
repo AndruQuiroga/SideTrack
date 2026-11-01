@@ -36,7 +36,9 @@ product renders the other states; this directory does not gate any route.
 - **Dataset audio and annotation files**: outside the repo. Only aggregate figures enter it.
 - **Dataset rights**: `datasets.yaml` records what each source says and what is unknown. It
   is not legal advice and never says that rights are cleared. Every entry keeps `recheck: true`
-  until the terms are verified at the exact revision used. Audio is obtained by the owner by
+  until the terms are verified at the exact revision used. Where terms can't be confirmed, the
+  owner can accept that for a stated scope (`owner_accepted`), with the date and scope recorded.
+  Audio is obtained by the owner by
   hand; evaluation tooling never runs yt-dlp or fetches audio.
 
 ## The owner gate
