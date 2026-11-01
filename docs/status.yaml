@@ -290,7 +290,7 @@ groups:
         notes: "Uptime Kuma runs on the rack, but it has no Sidetrack monitors yet."
       - capability: Deployment to Stache-Rack
         status: works
-        notes: "Portainer stack 23 runs release a54ccb3 for API/default worker, gallery release 3d83256 for web, bot release 73e9435, and GPU worker release e9f03e0. All six services are 1/1, with schema 0014 and all ten environment entries preserved. Portainer cold pulls remain unverified: updates use explicit node pulls."
+        notes: "Portainer stack 23 runs release 35620d7 for API/default worker, gallery release 3d83256 for web, bot release 73e9435, and GPU worker release e9f03e0. All six services are 1/1, with schema 0015 and all ten environment entries preserved. Portainer cold pulls remain unverified: updates use explicit node pulls."
         evidence:
           - deploy/EMBEDDINGS-ROLLOUT.md
           - deploy/stack.yml
