@@ -6,6 +6,8 @@ See proposal.md and `docs/research/MUSIC-ANALYSIS-RESEARCH-NOTES.md` §4 ("Self-
 
 The earlier draft proposed a 2,000-resample bootstrap interval. That interval is removed: weekly observations are temporally dependent, so an ordinary bootstrap is not valid. No fixed number of check-ins guarantees a narrow interval.
 
+Local time (week boundaries, the zone a profile records) comes from `identity.timezone_resolver(db, user_id)`, from `add-timezone-periods`, never from `users.timezone` directly, so a user's moves are respected.
+
 ## Goals / Non-Goals
 
 **Goals:**

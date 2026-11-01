@@ -87,7 +87,7 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 - `add-sound-themes`: 0/4 tasks
 - `add-sound-world-explorer`: 0/17 tasks
 - `add-timestamped-audio-windows`: 0/11 tasks
-- `add-timezone-periods`: 0/7 tasks
+- `add-timezone-periods`: 5/7 tasks
 - `add-track-facet-card`: 0/17 tasks
 - `add-track-mood-scores`: 0/7 tasks
 - `add-version-discovery`: 0/13 tasks
@@ -136,7 +136,7 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 
 ### Migration head
 
-`0014_track_audio_links`
+`0015_timezone_periods`
 
 ### API routes
 

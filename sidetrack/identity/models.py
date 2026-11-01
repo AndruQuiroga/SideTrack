@@ -147,3 +147,18 @@ class Follow(Base):
     followee: Mapped[User] = relationship(
         "User", foreign_keys=[followee_id], back_populates="followers"
     )
+
+
+class UserTimezonePeriod(Base):
+    """A zone that applies from `effective_from` until the user's next period starts."""
+
+    __tablename__ = "user_timezone_periods"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    effective_from: Mapped[datetime] = mapped_column(DateTime(timezone=True), primary_key=True)
+    timezone: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+    )

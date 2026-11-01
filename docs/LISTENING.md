@@ -27,6 +27,12 @@ Spec: `listening/listenbrainz-import`, `listening/listen-sessions`,
    Without one, sessions are still built, but they're flagged `unknown` and the result says
    `timezone_missing`. Nothing guesses a zone.
 
+   That timezone is the fallback. A user who moved can also have dated periods, added with the
+   `timezone` command below. Each period applies from its start until the next one, and a
+   session is classified in the zone in force at its own start. Before the first period the
+   fallback applies. Nothing else reads local time directly: code that needs a zone for a
+   moment calls `identity.timezone_resolver`.
+
 ## Commands
 
 The commands use the operator's `DATABASE_URL`, like Alembic.
@@ -37,6 +43,9 @@ python -m sidetrack.listening sync --user <uuid>
 python -m sidetrack.listening import-export --user <uuid> --export <dir>
 python -m sidetrack.listening sessionize --user <uuid> [--rebuild]
 python -m sidetrack.listening schedule --user <uuid> [--enable]
+python -m sidetrack.listening timezone --user <uuid> [--list]
+python -m sidetrack.listening timezone --user <uuid> --add --from YYYY-MM-DD --zone <IANA>
+python -m sidetrack.listening timezone --user <uuid> --remove --from YYYY-MM-DD
 ```
 
 - **`backfill`** queues the first page and prints its job ID. Each page job queues the next,
@@ -51,6 +60,10 @@ python -m sidetrack.listening schedule --user <uuid> [--enable]
   listen count. The API is the complete source.
 - **`sessionize`** continues from the latest session. `--rebuild` rebuilds every session, which
   is needed after setting a timezone.
+- **`timezone`** lists (the default), adds or removes the user's timezone periods. `--from` is
+  midnight UTC of that date. Changing periods never rebuilds sessions: the command prints a
+  reminder, so enter every period first and then run `sessionize --rebuild`. A rebuild only
+  changes `kind`, so session boundaries and overrides survive.
 - **`schedule`** defines the hourly sync, disabled. `--enable` turns it on, and running it
   without `--enable` turns it off.
 

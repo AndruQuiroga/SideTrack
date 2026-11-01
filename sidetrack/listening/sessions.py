@@ -5,13 +5,12 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta, tzinfo
 from typing import Any
 from uuid import UUID
-from zoneinfo import ZoneInfo
 
 from sqlalchemy import and_, delete, func, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from sidetrack.identity import User
+from sidetrack.identity import User, timezone_resolver
 from sidetrack.listening.models import ListenEvent, ListenSession, ListenSessionOverride
 
 SESSION_GAP = timedelta(minutes=30)
@@ -50,13 +49,13 @@ def sessionize(
     """Rebuild the sessions touching a played-time range, or all of them without one.
 
     Sessions within the gap of the range are rebuilt too, so new listens extend or join
-    them. The caller owns the transaction.
+    them. Each session is classified in the zone in force at its start, from one periods
+    query per run. The caller owns the transaction.
     """
 
-    user = db.get(User, user_id)
-    if user is None:
+    if db.get(User, user_id) is None:
         raise ValueError("user_unavailable")
-    zone = ZoneInfo(user.timezone) if user.timezone else None
+    zone_at = timezone_resolver(db, user_id)
     stale = select(ListenSession).where(ListenSession.user_id == user_id)
     first, last = since, until
     if since is not None:
@@ -83,7 +82,7 @@ def sessionize(
             started_at=started,
             ended_at=ended,
             listen_count=count,
-            kind=classify(started, ended, count, zone),
+            kind=classify(started, ended, count, zone_at(started)),
             rule_version=NIGHT_RULE,
             computed_at=now,
         )
@@ -119,7 +118,7 @@ def sessionize(
         "night_autoplay": sum(session.kind == "night_autoplay" for session in built),
         "unknown": sum(session.kind == "unknown" for session in built),
         "rule_version": NIGHT_RULE,
-        "notes": ["timezone_missing"] if zone is None else [],
+        "notes": ["timezone_missing"] if any(s.kind == "unknown" for s in built) else [],
         "override_orphaned": orphaned,
     }
 

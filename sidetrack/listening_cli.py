@@ -5,6 +5,8 @@
     python -m sidetrack.listening import-export --user <uuid> --export <dir>
     python -m sidetrack.listening sessionize --user <uuid> [--rebuild]
     python -m sidetrack.listening schedule --user <uuid> [--enable | --disable]
+    python -m sidetrack.listening timezone --user <uuid>
+        [--list | --add --from YYYY-MM-DD --zone <IANA> | --remove --from YYYY-MM-DD]
 
 It uses the operator's database access (DATABASE_URL), like Alembic.
 """
@@ -25,6 +27,11 @@ from sqlalchemy.orm import Session
 from sidetrack import models  # noqa: F401  (configures every mapper)
 from sidetrack.config import get_settings
 from sidetrack.db import get_engine, init_engine
+from sidetrack.identity import (
+    add_timezone_period,
+    list_timezone_periods,
+    remove_timezone_period,
+)
 from sidetrack.listening import (
     ImportUnavailable,
     ListenSession,
@@ -81,6 +88,35 @@ def run_sessionize(db: Session, user_id: UUID, *, rebuild: bool) -> dict[str, An
     return sessionize(db, user_id, since=since)
 
 
+REBUILD_REMINDER = (
+    "Sessions are unchanged until rebuilt: run "
+    "`python -m sidetrack.listening sessionize --user <uuid> --rebuild`."
+)
+
+
+def run_timezone(db: Session, args: argparse.Namespace) -> list[str]:
+    """Lines to print. Never rebuilds sessions; the caller commits."""
+
+    if args.add:
+        if args.start is None or not args.zone:
+            raise ValueError("--add needs --from and --zone")
+        add_timezone_period(db, args.user, args.start, args.zone)
+        return [f"added {args.start:%Y-%m-%d} {args.zone}", REBUILD_REMINDER]
+    if args.remove:
+        if args.start is None:
+            raise ValueError("--remove needs --from")
+        remove_timezone_period(db, args.user, args.start)
+        return [f"removed {args.start:%Y-%m-%d}", REBUILD_REMINDER]
+    return [
+        f"{period.effective_from:%Y-%m-%d} {period.timezone}"
+        for period in list_timezone_periods(db, args.user)
+    ]
+
+
+def _date(value: str) -> datetime:
+    return datetime.fromisoformat(value).replace(tzinfo=UTC)
+
+
 def _until(value: str) -> int:
     return int(datetime.fromisoformat(value).replace(tzinfo=UTC).timestamp())
 
@@ -102,6 +138,14 @@ def _parser() -> argparse.ArgumentParser:
     schedule = commands.add_parser("schedule", help="Define the hourly sync, disabled by default.")
     schedule.add_argument("--user", type=UUID, required=True)
     schedule.add_argument("--enable", action="store_true")
+    zones = commands.add_parser("timezone", help="List, add or remove timezone periods.")
+    zones.add_argument("--user", type=UUID, required=True)
+    action = zones.add_mutually_exclusive_group()
+    action.add_argument("--list", action="store_true", help="The default.")
+    action.add_argument("--add", action="store_true")
+    action.add_argument("--remove", action="store_true")
+    zones.add_argument("--from", dest="start", type=_date, help="Period start, UTC date.")
+    zones.add_argument("--zone", help="IANA zone name, with --add.")
     return parser
 
 
@@ -118,6 +162,12 @@ def main(argv: list[str] | None = None) -> int:
                 print(json.dumps(import_export(db, user_id=args.user, root=args.export)))
             elif args.command == "sessionize":
                 print(json.dumps(run_sessionize(db, args.user, rebuild=args.rebuild)))
+            elif args.command == "timezone":
+                try:
+                    print("\n".join(run_timezone(db, args)))
+                except ValueError as exc:
+                    print(str(exc), file=sys.stderr)
+                    return 1
             else:
                 schedule = schedule_sync(db, args.user, enabled=args.enable)
                 print(f"{schedule.id}: {'enabled' if args.enable else 'disabled'}")
