@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import copy
 import json
+import os
 import shlex
+import socket
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -668,3 +671,46 @@ def test_readme_example(tmp_path):
         assert argv[:3] == ["uv", "run", "audio-lab"], line
         assert main(argv[3:]) == 0, line
     assert json.loads(files["$SUMMARY"].read_text())["status"] == "approved"
+
+
+def test_youtube_dataset_prepares_no_audio(tmp_path, monkeypatch, capsys):
+    """MusicCaps metadata without local audio: nothing is prepared, fetched or started."""
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("evaluation preparation must not start a process or connection")
+
+    for target in ("run", "Popen", "call", "check_call", "check_output"):
+        monkeypatch.setattr(subprocess, target, forbidden)
+    monkeypatch.setattr(os, "system", forbidden)
+    monkeypatch.setattr(socket.socket, "connect", forbidden)
+    monkeypatch.setattr(socket, "create_connection", forbidden)
+    metadata = tmp_path / "musiccaps.csv"
+    metadata.write_text("id,caption\nyt1,a\nyt2,b\nyt3,c\n", encoding="utf-8")
+    result = gate.prepare_annotation_only(metadata, None)
+    assert result == {
+        "items": 3,
+        "local_audio": 0,
+        "no_local_audio": 3,
+        "audio_prepared": 0,
+        "downloads_started": 0,
+    }
+    assert main(["gate", "prepare", "--metadata", str(metadata)]) == 0
+    assert '"no_local_audio": 3' in capsys.readouterr().out
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["musiccaps.csv"]
+
+
+def test_prepare_counts_only_audio_the_owner_holds(tmp_path):
+    held = tmp_path / "held"
+    held.mkdir()
+    (held / "yt2.wav").write_bytes(b"RIFF")
+    metadata = tmp_path / "m.csv"
+    metadata.write_text("id\nyt1\nyt2\n", encoding="utf-8")
+    result = gate.prepare_annotation_only(metadata, held)
+    assert (result["local_audio"], result["no_local_audio"]) == (1, 1)
+
+
+def test_prepare_needs_the_id_column(tmp_path):
+    metadata = tmp_path / "m.csv"
+    metadata.write_text("ytid\nyt1\n", encoding="utf-8")
+    with pytest.raises(gate.GateError, match="id"):
+        gate.prepare_annotation_only(metadata, None)
