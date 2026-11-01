@@ -2,7 +2,7 @@
 
 ## 1. Record schema and `audio-lab gate check`
 
-- [ ] 1.1 Define the task-typed record schema (common header plus `neighbours`, `text_label`, `mood`, `timing`, `eras`, `other`) in `services/audio-lab/src/audio_lab/gate.py`; prove with `services/audio-lab/tests/test_gate.py::test_complete_record_per_task` using synthetic records only
+- [x] 1.1 Define the task-typed record schema (common header plus `neighbours`, `text_label`, `mood`, `timing`, `eras`, `other`) in `services/audio-lab/src/audio_lab/gate.py`; prove with `services/audio-lab/tests/test_gate.py::test_complete_record_per_task` using synthetic records only
 - [ ] 1.2 Report missing header fields as `incomplete` naming each field (spec: frozen task and population); prove with `test_gate.py::test_missing_checkpoint_revision`
 - [ ] 1.3 Check held-out challenge categories and report `not_covered`; prove with `test_gate.py::test_altered_versions_not_covered`
 - [ ] 1.4 Check grouping disclosure and cross-split duplicates by audio hash, recording ID and alternate upload; prove with `test_gate.py::test_ungrouped_flag` and `test_gate.py::test_duplicate_hash_across_folds`

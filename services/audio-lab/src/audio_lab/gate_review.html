@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gate review</title>
+<style>
+  :root { color-scheme: light dark; --bg: #fff; --fg: #1a1a1a; --muted: #666; --line: #ccc; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #151515; --fg: #eee; --muted: #aaa; --line: #444; } }
+  body { margin: 0 auto; max-width: 52rem; padding: 1rem 16px 3rem; background: var(--bg); color: var(--fg);
+         font: 16px/1.5 system-ui, sans-serif; }
+  .card { border: 1px solid var(--line); border-radius: 8px; padding: .75rem 1rem; margin: .75rem 0; }
+  .muted { color: var(--muted); font-size: .9rem; }
+  label { display: block; margin: .25rem 0; }
+  textarea, input[type=text] { width: 100%; box-sizing: border-box; font: inherit; }
+  button { font: inherit; padding: .5rem 1rem; }
+</style>
+</head>
+<body>
+<h1>Gate review</h1>
+<div id="header"></div>
+<h2>Examples</h2>
+<div id="examples"></div>
+<h2>Your decision</h2>
+<form id="decision">
+  <label><input type="radio" name="decision" value="approve"> Approve: show this claim</label>
+  <label><input type="radio" name="decision" value="correct"> Correct: keep it pending, list what is wrong</label>
+  <label><input type="radio" name="decision" value="reject"> Reject: do not show this claim</label>
+  <label>Notes <textarea id="notes" rows="3"></textarea></label>
+  <button type="button" id="export">Export decision.json</button>
+</form>
+<script id="data" type="application/json">/*__GATE_DATA__*/null</script>
+<script>
+// buildDecision is pure so it can be checked without a browser.
+function buildDecision(state) {
+  const verdicts = state.verdicts || {};
+  const reviewed = state.examples.filter((e) => verdicts[e.id] && verdicts[e.id].verdict).length;
+  const corrections = state.examples
+    .filter((e) => verdicts[e.id] && verdicts[e.id].verdict === "wrong")
+    .map((e) => ({ example_id: e.id, correction: verdicts[e.id].correction || "" }));
+  return {
+    decision: state.decision,
+    decided_at: state.today,
+    notes: state.notes || "",
+    corrections: corrections,
+    reviewed_examples: reviewed,
+  };
+}
+const gate = JSON.parse(document.getElementById("data").textContent);
+const verdicts = {};
+function text(tag, value, cls) {
+  const el = document.createElement(tag);
+  el.textContent = value;
+  if (cls) el.className = cls;
+  return el;
+}
+if (gate) {
+  const head = document.getElementById("header");
+  head.append(text("p", gate.claim_wording || ""));
+  head.append(text("p", [gate.model, gate.checkpoint_revision, gate.pipeline].join(" / "), "muted"));
+  const list = document.getElementById("examples");
+  gate.examples.forEach((example) => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.append(text("strong", example.label || example.id));
+    if (example.category) card.append(text("span", " (" + example.category + ")", "muted"));
+    if (example.shown) card.append(text("p", example.shown));
+    if (example.audio) {
+      const audio = document.createElement("audio");
+      audio.controls = true;
+      audio.preload = "none";
+      audio.src = example.audio;
+      card.append(audio);
+    }
+    const name = "v-" + example.id;
+    ["right", "wrong", "unsure"].forEach((value) => {
+      const label = document.createElement("label");
+      const input = document.createElement("input");
+      input.type = "radio";
+      input.name = name;
+      input.value = value;
+      input.addEventListener("change", () => {
+        verdicts[example.id] = Object.assign(verdicts[example.id] || {}, { verdict: value });
+      });
+      label.append(input, " " + value);
+      card.append(label);
+    });
+    const fix = document.createElement("input");
+    fix.type = "text";
+    fix.placeholder = "What should it say? (for wrong)";
+    fix.addEventListener("input", () => {
+      verdicts[example.id] = Object.assign(verdicts[example.id] || {}, { correction: fix.value });
+    });
+    card.append(fix);
+    list.append(card);
+  });
+  document.getElementById("export").addEventListener("click", () => {
+    const chosen = document.querySelector('input[name="decision"]:checked');
+    if (!chosen) { alert("Pick approve, correct or reject first."); return; }
+    const out = buildDecision({
+      examples: gate.examples,
+      verdicts: verdicts,
+      decision: chosen.value,
+      notes: document.getElementById("notes").value,
+      today: new Date().toISOString().slice(0, 10),
+    });
+    const url = URL.createObjectURL(new Blob([JSON.stringify(out, null, 2)], { type: "application/json" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "decision.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+}
+</script>
+</body>
+</html>
