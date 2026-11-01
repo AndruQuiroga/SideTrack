@@ -43,7 +43,13 @@ import {
   DeliveryEvent,
 } from './types';
 import { ApiError, toApiError } from './errors';
-import type { SinglesSessionRead, SinglesSessionDetail } from './types';
+import type {
+  SinglesSessionRead,
+  SinglesSessionDetail,
+  Rediscovery,
+  RediscoveryDismissal,
+  DismissalReason,
+} from './types';
 
 export interface WeekListParams {
   discussion_start?: Date | string | null;
@@ -457,6 +463,51 @@ export class SidetrackApiClient {
       method: 'GET',
       url: `/users/${userId}/listening/recent`,
       params: { range: params?.range, limit: params?.limit, offset: params?.offset },
+    });
+  }
+
+  /** Owner only: forgotten favourites, or the reason none can be named. */
+  async getRediscovery(
+    userId: UUID,
+    params?: { include_autoplay?: boolean },
+  ): Promise<Rediscovery> {
+    return this.request<Rediscovery>({
+      method: 'GET',
+      url: `/users/${userId}/listening/rediscovery`,
+      params: { include_autoplay: params?.include_autoplay },
+    });
+  }
+
+  async listRediscoveryDismissals(userId: UUID): Promise<RediscoveryDismissal[]> {
+    return this.request<RediscoveryDismissal[]>({
+      method: 'GET',
+      url: `/users/${userId}/listening/rediscovery/dismissals`,
+    });
+  }
+
+  async dismissRediscoveryTrack(
+    userId: UUID,
+    trackId: UUID,
+    reason: DismissalReason,
+  ): Promise<RediscoveryDismissal> {
+    return this.request<RediscoveryDismissal>({
+      method: 'PUT',
+      url: `/users/${userId}/listening/rediscovery/dismissals/${trackId}`,
+      data: { reason },
+    });
+  }
+
+  async restoreRediscoveryTrack(userId: UUID, trackId: UUID): Promise<void> {
+    await this.request<void>({
+      method: 'DELETE',
+      url: `/users/${userId}/listening/rediscovery/dismissals/${trackId}`,
+    });
+  }
+
+  async restoreAllRediscoveryTracks(userId: UUID): Promise<void> {
+    await this.request<void>({
+      method: 'DELETE',
+      url: `/users/${userId}/listening/rediscovery/dismissals`,
     });
   }
 

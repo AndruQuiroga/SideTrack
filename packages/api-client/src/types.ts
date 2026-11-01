@@ -3,6 +3,11 @@ export type SinglesSessionRead = import('./api-types').components['schemas']['Si
 export type SinglesSessionDetail =
   import('./api-types').components['schemas']['SinglesSessionDetail'];
 export type DeliveryEvent = import('./api-types').components['schemas']['DeliveryEvent'];
+export type Rediscovery = import('./api-types').components['schemas']['RediscoveryRead'];
+export type ForgottenTrack = import('./api-types').components['schemas']['ForgottenTrack'];
+export type RediscoveryDismissal = import('./api-types').components['schemas']['DismissalRead'];
+export type DismissalReason =
+  import('./api-types').components['schemas']['DismissalWrite']['reason'];
 export type IsoDateString = string;
 
 export enum ProviderType {
