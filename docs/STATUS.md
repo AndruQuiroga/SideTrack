@@ -77,7 +77,7 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 ### In-flight changes
 
 - `add-audio-coverage-review`: 0/20 tasks
-- `add-forgotten-favourites`: 0/11 tasks
+- `add-forgotten-favourites`: 9/11 tasks
 - `add-library-text-search`: 0/20 tasks
 - `add-listening-journey`: 0/19 tasks
 - `add-listening-visuals`: 0/5 tasks
@@ -136,7 +136,7 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 
 ### Migration head
 
-`0015_timezone_periods`
+`0016_rediscovery_dismissals`
 
 ### API routes
 
@@ -191,6 +191,11 @@ GET /users/{user_id}/linked-accounts
 POST /users/{user_id}/linked-accounts
 DELETE /users/{user_id}/linked-accounts/{provider}/{provider_user_id}
 GET /users/{user_id}/listening/recent
+GET /users/{user_id}/listening/rediscovery
+DELETE /users/{user_id}/listening/rediscovery/dismissals
+GET /users/{user_id}/listening/rediscovery/dismissals
+DELETE /users/{user_id}/listening/rediscovery/dismissals/{track_id}
+PUT /users/{user_id}/listening/rediscovery/dismissals/{track_id}
 GET /users/{user_id}/listening/sessions
 DELETE /users/{user_id}/listening/sessions/{session_id}/override
 PUT /users/{user_id}/listening/sessions/{session_id}/override

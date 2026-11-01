@@ -89,7 +89,7 @@ def find_forgotten(
     for track_id, at in plays:
         by_track[track_id].append(at)
     cutoff = now - timedelta(days=rules.forgotten_days)
-    found = []
+    found: list[dict[str, Any]] = []
     for track_id, times in by_track.items():
         last = max(times)
         if last > cutoff:
