@@ -29,6 +29,7 @@ from sidetrack.listening import clean_title, track_video_ids
 from sidetrack.types import AudioSource, AudioVerification
 
 MATCHER_VERSION = "links-v1"
+TASK = "analysis.link_audio"
 SEED_IDENTITY_CONFIDENCE = 0.9
 _VERSION = re.compile(r"^links-v(\d+)$")
 
@@ -78,6 +79,24 @@ class LinkReport:
     unlinked_assets: int = 0
     unlinked_tracks: int = 0
     rejected: list[tuple[UUID, UUID]] = field(default_factory=list)
+
+
+METHODS = ("recording_mbid", "youtube_id", "seed_identity", "seed", "manual")
+
+
+def report_json(report: LinkReport) -> dict[str, Any]:
+    """Exact counts for a job result. Pair ids stay out of it."""
+
+    return {
+        "matcher_version": report.matcher_version,
+        "links": {method: report.links[method] for method in METHODS},
+        "created": {method: report.created[method] for method in METHODS},
+        "updated": report.updated,
+        "ambiguous": report.ambiguous,
+        "unlinked_assets": report.unlinked_assets,
+        "unlinked_tracks": report.unlinked_tracks,
+        "rejected": len(report.rejected),
+    }
 
 
 def _candidates(db: Session, user_id: UUID | None) -> dict[tuple[UUID, UUID], Candidate]:

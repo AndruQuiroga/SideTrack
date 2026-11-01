@@ -19,7 +19,7 @@
 
 ## 4. Operator command and records
 
-- [ ] 4.1 Add `link` (in-process or `--queue`, `--manual`, `--reject`, `--confirm`), `coverage` to `sidetrack.audio` and the `analysis.link_audio` task to the job runner; verify `tests/test_audio_cli.py` covers the per-method counts output, the manual link, reject and confirm, and the queued job, and that nothing schedules the task
+- [x] 4.1 Add `link` (in-process or `--queue`, `--manual`, `--reject`, `--confirm`), `coverage` to `sidetrack.audio` and the `analysis.link_audio` task to the job runner; verify `tests/test_audio_cli.py` covers the per-method counts output, the manual link, reject and confirm, and the queued job, and that nothing schedules the task
 - [ ] 4.2 Document `link`, `coverage` and what the reasons mean in docs/AUDIO.md; verify the documented commands run as written against a local database
 - [ ] 4.3 (owner) Run the matcher on production after the ListenBrainz import and record links per method, unlinked assets and the owner's chosen-play coverage for the last four weeks in docs/AUDIO.md (aggregates only); verify `coverage` output matches a direct SQL count
 - [ ] 4.4 Update `docs/status.yaml` (new "Listens linked to audio" capability with evidence), run `python scripts/gen_status.py` and `uv run --frozen python scripts/gen_progress.py`; verify the status check passes, then `make lint` and `make test.unit`

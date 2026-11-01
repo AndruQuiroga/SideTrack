@@ -10,7 +10,13 @@ from uuid import UUID
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
-from sidetrack.analysis import compute_user_taste_profile, embed_assets
+from sidetrack.analysis import (
+    LINK_AUDIO_TASK,
+    compute_user_taste_profile,
+    embed_assets,
+    link_audio,
+    report_json,
+)
 from sidetrack.analysis.embeddings import TASK as EMBED_AUDIO
 from sidetrack.analysis.embeddings import ModelUnavailable
 from sidetrack.club import cleanup_notifications, produce_notification
@@ -80,6 +86,9 @@ def run(job_id: UUID) -> int:
                 cleanup_notifications(db)
             elif row.task == "club.notify":
                 result = produce_notification(db, **arguments)
+            elif row.task == LINK_AUDIO_TASK:
+                scope = arguments.get("user_id")
+                result = report_json(link_audio(db, user_id=UUID(scope) if scope else None))
             elif row.task == EMBED_AUDIO:
                 result = embed_assets(
                     db,
