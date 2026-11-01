@@ -118,6 +118,7 @@ PHASES: list[dict[str, Any]] = [
         "changes": [
             "add-music-analysis-evaluation-protocol",
             "import-listenbrainz-history",
+            "add-timezone-periods",
             "resolve-listens-to-audio",
             "add-audio-coverage-review",
             "add-track-mood-scores",
@@ -129,6 +130,7 @@ PHASES: list[dict[str, Any]] = [
             "add-sound-world-explorer",
             "add-sound-bridge",
             "add-forgotten-favourites",
+            "explore-sound-dimensions",
             "add-listening-journey",
             "add-share-consent",
             "add-track-facet-card",

@@ -24,7 +24,7 @@
 - [x] 3.3 Implement `scripts/check_evaluations.py` (register schema, dataset references and rights status, revision staleness, `docs/status.yaml` cross-check); prove with `tests/test_check_evaluations.py::test_pending_gate_blocks_works`, `::test_approved_gate_allows_works`, `::test_stale_pipeline`, `::test_unregistered_dataset`, `::test_rights_unconfirmed_blocks_approval`
 - [x] 3.4 Prove evaluation tooling never acquires audio: `test_gate.py::test_youtube_dataset_prepares_no_audio` asserts `no_local_audio` and that no subprocess or network call is made
 - [x] 3.5 Seed `docs/evaluations/register.yaml` with `muq-mulan-neighbours` (`incomplete`) and `mood-estimate` (`incomplete`: the owner passed the listening check on 2026-10-31, but run `20261031-204732-9b07ff0` is not artist-grouped, axis correlation 0.88 vs human 0.57); verify `python scripts/check_evaluations.py` exits zero on the repo
-- [ ] 3.6 Add the check to CI next to the status staleness check; verify by a CI run on the branch
+- [x] 3.6 Add the check to CI next to the status staleness check; verify by a CI run on the branch
 - [x] 3.7 Link `docs/evaluations/` from `docs/AUDIO-BENCHMARK.md` and `docs/research/MUSIC-ANALYSIS.md`; verify links resolve with the existing docs link check (or `python scripts/check_evaluations.py --links` if none exists)
 
 ## 4. Status and decisions
