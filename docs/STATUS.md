@@ -74,8 +74,27 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 
 ### In-flight changes
 
+- `add-audio-coverage-review`: 0/20 tasks
+- `add-forgotten-favourites`: 0/11 tasks
+- `add-library-text-search`: 0/20 tasks
+- `add-listening-journey`: 0/19 tasks
+- `add-listening-visuals`: 0/5 tasks
 - `add-mood-probe-benchmark`: 8/11 tasks
+- `add-music-analysis-evaluation-protocol`: 0/19 tasks
+- `add-share-consent`: 0/20 tasks
+- `add-sound-bridge`: 0/14 tasks
+- `add-sound-compatibility`: 0/3 tasks
+- `add-sound-themes`: 0/4 tasks
+- `add-sound-world-explorer`: 0/17 tasks
+- `add-timestamped-audio-windows`: 0/11 tasks
+- `add-track-facet-card`: 0/17 tasks
+- `add-track-mood-scores`: 0/7 tasks
+- `add-version-discovery`: 0/13 tasks
+- `add-weekly-listening-profile`: 0/4 tasks
 - `automate-database-backups`: 9/13 tasks
+- `explore-lyrics-and-captioning`: 0/11 tasks
+- `import-listenbrainz-history`: 0/21 tasks
+- `resolve-listens-to-audio`: 0/12 tasks
 
 ### Specs
 
