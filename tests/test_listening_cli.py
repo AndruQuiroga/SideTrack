@@ -56,6 +56,9 @@ def operator(engine, monkeypatch):
         cleanup.execute(delete(User).where(User.id.in_(ids)))
         cleanup.execute(delete(Track).where(Track.id.in_(tracks)))
         cleanup.commit()
+    # Pooled connections keep prepared `users` selects; a later migration test changes that
+    # table, and a cached plan would then fail with "must not change result type".
+    engine.dispose()
 
 
 def _job(engine, job_id):
