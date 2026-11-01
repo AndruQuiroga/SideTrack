@@ -259,3 +259,15 @@ def test_every_claim_needs_all_revisions(tmp_path):
 def test_duplicate_claims(tmp_path):
     one = claim(status="incomplete", summary=None)
     assert any("duplicate" in e for e in run(build(tmp_path, [one, copy.deepcopy(one)]))[0])
+
+
+def test_seed_register_is_honest_and_consistent():
+    assert check_evaluations.check(ROOT, TODAY) == ([], [])
+    data = yaml.safe_load((ROOT / "docs" / "evaluations" / "register.yaml").read_text("utf-8"))
+    claims = {c["claim"]: c for c in data["claims"]}
+    assert claims["muq-mulan-neighbours"]["status"] == "incomplete"
+    assert claims["mood-estimate"]["status"] == "incomplete"
+    assert claims["muq-mulan-neighbours"]["feature_revisions"]["pipeline"] == (
+        "w10-t3-cap180-fp32-mean-l2-v1"
+    )
+    assert "20261031-204732-9b07ff0" in json.dumps(claims["mood-estimate"]["evidence"])
