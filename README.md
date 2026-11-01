@@ -12,6 +12,7 @@ The project is mid-refactor. **What works today is in [docs/STATUS.md](docs/STAT
 
 - [Status](docs/STATUS.md): what actually works
 - [Decisions](docs/decisions/): architecture decisions
+- [Development environment](docs/DEVELOPMENT.md): run everything in WSL 2, not native Windows
 - [Module boundaries](docs/MODULES.md): Python ownership, imports and startup
 - [Background jobs](docs/JOBS.md): Postgres workers, schedules and bot delivery
 - [Refactor progress](docs/ROADMAP.md): phases and deferred operational checks
