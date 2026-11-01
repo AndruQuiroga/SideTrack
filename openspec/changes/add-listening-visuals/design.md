@@ -4,6 +4,8 @@
 
 See proposal.md, `docs/research/MOCKUPS.md` §1–6 and the anti-patterns, and `docs/research/MUSIC-ANALYSIS-RESEARCH-NOTES.md` §4 ("Visual vocabulary and accessibility") and §6.6.
 
+Any local-time view (such as the listening clock) gets its zone from `identity.timezone_resolver(db, user_id)`, from `add-timezone-periods`, never from `users.timezone` directly, so a user's moves are respected.
+
 ## Goals / Non-Goals
 
 **Goals:**
