@@ -5,7 +5,7 @@ processes share this code; the Next.js app and Discord bot call the HTTP API.
 
 | Module      | Owned tables                                                                                                                                                                                  |
 | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `identity`  | users, linked_accounts, follows                                                                                                                                                               |
+| `identity`  | users, linked_accounts, follows, user_timezone_periods                                                                                                                                        |
 | `catalog`   | albums, tracks                                                                                                                                                                                |
 | `listening` | listen_events, import_checkpoints, listening_import_runs, import_coverage, listen_sessions, listen_session_overrides                                                                          |
 | `club`      | weeks, nominations, votes, ratings, club_notification_outbox, club_members, club_history_batches, club_history_sources, singles_sessions, singles_songs, singles_submissions, singles_ratings |

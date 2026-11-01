@@ -69,7 +69,7 @@ def test_openapi_matches_phase3_and_reviewed_history_contract():
 def test_each_table_has_one_canonical_owner():
     configure_mappers()
     expected = {
-        "identity": {"users", "linked_accounts", "follows"},
+        "identity": {"users", "linked_accounts", "follows", "user_timezone_periods"},
         "catalog": {"albums", "tracks", "album_artwork"},
         "artwork_models": {"artwork_recoveries"},
         "listening": {

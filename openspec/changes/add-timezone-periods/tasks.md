@@ -2,8 +2,8 @@
 
 ## 1. Periods
 
-- [ ] 1.1 Add the identity-owned `UserTimezonePeriod` model and the next-numbered migration, and register the table in docs/MODULES.md and the ownership test; verify `services/api/tests/test_migrations.py`, `tests/test_module_layout.py` and `lint-imports` pass
-- [ ] 1.2 Add `identity.timezone_resolver`, and add, remove and list operations validating IANA names; verify `tests/test_timezone_periods.py::test_period_applies_until_the_next`, `::test_before_first_period_uses_fallback`, `::test_no_periods_uses_fallback`, `::test_no_zone_anywhere_is_none`, `::test_invalid_zone_refused`, `::test_duplicate_start_refused` and `::test_user_deletion_removes_periods`
+- [x] 1.1 Add the identity-owned `UserTimezonePeriod` model and the next-numbered migration, and register the table in docs/MODULES.md and the ownership test; verify `services/api/tests/test_migrations.py`, `tests/test_module_layout.py` and `lint-imports` pass
+- [x] 1.2 Add `identity.timezone_resolver`, and add, remove and list operations validating IANA names; verify `tests/test_timezone_periods.py::test_period_applies_until_the_next`, `::test_before_first_period_uses_fallback`, `::test_no_periods_uses_fallback`, `::test_no_zone_anywhere_is_none`, `::test_invalid_zone_refused`, `::test_duplicate_start_refused` and `::test_user_deletion_removes_periods`
 
 ## 2. Sessions and command
 
