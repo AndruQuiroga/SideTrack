@@ -2,7 +2,7 @@
 
 ## 1. Track selection
 
-- [ ] 1.1 Add `dimensions.py` selection: one vector per track preferring full assets, with `--exclude-seeds` and counts of what was dropped; verify `services/audio-lab/tests/test_dimensions.py::test_full_preferred_over_preview`, `::test_control_seeds_excluded` and `::test_drop_counts_reported`
+- [x] 1.1 Add `dimensions.py` selection: one vector per track preferring full assets, with `--exclude-seeds` and counts of what was dropped; verify `services/audio-lab/tests/test_dimensions.py::test_full_preferred_over_preview`, `::test_control_seeds_excluded` and `::test_drop_counts_reported`
 
 ## 2. Dimensions
 
