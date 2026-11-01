@@ -12,6 +12,7 @@ from lab_support import sha, write_axes, write_plays
 from test_dimensions import write_run
 from test_tangents import AWAY, HOME, cycle, flat, home_days, session
 
+from audio_lab.cli import main
 from audio_lab.lab.demos import explorer, signature, timeline
 from audio_lab.lab.site import LabContext, Unavailable, build_site
 from audio_lab.manifest import COLUMNS
@@ -199,3 +200,28 @@ def test_demos_report_unavailable_inputs(tmp_path):
     assert [e["status"] for e in entries] == ["unavailable"] * 3
     assert "listening snapshot" in entries[0]["reason"]
     assert "embedding run" in entries[2]["reason"]
+
+
+def test_documented_build_command(context, tmp_path, capsys):
+    """The README's `lab build` with every input flag, on synthetic data."""
+
+    ctx, _ = context
+    out = tmp_path / "site"
+    argv = ["lab", "build", "--out", str(out)]
+    for flag, value in (
+        ("--snapshot", ctx.snapshot),
+        ("--dimensions", ctx.dimensions_dir),
+        ("--manifest", ctx.manifest),
+        ("--audio-dir", ctx.audio_dir),
+        ("--run-dir", ctx.run_dir),
+    ):
+        argv += [flag, str(value)]
+    assert main(argv) == 0
+    lines = capsys.readouterr().out
+    assert "timeline: ready" in lines and "explorer: ready" in lines
+    assert sorted(p.name for p in out.glob("*.html")) == [
+        "explorer.html",
+        "index.html",
+        "signature.html",
+        "timeline.html",
+    ]

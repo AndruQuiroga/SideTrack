@@ -194,6 +194,30 @@ every play without audio is `no_link`: the library was built as a benchmark samp
 tracks have no audio at all. Analysis of listening needs a larger library before it can speak for
 a week.
 
+## Listening Lab snapshot
+
+The Listening Lab (`audio-lab lab build`, see `services/audio-lab/README.md`) needs one export from
+the database: `scripts/lab_snapshot.sql`. It is a single `SELECT`, so it needs no release and
+changes no data, and `audio-lab` never opens the database itself. You run it, against the database
+you want to look at, for one user.
+
+```bash
+psql -q --csv -v user_id=USER_UUID -f scripts/lab_snapshot.sql > E:/sidetrack/lab/snapshot.csv
+```
+
+One row per play: `played_at`, `artist`, `title`, `session_start`, `session_end`, `session_kind`,
+`sha256` and `doubtful_timing`.
+
+- **`session_kind`** is the effective kind: your `keep` or `autoplay` review of the session if there
+  is one, otherwise the rule's flag (`unclassified`, `night_autoplay` or `unknown`).
+- **`sha256`** is the asset the lab plays for that track. A full track is preferred over a preview;
+  then an unambiguous link, higher confidence, and the earlier link. It is empty for a play whose
+  track has no linked asset, and the lab counts such plays rather than dropping them silently.
+- **`doubtful_timing`** is true for a session of 20 or more listens at over 30 listens an hour, which
+  is likely a batch of offline scrobbles or an import rather than real time.
+
+The file lists what you listen to and when. Write it outside the repo, and don't commit it.
+
 ## Reading the summary
 
 ```

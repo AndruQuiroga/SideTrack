@@ -21,7 +21,7 @@
 
 ## 4. Docs
 
-- [ ] 4.1 Document the snapshot and build in `services/audio-lab/README.md` and `docs/AUDIO.md`; verify the documented commands run on synthetic data
+- [x] 4.1 Document the snapshot and build in `services/audio-lab/README.md` and `docs/AUDIO.md`; verify the documented commands run on synthetic data
 
 ## 5. Owner run
 
