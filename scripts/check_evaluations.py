@@ -24,8 +24,17 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 EVALUATIONS = Path("docs") / "evaluations"
 CLAIM_STATUSES = ("approved", "gate_pending", "incomplete", "rejected", "stale")
-AUDIO_STATUSES = ("recorded", "rights_unconfirmed", "annotation_only", "not_for_use")
-ANNOTATION_STATUSES = ("recorded", "rights_unconfirmed", "not_for_use")
+AUDIO_STATUSES = (
+    "recorded",
+    "owner_accepted",
+    "rights_unconfirmed",
+    "annotation_only",
+    "not_for_use",
+)
+ANNOTATION_STATUSES = ("recorded", "owner_accepted", "rights_unconfirmed", "not_for_use")
+# Statuses an approved claim may cite. `owner_accepted` means the terms are still unconfirmed.
+USABLE_STATUSES = ("recorded", "owner_accepted")
+ACCEPTANCE_FIELDS = ("date", "by", "scope")
 USES = ("audio", "annotations")
 ACQUISITIONS = ("owner_manual", "none")
 REVISION_FIELDS = (
@@ -92,6 +101,12 @@ def check_datasets(data: Any, today: date) -> tuple[dict[str, dict], list[str], 
             errors.append(
                 f"datasets.yaml: {name}: status.annotations must be one of {ANNOTATION_STATUSES}"
             )
+        if "owner_accepted" in status.values():
+            acceptance = entry.get("acceptance")
+            acceptance = acceptance if isinstance(acceptance, dict) else {}
+            for field in ACCEPTANCE_FIELDS:
+                if not acceptance.get(field):
+                    errors.append(f"datasets.yaml: {name}: acceptance needs {field}")
         if entry.get("acquisition") not in ACQUISITIONS:
             errors.append(
                 f"datasets.yaml: {name}: acquisition must be one of {ACQUISITIONS}, "
@@ -172,7 +187,7 @@ def _check_dataset_use(name: str, ref: Any, datasets: dict[str, dict], errors: l
     if entry is None:
         return
     status = (entry.get("status") or {}).get(use)
-    if status != "recorded":
+    if status not in USABLE_STATUSES:
         errors.append(
             f"{name}: cites {entry.get('name', dataset_id)} {use}, "
             f"whose rights status is {status}; it cannot be approved"

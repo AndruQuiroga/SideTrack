@@ -171,6 +171,29 @@ A play counts as covered only when its track's preferred asset has a current emb
 preferred asset is the embedded one, then a full track over a preview, then an
 AcoustID-confirmed asset over an unverified one.
 
+### First production run, 2026-11-01
+
+The matcher took 5 seconds over 19,361 tracks and 862 assets.
+
+| Measure                                  | Result                 |
+| ---------------------------------------- | ---------------------- |
+| Links by `youtube_id`                    | 238                    |
+| Links by `seed_identity`                 | 432                    |
+| Links by `recording_mbid`                | 0                      |
+| Ambiguous links                          | 71                     |
+| Tracks with a link                       | 392                    |
+| Assets with no link                      | 266                    |
+| Tracks with no link                      | 18,969                 |
+| All plays with audio                     | 6,988 of 74,907 (9.3%) |
+| Chosen plays with audio, all time        | 6,566 of 70,099 (9.4%) |
+| Chosen plays with audio, last four weeks | 119 of 693 (17.2%)     |
+
+Production assets have no `recording_mbid`, because the imported manifest had no such column, so
+that matcher has no evidence yet. Many of the 266 unlinked assets should be genre control tracks, which were never played. Almost
+every play without audio is `no_link`: the library was built as a benchmark sample, so most played
+tracks have no audio at all. Analysis of listening needs a larger library before it can speak for
+a week.
+
 ## Reading the summary
 
 ```

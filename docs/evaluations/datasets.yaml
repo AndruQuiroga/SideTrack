@@ -5,9 +5,11 @@
 # does not say any permission is cleared: every entry keeps `recheck: true` until the owner
 # has verified the terms at the exact revision and files used.
 #
-# status.audio:       recorded | rights_unconfirmed | annotation_only | not_for_use
-# status.annotations: recorded | rights_unconfirmed | not_for_use
+# status.audio:       recorded | owner_accepted | rights_unconfirmed | annotation_only | not_for_use
+# status.annotations: recorded | owner_accepted | rights_unconfirmed | not_for_use
 #   recorded           the source states terms, noted below; the use still needs the re-check
+#   owner_accepted     the terms are still unconfirmed, and the owner accepts that for the scope
+#                      in `acceptance`; this does not clear any rights
 #   rights_unconfirmed the terms are unknown or depend on files not yet checked
 #   annotation_only    audio exists only as references (such as YouTube ids); none is held
 # acquisition: owner_manual (the owner fetches files by hand) | none. Never automated: no
@@ -29,8 +31,14 @@ datasets:
       Crowdsourced or lab-collected human ratings. Terms of the actual annotation files not
       confirmed.
     status:
-      audio: rights_unconfirmed
-      annotations: rights_unconfirmed
+      audio: owner_accepted
+      annotations: owner_accepted
+    acceptance:
+      date: 2026-10-31
+      by: owner
+      scope: >-
+        Personal, non-commercial use in Sidetrack, a private project for the owner and a handful
+        of friends. Nothing from the dataset is redistributed. Commercial use voids this.
     gaps:
       - The original data site was inaccessible during review (it timed out again on 2026-10-31).
       - Run 20261031-204732-9b07ff0 used a Kaggle copy of the audio and a separate copy of the

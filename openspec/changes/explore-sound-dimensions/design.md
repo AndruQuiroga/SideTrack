@@ -36,8 +36,9 @@ always returns an answer, even for noise.
 
 ### Decision 3: Stability before listening
 
-For each kept component, 200 bootstrap resamples of tracks are aligned to the full fit by absolute
-cosine. A component is `stable` at a median of 0.80 or more. The threshold is a working rule, chosen
+For each kept component, 200 bootstrap resamples of tracks are compared with the full fit by
+absolute cosine, at the same rank. Matching to the best axis would make two equal-variance axes
+look stable while they swap places. A component is `stable` at a median of 0.80 or more. The threshold is a working rule, chosen
 before any result, and the report prints the value so it can be judged. Unstable components are
 reported and left out of the review.
 
@@ -55,9 +56,12 @@ the owner may prefer its framing. The owner decides merges.
 
 ### Decision 6: Names are suggestions with abstention
 
-`vocabulary.csv` holds versioned terms outside any model output. Terms are scored by a contrast:
-mean cosine with the axis's top tracks minus its bottom tracks, compared with a permuted-track
-null. An end with no term above the 95th percentile is `no_confident_label`. Names never appear in
+`vocabulary_v1.csv` holds versioned terms outside any model output. Terms are scored by a contrast:
+mean cosine with the axis's top tracks minus its bottom tracks. A term must beat two nulls, each at
+the 95th percentile of the best contrast over all terms: one permutes tracks, and one permutes the
+term vectors' coordinates. The track null alone was too lenient, because the ends of a real axis
+sit far apart and chance-aligned terms cleared it. An end with no such term is
+`no_confident_label`. About one end in ten can still get a chance label. Names never appear in
 the blind review, so they can't lead the owner.
 
 ### Decision 7: A blind review page

@@ -346,20 +346,49 @@ torch 2.11.0+cu128, 118 audio-s/s for each model. Five repeats of 5-fold nested 
 MuQ-MuLan is ahead of MuQ by 0.040 mean R² (95% interval 0.028 to 0.054). Both models clear the
 gate's two numeric thresholds.
 
-**Gate result, 2026-10-31: pass.** The owner heard the top and bottom 20 of their library on each
-dimension and passed the check. MuQ-MuLan stays the production model, so no re-embedding or ADR is
+**Gate result, 2026-10-31: pass.** The owner heard the top and bottom 20 of the run on each
+dimension and passed the check. 27 of those 80 places were genre control tracks, not the owner's
+own music. MuQ-MuLan stays the production model, so no re-embedding or ADR is
 needed. The owner also asked for more than these two axes, which later changes will explore.
 
 - **Data source:** DEAM's official site (Aljanaki, Yazdani and Soleymani, 2017) timed out, so the
   owner downloaded the audio from a Kaggle copy and the ratings from a separate copy. All 1,802
-  rated clips matched an audio file, and the count and columns match the published dataset. The
-  dataset's licence is non-commercial Creative Commons. Nothing from it is in this repo.
+  rated clips matched an audio file, and the count and columns match the published dataset. The dataset's licence is non-commercial Creative Commons. The owner accepted it for personal,
+  non-commercial use on 2026-10-31, and its exact terms remain unconfirmed
+  (`docs/evaluations/datasets.yaml`). Nothing from it is in this repo.
 - **No artist grouping:** the metadata file wasn't available, so each clip is its own group. Clips
   by one artist can sit on both sides of a split, which may flatter these scores. Both models get
   the same benefit, so the comparison is fairer than the absolute numbers.
 - **Valence and arousal are less separate than the scores suggest.** Human ratings correlate at
-  0.57, MuQ-MuLan's held-out predictions at 0.83, and its predictions on the owner's library at
-  0.88. It still predicts 27% of the valence that arousal doesn't explain, and 34% of the arousal
+  0.57, MuQ-MuLan's held-out predictions at 0.83, and its predictions at 0.91 on the owner's 233
+  tracks (0.88 with the genre control set). It still predicts 27% of the valence that arousal doesn't explain, and 34% of the arousal
   that valence doesn't explain (MuQ: 17% and 26%), so the two aren't the same signal, but dark and
   calm tracks will often be hard to tell apart. A two-axis mood chart will tend to run along a
   diagonal.
+
+### 2026-11-01: sound dimensions
+
+Run `20261027-031711-c7c3698`, one MuQ-MuLan vector per owner track: 233 tracks, after dropping 297
+control-set assets and 173 previews of tracks with a full asset. This is `explore-sound-dimensions`,
+and it covers at most the first 180 s of each track.
+
+- **18 components** beat the shuffled baseline, and **6 are stable** (bootstrap 0.83 to 0.99). The
+  next three fall to 0.79, 0.62 and 0.51.
+- **Mood explains 22%** of the embedding variance on these tracks.
+- **Axis 1 is close to mood:** 25% of the variance, correlating at 0.81 with valence and 0.80 with
+  arousal, ignoring sign.
+- **Axes 2 to 6 are mostly independent of mood:** 5% to 11% of the variance each, and no correlation
+  above 0.26 with either score.
+
+| Axis | Variance share | Valence | Arousal |
+| --- | --- | --- | --- |
+| 1 | 25.3% | -0.81 | -0.80 |
+| 2 | 11.0% | -0.01 | 0.17 |
+| 3 | 8.4% | -0.25 | -0.14 |
+| 4 | 8.2% | 0.23 | 0.26 |
+| 5 | 8.1% | 0.22 | 0.21 |
+| 6 | 5.3% | -0.08 | -0.08 |
+
+Suggested names are unavailable so far, because `torchvision` doesn't match `torch` in the current
+`models` install. The owner's blind listening review is still to come, so nothing here says what
+these axes mean.

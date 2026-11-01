@@ -44,6 +44,21 @@ def test_adapter_embeds_real_audio(name, cuda):
     assert peak > 0
 
 
+def test_mulan_text_vectors(cuda):
+    adapter = get_adapter("muq-mulan")
+    adapter.load(cuda)
+    try:
+        vectors = adapter.embed_texts(["calm solo piano", "aggressive double-kick metal"])
+        audio = pool(adapter.embed_windows([tone(10.0, 220.0, 24000)]))
+    finally:
+        adapter.unload()
+
+    assert vectors.shape == (2, adapter.expected_dim)
+    assert np.all(np.isfinite(vectors))
+    assert not np.allclose(vectors[0], vectors[1])
+    assert audio.shape == (adapter.expected_dim,)  # text and audio share one space
+
+
 def test_run_records_capability_and_load_time(cuda, make_manifest, audio_dir, tmp_path):
     torch = pytest.importorskip("torch")
     manifest = make_manifest([("A", "One", "full", 12, 220), ("B", "Two", "preview", 6, 440)])
