@@ -93,7 +93,7 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 - `add-weekly-listening-profile`: 0/4 tasks
 - `automate-database-backups`: 9/13 tasks
 - `explore-lyrics-and-captioning`: 0/11 tasks
-- `explore-sound-dimensions`: 0/12 tasks
+- `explore-sound-dimensions`: 8/12 tasks
 - `resolve-listens-to-audio`: 10/12 tasks
 
 ### Specs

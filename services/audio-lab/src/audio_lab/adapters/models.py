@@ -6,6 +6,7 @@ from typing import Any
 
 import numpy as np
 
+from .base import ModelUnavailable
 from .torch_base import TorchAdapter, require
 
 
@@ -44,6 +45,19 @@ class MuQMuLanAdapter(TorchAdapter):
 
     def _forward(self, batch: list[np.ndarray]) -> Any:
         return self._model(wavs=self._tensor(batch))
+
+    def embed_texts(self, texts: list[str]) -> np.ndarray:
+        """The text tower's vectors, shape (len(texts), 512), in the audio embedding space.
+
+        Same pinned revision as the audio path. Call ``load`` first; without torch or weights
+        that already raised ModelUnavailable, and this refuses an unloaded model the same way.
+        """
+
+        if self._model is None or self._torch is None:
+            raise ModelUnavailable(f"{self.name} is not loaded")
+        with self._torch.inference_mode():
+            vectors = self._model(texts=list(texts))
+        return vectors.float().cpu().numpy()
 
 
 class MERTAdapter(TorchAdapter):

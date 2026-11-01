@@ -2,24 +2,24 @@
 
 ## 1. Track selection
 
-- [ ] 1.1 Add `dimensions.py` selection: one vector per track preferring full assets, with `--exclude-seeds` and counts of what was dropped; verify `services/audio-lab/tests/test_dimensions.py::test_full_preferred_over_preview`, `::test_control_seeds_excluded` and `::test_drop_counts_reported`
+- [x] 1.1 Add `dimensions.py` selection: one vector per track preferring full assets, with `--exclude-seeds` and counts of what was dropped; verify `services/audio-lab/tests/test_dimensions.py::test_full_preferred_over_preview`, `::test_control_seeds_excluded` and `::test_drop_counts_reported`
 
 ## 2. Dimensions
 
-- [ ] 2.1 Add centred SVD and parallel analysis over shuffled columns; verify `test_dimensions.py::test_planted_dimensions_found` and `::test_pure_noise_keeps_no_dimensions`
-- [ ] 2.2 Add bootstrap stability with sign-free alignment and the `stable` label; verify `::test_strong_axis_is_stable`, `::test_weak_axis_is_unstable` and `::test_results_are_repeatable`
-- [ ] 2.3 Add numpy varimax on stable components; verify `::test_varimax_recovers_rotated_axes` and `::test_rotation_keeps_total_variance`
-- [ ] 2.4 Add mood overlap from a predictions file, including the embedding variance mood explains; verify `::test_axis_restating_mood_correlates` and `::test_predictions_for_other_tracks_are_counted`
-- [ ] 2.5 Add `audio-lab dimensions RUN --manifest M --predictions P --out DIR` writing `dimensions.json` and per-track scores, refusing paths in the repo; verify `::test_command_writes_provenance` and `::test_output_refused_in_repo`
+- [x] 2.1 Add centred SVD and parallel analysis over shuffled columns; verify `test_dimensions.py::test_planted_dimensions_found` and `::test_pure_noise_keeps_no_dimensions`
+- [x] 2.2 Add bootstrap stability with sign-free alignment and the `stable` label; verify `::test_strong_axis_is_stable`, `::test_weak_axis_is_unstable` and `::test_results_are_repeatable`
+- [x] 2.3 Add numpy varimax on stable components; verify `::test_varimax_recovers_rotated_axes` and `::test_rotation_keeps_total_variance`
+- [x] 2.4 Add mood overlap from a predictions file, including the embedding variance mood explains; verify `::test_axis_restating_mood_correlates` and `::test_predictions_for_other_tracks_are_counted`
+- [x] 2.5 Add `audio-lab dimensions RUN --manifest M --predictions P --out DIR` writing `dimensions.json` and per-track scores, refusing paths in the repo; verify `::test_command_writes_provenance` and `::test_output_refused_in_repo`
 
 ## 3. Suggested names
 
 - [ ] 3.1 Add text encoding to the MuQ-MuLan adapter with the pinned revision, reporting unavailable without torch; verify `tests/test_adapters_gpu.py::test_mulan_text_vectors` (marked `gpu`) and `test_dimensions.py::test_text_unavailable_without_torch`
-- [ ] 3.2 Add contrast scoring with a permutation null and `no_confident_label`, over a versioned vocabulary; verify `::test_planted_term_is_suggested` and `::test_no_term_abstains`
+- [x] 3.2 Add contrast scoring with a permutation null and `no_confident_label`, over a versioned vocabulary; verify `::test_planted_term_is_suggested` and `::test_no_term_abstains`
 
 ## 4. Blind review
 
-- [ ] 4.1 Add `audio-lab dimensions-review` writing a self-contained page with no scores or suggested names, randomised ends and exported decisions; verify `tests/test_dimensions_review.py::test_page_has_no_scores_or_names`, `::test_page_is_self_contained`, `::test_order_is_fixed_by_run` and `::test_decision_file_is_validated`
+- [x] 4.1 Add `audio-lab dimensions-review` writing a self-contained page with no scores or suggested names, randomised ends and exported decisions; verify `tests/test_dimensions_review.py::test_page_has_no_scores_or_names`, `::test_page_is_self_contained`, `::test_order_is_fixed_by_run` and `::test_decision_file_is_validated`
 
 ## 5. Owner run and records
 

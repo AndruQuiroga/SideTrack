@@ -11,6 +11,9 @@ from pathlib import Path
 from . import gate as gate_lib
 from .adapters import ADAPTERS, get_adapter
 from .control import DEFAULT_GENRES, ControlUnavailable, deezer_fetch, write_control
+from .dimensions import DIMENSIONS_JSON, DimensionsError, run_dimensions
+from .dimensions_review import validate_decision
+from .dimensions_review import write_review as write_dimensions_review
 from .emotion import EmotionDataError, Scale, prepare_dataset
 from .gate_review import write_review
 from .mood import MoodError, mood_probe, predict_run
@@ -83,6 +86,38 @@ def _parser() -> argparse.ArgumentParser:
     probe.add_argument("--predict-run", type=Path, help="Also predict this run's assets.")
     probe.add_argument("--predict-out", type=Path, help="Predictions CSV, outside the repo.")
     probe.add_argument("--predict-manifest", type=Path, help="Adds artists and titles.")
+
+    dims = commands.add_parser(
+        "dimensions", help="Independent sound dimensions of the owner's own tracks."
+    )
+    dims.add_argument("run_dir", type=Path)
+    dims.add_argument("--manifest", type=Path, required=True)
+    dims.add_argument("--predictions", type=Path, help="From mood-probe --predict-out.")
+    dims.add_argument("--out", type=Path, required=True, help="Outside the repo.")
+    dims.add_argument("--model", default="muq-mulan")
+    dims.add_argument(
+        "--exclude-seeds", type=Path, action="append", help="Repeatable; seeds.csv format."
+    )
+    dims.add_argument("--seed", type=int, default=0)
+    dims.add_argument(
+        "--names", action="store_true", help="Suggest names (needs the models extra)."
+    )
+    dims.add_argument("--vocabulary", type=Path, help="A term CSV; default is the packaged v1.")
+    dims.add_argument("--device", default="cuda", help="For the text tower with --names.")
+
+    review = commands.add_parser(
+        "dimensions-review", help="Blind listening page for a dimensions run."
+    )
+    review.add_argument("dimensions_dir", type=Path, help="The --out of `dimensions`.")
+    review.add_argument("--manifest", type=Path, required=True)
+    review.add_argument("--audio-dir", type=Path, required=True)
+    review.add_argument("--out", type=Path, required=True, help="HTML page, outside the repo.")
+
+    decision = commands.add_parser(
+        "dimensions-decision", help="Check the dimensions-decision.json the page exported."
+    )
+    decision.add_argument("dimensions_dir", type=Path)
+    decision.add_argument("decision", type=Path)
 
     compare = commands.add_parser("parity", help="One model's vectors in two runs, per asset.")
     compare.add_argument("run_a", type=Path)
@@ -261,6 +296,48 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(json.dumps({k: report[k] for k in ("clips", "models", "comparisons")}, indent=2))
         if predicted is not None:
             print(f"Wrote {predicted} predictions to {args.predict_out}")
+        return 0
+
+    if args.command == "dimensions":
+        try:
+            result = run_dimensions(
+                args.run_dir,
+                args.manifest,
+                args.out,
+                predictions_path=args.predictions,
+                model=args.model,
+                exclude_seeds=args.exclude_seeds,
+                seed=args.seed,
+                names=args.names,
+                vocabulary=args.vocabulary,
+                device=args.device,
+            )
+        except (DimensionsError, OutputInRepo) as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+        print(json.dumps({k: result[k] for k in ("selection", "summary")}, indent=2))
+        print(f"Wrote {args.out}")
+        return 0
+
+    if args.command == "dimensions-review":
+        try:
+            page = write_dimensions_review(
+                args.dimensions_dir, args.manifest, args.audio_dir, args.out
+            )
+        except (DimensionsError, OutputInRepo) as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+        print(f"Wrote {page}")
+        return 0
+
+    if args.command == "dimensions-decision":
+        try:
+            report = json.loads((args.dimensions_dir / DIMENSIONS_JSON).read_text("utf-8"))
+            summary = validate_decision(json.loads(args.decision.read_text("utf-8")), report)
+        except (DimensionsError, OSError, ValueError) as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+        print(json.dumps(summary, indent=2))
         return 0
 
     if args.command == "control-seeds":
