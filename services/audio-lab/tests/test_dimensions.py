@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
 from pathlib import Path
 
@@ -11,6 +12,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 
+from audio_lab.cli import main
 from audio_lab.dimensions import (
     analyse,
     load_selection,
@@ -18,10 +20,12 @@ from audio_lab.dimensions import (
     parallel_analysis,
     principal_components,
     rotate,
+    run_dimensions,
     select_tracks,
 )
 from audio_lab.manifest import COLUMNS, Asset, read_manifest
 from audio_lab.runs import EMBEDDINGS, RUN_JSON, load_run
+from audio_lab.seeds import OutputInRepo, repo_root
 
 MODEL = "muq-mulan"
 
@@ -256,6 +260,74 @@ def test_predictions_for_other_tracks_are_counted():
 
     sparse = mood_overlap(x, scores, hashes, {hashes[0]: (0.0, 0.0)})
     assert sparse["status"] == "unavailable"
+
+
+def write_predictions(path: Path, hashes: list[str], valence, arousal) -> Path:
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.writer(handle, lineterminator="\n")
+        writer.writerow(["sha256", "artist", "title", "model", "valence", "arousal"])
+        for h, v, a in zip(hashes, valence, arousal, strict=True):
+            writer.writerow([h, "", "", MODEL, v, a])
+    return path
+
+
+def command_inputs(tmp_path, tracks=120):
+    """A run of ``tracks`` distinct full tracks with planted structure, a manifest, predictions."""
+
+    x, _ = planted(np.random.default_rng(3), tracks=tracks, dim=16, strengths=(6.0, 4.0))
+    run = write_run(tmp_path / "run", x)
+    manifest = write_manifest(
+        tmp_path / "manifest.csv",
+        [(i, f"Artist {i}", f"Title {i}", "full", 200) for i in range(tracks)],
+    )
+    rng = np.random.default_rng(2)
+    predictions = write_predictions(
+        tmp_path / "predictions.csv",
+        [sha(i) for i in range(tracks)],
+        rng.normal(size=tracks),
+        rng.normal(size=tracks),
+    )
+    return run, manifest, predictions
+
+
+def test_command_writes_provenance(tmp_path):
+    run, manifest, predictions = command_inputs(tmp_path)
+    out = tmp_path / "out"
+
+    code = main(
+        ["dimensions", str(run), "--manifest", str(manifest), "--predictions", str(predictions)]
+        + ["--out", str(out), "--seed", "4"]
+    )
+
+    report = json.loads((out / "dimensions.json").read_text("utf-8"))
+    assert code == 0
+    assert report["run_id"] == "run" and report["model"] == MODEL and report["revision"] == "r1"
+    assert report["seed"] == 4
+    assert report["manifest_sha256"] == hashlib.sha256(manifest.read_bytes()).hexdigest()
+    assert report["predictions_sha256"] == hashlib.sha256(predictions.read_bytes()).hexdigest()
+    assert report["selection"]["tracks"] == 120
+    assert report["components_kept"] == 2
+    assert len(report["axes"]) == report["components_stable"]
+    assert report["mood"]["status"] == "ok" and "axes" not in report["mood"]
+    assert all("mood" in axis for axis in report["axes"])
+    with (out / "scores.csv").open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    assert len(rows) == 120
+    assert {"sha256", "artist", "title", "pc1", "pc2", "axis1"} <= set(rows[0])
+    assert main(["dimensions", str(run), "--manifest", str(manifest), "--out", str(out)]) == 0
+
+
+def test_output_refused_in_repo(tmp_path, capsys):
+    run, manifest, _ = command_inputs(tmp_path)
+    out = repo_root(Path(__file__)) / "dimensions-test-output"
+
+    code = main(["dimensions", str(run), "--manifest", str(manifest), "--out", str(out)])
+
+    assert code == 1
+    assert "inside the repository" in capsys.readouterr().err
+    assert not out.exists()
+    with pytest.raises(OutputInRepo):
+        run_dimensions(run, manifest, out)
 
 
 def test_rotation_keeps_total_variance():

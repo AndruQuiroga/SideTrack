@@ -11,6 +11,7 @@ from pathlib import Path
 from . import gate as gate_lib
 from .adapters import ADAPTERS, get_adapter
 from .control import DEFAULT_GENRES, ControlUnavailable, deezer_fetch, write_control
+from .dimensions import DimensionsError, run_dimensions
 from .emotion import EmotionDataError, Scale, prepare_dataset
 from .gate_review import write_review
 from .mood import MoodError, mood_probe, predict_run
@@ -83,6 +84,19 @@ def _parser() -> argparse.ArgumentParser:
     probe.add_argument("--predict-run", type=Path, help="Also predict this run's assets.")
     probe.add_argument("--predict-out", type=Path, help="Predictions CSV, outside the repo.")
     probe.add_argument("--predict-manifest", type=Path, help="Adds artists and titles.")
+
+    dims = commands.add_parser(
+        "dimensions", help="Independent sound dimensions of the owner's own tracks."
+    )
+    dims.add_argument("run_dir", type=Path)
+    dims.add_argument("--manifest", type=Path, required=True)
+    dims.add_argument("--predictions", type=Path, help="From mood-probe --predict-out.")
+    dims.add_argument("--out", type=Path, required=True, help="Outside the repo.")
+    dims.add_argument("--model", default="muq-mulan")
+    dims.add_argument(
+        "--exclude-seeds", type=Path, action="append", help="Repeatable; seeds.csv format."
+    )
+    dims.add_argument("--seed", type=int, default=0)
 
     compare = commands.add_parser("parity", help="One model's vectors in two runs, per asset.")
     compare.add_argument("run_a", type=Path)
@@ -261,6 +275,24 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(json.dumps({k: report[k] for k in ("clips", "models", "comparisons")}, indent=2))
         if predicted is not None:
             print(f"Wrote {predicted} predictions to {args.predict_out}")
+        return 0
+
+    if args.command == "dimensions":
+        try:
+            result = run_dimensions(
+                args.run_dir,
+                args.manifest,
+                args.out,
+                predictions_path=args.predictions,
+                model=args.model,
+                exclude_seeds=args.exclude_seeds,
+                seed=args.seed,
+            )
+        except (DimensionsError, OutputInRepo) as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+        print(json.dumps({k: result[k] for k in ("selection", "summary")}, indent=2))
+        print(f"Wrote {args.out}")
         return 0
 
     if args.command == "control-seeds":

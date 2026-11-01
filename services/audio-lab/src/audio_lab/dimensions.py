@@ -8,6 +8,8 @@ Everything here is a linear view of the embeddings; nothing is a fact about the 
 from __future__ import annotations
 
 import csv
+import hashlib
+import json
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -15,6 +17,7 @@ import numpy as np
 
 from .manifest import Asset, _norm, read_manifest
 from .runs import RUN_JSON, load_run
+from .seeds import ensure_outside_repo
 
 
 class DimensionsError(Exception):
@@ -234,6 +237,8 @@ def rotate(axes: np.ndarray, eigenvalues: np.ndarray) -> tuple[np.ndarray, np.nd
 
 
 MIN_MOOD_TRACKS = 10
+DIMENSIONS_JSON = "dimensions.json"
+SCORES_CSV = "scores.csv"
 
 
 def read_predictions(path: Path, model: str) -> dict[str, tuple[float, float]]:
@@ -298,3 +303,118 @@ def mood_overlap(
             for k in range(scores.shape[1])
         ],
     }
+
+
+def _sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _share(value: float, total: float) -> float:
+    return round(float(value / total), 6) if total > 0 else 0.0
+
+
+def run_dimensions(
+    run_dir: Path,
+    manifest_path: Path,
+    out: Path,
+    *,
+    predictions_path: Path | None = None,
+    model: str = "muq-mulan",
+    exclude_seeds: list[Path] | None = None,
+    seed: int = 0,
+) -> dict:
+    """Write ``dimensions.json`` and ``scores.csv`` into ``out`` and return the report.
+
+    The report holds aggregates and provenance; ``scores.csv`` holds the per-track scores. Both
+    are personal data, so ``out`` must be outside the repository, and nothing is written if not.
+    """
+
+    ensure_outside_repo(out)
+    record, selection = load_selection(run_dir, manifest_path, model, exclude_seeds)
+    x = selection.vectors
+    components = analyse(x, seed)
+    stable = components.stable
+    centred = x - x.mean(axis=0)
+    total = float(components.eigenvalues.sum())
+
+    if stable:
+        axes, variances = rotate(components.axes[stable], components.eigenvalues[stable])
+    else:
+        axes, variances = np.zeros((0, x.shape[1])), np.zeros(0)
+    rotated_scores = centred @ axes.T
+    raw_scores = centred @ components.axes[: components.kept].T
+
+    mood = None
+    if predictions_path is not None:
+        predictions = read_predictions(predictions_path, model)
+        mood = mood_overlap(x, rotated_scores, selection.hashes, predictions)
+
+    axis_rows = []
+    for k in range(len(axes)):
+        row = {
+            "id": f"axis{k + 1}",
+            "variance": float(variances[k]),
+            "variance_share": _share(variances[k], total),
+        }
+        if mood is not None and mood["status"] == "ok":
+            row["mood"] = mood["axes"][k]
+        axis_rows.append(row)
+
+    report = {
+        "schema": 1,
+        "run_id": record["run_id"],
+        "model": model,
+        "revision": record["models"][model].get("revision"),
+        "pipeline": {
+            "window_s": record.get("windows", {}).get("window_s"),
+            "max_full_s": record.get("windows", {}).get("max_full_s"),
+            "note": "vectors pool at most the first max_full_s seconds of a track",
+        },
+        "manifest_sha256": _sha256(manifest_path),
+        "predictions_sha256": _sha256(predictions_path) if predictions_path else None,
+        "seed": seed,
+        "parameters": {
+            "shuffles": SHUFFLES,
+            "baseline_percentile": BASELINE_PERCENTILE,
+            "resamples": RESAMPLES,
+            "stable_at": STABLE_AT,
+        },
+        "selection": selection.counts(),
+        "embedding_dim": int(x.shape[1]),
+        "components_kept": components.kept,
+        "components_stable": len(stable),
+        "components": [
+            {
+                "index": i + 1,
+                "eigenvalue": float(components.eigenvalues[i]),
+                "variance_share": _share(components.eigenvalues[i], total),
+                "baseline": float(components.threshold[i]),
+                "stability": float(components.stability[i]),
+                "stable": i in stable,
+            }
+            for i in range(components.kept)
+        ],
+        "axes": axis_rows,
+        "mood": None if mood is None else {k: v for k, v in mood.items() if k != "axes"},
+        "summary": (
+            "no component beat the shuffled baseline"
+            if components.kept == 0
+            else f"{components.kept} kept, {len(stable)} stable"
+        ),
+    }
+
+    out.mkdir(parents=True, exist_ok=True)
+    (out / DIMENSIONS_JSON).write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    header = ["sha256", "artist", "title", "kind"]
+    header += [f"pc{i + 1}" for i in range(components.kept)]
+    header += [row["id"] for row in axis_rows]
+    with (out / SCORES_CSV).open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.writer(handle, lineterminator="\n")
+        writer.writerow(header)
+        for i, asset in enumerate(selection.assets):
+            writer.writerow(
+                [asset.sha256, asset.artist, asset.title, asset.kind]
+                + [f"{v:.6f}" for v in raw_scores[i]]
+                + [f"{v:.6f}" for v in rotated_scores[i]]
+            )
+    return report
