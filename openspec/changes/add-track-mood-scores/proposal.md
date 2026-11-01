@@ -32,7 +32,7 @@ None.
 - **Observed:**
   - The probe code is a numpy ridge in `services/audio-lab/src/audio_lab/mood.py`. Production has no probe table.
   - Embeddings live in `audio_embeddings` (`sidetrack/analysis/models.py`). There is one pooled vector per asset, from the first 180 s only (`sidetrack/analysis/embeddings/audio.py`).
-  - Benchmark splits were not artist-grouped. Predicted valence and arousal correlate at 0.88 on the owner's library (`docs/AUDIO-BENCHMARK.md`).
+  - Benchmark splits were not artist-grouped. Predicted valence and arousal correlate at 0.91 on the owner's 233 tracks (`docs/AUDIO-BENCHMARK.md`).
 - **Assumed:** CPU scoring of about 1k assets takes seconds; this will be measured in task 2.
 - **Met:** the owner passed the mood gate's listening check on 2026-10-31. The evaluation follows the protocol in `add-music-analysis-evaluation-protocol`.
 - Affected: `sidetrack/analysis/`, `migrations/`, `sidetrack/audio.py`, `docs/AUDIO.md`, `docs/status.yaml`.

@@ -251,7 +251,7 @@ The local mood-probe branch (`origin/feat/mood-probe-benchmark`,
 nested five-fold validation on DEAM: MuQ-MuLan valence R² **0.615** and arousal R²
 **0.688**. Artist metadata was unavailable, so the splits were **not artist-grouped**
 and may flatter absolute scores. Human ratings correlate at 0.57, held-out predictions
-at 0.83, and predictions on the owner's library at 0.88. This diagonal is a warning
+at 0.83, and predictions on the owner's 233 tracks at 0.91. This diagonal is a warning
 about distinction between axes, not proof of a specific worst-performing quadrant. The
 owner's listening check and decision were pending.
 
