@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dimensions review</title>
+<style>
+  :root { color-scheme: light dark; --bg: #fff; --fg: #1a1a1a; --muted: #666; --line: #ccc; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #151515; --fg: #eee; --muted: #aaa; --line: #444; } }
+  body { margin: 0 auto; max-width: 60rem; padding: 1rem 16px 3rem; background: var(--bg); color: var(--fg);
+         font: 16px/1.5 system-ui, sans-serif; }
+  .axis { border: 1px solid var(--line); border-radius: 8px; padding: .75rem 1rem; margin: 1rem 0; }
+  .ends { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1rem; }
+  .muted { color: var(--muted); font-size: .9rem; }
+  audio { width: 100%; display: block; margin: .15rem 0; }
+  label { display: inline-block; margin: .25rem 1rem .25rem 0; }
+  input[type=text] { width: 100%; box-sizing: border-box; font: inherit; }
+  button { font: inherit; padding: .5rem 1rem; }
+</style>
+</head>
+<body>
+<h1>Dimensions review</h1>
+<p class="muted">Each axis shows ten tracks from each of its two ends, played from 35% in. Listen to what
+sets the ends apart. Nothing here says which end is which, or what the model thinks the axis is.</p>
+<div id="axes"></div>
+<p><button type="button" id="export">Export dimensions-decision.json</button></p>
+<script id="data" type="application/json">/*__DIMENSIONS_DATA__*/null</script>
+<script>
+// buildDecision is pure so it can be checked without a browser.
+function buildDecision(state) {
+  const axes = {};
+  state.axes.forEach((axis) => {
+    const choice = state.choices[axis.id] || {};
+    axes[axis.id] = {
+      decision: choice.decision || "",
+      name: (choice.name || "").trim(),
+      merge_into: choice.decision === "merge" ? choice.merge_into || "" : "",
+    };
+  });
+  return { run_id: state.run_id, decided_at: state.today, axes: axes };
+}
+const review = JSON.parse(document.getElementById("data").textContent);
+const choices = {};
+function text(tag, value, cls) {
+  const el = document.createElement(tag);
+  el.textContent = value;
+  if (cls) el.className = cls;
+  return el;
+}
+function endColumn(title, tracks) {
+  const column = document.createElement("div");
+  column.append(text("h3", title));
+  tracks.forEach((track, index) => {
+    column.append(text("div", String(index + 1), "muted"));
+    if (track.audio) {
+      const audio = document.createElement("audio");
+      audio.controls = true;
+      audio.preload = "none";
+      audio.src = track.audio;
+      column.append(audio);
+    } else {
+      column.append(text("div", "audio file not found", "muted"));
+    }
+  });
+  return column;
+}
+if (review) {
+  const container = document.getElementById("axes");
+  review.axes.forEach((axis) => {
+    const card = document.createElement("div");
+    card.className = "axis";
+    card.append(text("h2", "Axis " + axis.id.replace("axis", "")));
+    const ends = document.createElement("div");
+    ends.className = "ends";
+    ends.append(endColumn("End A", axis.a), endColumn("End B", axis.b));
+    card.append(ends);
+    const set = (patch) => { choices[axis.id] = Object.assign(choices[axis.id] || {}, patch); };
+    ["keep", "merge", "drop"].forEach((value) => {
+      const label = document.createElement("label");
+      const input = document.createElement("input");
+      input.type = "radio";
+      input.name = "d-" + axis.id;
+      input.value = value;
+      input.addEventListener("change", () => set({ decision: value }));
+      label.append(input, " " + value);
+      card.append(label);
+    });
+    const other = document.createElement("select");
+    other.append(new Option("merge into...", ""));
+    review.axes.filter((o) => o.id !== axis.id).forEach((o) => other.append(new Option(o.id, o.id)));
+    other.addEventListener("change", () => set({ merge_into: other.value }));
+    card.append(other);
+    const name = document.createElement("input");
+    name.type = "text";
+    name.placeholder = "Your name for this axis";
+    name.addEventListener("input", () => set({ name: name.value }));
+    card.append(name);
+    container.append(card);
+  });
+  document.getElementById("export").addEventListener("click", () => {
+    const out = buildDecision({
+      run_id: review.run_id,
+      axes: review.axes,
+      choices: choices,
+      today: new Date().toISOString().slice(0, 10),
+    });
+    const url = URL.createObjectURL(new Blob([JSON.stringify(out, null, 2)], { type: "application/json" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "dimensions-decision.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+}
+</script>
+</body>
+</html>

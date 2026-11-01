@@ -19,7 +19,7 @@
 
 ## 4. Blind review
 
-- [ ] 4.1 Add `audio-lab dimensions-review` writing a self-contained page with no scores or suggested names, randomised ends and exported decisions; verify `tests/test_dimensions_review.py::test_page_has_no_scores_or_names`, `::test_page_is_self_contained`, `::test_order_is_fixed_by_run` and `::test_decision_file_is_validated`
+- [x] 4.1 Add `audio-lab dimensions-review` writing a self-contained page with no scores or suggested names, randomised ends and exported decisions; verify `tests/test_dimensions_review.py::test_page_has_no_scores_or_names`, `::test_page_is_self_contained`, `::test_order_is_fixed_by_run` and `::test_decision_file_is_validated`
 
 ## 5. Owner run and records
 

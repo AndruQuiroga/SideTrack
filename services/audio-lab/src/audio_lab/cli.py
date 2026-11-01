@@ -11,7 +11,9 @@ from pathlib import Path
 from . import gate as gate_lib
 from .adapters import ADAPTERS, get_adapter
 from .control import DEFAULT_GENRES, ControlUnavailable, deezer_fetch, write_control
-from .dimensions import DimensionsError, run_dimensions
+from .dimensions import DIMENSIONS_JSON, DimensionsError, run_dimensions
+from .dimensions_review import validate_decision
+from .dimensions_review import write_review as write_dimensions_review
 from .emotion import EmotionDataError, Scale, prepare_dataset
 from .gate_review import write_review
 from .mood import MoodError, mood_probe, predict_run
@@ -102,6 +104,20 @@ def _parser() -> argparse.ArgumentParser:
     )
     dims.add_argument("--vocabulary", type=Path, help="A term CSV; default is the packaged v1.")
     dims.add_argument("--device", default="cuda", help="For the text tower with --names.")
+
+    review = commands.add_parser(
+        "dimensions-review", help="Blind listening page for a dimensions run."
+    )
+    review.add_argument("dimensions_dir", type=Path, help="The --out of `dimensions`.")
+    review.add_argument("--manifest", type=Path, required=True)
+    review.add_argument("--audio-dir", type=Path, required=True)
+    review.add_argument("--out", type=Path, required=True, help="HTML page, outside the repo.")
+
+    decision = commands.add_parser(
+        "dimensions-decision", help="Check the dimensions-decision.json the page exported."
+    )
+    decision.add_argument("dimensions_dir", type=Path)
+    decision.add_argument("decision", type=Path)
 
     compare = commands.add_parser("parity", help="One model's vectors in two runs, per asset.")
     compare.add_argument("run_a", type=Path)
@@ -301,6 +317,27 @@ def main(argv: Sequence[str] | None = None) -> int:
             return 1
         print(json.dumps({k: result[k] for k in ("selection", "summary")}, indent=2))
         print(f"Wrote {args.out}")
+        return 0
+
+    if args.command == "dimensions-review":
+        try:
+            page = write_dimensions_review(
+                args.dimensions_dir, args.manifest, args.audio_dir, args.out
+            )
+        except (DimensionsError, OutputInRepo) as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+        print(f"Wrote {page}")
+        return 0
+
+    if args.command == "dimensions-decision":
+        try:
+            report = json.loads((args.dimensions_dir / DIMENSIONS_JSON).read_text("utf-8"))
+            summary = validate_decision(json.loads(args.decision.read_text("utf-8")), report)
+        except (DimensionsError, OSError, ValueError) as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+        print(json.dumps(summary, indent=2))
         return 0
 
     if args.command == "control-seeds":
