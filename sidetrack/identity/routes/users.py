@@ -108,10 +108,13 @@ async def update_user(
 ) -> UserRead:
     """Update the acting user's own fields (display_name, handle, listening_visibility)."""
 
-    if principal.actor != user_id:
+    # An admin may set only another user's timezone (identity/user-preferences).
+    updates = payload.model_dump(exclude_unset=True)
+    if principal.actor != user_id and not (
+        set(updates) == {"timezone"} and auth.is_admin(db, principal)
+    ):
         raise auth.forbidden("Users can change only their own profile.")
     user = _ensure_user_exists(db, user_id)
-    updates = payload.model_dump(exclude_unset=True)
     for field, value in updates.items():
         setattr(user, field, value)
     try:

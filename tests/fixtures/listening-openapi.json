@@ -1,0 +1,375 @@
+{
+ "paths": {
+  "/users/{user_id}/listening/sessions": {
+   "get": {
+    "operationId": "read_sessions_users__user_id__listening_sessions_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "user_id",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "User Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "schema": {
+       "default": 50,
+       "maximum": 200,
+       "minimum": 1,
+       "title": "Limit",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "offset",
+      "required": false,
+      "schema": {
+       "default": 0,
+       "minimum": 0,
+       "title": "Offset",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/ListenSessionRead"
+         },
+         "title": "Response Read Sessions Users  User Id  Listening Sessions Get",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Read Sessions",
+    "tags": [
+     "listening"
+    ]
+   }
+  },
+  "/users/{user_id}/listening/sessions/{session_id}/override": {
+   "delete": {
+    "operationId": "delete_override_users__user_id__listening_sessions__session_id__override_delete",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "user_id",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "User Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "session_id",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Session Id",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ListenSessionRead"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Delete Override",
+    "tags": [
+     "listening"
+    ]
+   },
+   "put": {
+    "operationId": "put_override_users__user_id__listening_sessions__session_id__override_put",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "user_id",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "User Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "session_id",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Session Id",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/OverrideWrite"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ListenSessionRead"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Put Override",
+    "tags": [
+     "listening"
+    ]
+   }
+  }
+ },
+ "schemas": {
+  "ListenSessionRead": {
+   "properties": {
+    "effective_kind": {
+     "title": "Effective Kind",
+     "type": "string"
+    },
+    "ended_at": {
+     "format": "date-time",
+     "title": "Ended At",
+     "type": "string"
+    },
+    "id": {
+     "format": "uuid",
+     "title": "Id",
+     "type": "string"
+    },
+    "kind": {
+     "title": "Kind",
+     "type": "string"
+    },
+    "listen_count": {
+     "title": "Listen Count",
+     "type": "integer"
+    },
+    "override": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "title": "Override"
+    },
+    "rule_version": {
+     "title": "Rule Version",
+     "type": "string"
+    },
+    "started_at": {
+     "format": "date-time",
+     "title": "Started At",
+     "type": "string"
+    }
+   },
+   "required": [
+    "id",
+    "started_at",
+    "ended_at",
+    "listen_count",
+    "kind",
+    "rule_version",
+    "override",
+    "effective_kind"
+   ],
+   "title": "ListenSessionRead",
+   "type": "object"
+  },
+  "OverrideWrite": {
+   "properties": {
+    "override": {
+     "enum": [
+      "keep",
+      "autoplay"
+     ],
+     "title": "Override",
+     "type": "string"
+    }
+   },
+   "required": [
+    "override"
+   ],
+   "title": "OverrideWrite",
+   "type": "object"
+  },
+  "UserRead": {
+   "properties": {
+    "created_at": {
+     "format": "date-time",
+     "title": "Created At",
+     "type": "string"
+    },
+    "display_name": {
+     "title": "Display Name",
+     "type": "string"
+    },
+    "handle": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "title": "Handle"
+    },
+    "id": {
+     "format": "uuid",
+     "title": "Id",
+     "type": "string"
+    },
+    "listening_visibility": {
+     "allOf": [
+      {
+       "$ref": "#/components/schemas/ListeningVisibility"
+      }
+     ],
+     "default": "private"
+    },
+    "timezone": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "title": "Timezone"
+    },
+    "updated_at": {
+     "format": "date-time",
+     "title": "Updated At",
+     "type": "string"
+    }
+   },
+   "required": [
+    "display_name",
+    "id",
+    "created_at",
+    "updated_at"
+   ],
+   "title": "UserRead",
+   "type": "object"
+  },
+  "UserUpdate": {
+   "properties": {
+    "display_name": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "title": "Display Name"
+    },
+    "handle": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "title": "Handle"
+    },
+    "listening_visibility": {
+     "anyOf": [
+      {
+       "$ref": "#/components/schemas/ListeningVisibility"
+      },
+      {
+       "type": "null"
+      }
+     ]
+    },
+    "timezone": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "title": "Timezone"
+    }
+   },
+   "title": "UserUpdate",
+   "type": "object"
+  }
+ }
+}

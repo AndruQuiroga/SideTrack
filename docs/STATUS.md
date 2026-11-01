@@ -29,7 +29,7 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 | Last.fm scrobble import | partial | Durable per-account checkpoints and duplicate-safe retries; newest 200 only, no backfill; unresolved/album-less records can be dropped | `tests/test_import_checkpoints.py`, `services/api/tests/test_jobs.py` |
 | Listen storage | works | listen_events.source matches the database enum, and the listen-event routes return stored rows with metadata. Before 2026-10-25 every listen insert failed on Postgres; before 2026-10-26 every listen-event response returned 500 | `services/api/tests/test_migrations.py`, `services/api/tests/test_listen_events.py` |
 | Spotify listen sync | absent | Legacy sync worker retired in Phase 2; Spotify remains metadata-only (ADR 0003) |  |
-| ListenBrainz import | absent |  |  |
+| ListenBrainz import | partial | Operator-started API backfill, sync and export import with sessions, autoplay review, coverage and a user timezone. A rehearsal on a throwaway database stored 74,907 of the owner's 74,928 listens with the real worker on 2026-10-31. Production hasn't been migrated or imported yet. | `docs/LISTENING.md`, `tests/test_listenbrainz_jobs.py`, `tests/test_listenbrainz_store.py`, `tests/test_listen_sessions.py` |
 | MusicBrainz resolution | partial | Per-scrobble web API calls inside imports; attempts share a global Postgres pacing lock, including HTTP retries |  |
 
 ## Analysis
@@ -79,7 +79,7 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 - `add-library-text-search`: 0/20 tasks
 - `add-listening-journey`: 0/19 tasks
 - `add-listening-visuals`: 0/5 tasks
-- `add-mood-probe-benchmark`: 8/11 tasks
+- `add-mood-probe-benchmark`: 9/11 tasks
 - `add-music-analysis-evaluation-protocol`: 0/19 tasks
 - `add-share-consent`: 0/20 tasks
 - `add-sound-bridge`: 0/14 tasks
@@ -93,7 +93,7 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 - `add-weekly-listening-profile`: 0/4 tasks
 - `automate-database-backups`: 9/13 tasks
 - `explore-lyrics-and-captioning`: 0/11 tasks
-- `import-listenbrainz-history`: 0/21 tasks
+- `import-listenbrainz-history`: 19/21 tasks
 - `resolve-listens-to-audio`: 0/12 tasks
 
 ### Specs
@@ -131,7 +131,7 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 
 ### Migration head
 
-`0012_artwork_recovery`
+`0013_listenbrainz_import`
 
 ### API routes
 
@@ -186,6 +186,9 @@ GET /users/{user_id}/linked-accounts
 POST /users/{user_id}/linked-accounts
 DELETE /users/{user_id}/linked-accounts/{provider}/{provider_user_id}
 GET /users/{user_id}/listening/recent
+GET /users/{user_id}/listening/sessions
+DELETE /users/{user_id}/listening/sessions/{session_id}/override
+PUT /users/{user_id}/listening/sessions/{session_id}/override
 GET /users/{user_id}/taste-profiles/
 POST /users/{user_id}/taste-profiles/recompute
 GET /votes

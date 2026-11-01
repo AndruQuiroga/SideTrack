@@ -4,11 +4,20 @@ import importlib
 from uuid import uuid4
 
 import pytest
+from listenbrainz_doubles import Listens, backfill, listen
 from sqlalchemy import delete, func, select
 
 from sidetrack.catalog import Album, Track
-from sidetrack.identity import User
-from sidetrack.listening import ImportCheckpoint, ListenEvent, ingest_lastfm
+from sidetrack.identity import LinkedAccount, User
+from sidetrack.listening import (
+    ImportCheckpoint,
+    ImportUnavailable,
+    ListenEvent,
+    ListenSession,
+    ingest_lastfm,
+    ingest_listenbrainz,
+)
+from sidetrack.types import ProviderType
 
 
 @pytest.fixture
@@ -133,3 +142,62 @@ def test_concurrent_overlapping_imports(engine, monkeypatch):
         with engine.begin() as conn:
             conn.execute(delete(User).where(User.id == user_id))
             conn.execute(delete(Album).where(Album.id == album_id))
+
+
+def _linked(db, name):
+    user = User(display_name=name)
+    db.add(user)
+    db.flush()
+    db.add(
+        LinkedAccount(user_id=user.id, provider=ProviderType.LISTENBRAINZ, provider_user_id=name)
+    )
+    db.flush()
+    return user
+
+
+def test_listenbrainz_backward_pages_never_lower_the_checkpoint(db):
+    user = _linked(db, "backward")
+    source = Listens([listen(1000 + index, title=f"Song {index}") for index in range(25)])
+    backfill(db, user.id, source, page_size=10)
+    assert db.get(ImportCheckpoint, (user.id, "listenbrainz", "backward")).last_ts == 1024
+
+
+def test_listenbrainz_backfill_after_sync_keeps_the_newest(db):
+    user = _linked(db, "aftersync")
+    db.add(
+        ImportCheckpoint(
+            user_id=user.id, provider="listenbrainz", account="aftersync", last_ts=5000
+        )
+    )
+    db.flush()
+    backfill(db, user.id, Listens([listen(1000)]))
+    assert db.get(ImportCheckpoint, (user.id, "listenbrainz", "aftersync")).last_ts == 5000
+
+
+def test_two_providers_keep_their_own_checkpoints(db, recording, monkeypatch):
+    user, *_ = recording
+    db.add(
+        LinkedAccount(user_id=user.id, provider=ProviderType.LISTENBRAINZ, provider_user_id="two")
+    )
+    db.flush()
+    ingest_lastfm(db, user_id=user.id, lastfm_username="listener")
+    backfill(db, user.id, Listens([listen(1000)]))
+    assert db.get(ImportCheckpoint, (user.id, "lastfm", "listener")).last_ts == 1792886400
+    assert db.get(ImportCheckpoint, (user.id, "listenbrainz", "two")).last_ts == 1000
+
+
+def test_listenbrainz_overlapping_imports_do_not_regress(db):
+    user = _linked(db, "overlap")
+    source = Listens([listen(1000 + index, title=f"Song {index}") for index in range(5)])
+    backfill(db, user.id, source)
+    again = backfill(db, user.id, source)
+    assert (again["stored"], again["duplicate"]) == (0, 5)
+    assert db.get(ImportCheckpoint, (user.id, "listenbrainz", "overlap")).last_ts == 1004
+
+
+def test_listenbrainz_import_for_a_deleted_user_creates_nothing(db):
+    missing = uuid4()
+    with pytest.raises(ImportUnavailable, match="user_unavailable"):
+        ingest_listenbrainz(db, user_id=missing, fetch=Listens([listen(1000)]))
+    assert db.scalar(select(func.count()).select_from(ListenSession)) == 0
+    assert db.get(ImportCheckpoint, (missing, "listenbrainz", "gone")) is None

@@ -142,3 +142,11 @@ code with a test sender, restarts the API, and checks Linux SIGTERM completion.
 It also drains new work, serves reads through the previous image using the
 rollback command, and returns to the new image with job results intact.
 Its containers/network and the test database are removed afterward.
+
+## ListenBrainz import
+
+`listening.ingest_listenbrainz` runs on `default` with a 600 s limit. A backfill is a chain of
+page jobs: each commits one page and queues the next, recording `next_job_id` in its result.
+An interrupted chain keeps its committed pages, and a repeat starts from the newest listen and
+skips what's stored. The optional hourly sync is a `job_schedules` row with no due time until
+the operator enables it. Commands and counts are in `docs/LISTENING.md`.

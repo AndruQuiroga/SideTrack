@@ -7,6 +7,7 @@ from .artwork import (
     write_album_artwork,
 )
 from .historical import ensure_historical_album, find_historical_album
+from .identity import resolve_track_identity
 from .metadata import (
     enrich_album,
     resolve_album,
@@ -27,5 +28,6 @@ __all__ = [
     "enrich_album",
     "resolve_album",
     "resolve_listen_track",
+    "resolve_track_identity",
     "upsert_album_from_release_group",
 ]
