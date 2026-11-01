@@ -126,7 +126,7 @@ groups:
           - docs/AUDIO.md
       - capability: Audio feature extraction
         status: partial
-        notes: "services/audio-lab benchmark CLI (ADR 0004) embeds acquired audio into versioned Parquet runs with a blind-duel report, automatic neighbour metrics and duel scoring; plus a seed builder for ListenBrainz exports and a Deezer genre control set. Benchmark only, not integrated into Sidetrack (docs/AUDIO-BENCHMARK.md)"
+        notes: "services/audio-lab benchmark CLI (ADR 0004) embeds acquired audio into versioned Parquet runs with a blind-duel report, automatic neighbour metrics and duel scoring; plus a seed builder for ListenBrainz exports and a Deezer genre control set. `dimensions` finds a listener's own sound dimensions; six stable axes on the owner's 233 tracks were named by blind listening on 2026-11-01. Benchmark only, not integrated into Sidetrack (docs/AUDIO-BENCHMARK.md)"
         evidence:
           - services/audio-lab/tests/test_runs.py
           - services/audio-lab/tests/test_neighbours.py
