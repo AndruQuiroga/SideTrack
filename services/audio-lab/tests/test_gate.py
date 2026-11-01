@@ -248,3 +248,136 @@ def test_accepted_duplicate_needs_a_reason():
     assert gate.check_record(record)["status"] == "incomplete"
     record["accepted_leakage"] = [{"key": "h1", "reason": "owner: same file, kept in both"}]
     assert gate.check_record(record)["status"] == "complete"
+
+
+def test_neighbour_requires_random_control():
+    record = neighbours()
+    del record["neighbours"]["random_control"]
+    result = gate.check_record(record)
+    assert result["status"] == "incomplete"
+    assert result["missing"] == ["random_control"]
+
+
+def test_neighbour_requires_recent_or_frequent_baseline():
+    record = neighbours()
+    del record["neighbours"]["recent_or_frequent_baseline"]
+    assert gate.check_record(record)["missing"] == ["recent_or_frequent_baseline"]
+
+
+def test_neighbour_judgments_must_be_blind():
+    record = neighbours()
+    record["neighbours"]["pairwise_judgments"]["blind"] = False
+    assert gate.check_record(record)["missing"] == ["pairwise_judgments"]
+
+
+def test_preview_counted_as_same_recording():
+    record = neighbours()
+    record["neighbours"]["judgments"].append(
+        {"seed": "s1", "neighbour": "s1-preview", "verdict": "similar", "is_seed_preview": True}
+    )
+    derived = gate.check_record(record)["derived"]
+    assert derived["same_recording"] == 1
+    # The preview is not a correct "sounds similar" neighbour: 1 of the other 2.
+    assert derived["judged_for_similarity"] == 2
+    assert derived["similar_precision"] == 0.5
+
+
+def test_version_of_seed_counted_as_same_recording():
+    record = neighbours()
+    record["neighbours"]["judgments"].append(
+        {"seed": "s1", "neighbour": "n9", "verdict": "similar", "is_version_of_seed": True}
+    )
+    assert gate.check_record(record)["derived"]["same_recording"] == 1
+
+
+def test_single_prompt_incomplete():
+    record = text_label()
+    record["text_label"]["prompt_variants"]["calm"] = ["calm music"]
+    result = gate.check_record(record)
+    assert result["status"] == "incomplete"
+    assert result["missing"] == ["prompt_variants"]
+
+
+@pytest.mark.parametrize("task", ["text_label", "neighbours"])
+def test_similarity_called_confidence(task):
+    record = BUILDERS[task]()
+    record["claim_wording"] = "Matches the theme with 80% confidence"
+    result = gate.check_record(record)
+    assert result["status"] == "incomplete"
+    assert result["missing"] == ["uncalibrated_confidence"]
+
+
+def test_text_label_requires_hard_negatives_and_abstention():
+    record = text_label()
+    del record["text_label"]["hard_negatives"]
+    record["text_label"]["abstention"] = {"supported": False}
+    assert set(gate.check_record(record)["missing"]) == {"hard_negatives", "abstention"}
+
+
+def test_mood_requires_both_axes():
+    record = mood()
+    del record["mood"]["axes"]["arousal"]
+    result = gate.check_record(record)
+    assert result["status"] == "incomplete"
+    assert result["missing"] == ["arousal"]
+
+
+def test_mood_requires_baseline_ranking_and_calibration():
+    record = mood()
+    for name in ("mean_only_baseline_r2", "rank_correlation", "calibration_coverage"):
+        del record["mood"]["axes"]["valence"][name]
+    assert set(gate.check_record(record)["missing"]) == {
+        "valence.mean_only_baseline_r2",
+        "valence.rank_correlation",
+        "valence.calibration_coverage",
+    }
+
+
+def test_axis_correlation_warning():
+    record = mood()
+    record["mood"]["axis_correlation"] = {"predicted_library": 0.92, "human": 0.57}
+    result = gate.check_record(record)
+    assert result["status"] == "complete"
+    assert any("may not be distinguished" in w for w in result["warnings"])
+    summary = gate.summarize(record)
+    assert any("0.92" in w and "0.57" in w for w in summary["warnings"])
+
+
+def test_low_axis_correlation_has_no_warning():
+    assert not any("distinguished" in w for w in gate.check_record(mood())["warnings"])
+
+
+def test_timing_requires_tolerance():
+    record = timing()
+    del record["timing"]["tolerance_s"]
+    result = gate.check_record(record)
+    assert result["status"] == "incomplete"
+    assert result["missing"] == ["tolerance_s"]
+
+
+def test_timing_reports_boundary_and_label_accuracy_separately():
+    record = timing()
+    del record["timing"]["label_accuracy"]
+    assert gate.check_record(record)["missing"] == ["label_accuracy"]
+
+
+def test_tempo_requires_half_double_agreement():
+    record = timing()
+    del record["timing"]["half_double_tempo_agreement"]
+    assert gate.check_record(record)["missing"] == ["half_double_tempo_agreement"]
+
+
+def test_drop_label_unsupported():
+    record = timing()
+    record["claim_wording"] = "Marks the drop in electronic tracks"
+    result = gate.check_record(record)
+    assert result["status"] == "incomplete"
+    assert result["missing"] == ["unsupported_label"]
+    record["timing"]["reference_classes"].append("drop")
+    assert gate.check_record(record)["status"] == "complete"
+
+
+def test_eras_never_interpolate_missing_periods():
+    record = eras()
+    record["eras"]["interpolated_periods"] = 1
+    assert gate.check_record(record)["missing"] == ["interpolated_periods"]
