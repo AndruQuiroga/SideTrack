@@ -6,7 +6,7 @@ Every feature in `docs/PRODUCT-VISION.md` (weekly mood and themes, the baseline 
 you", comfort against exploring, the listening clock, compatibility) reads the owner's
 listening history, and that history is a ListenBrainz export on the owner's disk: 74,826
 listens from 2019 to 2026 that Sidetrack's database has never seen. Until the history is in
-Postgres, with its sessions and sleep-tab autoplay told apart from chosen plays, nothing
+Postgres, with its sessions and sleep-tab autoplay flagged for review, nothing
 downstream can be built honestly.
 
 ## What Changes
@@ -21,10 +21,16 @@ downstream can be built honestly.
   uploads are split as the benchmark seeds already do. Import never calls the MusicBrainz web
   API per listen. A listen whose release is unknown is still stored: the catalog gains
   tracks without an album rather than dropping the play.
-- **Sessions and autoplay.** Listens are grouped into sessions (a gap of 30 minutes starts a
-  new one). A session that starts late at night, runs for an hour or more and holds 12 or
-  more listens is flagged `night_autoplay`; everything else is `active`. The flags are the
-  only way later changes separate chosen plays from the service's choices.
+- **Sessions and autoplay.** Listens are grouped into sessions, with a gap of 30 minutes
+  starting a new one. A session that starts late at night, runs for an hour or more and
+  holds 12 or more listens is flagged `night_autoplay`; everything else is `unclassified`.
+  The flag is a heuristic, not evidence of sleep or intent. The user can review any
+  session and set or clear a `keep`/`autoplay` override. Later changes read the
+  *effective* classification and disclose what they exclude (research notes §4 and §6.1).
+- **Provenance and coverage.** Each listen records its import run and path (API or
+  export), with times stored in UTC. Each account records the earliest and latest
+  imported time, so downstream features can tell "not imported" from "no listening".
+  Retrying a failed import is safe.
 - **A timezone per user.** Night detection, weekly boundaries and the listening clock need
   the user's local time. Users get an IANA `timezone` that the owner sets through the
   existing user update route; without it, sessions are still built but no night flag is set
@@ -48,8 +54,8 @@ Out of scope:
 - `listening/listenbrainz-import`: importing a user's ListenBrainz listens (API backfill,
   incremental sync, export files), how listens are normalised and resolved, and what the
   import reports.
-- `listening/listen-sessions`: grouping listens into sessions and flagging night autoplay,
-  so downstream features can tell chosen plays from the service's choices.
+- `listening/listen-sessions`: grouping listens into sessions, flagging likely night
+  autoplay by a versioned heuristic, and letting users review and reverse the flag.
 - `identity/user-preferences`: per-user preferences that other domains read, starting with
   the IANA timezone.
 

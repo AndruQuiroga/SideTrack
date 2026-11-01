@@ -7,7 +7,7 @@ Sidetrack now has two halves of the picture that never touch: 862 embedded audio
 Not one production asset is linked to a catalog track, because `import-manifest` drops
 track links by design. Until a play can be traced to the audio it was a play of, no
 profile, visual or compatibility score can weight sound by listening, and no honest
-coverage figure ("71% of this week's chosen plays have audio") can be shown.
+coverage figure ("71% of this week's included plays have audio") can be shown.
 
 ## What Changes
 
@@ -19,13 +19,17 @@ coverage figure ("71% of this week's chosen plays have audio") can be shown.
   recording MBID on both sides; the YouTube video IDs recorded on a track's listens against
   the asset's YouTube source reference; and the asset's seed artist and title against the
   track's normalised artist and title. It never fetches, never embeds, never guesses on
-  partial matches, and reports every count.
+  partial matches, and reports every count. Each link keeps the evidence it matched on.
+  When one key fits several tracks or assets, the links are marked `ambiguous` and not
+  resolved silently. Operators can reject or confirm links, and corrections survive reruns.
+  Sonic similarity never creates a link (research notes §6.2).
 - **Audio-for-track read model.** A public analysis operation returns the preferred asset for
   a track (full over preview, confirmed over unverified, embedded over not) and says plainly
   when a track has none.
-- **Coverage report.** For a user and period, the share of plays, and of chosen plays, that
-  resolve to an asset with a current embedding, broken down by why the rest don't
-  (`no_link`, `no_embedding`, `file_missing`). Downstream features must show this number.
+- **Coverage report.** For a user and period, the share of plays, and of included plays
+  (effective session classification not autoplay), that resolve to an asset with a current
+  embedding, broken down by why the rest don't (`no_link`, `ambiguous`, `no_embedding`,
+  `file_missing`). Downstream features must show this number.
 - **Operator command** `python -m sidetrack.audio link` runs the matcher and prints the
   report; an optional job lets it run on the rack after imports.
 

@@ -80,6 +80,31 @@ Each import result SHALL report counts of listens `fetched`, `stored`, `duplicat
 - **WHEN** a backfill fetches 2,500 listens of which 2,480 are stored, 15 are duplicates and 5 lack an artist or title
 - **THEN** the result reports `fetched: 2500`, `stored: 2480`, `duplicate: 15`, `skipped: 5` with reason `missing_metadata`, the request count and the earliest and latest played times
 
+### Requirement: Imported listens keep provenance and times in UTC
+Each stored listen SHALL record the import run that stored it and its path (`api` or `export`). Played times SHALL be stored in UTC. Local-time interpretation SHALL happen when downstream features compute, using the user's current timezone, and SHALL never be fixed at import.
+
+#### Scenario: Provenance
+- **WHEN** a listen is stored by an export import
+- **THEN** its row records the import run ID and path `export`, and its played time is in UTC
+
+### Requirement: Imported coverage distinguishes absent history from silence
+For each linked account, the system SHALL record the earliest and latest played time covered by completed imports. Downstream reads SHALL be able to tell a period outside imported coverage (`not_imported`) from a covered period with no listens.
+
+#### Scenario: Before the first import
+- **WHEN** imports cover 2019-03-01 to 2026-10-31 and a feature asks about 2018
+- **THEN** the coverage read reports 2018 as `not_imported`, not as zero listening
+
+#### Scenario: Covered quiet week
+- **WHEN** a covered week has no listens
+- **THEN** the coverage read reports it as covered with zero listens
+
+### Requirement: Failed imports can be retried safely
+Retrying a failed or interrupted import SHALL store each listen at most once. It SHALL NOT advance the checkpoint or coverage past committed listens, and SHALL report the retried run separately from the failed run.
+
+#### Scenario: Retry after failure
+- **WHEN** a backfill fails on page 3 and is retried
+- **THEN** listens from pages 1–2 are reported as `duplicate`, the rest are stored once, and coverage ends at the newest committed listen
+
 ### Requirement: Import is operator-started and rate-respecting
 Backfills and syncs SHALL be queued by the operator command or a persisted schedule the operator enables, never by a web page or bot command. The client SHALL honour ListenBrainz's rate-limit headers by waiting until the reset time when the remaining allowance is exhausted.
 

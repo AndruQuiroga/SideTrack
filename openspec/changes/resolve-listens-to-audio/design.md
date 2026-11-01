@@ -65,19 +65,21 @@ recordings for the profile's purposes until recognition says otherwise.
 
 ### Decision 3: Preferred asset is a sort, not a flag
 
-`audio_for_track(db, track_id)` orders linked assets by `(kind = 'full', verification =
-'confirmed', has current embedding, confidence DESC, fetched_at DESC)` and returns the first,
-with `status` in `ok | no_audio | no_embedding`. No "primary" flag is stored, so a new
-embedding or a pruned file changes the answer without a write.
+`audio_for_track(db, track_id)` ignores rejected links, reports `ambiguous` with candidates
+when only ambiguous links remain, and otherwise orders linked assets by `(kind = 'full',
+verification = 'confirmed', has current embedding, confidence DESC, fetched_at DESC)` and
+returns the first, with `status` in `ok | no_audio | ambiguous | no_embedding`. No
+"primary" flag is stored, so a new embedding or a pruned file changes the answer without a
+write.
 
 ### Decision 4: Coverage joins plays to sessions and links
 
-`audio_coverage(db, user_id, start, end)` counts plays in the range, chosen plays (session
-kind `active` or `unknown`; `night_autoplay` excluded), and for chosen and all plays the
-number whose track has a preferred asset with status `ok`; the rest are bucketed by the
-preferred asset's status (`no_link` when no links, `no_embedding`, `file_missing` when the
-only linked assets are pruned). It returns counts; callers derive shares. This is the
-number the weekly profile and every chart must print.
+`audio_coverage(db, user_id, start, end)` counts plays in the range, included plays
+(session `effective_kind` is not autoplay; `unclassified` and `unknown` are included), and
+for included and all plays the number whose track has a preferred asset with status `ok`;
+the rest are bucketed by status (`no_link` when no links, `ambiguous`, `no_embedding`,
+`file_missing` when the only linked assets are pruned). It returns counts; callers derive
+shares. This is the number the weekly profile and every chart must print.
 
 ### Decision 5: Operator command, optional job
 
@@ -87,11 +89,25 @@ rack can run it after a ListenBrainz sync. `python -m sidetrack.audio coverage -
 --weeks 4` prints coverage. `link --manual <track-id> <asset-id>` writes a `manual` link.
 Nothing schedules linking in this change; the ListenBrainz sync schedule can chain it later.
 
+### Decision 6: Evidence, ambiguity and corrections
+
+Each link stores `evidence jsonb` (`{"recording_mbid": ...}`, `{"youtube_id": ...}` or
+`{"key": "artist|title"}`) and an `ambiguous` boolean. After the seed-identity pass, any
+key that joined more than one track, or more than one asset of the same `kind`, marks those
+links ambiguous. Normalised artist and title cannot tell album, live and remastered
+versions apart (research notes §6.2), so the system surfaces this instead of picking.
+`track_audio_link_corrections(track_id, asset_id, action in reject|confirm, note,
+created_at)` is read by every matcher run: rejected pairs are never re-inserted, and
+confirmed pairs clear `ambiguous`. Operator commands: `link --reject <track> <asset>` and
+`link --confirm <track> <asset>`. Embedding similarity is not a matcher and never will be
+in this table; recognition belongs to `add-muq-recognition` and `add-version-discovery`,
+which propose rather than link.
+
 ## Risks / Trade-offs
 
 - [Seed identity matches a wrong track with the same artist and title (a different
-  version)] → Confidence 0.9 marks it; recognition later can demote it. The owner's seed
-  list used the same keys, so these are the tracks the seeds were built from.
+  version)] → Such links are marked `ambiguous` when the key is shared, keep their evidence,
+  and can be rejected (Decision 6).
 - [Normaliser drift between import and matcher] → Both import the same functions; a test
   links a fixture through both paths.
 - [Coverage is low at first] → That is the honest number. The report's `no_link` list is

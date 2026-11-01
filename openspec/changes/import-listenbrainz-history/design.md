@@ -114,7 +114,7 @@ stable key for a listen and lets a later change fetch feedback or mappings for i
 ### Decision 6: Sessions are a listening-owned table, rebuilt from the first new listen
 
 `listen_sessions(id, user_id, started_at, ended_at, listen_count, kind, rule_version,
-computed_at)` with `kind` in `active | night_autoplay | unknown`, and
+computed_at)` with `kind` in `unclassified | night_autoplay | unknown`, and
 `listen_events.session_id` (nullable, `ON DELETE SET NULL`). `sessionize(db, user_id,
 since=None)` deletes sessions that end within 30 minutes before `since` or later, and
 rebuilds forward from the listens, so an import that stored listens touching the last
@@ -145,6 +145,28 @@ operator's machine (the export is on their disk), committing per file; `sessioni
 in-process. An optional persisted schedule, `listening.ingest_listenbrainz` in sync mode
 every hour per linked account, is defined but disabled until the operator enables it.
 
+### Decision 9: Autoplay flags are reviewable heuristics
+
+The earlier draft named the non-flagged kind `active`. That implied deliberate listening,
+which the rule cannot establish, so the kind is now `unclassified`. Overrides live in
+`listen_session_overrides(user_id, started_at, ended_at, override in keep|autoplay,
+set_at)`, keyed by session boundaries rather than session ID, so they survive rebuilds
+while the boundaries are unchanged. `sessionize` re-applies matching overrides and reports
+unmatched ones as `override_orphaned`. Routes: `GET /users/{id}/listening/sessions` and
+`PUT|DELETE /users/{id}/listening/sessions/{session_id}/override`, self-only.
+Downstream changes read `effective_kind`. See research notes §4 ("Self-report and
+autoplay cautions") and §6.1.
+
+### Decision 10: Provenance, UTC and import coverage
+
+`listen_events.import_run_id` references a new `listening_import_runs(id, user_id,
+provider, account, path in api|export, started_at, finished_at, outcome, counts json)`.
+`played_at` stays `timestamptz`, stored in UTC; nothing converts to local time at import.
+`import_coverage(user_id, provider, account, earliest_played_at, latest_played_at)` is
+advanced in the same transaction as committed listens. Coverage is contiguous by
+construction, because backfill pages walk backwards without gaps and sync walks forwards
+from the checkpoint. A retry is a new run; duplicates are counted, not stored.
+
 ## Risks / Trade-offs
 
 - [ListenBrainz API shape or limits differ from the assumption] → Task 1.1 checks the live
@@ -152,8 +174,9 @@ every hour per linked account, is defined but disabled until the operator enable
 - [Catalog grows by about 15,000 album-less tracks] → They are real tracks the user played;
   search already handles missing albums. The expression index keeps resolution a lookup.
 - [Night rule misfires on genuine late listening] → It is the rule the owner validated on
-  the benchmark seeds (36 sleep seeds, purity 0.63), and the flag is advisory: profiles
-  exclude `night_autoplay` by default and can show it separately. The rule is versioned.
+  the   benchmark seeds (36 sleep seeds, purity 0.63), and the flag is advisory. Users can review
+  and override it (Decision 9), profiles disclose how many plays they excluded, and the rule
+  is versioned.
 - [A sync and a backfill job overlap for one account] → The advisory lock serialises them;
   duplicates are skipped either way.
 - [Nullable album breaks a reader] → `grep` for `.album.` shows one reader, already

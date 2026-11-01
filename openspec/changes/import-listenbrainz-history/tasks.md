@@ -21,6 +21,7 @@
 - [ ] 4.2 Add the ListenBrainz client in `sidetrack/external/listenbrainz.py` (public listens, `count`, `max_ts`, `min_ts`, rate-limit header handling that sleeps until reset); verify `tests/test_listenbrainz_client.py` with a stubbed HTTP transport covers paging and the rate-limit scenario
 - [ ] 4.3 Add `store_listens()` (per-account advisory lock, user-unavailable outcome, `ON CONFLICT DO NOTHING`, curated metadata, exact counts with `skipped` reasons and without-release count, time range); verify `tests/test_listenbrainz_store.py` on Postgres covers stored, duplicate, skipped, Last.fm-overlap and user-deleted scenarios
 - [ ] 4.4 Add the export reader for `listens/*.jsonl`; verify `tests/test_listenbrainz_export.py` shows export and API records for the same listen produce one identical row whichever runs first, and that the export path never appears in the result
+- [ ] 4.5 Add `listening_import_runs`, `listen_events.import_run_id` and `import_coverage`, advanced transactionally; verify `tests/test_listenbrainz_store.py` covers the provenance, before-the-first-import, covered-quiet-week and retry-after-failure scenarios
 
 ## 5. Jobs and checkpoints
 
@@ -32,6 +33,7 @@
 
 - [ ] 6.1 Add the `ListenSession` model and `listening.sessionize(db, user_id, since=None)` with the 30-minute gap, the `night-v1` rule, `unknown` without a timezone and deterministic rebuild; verify `tests/test_listen_sessions.py` covers gap splitting, extension of the last session, the sleep-tab, short-late and long-evening sessions, timezone missing then set, stable rebuild and user deletion
 - [ ] 6.2 Call `sessionize` from the import job for the stored time range; verify `tests/test_listenbrainz_jobs.py::test_import_extends_sessions` shows a sync extending the latest session
+- [ ] 6.3 Add `listen_session_overrides`, override re-application in `sessionize`, and the self-only session list and override routes; verify `tests/test_listen_sessions.py` covers keep-a-flagged-session, clear-an-override and rebuild-changes-boundaries, and `services/api/tests/test_session_overrides.py` covers the self-only policy
 
 ## 7. Operator command and docs
 
@@ -43,4 +45,4 @@
 ## Workflow follow-up
 
 - Archive the change once every scenario has a passing test.
-- `resolve-listens-to-audio` depends on this change's imported tracks and `night_autoplay` flags.
+- `resolve-listens-to-audio` depends on this change's imported tracks and session classifications; `add-weekly-listening-profile` reads the effective classification and import coverage.
