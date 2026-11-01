@@ -24,7 +24,7 @@ coverage figure ("71% of this week's included plays have audio") can be shown.
   resolved silently. Operators can reject or confirm links, and corrections survive reruns.
   Sonic similarity never creates a link (research notes §6.2).
 - **Audio-for-track read model.** A public analysis operation returns the preferred asset for
-  a track (full over preview, confirmed over unverified, embedded over not) and says plainly
+  a track (embedded over not, then full over preview, then confirmed over unverified) and says plainly
   when a track has none.
 - **Coverage report.** For a user and period, the share of plays, and of included plays
   (effective session classification not autoplay), that resolve to an asset with a current
@@ -34,6 +34,7 @@ coverage figure ("71% of this week's included plays have audio") can be shown.
   report; an optional job lets it run on the rack after imports.
 
 Out of scope:
+
 - Merging edits and versions of one recording (slowed, sped-up, remixes) by audio
   recognition. MuQ-MuLan's preview→full recall@1 is 0.66; MuQ's 0.96 makes it the model for
   that, and ADR 0010 reserves adding MuQ for the first recognition feature. That is a
@@ -46,16 +47,19 @@ Out of scope:
 ## Capabilities
 
 ### New Capabilities
+
 - `analysis/listen-audio-resolution`: how catalog tracks are linked to audio assets, which
   asset represents a track, and how audio coverage of a user's plays is reported.
 
 ### Modified Capabilities
+
 None. `analysis/audio-assets` and `analysis/audio-embeddings` are unchanged; this change
 reads them.
 
 ## Impact
 
 Current state:
+
 - **Observed:** `audio_assets.track_id` is nullable and `import-manifest` "drops catalog
   track links, which belong to the other database" (docs/AUDIO.md); the production assets
   were imported that way (docs/STATUS.md, "862 assets were imported to production on
@@ -73,6 +77,7 @@ Current state:
   (`audio_lab/seeds.py`); task 4.1 measures the real match rate.
 
 Affected:
+
 - `sidetrack/analysis/` (new `links` module, read models, `link` subcommand in
   `sidetrack/audio.py`), `sidetrack/job_runner.py` for the optional job, `migrations/` (0014).
 - Docs: `docs/AUDIO.md` (link command, coverage), `docs/MODULES.md` (new table),
