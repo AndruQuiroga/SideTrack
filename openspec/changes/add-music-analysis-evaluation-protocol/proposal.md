@@ -5,7 +5,7 @@
 Sidetrack is about to turn audio embeddings into claims a person reads about their own
 music (mood, themes, neighbours, eras), and the research notes show how easily such claims
 outrun their evidence: the mood probe's DEAM scores were not artist-grouped, its two axes
-correlate at 0.92 on the owner's library, and the owner's listening check is still pending
+correlate at 0.88 on the owner's library, and the owner's listening check is still pending
 (docs/research/MUSIC-ANALYSIS-RESEARCH-NOTES.md, section 3). The project has a benchmark
 for choosing an embedding model, but no rule for when *any* analysis result is good enough
 to show a user. This change writes that rule down, with the evaluation-data rights it

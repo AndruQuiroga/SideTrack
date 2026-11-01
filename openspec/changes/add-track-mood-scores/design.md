@@ -6,7 +6,7 @@ See proposal.md and `docs/research/MUSIC-ANALYSIS-RESEARCH-NOTES.md` §3, includ
 
 Observed facts:
 - DEAM splits were not artist-grouped, so the absolute R² may be flattering.
-- Human valence and arousal ratings correlate at 0.57, held-out predictions at 0.83, and predictions on the owner's library at 0.92.
+- Human valence and arousal ratings correlate at 0.57, held-out predictions at 0.83, and predictions on the owner's library at 0.88.
 - The owner's library is mostly electronic and bass music, unlike DEAM.
 
 ## Goals / Non-Goals
@@ -34,7 +34,7 @@ Observed facts:
 ## Risks / Trade-offs
 
 - **DEAM shift to bass music.** Mitigated by the owner gate, user-relative percentiles and out-of-domain examples in the evaluation record. Never make absolute claims.
-- **Valence and arousal correlate at 0.92 on this library.** This is recorded on the probe. Visuals label the diagonal, and the two axes must not be presented as independent findings.
+- **Valence and arousal correlate at 0.88 on this library.** This is recorded on the probe. Visuals label the diagonal, and the two axes must not be presented as independent findings.
 - **Non-grouped splits inflate metrics.** This is recorded via `artist_grouped=false`. Re-run with grouped splits when artist metadata exists.
 - **First-180-s embeddings.** Scores describe at most the first three minutes. Reads expose analyzed duration via the embedding record.
 

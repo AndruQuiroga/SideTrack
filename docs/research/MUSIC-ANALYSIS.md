@@ -39,7 +39,7 @@ tagged each obscure track:
 The DEAM splits were **not artist-grouped**, because artist metadata was unavailable;
 that can inflate the absolute scores. Do not compare them directly with published
 results that use different data or splits. On the owner's library the two predictions
-correlate at 0.92, so the two-axis view may run along a diagonal. The owner's listening
+correlate at 0.88, so the two-axis view may run along a diagonal. The owner's listening
 check and decision are still pending. The production pipeline stores one pooled vector
 per asset, not the intermediate 10-second window vectors.
 

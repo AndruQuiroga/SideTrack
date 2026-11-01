@@ -39,8 +39,8 @@
 
 - [x] 7.1 Add `python -m sidetrack.listening` with `backfill`, `sync`, `import-export` and `sessionize`; verify `tests/test_listening_cli.py` covers job queuing output, the `account_not_linked` failure, in-process export import counts and `--rebuild`
 - [x] 7.2 Write docs/LISTENING.md (linking the account, timezone, backfill, export import, sessions, what the counts mean) and update docs/JOBS.md with the new task and limit; verify the documented commands run as written against a local database
-- [ ] 7.3 Run the owner's import for real (export or backfill), then `sessionize`, and record the counts (fetched, stored, duplicate, skipped, without release, sessions, night sessions) in docs/LISTENING.md, aggregates only; verify `GET /users/{id}/listening/recent` returns imported rows
-- [ ] 7.4 Update `docs/status.yaml` ("ListenBrainz import" to works with evidence, "Listen storage" note), run `python scripts/gen_status.py` and `uv run --frozen python scripts/gen_progress.py`; verify the status check passes, then `make lint` and `make test.unit`
+- [x] 7.3 Run the owner's import for real (export or backfill), then `sessionize`, and record the counts (fetched, stored, duplicate, skipped, without release, sessions, night sessions) in docs/LISTENING.md, aggregates only; verify `GET /users/{id}/listening/recent` returns imported rows
+- [x] 7.4 Update `docs/status.yaml` ("ListenBrainz import" to works with evidence, "Listen storage" note), run `python scripts/gen_status.py` and `uv run --frozen python scripts/gen_progress.py`; verify the status check passes, then `make lint` and `make test.unit`
 
 ## Workflow follow-up
 

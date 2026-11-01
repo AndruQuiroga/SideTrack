@@ -27,9 +27,9 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 | --- | --- | --- | --- |
 | Last.fm account link | works | Signed-state flow implemented and tested (harden-api-credentials); the owner confirmed successful real Last.fm linking on sidetrack.network on 2026-10-28. | `services/api/tests/test_lastfm_link.py`, `services/api/tests/test_link_state.py`, `docs/CLUB-HISTORY.md` |
 | Last.fm scrobble import | partial | Durable per-account checkpoints and duplicate-safe retries; newest 200 only, no backfill; unresolved/album-less records can be dropped | `tests/test_import_checkpoints.py`, `services/api/tests/test_jobs.py` |
-| Listen storage | works | listen_events.source matches the database enum, and the listen-event routes return stored rows with metadata. Before 2026-10-25 every listen insert failed on Postgres; before 2026-10-26 every listen-event response returned 500 | `services/api/tests/test_migrations.py`, `services/api/tests/test_listen_events.py` |
+| Listen storage | works | listen_events.source matches the database enum, and the listen-event routes return stored rows with metadata. Before 2026-10-25 every listen insert failed on Postgres; before 2026-10-26 every listen-event response returned 500. Listens with no known release are kept against a track with no album. | `services/api/tests/test_migrations.py`, `services/api/tests/test_listen_events.py` |
 | Spotify listen sync | absent | Legacy sync worker retired in Phase 2; Spotify remains metadata-only (ADR 0003) |  |
-| ListenBrainz import | partial | Operator-started API backfill, sync and export import with sessions, autoplay review, coverage and a user timezone. A rehearsal on a throwaway database stored 74,907 of the owner's 74,928 listens with the real worker on 2026-10-31. Production hasn't been migrated or imported yet. | `docs/LISTENING.md`, `tests/test_listenbrainz_jobs.py`, `tests/test_listenbrainz_store.py`, `tests/test_listen_sessions.py` |
+| ListenBrainz import | works | Operator-started API backfill, sync and export import with sessions, autoplay review, coverage and a user timezone. Production stored 74,907 of the owner's 74,928 listens on 2026-11-01; the other 21 were duplicates and none were skipped. Later listens need a sync, and the hourly schedule is off. | `docs/LISTENING.md`, `tests/test_listenbrainz_jobs.py`, `tests/test_listenbrainz_store.py`, `tests/test_listen_sessions.py` |
 | MusicBrainz resolution | partial | Per-scrobble web API calls inside imports; attempts share a global Postgres pacing lock, including HTTP retries |  |
 
 ## Analysis
@@ -68,7 +68,7 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 | CI | works | Lint, tests, OpenSpec validation, status check and image builds; main pushes ghcr.io/andruquiroga/sidetrack-{api,web,bot}; required for merging | `.github/workflows/ci.yml` |
 | Database backups | partial | Daily backup and second-host copy, a weekly isolated restore check and tiered retention run from host timers (deploy/backups). The first manual and unattended runs passed on 2026-10-31. Failures don't alert anyone until Uptime Kuma heartbeats are configured, and the first unattended restore check is pending. | `tests/test_database_backups.py`, `deploy/BACKUPS-ROLLOUT.md` |
 | Service monitoring | absent | Uptime Kuma runs on the rack, but it has no Sidetrack monitors yet. |  |
-| Deployment to Stache-Rack | works | Portainer stack 23 runs gallery release 3d83256 for API/default worker and web, bot release 73e9435, and GPU worker release e9f03e0. All six services are 1/1, with schema 0012 and all ten environment entries preserved. Portainer cold pulls remain unverified: updates use explicit node pulls. | `deploy/EMBEDDINGS-ROLLOUT.md`, `deploy/stack.yml`, `deploy/SINGLES-GALLERY-2026-10-29.md`, `deploy/README.md`, `docs/CLUB-HISTORY.md` |
+| Deployment to Stache-Rack | works | Portainer stack 23 runs release cfe7804 for API/default worker, gallery release 3d83256 for web, bot release 73e9435, and GPU worker release e9f03e0. All six services are 1/1, with schema 0013 and all ten environment entries preserved. Portainer cold pulls remain unverified: updates use explicit node pulls. | `deploy/EMBEDDINGS-ROLLOUT.md`, `deploy/stack.yml`, `deploy/SINGLES-GALLERY-2026-10-29.md`, `deploy/README.md`, `docs/CLUB-HISTORY.md` |
 
 ## Facts from the repository
 
@@ -93,7 +93,7 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 - `add-weekly-listening-profile`: 0/4 tasks
 - `automate-database-backups`: 9/13 tasks
 - `explore-lyrics-and-captioning`: 0/11 tasks
-- `import-listenbrainz-history`: 19/21 tasks
+- `import-listenbrainz-history`: 21/21 tasks
 - `resolve-listens-to-audio`: 0/12 tasks
 
 ### Specs

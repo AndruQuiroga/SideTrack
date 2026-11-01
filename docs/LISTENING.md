@@ -95,8 +95,8 @@ them reports it as `override_orphaned`.
 
 ## Rehearsal, 2026-10-31
 
-A throwaway Postgres 16 and the real worker read the owner's history from the live API.
-Production hasn't been imported yet.
+A throwaway Postgres 16 and the real worker read the owner's history from the live API. The
+production import on 2026-11-01 gave the same counts, in 77 jobs and about 6 minutes.
 
 | Measure              | Result                                 |
 | -------------------- | -------------------------------------- |
@@ -111,5 +111,6 @@ Production hasn't been imported yet.
 | Sessions             | 5,420, every listen in one             |
 | `listen_events` size | 62 MB                                  |
 
-With a sample timezone, 84 sessions holding 3,351 listens were flagged `night_autoplay`, and a
-full rebuild took 14 s. The real figure depends on the owner's timezone.
+With `America/Phoenix`, 84 sessions holding 3,351 listens were flagged `night_autoplay`, and a
+full rebuild took 14 s. One zone covers the whole history, so nights from years spent in another
+zone can be misjudged.
