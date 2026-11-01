@@ -39,6 +39,12 @@ A bug found mid-task becomes its own change (or a GitHub issue that names the sp
 | `migrations/`         | Alembic                                                                   |
 | `deploy/`             | Swarm stack for Stache-Rack (ADR 0006)                                    |
 
+## Environment
+
+Run commands in **WSL 2 (Ubuntu 22.04)**, not native Windows: `make`, the shell scripts,
+the full test suite and CI parity only hold on Linux. Details and setup in
+`docs/DEVELOPMENT.md`. Docs-only edits may be made from either side.
+
 ## Commands
 
 ```bash
