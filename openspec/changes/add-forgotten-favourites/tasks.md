@@ -12,7 +12,7 @@
 
 ## 3. Web
 
-- [ ] 3.1 Build `/listening/rediscover` with the list, disclosure block, autoplay toggle, versions note, every state and dismiss/restore; verify `apps/web/tests/rediscovery.test.cjs`
+- [x] 3.1 Build `/listening/rediscover` with the list, disclosure block, autoplay toggle, versions note, every state and dismiss/restore; verify `apps/web/tests/rediscovery.test.cjs`
 - [ ] 3.2 Wording and media guard: no "loved", "liked" or "your favourite", no audio elements; verify `apps/web/tests/rediscovery.test.cjs` wording case and `apps/web/app/no-fake-data.test.ts`
 
 ## 4. Owner gate
