@@ -7,11 +7,17 @@
     python -m sidetrack.audio prune
     python -m sidetrack.audio embed [--model muq-mulan] [--limit N]
     python -m sidetrack.audio neighbours SHA256_OR_ID [--model muq-mulan] [--k 10]
+    python -m sidetrack.audio link [--user ID] [--queue]
+    python -m sidetrack.audio link --manual|--reject|--confirm TRACK_ID ASSET [--note TEXT]
+    python -m sidetrack.audio coverage --user ID [--weeks 4] [--model muq-mulan]
 
 Fetching runs only with SIDETRACK_AUDIO_FETCH_ENABLED=true. Files go to
 SIDETRACK_AUDIO_DIR; rows go to the configured database. `embed` only queues gpu jobs for
 the dedicated GPU worker; nothing schedules it. `import-manifest` creates rows for files
 already in SIDETRACK_AUDIO_DIR, makes no network requests, and writes only with --apply.
+`link` joins catalog tracks to assets from evidence already stored (no network, no audio
+directory needed); `--queue` runs it as an `analysis.link_audio` job instead. Nothing
+schedules it. `coverage` only reads.
 """
 
 from __future__ import annotations
@@ -21,12 +27,24 @@ import contextlib
 import sys
 from collections import Counter
 from collections.abc import Callable, Sequence
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import IO
+from uuid import UUID
 
 from sqlalchemy.orm import Session
 
 from sidetrack import models  # noqa: F401  (configures every mapper)
+from sidetrack.analysis import (
+    LINK_AUDIO_TASK,
+    LINK_METHODS,
+    NO_AUDIO_REASONS,
+    LinkReport,
+    audio_coverage,
+    correct_link,
+    link_audio,
+    link_manually,
+)
 from sidetrack.analysis.audio import (
     AcoustIdClient,
     DeezerPreviewSource,
@@ -55,6 +73,7 @@ from sidetrack.analysis.embeddings import (
 )
 from sidetrack.config import Settings, get_settings
 from sidetrack.db import get_engine, init_engine
+from sidetrack.queue_client import enqueue
 from sidetrack.types import AudioKind, AudioVerification
 
 SourceFactory = Callable[[Path | None, str | None], list[Source]]
@@ -103,6 +122,21 @@ def _parser() -> argparse.ArgumentParser:
     near.add_argument("asset", help="Asset SHA-256 or ID.")
     near.add_argument("--model", default=default_model)
     near.add_argument("--k", type=int, default=10)
+    linking = commands.add_parser("link", help="Link catalog tracks to audio assets.")
+    linking.add_argument("--user", type=UUID, help="Limit YouTube evidence and counts to a user.")
+    action = linking.add_mutually_exclusive_group()
+    action.add_argument("--queue", action="store_true", help="Queue an analysis.link_audio job.")
+    for name, text in (
+        ("manual", "Link a track and an asset by hand."),
+        ("reject", "Remove a link and stop the matcher recreating it."),
+        ("confirm", "Confirm an ambiguous link."),
+    ):
+        action.add_argument(f"--{name}", nargs=2, metavar=("TRACK_ID", "ASSET"), help=text)
+    linking.add_argument("--note", help="Why, for --reject and --confirm.")
+    cover = commands.add_parser("coverage", help="Share of a user's plays that have audio.")
+    cover.add_argument("--user", type=UUID, required=True)
+    cover.add_argument("--weeks", type=int, default=4)
+    cover.add_argument("--model", default=default_model)
     return parser
 
 
@@ -116,6 +150,95 @@ def run_embed(db: Session, args: argparse.Namespace, audio_dir: Path, out: IO[st
     )
     for job_id in backfill.job_ids:
         print(f"  job {job_id}", file=out)
+    return 0
+
+
+def _print_link_report(report: LinkReport, out: IO[str]) -> None:
+    print(f"Links by method (matcher {report.matcher_version}):", file=out)
+    for method in LINK_METHODS:
+        print(f"  {method}: {report.links[method]} (new: {report.created[method]})", file=out)
+    print(
+        f"Replaced by a newer matcher version: {report.updated}\n"
+        f"Ambiguous links: {report.ambiguous}\n"
+        f"Unlinked assets: {report.unlinked_assets}\n"
+        f"Unlinked tracks: {report.unlinked_tracks}\n"
+        f"Rejected pairs skipped: {len(report.rejected)}",
+        file=out,
+    )
+    for track_id, asset_id in report.rejected:
+        print(f"  rejected track {track_id} asset {asset_id}", file=out)
+
+
+def _track_and_asset(db: Session, pair: Sequence[str]) -> tuple[UUID, UUID] | None:
+    try:
+        track_id = UUID(pair[0])
+    except ValueError:
+        print(f"Not a track ID: {pair[0]}", file=sys.stderr)
+        return None
+    asset = resolve_asset(db, pair[1])
+    if asset is None:
+        print(f"No asset {pair[1]}.", file=sys.stderr)
+        return None
+    return track_id, asset.id
+
+
+def run_link(db: Session, args: argparse.Namespace, out: IO[str]) -> int:
+    if args.queue:
+        job = enqueue(db, LINK_AUDIO_TASK, {"user_id": str(args.user)} if args.user else {})
+        db.commit()
+        print(f"Queued link job {job.id}.", file=out)
+        return 0
+    for action in ("manual", "reject", "confirm"):
+        pair = getattr(args, action)
+        if pair is None:
+            continue
+        ids = _track_and_asset(db, pair)
+        if ids is None:
+            return 1
+        try:
+            if action == "manual":
+                link_manually(db, *ids)
+            else:
+                correct_link(db, *ids, action, args.note)
+        except ValueError as exc:
+            print(f"Nothing written: {exc}", file=sys.stderr)
+            db.rollback()
+            return 1
+        db.commit()
+        print(f"{action.capitalize()}: track {ids[0]} asset {ids[1]}.", file=out)
+        return 0
+    report = link_audio(db, user_id=args.user)
+    db.commit()
+    _print_link_report(report, out)
+    return 0
+
+
+def run_coverage(db: Session, args: argparse.Namespace, out: IO[str]) -> int:
+    if args.weeks < 1:
+        print("--weeks must be at least 1.", file=sys.stderr)
+        return 2
+    end = datetime.now(UTC)
+    start = end - timedelta(weeks=args.weeks)
+    report = audio_coverage(db, args.user, start, end, args.model)
+
+    def percent(share: float | None) -> str:
+        return "no plays" if share is None else f"{share:.1%}"
+
+    print(
+        f"Audio coverage, {start:%Y-%m-%d} to {end:%Y-%m-%d} "
+        f"({args.weeks} weeks, {report.model}):\n"
+        f"Included plays: {report.included_plays}, with audio: {report.covered_included} "
+        f"({percent(report.share_included)})\n"
+        f"All plays: {report.plays}, with audio: {report.covered} ({percent(report.share_all)})",
+        file=out,
+    )
+    for label, reasons in (
+        ("Included plays without audio", report.reasons_included),
+        ("All plays without audio", report.reasons),
+    ):
+        print(f"{label}:", file=out)
+        for reason in NO_AUDIO_REASONS:
+            print(f"  {reason}: {reasons[reason]}", file=out)
     return 0
 
 
@@ -263,7 +386,13 @@ def main(
             print(str(exc), file=sys.stderr)
             return 2
     audio_dir = settings.sidetrack_audio_dir
-    if audio_dir is None and args.command != "neighbours":
+    if args.command == "coverage":
+        try:
+            enabled_model(args.model)
+        except ModelNotEnabled as exc:
+            print(str(exc), file=sys.stderr)
+            return 2
+    if audio_dir is None and args.command not in ("neighbours", "link", "coverage"):
         print("Set SIDETRACK_AUDIO_DIR to the audio directory.", file=sys.stderr)
         return 2
     if args.command == "prune" and settings.sidetrack_audio_retention_days is None:
@@ -280,6 +409,10 @@ def main(
             return run_fetch(db, args, settings, out=out, **fetch_options)
         if args.command == "neighbours":
             return run_neighbours(db, args, out)
+        if args.command == "link":
+            return run_link(db, args, out)
+        if args.command == "coverage":
+            return run_coverage(db, args, out)
         assert audio_dir is not None
         if args.command == "embed":
             return run_embed(db, args, audio_dir, out)

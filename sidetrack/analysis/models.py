@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 from pgvector.sqlalchemy import VECTOR
 from sqlalchemy import (
     JSON,
+    Boolean,
     CheckConstraint,
     DateTime,
     Float,
@@ -19,7 +20,7 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy import Enum as SAEnum
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from sidetrack.db import Base
@@ -199,5 +200,71 @@ class AudioEmbedding(Base):
     # The background job that produced it. Not a foreign key: finished jobs are cleaned up.
     job_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
     embedded_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+    )
+
+
+LINK_METHODS = ("recording_mbid", "youtube_id", "seed_identity", "seed", "manual")
+LINK_ACTIONS = ("reject", "confirm")
+
+
+class TrackAudioLink(Base):
+    """A catalog track and an audio asset that is a recording of it (openspec
+    analysis/listen-audio-resolution).
+
+    Many-to-many: a track links to its full track and its preview, and one asset can serve
+    several tracks until they are merged. ``evidence`` holds what the link matched on and
+    ``ambiguous`` marks a key that fit more than one track or asset of a kind.
+    """
+
+    __tablename__ = "track_audio_links"
+    __table_args__ = (
+        UniqueConstraint("track_id", "asset_id", name="uq_track_audio_links_pair"),
+        CheckConstraint("confidence >= 0 AND confidence <= 1", name="ck_track_audio_links_conf"),
+        CheckConstraint(
+            "method IN ('recording_mbid', 'youtube_id', 'seed_identity', 'seed', 'manual')",
+            name="ck_track_audio_links_method",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    track_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("tracks.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    asset_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("audio_assets.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    method: Mapped[str] = mapped_column(String(32), nullable=False)
+    confidence: Mapped[float] = mapped_column(Float, nullable=False)
+    matcher_version: Mapped[str] = mapped_column(String(32), nullable=False)
+    evidence: Mapped[dict | None] = mapped_column(JSONB)
+    ambiguous: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+    linked_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+    )
+
+
+class TrackAudioLinkCorrection(Base):
+    """An operator's verdict on a track and asset pair. Read by every matcher run."""
+
+    __tablename__ = "track_audio_link_corrections"
+    __table_args__ = (
+        CheckConstraint("action IN ('reject', 'confirm')", name="ck_track_audio_link_corr_action"),
+    )
+
+    track_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("tracks.id", ondelete="CASCADE"), primary_key=True
+    )
+    asset_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("audio_assets.id", ondelete="CASCADE"), primary_key=True
+    )
+    action: Mapped[str] = mapped_column(String(16), nullable=False)
+    note: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
     )

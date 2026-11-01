@@ -3,13 +3,13 @@
 ADR 0001 is implemented in the canonical `sidetrack` package. API and Postgres worker
 processes share this code; the Next.js app and Discord bot call the HTTP API.
 
-| Module      | Owned tables                                                        |
-| ----------- | ------------------------------------------------------------------- |
-| `identity`  | users, linked_accounts, follows                                     |
-| `catalog`   | albums, tracks                                                      |
-| `listening` | listen_events, import_checkpoints, listening_import_runs, import_coverage, listen_sessions, listen_session_overrides |
+| Module      | Owned tables                                                                                                                                                                                  |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `identity`  | users, linked_accounts, follows                                                                                                                                                               |
+| `catalog`   | albums, tracks                                                                                                                                                                                |
+| `listening` | listen_events, import_checkpoints, listening_import_runs, import_coverage, listen_sessions, listen_session_overrides                                                                          |
 | `club`      | weeks, nominations, votes, ratings, club_notification_outbox, club_members, club_history_batches, club_history_sources, singles_sessions, singles_songs, singles_submissions, singles_ratings |
-| `analysis`  | track_features, taste_profiles, compatibility, user_recommendations, audio_assets, audio_embeddings |
+| `analysis`  | track_features, taste_profiles, compatibility, user_recommendations, audio_assets, audio_embeddings, track_audio_links, track_audio_link_corrections                                          |
 
 Import another domain's public package for operations or exported **read models**.
 Never mutate a foreign domain's ORM instances or construct its rows. Listening
