@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+from uuid import uuid4
 
 import pytest
 from listenbrainz_doubles import listen
@@ -10,8 +11,8 @@ from sqlalchemy import func, select
 from test_audio_embeddings_store import make_asset
 from test_track_audio_links import make_track
 
-from sidetrack.analysis.links import MATCHER_VERSION, link_audio, link_manually
-from sidetrack.analysis.models import TrackAudioLink
+from sidetrack.analysis.links import MATCHER_VERSION, correct_link, link_audio, link_manually
+from sidetrack.analysis.models import AudioEmbedding, TrackAudioLink, TrackAudioLinkCorrection
 from sidetrack.identity import LinkedAccount, User
 from sidetrack.listening import ListenEvent, ListeningImportRun, ListenSource, store_listens
 from sidetrack.types import AudioKind, AudioSource, AudioVerification, ProviderType
@@ -314,3 +315,135 @@ def test_normaliser_shared_with_import(db):
 
     assert {track for track, _ in links(db)} == {imported, raw.id}
     assert {a for _, a in links(db)} == {asset.id}
+
+
+def test_seed_identity_link_returns_the_shared_key(db):
+    make_track(db, "Some Artist", "Deep Cut (Official Video)")
+    make_asset(db, seed_artist="SOME ARTIST", seed_title="Deep  Cut")
+
+    link_audio(db)
+
+    row = only_link(db)
+    assert row.method == "seed_identity"
+    assert row.evidence == {"key": "some artist|deep cut"}
+
+
+def test_two_tracks_sharing_a_key_are_both_ambiguous(db):
+    album = make_track(db, "Some Artist", "Song")
+    live = make_track(db, "Some Artist", "Song ")
+    asset = make_asset(db, seed_artist="Some Artist", seed_title="Song")
+
+    report = link_audio(db)
+
+    rows = links(db)
+    assert set(rows) == {(album.id, asset.id), (live.id, asset.id)}
+    assert all(row.ambiguous for row in rows.values())
+    assert report.ambiguous == 2
+
+
+def test_two_assets_of_one_kind_sharing_a_key_are_ambiguous(db):
+    make_track(db, "Some Artist", "Song")
+    make_asset(db, seed_artist="Some Artist", seed_title="Song")
+    make_asset(db, seed_artist="Some Artist", seed_title="Song")
+
+    link_audio(db)
+
+    assert [row.ambiguous for row in links(db).values()] == [True, True]
+
+
+def test_full_and_preview_of_one_seed_are_not_ambiguous(db):
+    make_track(db, "Some Artist", "Song")
+    make_asset(db, seed_artist="Some Artist", seed_title="Song", kind=AudioKind.FULL)
+    make_asset(db, seed_artist="Some Artist", seed_title="Song", kind=AudioKind.PREVIEW)
+
+    link_audio(db)
+
+    assert not any(row.ambiguous for row in links(db).values())
+
+
+def test_ambiguity_clears_when_the_catalog_no_longer_shares_the_key(db):
+    first = make_track(db, "Some Artist", "Song")
+    second = make_track(db, "Some Artist", "Song ")
+    asset = make_asset(db, seed_artist="Some Artist", seed_title="Song")
+    link_audio(db)
+    db.delete(second)
+    db.flush()
+
+    link_audio(db)
+
+    assert links(db)[(first.id, asset.id)].ambiguous is False
+
+
+def test_confirm_clears_ambiguity_and_survives_reruns(db):
+    first = make_track(db, "Some Artist", "Song")
+    make_track(db, "Some Artist", "Song ")
+    asset = make_asset(db, seed_artist="Some Artist", seed_title="Song")
+    link_audio(db)
+
+    correct_link(db, first.id, asset.id, "confirm", "the studio version")
+    link_audio(db)
+
+    rows = links(db)
+    assert rows[(first.id, asset.id)].ambiguous is False
+    assert sum(row.ambiguous for row in rows.values()) == 1
+
+
+def test_reject_removes_the_link_and_it_is_not_recreated(db):
+    track = make_track(db, "Some Artist", "Song")
+    asset = make_asset(db, seed_artist="Some Artist", seed_title="Song")
+    link_audio(db)
+
+    correct_link(db, track.id, asset.id, "reject", "a cover")
+    assert links(db) == {}
+    report = link_audio(db)
+
+    assert links(db) == {}
+    assert report.rejected == [(track.id, asset.id)]
+    assert sum(report.created.values()) == 0
+    correction = db.get(TrackAudioLinkCorrection, (track.id, asset.id))
+    assert correction.action == "reject" and correction.created_at is not None
+
+
+def test_manual_link_overrides_an_earlier_rejection(db):
+    track = make_track(db, "Some Artist", "Song")
+    asset = make_asset(db, seed_artist="Some Artist", seed_title="Song")
+    correct_link(db, track.id, asset.id, "reject")
+
+    link_manually(db, track.id, asset.id)
+    link_audio(db)
+
+    assert only_link(db).method == "manual"
+
+
+def test_corrections_reject_unknown_actions_and_pairs(db):
+    track = make_track(db)
+    asset = make_asset(db)
+    with pytest.raises(ValueError, match="unknown_action"):
+        correct_link(db, track.id, asset.id, "maybe")
+    with pytest.raises(ValueError, match="track_or_asset_not_found"):
+        correct_link(db, uuid4(), asset.id, "reject")
+
+
+def test_close_neighbour_with_different_metadata_creates_no_link(db):
+    linked_track = make_track(db, "Some Artist", "Song")
+    linked = make_asset(db, seed_artist="Some Artist", seed_title="Song")
+    stranger = make_asset(db, seed_artist="Other Band", seed_title="Different")
+    for asset in (linked, stranger):
+        db.add(
+            AudioEmbedding(
+                asset_id=asset.id,
+                model="muq-mulan",
+                checkpoint_revision="rev",
+                pipeline="test",
+                dim=2,
+                embedding=[1.0, 0.0],
+            )
+        )
+    db.flush()
+
+    report = link_audio(db)
+
+    assert {(row.track_id, row.asset_id) for row in links(db).values()} == {
+        (linked_track.id, linked.id)
+    }
+    assert report.unlinked_assets == 1

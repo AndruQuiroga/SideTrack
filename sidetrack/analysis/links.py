@@ -273,3 +273,40 @@ def link_manually(db: Session, track_id: UUID, asset_id: UUID) -> TrackAudioLink
             setattr(row, name, value)
     db.flush()
     return row
+
+
+def correct_link(
+    db: Session, track_id: UUID, asset_id: UUID, action: str, note: str | None = None
+) -> None:
+    """Record an operator's verdict on a pair. The caller commits.
+
+    ``reject`` removes the link and stops the matcher recreating it. ``confirm`` clears
+    ``ambiguous`` now and on every later run. The latest verdict for a pair replaces the
+    earlier one.
+    """
+
+    if action not in ("reject", "confirm"):
+        raise ValueError("unknown_action")
+    if db.get(Track, track_id) is None or db.get(AudioAsset, asset_id) is None:
+        raise ValueError("track_or_asset_not_found")
+    now = datetime.now(UTC)
+    correction = db.get(TrackAudioLinkCorrection, (track_id, asset_id))
+    if correction is None:
+        db.add(
+            TrackAudioLinkCorrection(
+                track_id=track_id, asset_id=asset_id, action=action, note=note, created_at=now
+            )
+        )
+    else:
+        correction.action, correction.note, correction.created_at = action, note, now
+    row = db.scalar(
+        select(TrackAudioLink).where(
+            TrackAudioLink.track_id == track_id, TrackAudioLink.asset_id == asset_id
+        )
+    )
+    if row is not None:
+        if action == "reject":
+            db.delete(row)
+        else:
+            row.ambiguous = False
+    db.flush()
