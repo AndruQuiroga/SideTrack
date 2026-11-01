@@ -14,7 +14,7 @@
 ## 2. Summaries and owner review page
 
 - [x] 2.1 `audio-lab gate summarize` writes an allow-listed aggregate summary; prove with `test_gate.py::test_summary_has_no_titles_or_paths`
-- [ ] 2.2 Offline owner review page (no network scripts, local files only, no HTTP audio server) exporting `decision.json`; prove with `services/audio-lab/tests/test_gate_review.py::test_page_is_self_contained` and `::test_decision_export`
+- [x] 2.2 Offline owner review page (no network scripts, local files only, no HTTP audio server) exporting `decision.json`; prove with `services/audio-lab/tests/test_gate_review.py::test_page_is_self_contained` and `::test_decision_export`
 - [ ] 2.3 Document `gate check`, `summarize` and the review flow in `services/audio-lab/README.md`; verify the documented commands run against a synthetic record in `test_gate.py::test_readme_example`
 
 ## 3. Registers and repo check
