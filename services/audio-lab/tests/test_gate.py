@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import copy
 import json
+import shlex
 from pathlib import Path
 
 import pytest
@@ -631,3 +632,39 @@ def test_summarize_command(tmp_path):
     record.write_text(json.dumps(personal_record()), encoding="utf-8")
     assert main(["gate", "summarize", str(record), "--out", str(out)]) == 0
     assert json.loads(out.read_text())["record_id"] == "rec-001"
+
+
+def test_readme_example(tmp_path):
+    readme = (REPO / "services" / "audio-lab" / "README.md").read_text(encoding="utf-8")
+    section = readme.split("## Evaluation gates", 1)[1]
+    block = section.split("```bash\n", 1)[1].split("```", 1)[0]
+    audio = tmp_path / "audio"
+    audio.mkdir()
+    (audio / "x1.wav").write_bytes(b"RIFF")
+    record = neighbours()
+    record["examples"] = [{"id": "1", "label": "Synthetic pair", "audio": "x1.wav"}]
+    files = {
+        "$RECORD": tmp_path / "record.json",
+        "$DECISION": tmp_path / "decision.json",
+        "$DECIDED": tmp_path / "decided.json",
+        "$REVIEW": tmp_path / "review.html",
+        "$SUMMARY": tmp_path / "summary.json",
+        "$METADATA": tmp_path / "metadata.csv",
+        "$AUDIO": audio,
+    }
+    files["$RECORD"].write_text(json.dumps(record), encoding="utf-8")
+    files["$DECISION"].write_text(json.dumps(decision("approve")), encoding="utf-8")
+    files["$METADATA"].write_text("id,caption\nx1,a\nx2,b\n", encoding="utf-8")
+    commands = [line for line in block.splitlines() if line.strip()]
+    assert [shlex.split(c)[4] for c in commands] == [
+        "check",
+        "review",
+        "decide",
+        "summarize",
+        "prepare",
+    ]
+    for line in commands:
+        argv = [str(files.get(t, t)) for t in shlex.split(line)]
+        assert argv[:3] == ["uv", "run", "audio-lab"], line
+        assert main(argv[3:]) == 0, line
+    assert json.loads(files["$SUMMARY"].read_text())["status"] == "approved"
