@@ -4,7 +4,7 @@
 
 - [x] 1.1 Add `lab/site.py` and `audio-lab lab build --out DIR` with demo registration, `unavailable` reporting and the repo-path refusal; verify `services/audio-lab/tests/test_lab_site.py::test_missing_input_is_unavailable`, `::test_other_demos_still_build`, `::test_output_refused_in_repo` and `::test_pages_load_nothing_remote`
 - [x] 1.2 Add the home page with demo list, verdicts and export, working without `localStorage`; verify `test_lab_site.py::test_verdict_export_shape` through `node`, as `test_gate_review.py` does, and `::test_verdicts_hold_no_track_data`
-- [ ] 1.3 Add `scripts/lab_snapshot.sql` with effective kind, preferred asset and `doubtful_timing`; verify `tests/test_lab_snapshot.py::test_override_gives_effective_kind`, `::test_full_asset_preferred`, `::test_impossible_pace_is_flagged` and `::test_snapshot_writes_nothing` on migrated Postgres
+- [x] 1.3 Add `scripts/lab_snapshot.sql` with effective kind, preferred asset and `doubtful_timing`; verify `tests/test_lab_snapshot.py::test_override_gives_effective_kind`, `::test_full_asset_preferred`, `::test_impossible_pace_is_flagged` and `::test_snapshot_writes_nothing` on migrated Postgres
 - [ ] 1.4 Add the snapshot reader, which joins plays to axis scores by SHA-256 and counts what it can't use; verify `test_lab_snapshot_reader.py::test_plays_join_axis_scores` and `::test_unmatched_are_counted`, under `services/audio-lab/tests`
 
 ## 2. Tangent detection
