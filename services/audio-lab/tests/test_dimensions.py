@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -12,9 +13,12 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 
+from audio_lab.adapters import ModelUnavailable
+from audio_lab.adapters.models import MuQMuLanAdapter
 from audio_lab.cli import main
 from audio_lab.dimensions import (
     analyse,
+    encode_terms,
     load_selection,
     mood_overlap,
     parallel_analysis,
@@ -328,6 +332,17 @@ def test_output_refused_in_repo(tmp_path, capsys):
     assert not out.exists()
     with pytest.raises(OutputInRepo):
         run_dimensions(run, manifest, out)
+
+
+def test_text_unavailable_without_torch(monkeypatch):
+    # A None entry makes the import fail, whether or not the models extra is installed.
+    monkeypatch.setitem(sys.modules, "torch", None)
+    monkeypatch.setitem(sys.modules, "muq", None)
+
+    with pytest.raises(ModelUnavailable, match="torch is not installed"):
+        encode_terms(["calm piano"], "cpu")
+    with pytest.raises(ModelUnavailable, match="not loaded"):
+        MuQMuLanAdapter().embed_texts(["calm piano"])
 
 
 def test_rotation_keeps_total_variance():

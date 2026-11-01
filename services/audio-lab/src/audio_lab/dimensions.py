@@ -15,6 +15,7 @@ from pathlib import Path
 
 import numpy as np
 
+from .adapters.models import MuQMuLanAdapter
 from .manifest import Asset, _norm, read_manifest
 from .runs import RUN_JSON, load_run
 from .seeds import ensure_outside_repo
@@ -303,6 +304,17 @@ def mood_overlap(
             for k in range(scores.shape[1])
         ],
     }
+
+
+def encode_terms(terms: list[str], device: str = "cuda") -> np.ndarray:
+    """MuQ-MuLan text vectors for ``terms``; raises ModelUnavailable without torch or weights."""
+
+    adapter = MuQMuLanAdapter()
+    adapter.load(device)
+    try:
+        return adapter.embed_texts(terms)
+    finally:
+        adapter.unload()
 
 
 def _sha256(path: Path) -> str:
