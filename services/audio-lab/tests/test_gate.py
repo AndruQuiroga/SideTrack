@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import copy
 import json
+from pathlib import Path
 
 import pytest
 
@@ -381,3 +382,192 @@ def test_eras_never_interpolate_missing_periods():
     record = eras()
     record["eras"]["interpolated_periods"] = 1
     assert gate.check_record(record)["missing"] == ["interpolated_periods"]
+
+
+def test_failure_counts():
+    result = gate.check_record(neighbours())
+    coverage = result["coverage"]
+    assert coverage["model_failures"] == 5
+    assert coverage["short_files"] == 12
+    assert coverage["excluded"] == 17
+    assert coverage["excluded_fraction"] == "17/200"
+    assert coverage["excluded_fraction_value"] == 0.085
+
+
+def test_coverage_counts_must_add_up():
+    record = neighbours()
+    record["coverage"]["evaluated"] = 190
+    result = gate.check_record(record)
+    assert result["status"] == "incomplete"
+    assert "coverage_counts" in result["missing"]
+
+
+def test_other_exclusions_count_with_a_reason():
+    record = neighbours()
+    record["coverage"]["evaluated"] = 173
+    record["coverage"]["excluded_other"] = [{"reason": "duplicate of seed", "count": 10}]
+    assert gate.check_record(record)["coverage"]["excluded_fraction"] == "27/200"
+
+
+def test_missing_coverage_count_is_named():
+    record = neighbours()
+    del record["coverage"]["ambiguous_links"]
+    assert gate.check_record(record)["missing"] == ["coverage"]
+
+
+def test_preview_robustness_flag():
+    record = neighbours()
+    record["robustness"]["preview_vs_full"] = {"delta": -0.15}
+    result = gate.check_record(record)
+    assert result["status"] == "complete"
+    assert result["flags"] == ["preview_robustness_failed"]
+    assert gate.summarize(record)["flags"] == ["preview_robustness_failed"]
+
+
+def test_preview_within_material_change_is_not_flagged():
+    assert gate.check_record(neighbours())["flags"] == []
+
+
+def test_preview_not_applicable_needs_a_reason():
+    record = neighbours()
+    record["robustness"]["preview_vs_full"] = {"not_applicable": "no full audio exists"}
+    assert gate.check_record(record)["status"] == "complete"
+    record["robustness"]["preview_vs_full"] = {}
+    assert gate.check_record(record)["missing"] == ["preview_vs_full"]
+
+
+@pytest.mark.parametrize("unit", ["play", "listen", None])
+def test_play_level_resampling_rejected(unit):
+    record = neighbours()
+    record["robustness"]["sampling_unit"] = unit
+    result = gate.check_record(record)
+    assert result["status"] == "incomplete"
+    assert result["missing"] == ["sampling_unit"]
+
+
+def test_thresholds_declared_after_scoring():
+    record = neighbours()
+    record["declared_at"] = "2026-11-01T00:00:00"
+    result = gate.check_record(record)
+    assert result["status"] == "incomplete"
+    assert result["missing"] == ["declared_at"]
+
+
+def test_thresholds_never_declared():
+    record = neighbours()
+    del record["declared_at"]
+    assert gate.check_record(record)["missing"] == ["declared_at"]
+
+
+def test_material_change_must_be_declared():
+    record = neighbours()
+    del record["robustness"]["material_change"]
+    assert gate.check_record(record)["missing"] == ["material_change"]
+
+
+def decision(kind: str, **extra) -> dict:
+    return {
+        "decision": kind,
+        "decided_at": "2026-11-01",
+        "notes": "heard 20 examples",
+        "corrections": [],
+        "reviewed_examples": 20,
+        **extra,
+    }
+
+
+def test_no_decision_is_pending():
+    record = neighbours()
+    assert gate.derive_status(record) == "gate_pending"
+    assert gate.summarize(record)["status"] == "gate_pending"
+
+
+def test_dataset_scores_without_owner_review_are_pending():
+    record = mood()
+    record["datasets"] = ["deam"]
+    assert gate.derive_status(record) == "gate_pending"
+
+
+def test_approve():
+    record = gate.import_decision(neighbours(), decision("approve"))
+    assert gate.derive_status(record) == "approved"
+    assert gate.summarize(record)["decision"]["decision"] == "approve"
+
+
+def test_approve_does_not_rescue_an_incomplete_record():
+    record = neighbours()
+    del record["checkpoint_revision"]
+    record = gate.import_decision(record, decision("approve"))
+    assert gate.derive_status(record) == "incomplete"
+
+
+def test_reject():
+    record = gate.import_decision(neighbours(), decision("reject", notes="sounds wrong"))
+    assert gate.derive_status(record) == "rejected"
+    assert record["decision"]["notes"] == "sounds wrong"
+
+
+def test_reject_needs_a_note():
+    with pytest.raises(gate.GateError, match="note"):
+        gate.import_decision(neighbours(), decision("reject", notes=""))
+
+
+def test_correct_stays_pending():
+    fixes = [{"example_id": str(i), "correction": "calm"} for i in range(3)]
+    record = gate.import_decision(neighbours(), decision("correct", corrections=fixes))
+    assert gate.derive_status(record) == "gate_pending"
+    assert record["decision"]["corrections"] == fixes
+    record = gate.import_decision(record, decision("approve"))
+    assert gate.derive_status(record) == "approved"
+    assert record["decision_history"][0]["corrections"] == fixes
+
+
+def test_correct_needs_corrections():
+    with pytest.raises(gate.GateError, match="corrected"):
+        gate.import_decision(neighbours(), decision("correct"))
+
+
+def test_decision_needs_reviewed_examples_and_a_date():
+    with pytest.raises(gate.GateError, match="reviewed_examples"):
+        gate.import_decision(neighbours(), decision("approve", reviewed_examples=0))
+    with pytest.raises(gate.GateError, match="decided_at"):
+        gate.import_decision(neighbours(), decision("approve", decided_at="soon"))
+    with pytest.raises(gate.GateError, match="decision must be"):
+        gate.import_decision(neighbours(), decision("maybe"))
+
+
+def test_decide_command_writes_updated_record(tmp_path):
+    record, owner, out = tmp_path / "r.json", tmp_path / "d.json", tmp_path / "out.json"
+    record.write_text(json.dumps(neighbours()), encoding="utf-8")
+    owner.write_text(json.dumps(decision("approve")), encoding="utf-8")
+    assert main(["gate", "decide", str(record), str(owner), "--out", str(out)]) == 0
+    assert json.loads(out.read_text())["decision"]["decision"] == "approve"
+
+
+REPO = Path(gate.__file__).resolve().parents[4]
+
+
+def test_refuses_repo_output(tmp_path, capsys):
+    record = tmp_path / "record.json"
+    record.write_text(json.dumps(neighbours()), encoding="utf-8")
+    inside = REPO / "scratch-gate-output.json"
+    for argv in (
+        ["gate", "check", str(record), "--out", str(inside)],
+        ["gate", "summarize", str(record), "--out", str(inside)],
+        ["gate", "review", str(record), "--out", str(inside)],
+        ["gate", "decide", str(record), str(record), "--out", str(inside)],
+    ):
+        assert main(argv) == 1
+        assert "inside the repository" in capsys.readouterr().err
+        assert not inside.exists()
+
+
+def test_summaries_may_go_to_the_summary_directory(tmp_path):
+    record = tmp_path / "record.json"
+    record.write_text(json.dumps(neighbours()), encoding="utf-8")
+    allowed = REPO / "docs" / "evaluations" / "summaries" / "claim" / "x.json"
+    gate.ensure_output_allowed(allowed, summary=True)
+    with pytest.raises(gate.OutputInRepo):
+        gate.ensure_output_allowed(allowed, summary=False)
+    with pytest.raises(gate.OutputInRepo):
+        gate.ensure_output_allowed(REPO / "docs" / "elsewhere.json", summary=True)
