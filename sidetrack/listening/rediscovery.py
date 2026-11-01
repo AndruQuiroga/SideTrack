@@ -10,14 +10,17 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Iterable
 from dataclasses import asdict, dataclass
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from sidetrack.listening.models import ListenEvent
+from sidetrack.catalog import Track
+from sidetrack.identity import timezone_resolver
+from sidetrack.listening.listenbrainz import coverage_state
+from sidetrack.listening.models import ImportCoverage, ListenEvent
 from sidetrack.listening.sessions import effective_kind, list_sessions
 
 RULE_VERSION = "forgotten-v1"
@@ -158,3 +161,78 @@ def included_plays(db: Session, user_id: UUID, *, include_autoplay: bool = False
         unknown += kind == "unknown"
         plays.append((track_id, played_at))
     return IncludedPlays(plays=plays, excluded_autoplay=excluded, unknown_session=unknown)
+
+
+# Imported history ends at the last listen, not at the moment of import, so "covers the
+# recent window" allows the newest listen to be a few days old.
+COVERAGE_SLACK = timedelta(days=7)
+NOT_IMPORTED = "not_imported"
+COVERAGE_GAP = "coverage_gap"
+INSUFFICIENT_HISTORY = "insufficient_history"
+NONE_FOUND = "none_found"
+FOUND = "found"
+
+
+def forgotten_favourites(
+    db: Session,
+    user_id: UUID,
+    *,
+    include_autoplay: bool = False,
+    now: datetime | None = None,
+    rules: Rules = DEFAULT_RULES,
+) -> dict[str, Any]:
+    """The user's forgotten favourites, or the reason none can be named.
+
+    `state` is `not_imported` (no committed import), `coverage_gap` (imported history does
+    not reach back M days and forward to now), `insufficient_history` (too little recent
+    activity to call anything forgotten), `none_found` or `found`. Only `found` has tracks.
+    """
+
+    now = now or datetime.now(UTC)
+    coverage = _coverage_range(db, user_id)
+    result: dict[str, Any] = {
+        "state": NOT_IMPORTED,
+        "rules": rules.values(),
+        "include_autoplay": include_autoplay,
+        "coverage_start": coverage[0] if coverage else None,
+        "coverage_end": coverage[1] if coverage else None,
+        "recent_plays": None,
+        "recent_days": None,
+        "excluded_autoplay_plays": 0,
+        "unknown_session_plays": 0,
+        "tracks": [],
+    }
+    if coverage is None:
+        return result
+    recent_from = now - timedelta(days=rules.forgotten_days)
+    if coverage_state(db, user_id, recent_from, now - COVERAGE_SLACK) != "covered":
+        result["state"] = COVERAGE_GAP
+        return result
+
+    included = included_plays(db, user_id, include_autoplay=include_autoplay)
+    result["excluded_autoplay_plays"] = included.excluded_autoplay
+    result["unknown_session_plays"] = included.unknown_session
+    zone = timezone_resolver(db, user_id)
+    recent = [at for _, at in included.plays if recent_from < at <= now]
+    days = {at.astimezone(zone(at) or UTC).date() for at in recent}
+    result["recent_plays"], result["recent_days"] = len(recent), len(days)
+    if len(recent) < rules.min_recent_plays or len(days) < rules.min_recent_days:
+        result["state"] = INSUFFICIENT_HISTORY
+        return result
+
+    found = find_forgotten(included.plays, now, rules)
+    tracks = db.scalars(select(Track).where(Track.id.in_([row["track_id"] for row in found])))
+    by_id = {track.id: track for track in tracks}
+    for row in found:
+        track = by_id[row["track_id"]]
+        row.update(title=track.title, artist_name=track.artist_name)
+    result["tracks"] = found
+    result["state"] = FOUND if found else NONE_FOUND
+    return result
+
+
+def _coverage_range(db: Session, user_id: UUID) -> tuple[datetime, datetime] | None:
+    rows = db.scalars(select(ImportCoverage).where(ImportCoverage.user_id == user_id)).all()
+    if not rows:
+        return None
+    return min(r.earliest_played_at for r in rows), max(r.latest_played_at for r in rows)
