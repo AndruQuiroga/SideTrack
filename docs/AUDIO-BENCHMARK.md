@@ -339,7 +339,11 @@ torch 2.11.0+cu128, 118 audio-s/s for each model. Five repeats of 5-fold nested 
 | Mean-only baseline | -0.001 | -0.001 | -0.001 |
 
 MuQ-MuLan is ahead of MuQ by 0.040 mean R² (95% interval 0.028 to 0.054). Both models clear the
-gate's two numeric thresholds. The owner's listening check and decision are still to come.
+gate's two numeric thresholds.
+
+**Gate result, 2026-10-31: pass.** The owner heard the top and bottom 20 of their library on each
+dimension and passed the check. MuQ-MuLan stays the production model, so no re-embedding or ADR is
+needed. The owner also asked for more than these two axes, which later changes will explore.
 
 - **Data source:** DEAM's official site (Aljanaki, Yazdani and Soleymani, 2017) timed out, so the
   owner downloaded the audio from a Kaggle copy and the ratings from a separate copy. All 1,802

@@ -3,6 +3,7 @@
 ## Claude Code notes
 
 - OpenSpec commands are in `.claude/commands/opsx/`; skills in `.claude/skills/`.
+- Sonnet implements ready changes through `.claude/agents/opsx-implementer.md`; the main session plans and reviews (`docs/AGENT-WORKFLOW.md`).
 - Run `make lint` and `make test.unit` before saying a Python change is done.
 - After any `/opsx:*` command that changes `openspec/` or after editing `docs/status.yaml`,
   run `uv run --frozen python scripts/gen_progress.py` and republish `build/progress.html`

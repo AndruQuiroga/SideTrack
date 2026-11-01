@@ -15,6 +15,8 @@ All non-trivial work goes through OpenSpec:
 - Claude Code: `/opsx:propose`, `/opsx:apply`, `/opsx:archive`
 - Codex: `$openspec-propose`, `$openspec-apply-change`, `$openspec-archive-change`
 
+Planning and implementation can be split between agents: see `docs/AGENT-WORKFLOW.md`.
+
 A bug found mid-task becomes its own change (or a GitHub issue that names the spec it violates), not a silent drive-by fix.
 
 ## Hard rules

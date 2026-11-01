@@ -2,7 +2,7 @@
 
 ## Why
 
-The mood probe benchmark (run `20261031-204732-9b07ff0`, branch `feat/mood-probe-benchmark`) showed that a ridge probe on MuQ-MuLan embeddings predicts DEAM valence (R² 0.615) and arousal (R² 0.688), but the probe lives only in audio-lab. Weekly profiles need per-track perceived-mood values in Postgres. These values must be versioned so a retrained probe never mixes with old values. They must also be gated on evidence that they are meaningful for the owner's music, which differs strongly from DEAM.
+The mood probe benchmark (run `20261031-204732-9b07ff0`) showed that a ridge probe on MuQ-MuLan embeddings predicts DEAM valence (R² 0.615) and arousal (R² 0.688), but the probe lives only in audio-lab. Weekly profiles need per-track perceived-mood values in Postgres. These values must be versioned so a retrained probe never mixes with old values. They must also be gated on evidence that they are meaningful for the owner's music, which differs strongly from DEAM.
 
 ## What Changes
 
@@ -30,11 +30,11 @@ None.
 ## Impact
 
 - **Observed:**
-  - The probe code is a numpy ridge in `services/audio-lab/src/audio_lab/mood.py`, on branch `feat/mood-probe-benchmark`. Production has no probe table.
+  - The probe code is a numpy ridge in `services/audio-lab/src/audio_lab/mood.py`. Production has no probe table.
   - Embeddings live in `audio_embeddings` (`sidetrack/analysis/models.py`). There is one pooled vector per asset, from the first 180 s only (`sidetrack/analysis/embeddings/audio.py`).
-  - Benchmark splits were not artist-grouped. Predicted valence and arousal correlate at 0.88 on the owner's library (`docs/AUDIO-BENCHMARK.md` on the branch).
+  - Benchmark splits were not artist-grouped. Predicted valence and arousal correlate at 0.88 on the owner's library (`docs/AUDIO-BENCHMARK.md`).
 - **Assumed:** CPU scoring of about 1k assets takes seconds; this will be measured in task 2.
-- **Prerequisite:** the mood gate's owner listening check and decision (tasks 4.2–4.3 of `add-mood-probe-benchmark`). The evaluation follows the protocol in `add-music-analysis-evaluation-protocol`.
+- **Met:** the owner passed the mood gate's listening check on 2026-10-31. The evaluation follows the protocol in `add-music-analysis-evaluation-protocol`.
 - Affected: `sidetrack/analysis/`, `migrations/`, `sidetrack/audio.py`, `docs/AUDIO.md`, `docs/status.yaml`.
 - Licence: DEAM annotations and MuQ-MuLan weights (CC BY-NC) restrict use, so scores are for personal, non-commercial use only.
 - Research: `docs/research/MUSIC-ANALYSIS-RESEARCH-NOTES.md` §3 and §6.3.

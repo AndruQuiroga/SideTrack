@@ -98,8 +98,9 @@ For this goal, the deciding test is **mood prediction**:
 - **The trade-off:** MuQ is best at recognising a recording (preview→full recall 0.96),
   while MuQ-MuLan groups genre and themes better and has a text tower for naming them.
 - **Storing both is cheap:** about 1.5 KB per track per model.
-- **Likely outcome:** MuQ handles identity, such as merging uploads, while the mood
-  winner drives profiles.
+- **Result:** MuQ-MuLan won on mood (`docs/AUDIO-BENCHMARK.md`) and passed the owner's
+  listening check on 2026-10-31. It stays the production model. MuQ remains the option for
+  identity, such as merging uploads.
 
 ## Order of work
 
