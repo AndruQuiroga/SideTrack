@@ -91,7 +91,7 @@ groups:
           - services/api/tests/test_jobs.py
       - capability: Listen storage
         status: works
-        notes: "listen_events.source matches the database enum, and the listen-event routes return stored rows with metadata. Before 2026-10-25 every listen insert failed on Postgres; before 2026-10-26 every listen-event response returned 500"
+        notes: "listen_events.source matches the database enum, and the listen-event routes return stored rows with metadata. Before 2026-10-25 every listen insert failed on Postgres; before 2026-10-26 every listen-event response returned 500. Listens with no known release are kept against a track with no album."
         evidence:
           - services/api/tests/test_migrations.py
           - services/api/tests/test_listen_events.py
@@ -99,12 +99,12 @@ groups:
         status: absent
         notes: "Legacy sync worker retired in Phase 2; Spotify remains metadata-only (ADR 0003)"
       - capability: ListenBrainz import
-        status: partial
+        status: works
         notes: >-
           Operator-started API backfill, sync and export import with sessions, autoplay review,
-          coverage and a user timezone. A rehearsal on a throwaway database stored 74,907 of the
-          owner's 74,928 listens with the real worker on 2026-10-31. Production hasn't been
-          migrated or imported yet.
+          coverage and a user timezone. Production stored 74,907 of the owner's 74,928 listens on
+          2026-11-01; the other 21 were duplicates and none were skipped. Later listens need a
+          sync, and the hourly schedule is off.
         evidence:
           - docs/LISTENING.md
           - tests/test_listenbrainz_jobs.py
@@ -271,7 +271,7 @@ groups:
         notes: "Uptime Kuma runs on the rack, but it has no Sidetrack monitors yet."
       - capability: Deployment to Stache-Rack
         status: works
-        notes: "Portainer stack 23 runs gallery release 3d83256 for API/default worker and web, bot release 73e9435, and GPU worker release e9f03e0. All six services are 1/1, with schema 0012 and all ten environment entries preserved. Portainer cold pulls remain unverified: updates use explicit node pulls."
+        notes: "Portainer stack 23 runs release cfe7804 for API/default worker, gallery release 3d83256 for web, bot release 73e9435, and GPU worker release e9f03e0. All six services are 1/1, with schema 0013 and all ten environment entries preserved. Portainer cold pulls remain unverified: updates use explicit node pulls."
         evidence:
           - deploy/EMBEDDINGS-ROLLOUT.md
           - deploy/stack.yml

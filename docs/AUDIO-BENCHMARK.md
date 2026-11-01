@@ -350,8 +350,7 @@ gate's two numeric thresholds. The owner's listening check and decision are stil
   the same benefit, so the comparison is fairer than the absolute numbers.
 - **Valence and arousal are less separate than the scores suggest.** Human ratings correlate at
   0.57, MuQ-MuLan's held-out predictions at 0.83, and its predictions on the owner's library at
-  0.92. It still predicts 27% of the valence that arousal doesn't explain, and 34% of the arousal
+  0.88. It still predicts 27% of the valence that arousal doesn't explain, and 34% of the arousal
   that valence doesn't explain (MuQ: 17% and 26%), so the two aren't the same signal, but dark and
   calm tracks will often be hard to tell apart. A two-axis mood chart will tend to run along a
   diagonal.
-
