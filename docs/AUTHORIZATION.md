@@ -87,7 +87,7 @@ Request logs record `client=` and `actor=` with the request ID, never tokens.
 | GET | `/users/{user_a}/compatibility/{user_b}` | `personal:read` | One of the pair, both members, the other shares |
 | DELETE | `/users/{user_id}` | `identity:self` | Owner |
 | GET | `/users/{user_id}` | `club:read \| identity:self` | Owner, or member viewing a member |
-| PATCH | `/users/{user_id}` | `identity:self` | Owner |
+| PATCH | `/users/{user_id}` | `identity:self` | Owner; an admin may set only `timezone` |
 | DELETE | `/users/{user_id}/follow/{target_id}` | `identity:self` | Owner as follower |
 | POST | `/users/{user_id}/follow/{target_id}` | `identity:self` | Owner as follower |
 | GET | `/users/{user_id}/followers` | `club:read` | Member |
@@ -96,6 +96,9 @@ Request logs record `client=` and `actor=` with the request ID, never tokens.
 | POST | `/users/{user_id}/linked-accounts` | `identity:provision \| identity:self` | Owner, or provisioning a first Discord account |
 | DELETE | `/users/{user_id}/linked-accounts/{provider}/{provider_user_id}` | `identity:self` | Owner |
 | GET | `/users/{user_id}/listening/recent` | `personal:read` | Owner, or member if shared |
+| GET | `/users/{user_id}/listening/sessions` | `personal:read` | Owner |
+| DELETE | `/users/{user_id}/listening/sessions/{session_id}/override` | `personal:write` | Owner |
+| PUT | `/users/{user_id}/listening/sessions/{session_id}/override` | `personal:write` | Owner |
 | GET | `/users/{user_id}/taste-profiles/` | `personal:read` | Owner, or member if shared |
 | POST | `/users/{user_id}/taste-profiles/recompute` | `personal:write` | Owner |
 | GET | `/votes` | `club:write` | The actor's own votes |

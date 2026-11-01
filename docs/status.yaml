@@ -99,7 +99,17 @@ groups:
         status: absent
         notes: "Legacy sync worker retired in Phase 2; Spotify remains metadata-only (ADR 0003)"
       - capability: ListenBrainz import
-        status: absent
+        status: partial
+        notes: >-
+          Operator-started API backfill, sync and export import with sessions, autoplay review,
+          coverage and a user timezone. A rehearsal on a throwaway database stored 74,907 of the
+          owner's 74,928 listens with the real worker on 2026-10-31. Production hasn't been
+          migrated or imported yet.
+        evidence:
+          - docs/LISTENING.md
+          - tests/test_listenbrainz_jobs.py
+          - tests/test_listenbrainz_store.py
+          - tests/test_listen_sessions.py
       - capability: MusicBrainz resolution
         status: partial
         notes: "Per-scrobble web API calls inside imports; attempts share a global Postgres pacing lock, including HTTP retries"

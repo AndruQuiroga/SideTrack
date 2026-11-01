@@ -19,7 +19,7 @@
 ## 4. Benchmark
 
 - [x] 4.1 Run `embed` on DEAM with `muq-mulan` and `muq` on the RTX 5070, then `mood-probe`. Verify `run.json` shows both models ok, and record the run ID, clip count, R² and comparison in `docs/AUDIO-BENCHMARK.md`, aggregates only.
-- [ ] 4.2 Write predictions for run `20261027-031711-c7c3698`, and give the owner the top and bottom 20 per dimension to listen to. Verify the file is outside the repo.
+- [x] 4.2 Write predictions for run `20261027-031711-c7c3698`, and give the owner the top and bottom 20 per dimension to listen to. Verify the file is outside the repo.
 - [ ] 4.3 Add the mood gate to `docs/AUDIO-BENCHMARK.md` before opening the results in 4.1, then record the gate result and the owner's decision with the run ID.
 
 ## 5. Records

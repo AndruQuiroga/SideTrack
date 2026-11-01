@@ -1,0 +1,72 @@
+{
+ "payload": {
+  "count": 3,
+  "latest_listen_ts": 1700000900,
+  "oldest_listen_ts": 1600000000,
+  "user_id": "fixture-listener",
+  "listens": [
+   {
+    "inserted_at": 1700000960,
+    "listened_at": 1700000900,
+    "recording_msid": "msid-1",
+    "track_metadata": {
+     "artist_name": "Fixture Band",
+     "track_name": "Mapped Song (Remastered)",
+     "additional_info": {
+      "submission_client": "Fixture",
+      "duration_ms": 200000
+     },
+     "release_name": "Fixture Album",
+     "mbid_mapping": {
+      "recording_mbid": "00000000-0000-4000-8000-000000000001",
+      "recording_name": "Mapped Song",
+      "artist_mbids": [
+       "00000000-0000-4000-8000-0000000000aa"
+      ],
+      "artists": [
+       {
+        "artist_credit_name": "Fixture Band",
+        "join_phrase": "",
+        "artist_mbid": "00000000-0000-4000-8000-0000000000aa"
+       }
+      ],
+      "caa_id": 1,
+      "caa_release_mbid": "00000000-0000-4000-8000-0000000000bb",
+      "release_group_mbid": "00000000-0000-4000-8000-0000000000cc",
+      "release_mbid": "00000000-0000-4000-8000-0000000000bb"
+     }
+    },
+    "user_name": "fixture-listener"
+   },
+   {
+    "inserted_at": 1700000860,
+    "listened_at": 1700000800,
+    "recording_msid": "msid-2",
+    "track_metadata": {
+     "artist_name": "Fixture Channel",
+     "track_name": "Some Artist - Deep Cut (Official Video)",
+     "additional_info": {
+      "submission_client": "Fixture",
+      "origin_url": "https://music.youtube.com/watch?v=abc123DEF45",
+      "music_service": "music.youtube.com",
+      "duration": 215
+     }
+    },
+    "user_name": "fixture-listener"
+   },
+   {
+    "inserted_at": 1700000760,
+    "listened_at": 1700000700,
+    "recording_msid": "msid-3",
+    "track_metadata": {
+     "artist_name": "Plain Artist",
+     "track_name": "Plain Song",
+     "additional_info": {
+      "submission_client": "Fixture"
+     }
+    },
+    "user_name": "fixture-listener"
+   }
+  ]
+ }
+}

@@ -30,6 +30,8 @@ def test_phase0_routes_are_retained():
         "/club/members/discord/{discord_id}",
         "/club/singles-nights",
         "/club/singles-nights/{session_id}",
+        "/users/{user_id}/listening/sessions",
+        "/users/{user_id}/listening/sessions/{session_id}/override",
     }
 
 
@@ -57,6 +59,10 @@ def test_openapi_matches_phase3_and_reviewed_history_contract():
         k: v for k, v in artwork["AlbumRead"]["properties"].items() if k != "artwork_source_url"
     } == before_album["properties"]
     expected["components"]["schemas"].update(artwork)
+    listening = json.loads((FIXTURES / "listening-openapi.json").read_text(encoding="utf-8"))
+    assert not set(expected["paths"]) & set(listening["paths"])
+    expected["paths"].update(listening["paths"])
+    expected["components"]["schemas"].update(listening["schemas"])
     assert create_app().openapi() == expected
 
 
@@ -66,7 +72,14 @@ def test_each_table_has_one_canonical_owner():
         "identity": {"users", "linked_accounts", "follows"},
         "catalog": {"albums", "tracks", "album_artwork"},
         "artwork_models": {"artwork_recoveries"},
-        "listening": {"listen_events", "import_checkpoints"},
+        "listening": {
+            "listen_events",
+            "import_checkpoints",
+            "listening_import_runs",
+            "import_coverage",
+            "listen_sessions",
+            "listen_session_overrides",
+        },
         "club": {
             "weeks",
             "nominations",

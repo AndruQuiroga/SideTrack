@@ -1,0 +1,346 @@
+[
+ {
+  "name": "mapped listen uses the mapping",
+  "record": {
+   "inserted_at": 1700000061,
+   "listened_at": 1700000001,
+   "recording_msid": "m1",
+   "track_metadata": {
+    "artist_name": "Uploader",
+    "track_name": "Whatever",
+    "additional_info": {
+     "submission_client": "Fixture"
+    },
+    "release_name": "Real Album",
+    "mbid_mapping": {
+     "recording_mbid": "00000000-0000-4000-8000-000000000011",
+     "recording_name": "Real Name",
+     "artist_mbids": [
+      "00000000-0000-4000-8000-0000000000aa"
+     ],
+     "artists": [
+      {
+       "artist_credit_name": "Real Artist",
+       "join_phrase": "",
+       "artist_mbid": "00000000-0000-4000-8000-0000000000aa"
+      }
+     ],
+     "caa_id": 1,
+     "caa_release_mbid": "00000000-0000-4000-8000-0000000000bb",
+     "release_group_mbid": "00000000-0000-4000-8000-0000000000cc",
+     "release_mbid": "00000000-0000-4000-8000-0000000000bb"
+    }
+   },
+   "user_name": "fixture-listener"
+  },
+  "expected": {
+   "artist": "Real Artist",
+   "title": "Real Name",
+   "release": "Real Album",
+   "recording_mbid": "00000000-0000-4000-8000-000000000011"
+  }
+ },
+ {
+  "name": "mapped credits keep join phrases",
+  "record": {
+   "inserted_at": 1700000062,
+   "listened_at": 1700000002,
+   "recording_msid": "m2",
+   "track_metadata": {
+    "artist_name": "A",
+    "track_name": "B",
+    "additional_info": {
+     "submission_client": "Fixture"
+    },
+    "mbid_mapping": {
+     "recording_mbid": "00000000-0000-4000-8000-000000000012",
+     "recording_name": "Duet",
+     "artist_mbids": [
+      "00000000-0000-4000-8000-0000000000aa"
+     ],
+     "artists": [
+      {
+       "artist_credit_name": "One",
+       "join_phrase": " feat. ",
+       "artist_mbid": "00000000-0000-4000-8000-0000000000aa"
+      },
+      {
+       "artist_credit_name": "Two",
+       "join_phrase": "",
+       "artist_mbid": "00000000-0000-4000-8000-0000000000aa"
+      }
+     ],
+     "caa_id": 1,
+     "caa_release_mbid": "00000000-0000-4000-8000-0000000000bb",
+     "release_group_mbid": "00000000-0000-4000-8000-0000000000cc",
+     "release_mbid": "00000000-0000-4000-8000-0000000000bb"
+    }
+   },
+   "user_name": "fixture-listener"
+  },
+  "expected": {
+   "artist": "One feat. Two",
+   "title": "Duet",
+   "release": null,
+   "recording_mbid": "00000000-0000-4000-8000-000000000012"
+  }
+ },
+ {
+  "name": "mapped title loses upload noise",
+  "record": {
+   "inserted_at": 1700000063,
+   "listened_at": 1700000003,
+   "recording_msid": "m3",
+   "track_metadata": {
+    "artist_name": "A",
+    "track_name": "B",
+    "additional_info": {
+     "submission_client": "Fixture"
+    },
+    "mbid_mapping": {
+     "recording_mbid": "00000000-0000-4000-8000-000000000013",
+     "recording_name": "Song (Official Video)",
+     "artist_mbids": [
+      "00000000-0000-4000-8000-0000000000aa"
+     ],
+     "artists": [
+      {
+       "artist_credit_name": "Artist",
+       "join_phrase": "",
+       "artist_mbid": "00000000-0000-4000-8000-0000000000aa"
+      }
+     ],
+     "caa_id": 1,
+     "caa_release_mbid": "00000000-0000-4000-8000-0000000000bb",
+     "release_group_mbid": "00000000-0000-4000-8000-0000000000cc",
+     "release_mbid": "00000000-0000-4000-8000-0000000000bb"
+    }
+   },
+   "user_name": "fixture-listener"
+  },
+  "expected": {
+   "artist": "Artist",
+   "title": "Song"
+  }
+ },
+ {
+  "name": "channel upload splits",
+  "record": {
+   "inserted_at": 1700000064,
+   "listened_at": 1700000004,
+   "recording_msid": "m4",
+   "track_metadata": {
+    "artist_name": "Fixture Channel",
+    "track_name": "Some Artist - Deep Cut (Official Video)",
+    "additional_info": {
+     "submission_client": "Fixture",
+     "origin_url": "https://music.youtube.com/watch?v=abc",
+     "music_service": "music.youtube.com"
+    }
+   },
+   "user_name": "fixture-listener"
+  },
+  "expected": {
+   "artist": "Some Artist",
+   "title": "Deep Cut",
+   "youtube_id": "abc",
+   "recording_mbid": null,
+   "original_artist": "Fixture Channel",
+   "original_title": "Some Artist - Deep Cut (Official Video)",
+   "service": "music.youtube.com"
+  }
+ },
+ {
+  "name": "youtu.be upload splits",
+  "record": {
+   "inserted_at": 1700000065,
+   "listened_at": 1700000005,
+   "recording_msid": "m5",
+   "track_metadata": {
+    "artist_name": "Channel",
+    "track_name": "Artist - Title [Monstercat Release]",
+    "additional_info": {
+     "submission_client": "Fixture",
+     "origin_url": "https://youtu.be/xyz",
+     "music_service_name": "YouTube"
+    }
+   },
+   "user_name": "fixture-listener"
+  },
+  "expected": {
+   "artist": "Artist",
+   "title": "Title",
+   "youtube_id": "xyz",
+   "service": "YouTube"
+  }
+ },
+ {
+  "name": "only the first separator splits",
+  "record": {
+   "inserted_at": 1700000066,
+   "listened_at": 1700000006,
+   "recording_msid": "m6",
+   "track_metadata": {
+    "artist_name": "Channel",
+    "track_name": "Artist - Title - Live",
+    "additional_info": {
+     "submission_client": "Fixture",
+     "origin_url": "https://www.youtube.com/watch?v=q"
+    }
+   },
+   "user_name": "fixture-listener"
+  },
+  "expected": {
+   "artist": "Artist",
+   "title": "Title - Live"
+  }
+ },
+ {
+  "name": "a real title is not split off YouTube",
+  "record": {
+   "inserted_at": 1700000067,
+   "listened_at": 1700000007,
+   "recording_msid": "m7",
+   "track_metadata": {
+    "artist_name": "Band",
+    "track_name": "Song - Slowed",
+    "additional_info": {
+     "submission_client": "Pano Scrobbler"
+    }
+   },
+   "user_name": "fixture-listener"
+  },
+  "expected": {
+   "artist": "Band",
+   "title": "Song - Slowed",
+   "youtube_id": null
+  }
+ },
+ {
+  "name": "a real title is not split on another service",
+  "record": {
+   "inserted_at": 1700000068,
+   "listened_at": 1700000008,
+   "recording_msid": "m8",
+   "track_metadata": {
+    "artist_name": "Band",
+    "track_name": "Song - Remix",
+    "additional_info": {
+     "submission_client": "Fixture",
+     "origin_url": "https://open.spotify.com/track/1"
+    }
+   },
+   "user_name": "fixture-listener"
+  },
+  "expected": {
+   "artist": "Band",
+   "title": "Song - Remix",
+   "youtube_id": null
+  }
+ },
+ {
+  "name": "a YouTube title with no separator stays",
+  "record": {
+   "inserted_at": 1700000069,
+   "listened_at": 1700000009,
+   "recording_msid": "m9",
+   "track_metadata": {
+    "artist_name": "Artist",
+    "track_name": "Title (Lyrics)",
+    "additional_info": {
+     "submission_client": "Fixture",
+     "origin_url": "https://music.youtube.com/watch?v=r"
+    }
+   },
+   "user_name": "fixture-listener"
+  },
+  "expected": {
+   "artist": "Artist",
+   "title": "Title",
+   "youtube_id": "r"
+  }
+ },
+ {
+  "name": "non-noise brackets stay",
+  "record": {
+   "inserted_at": 1700000070,
+   "listened_at": 1700000010,
+   "recording_msid": "m10",
+   "track_metadata": {
+    "artist_name": "Artist",
+    "track_name": "Title (feat. Guest) [Acoustic]",
+    "additional_info": {
+     "submission_client": "Fixture"
+    }
+   },
+   "user_name": "fixture-listener"
+  },
+  "expected": {
+   "artist": "Artist",
+   "title": "Title (feat. Guest) [Acoustic]"
+  }
+ },
+ {
+  "name": "duration in milliseconds",
+  "record": {
+   "inserted_at": 1700000071,
+   "listened_at": 1700000011,
+   "recording_msid": "m11",
+   "track_metadata": {
+    "artist_name": "Artist",
+    "track_name": "Title",
+    "additional_info": {
+     "submission_client": "Fixture",
+     "duration_ms": 200000
+    }
+   },
+   "user_name": "fixture-listener"
+  },
+  "expected": {
+   "duration_ms": 200000
+  }
+ },
+ {
+  "name": "duration in seconds",
+  "record": {
+   "inserted_at": 1700000072,
+   "listened_at": 1700000012,
+   "recording_msid": "m12",
+   "track_metadata": {
+    "artist_name": "Artist",
+    "track_name": "Title",
+    "additional_info": {
+     "submission_client": "Fixture",
+     "duration": 215
+    }
+   },
+   "user_name": "fixture-listener"
+  },
+  "expected": {
+   "duration_ms": 215000
+  }
+ },
+ {
+  "name": "a mapping without artists is not a mapping",
+  "record": {
+   "inserted_at": 1700000073,
+   "listened_at": 1700000013,
+   "recording_msid": "m13",
+   "track_metadata": {
+    "artist_name": "Artist",
+    "track_name": "Title",
+    "additional_info": {
+     "submission_client": "Fixture"
+    },
+    "mbid_mapping": {
+     "recording_mbid": "00000000-0000-4000-8000-000000000014"
+    }
+   },
+   "user_name": "fixture-listener"
+  },
+  "expected": {
+   "artist": "Artist",
+   "recording_mbid": null
+  }
+ }
+]

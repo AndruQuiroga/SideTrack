@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import JSON, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, ForeignKey, Index, Integer, String, Text, column, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -53,10 +53,14 @@ class Album(Base):
 
 class Track(Base):
     __tablename__ = "tracks"
+    __table_args__ = (
+        Index("ix_tracks_identity", func.lower(column("artist_name")), func.lower(column("title"))),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    album_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("albums.id", ondelete="CASCADE"), nullable=False
+    # Null for a listen whose release is unknown; no placeholder album stands in for it.
+    album_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("albums.id", ondelete="CASCADE")
     )
     title: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     artist_name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
@@ -64,7 +68,7 @@ class Track(Base):
     musicbrainz_id: Mapped[str | None] = mapped_column(String(64), unique=True)
     spotify_id: Mapped[str | None] = mapped_column(String(64), unique=True)
 
-    album: Mapped[Album] = relationship(
+    album: Mapped[Album | None] = relationship(
         back_populates="tracks",
         primaryjoin="Track.album_id==Album.id",
         foreign_keys=album_id,

@@ -4,8 +4,11 @@ from datetime import timedelta
 
 from sqlalchemy import func, select
 
+from sidetrack.identity import LinkedAccount, User
+from sidetrack.listening_cli import schedule_sync
 from sidetrack.queue_maintenance import reconcile_schedules
 from sidetrack.queue_models import BackgroundJob, JobSchedule, ScheduleOccurrence
+from sidetrack.types import ProviderType
 
 
 def test_schedule_coalesces_and_does_not_replay(db):
@@ -132,3 +135,28 @@ def test_cleanup_keeps_occurrence_identity_and_active_ack_window(db):
     db.flush()
     assert db.scalar(select(func.count()).select_from(ScheduleOccurrence)) == 1
     assert reconcile_schedules(db) == 0
+
+
+def test_listenbrainz_sync_schedule_stays_disabled_until_enabled(db):
+    user = User(display_name="Scheduled listener")
+    db.add(user)
+    db.flush()
+    db.add(
+        LinkedAccount(
+            user_id=user.id, provider=ProviderType.LISTENBRAINZ, provider_user_id="scheduled"
+        )
+    )
+    db.flush()
+    schedule = schedule_sync(db, user.id, enabled=False)
+    assert schedule.task == "listening.ingest_listenbrainz"
+    assert schedule.arguments["mode"] == "sync"
+    assert schedule.interval_seconds == 3600
+    assert schedule.next_due_at is None
+
+    reconcile_schedules(db)
+    assert schedule.id not in {
+        row.schedule_id for row in db.scalars(select(ScheduleOccurrence)).all()
+    }
+
+    assert schedule_sync(db, user.id, enabled=True).next_due_at is not None
+    assert schedule_sync(db, user.id, enabled=False).next_due_at is None

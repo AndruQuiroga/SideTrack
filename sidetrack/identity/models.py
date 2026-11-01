@@ -40,6 +40,8 @@ class User(Base):
         default=ListeningVisibility.PRIVATE,
         server_default=ListeningVisibility.PRIVATE.value,
     )
+    # IANA zone name; local-time analysis reads it, and nothing guesses one when it's null.
+    timezone: Mapped[str | None] = mapped_column(String(64))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC)
     )

@@ -56,6 +56,7 @@ def request_json(
     timeout: float = 15.0,
     max_attempts: int = 3,
     request_guard: Callable[[], AbstractContextManager] | None = None,
+    on_response: Callable[[httpx.Response], None] | None = None,
 ) -> Any:
     h = dict(headers or {})
     delays = _retry_delays(max_attempts)
@@ -71,6 +72,8 @@ def request_json(
         try:
             with request_guard() if request_guard else nullcontext():
                 resp = client.request(method, url, params=params, headers=h)
+            if on_response:
+                on_response(resp)
             if 200 <= resp.status_code < 300:
                 return resp.json()
             # Retry 429/5xx

@@ -4,4162 +4,4339 @@
  */
 
 export interface paths {
-  '/admin/weeks/{week_id}/override-winner': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/admin/weeks/{week_id}/override-winner": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Override Winner
+         * @description Manually set the winner album for a week, bypassing the poll result. Admins only.
+         */
+        post: operations["override_winner_admin_weeks__week_id__override_winner_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * Override Winner
-     * @description Manually set the winner album for a week, bypassing the poll result. Admins only.
-     */
-    post: operations['override_winner_admin_weeks__week_id__override_winner_post'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/admin/ratings/{rating_id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/admin/ratings/{rating_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Rating
+         * @description Hard-delete a rating (moderator action). Admins only.
+         */
+        delete: operations["delete_rating_admin_ratings__rating_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post?: never;
-    /**
-     * Delete Rating
-     * @description Hard-delete a rating (moderator action). Admins only.
-     */
-    delete: operations['delete_rating_admin_ratings__rating_id__delete'];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/users/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/users/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Users
+         * @description Return current club members; only members may list them.
+         */
+        get: operations["list_users_users__get"];
+        put?: never;
+        /**
+         * Create User
+         * @description Create a user record (provisioning by the web or bot client acting as itself).
+         */
+        post: operations["create_user_users__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * List Users
-     * @description Return current club members; only members may list them.
-     */
-    get: operations['list_users_users__get'];
-    put?: never;
-    /**
-     * Create User
-     * @description Create a user record (provisioning by the web or bot client acting as itself).
-     */
-    post: operations['create_user_users__post'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/users/{user_id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/users/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get User
+         * @description Return a user to themselves, or a club member to another member; otherwise 404.
+         */
+        get: operations["get_user_users__user_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete User
+         * @description Delete the acting user and cascade-remove all owned records.
+         */
+        delete: operations["delete_user_users__user_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update User
+         * @description Update the acting user's own fields (display_name, handle, listening_visibility).
+         */
+        patch: operations["update_user_users__user_id__patch"];
+        trace?: never;
     };
-    /**
-     * Get User
-     * @description Return a user to themselves, or a club member to another member; otherwise 404.
-     */
-    get: operations['get_user_users__user_id__get'];
-    put?: never;
-    post?: never;
-    /**
-     * Delete User
-     * @description Delete the acting user and cascade-remove all owned records.
-     */
-    delete: operations['delete_user_users__user_id__delete'];
-    options?: never;
-    head?: never;
-    /**
-     * Update User
-     * @description Update the acting user's own fields (display_name, handle, listening_visibility).
-     */
-    patch: operations['update_user_users__user_id__patch'];
-    trace?: never;
-  };
-  '/users/{user_id}/linked-accounts': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/users/{user_id}/linked-accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Linked Accounts
+         * @description List the acting user's own linked accounts; anyone else's are not found.
+         */
+        get: operations["list_linked_accounts_users__user_id__linked_accounts_get"];
+        put?: never;
+        /**
+         * Create Linked Account
+         * @description Link an account to the acting user, with provider-specific validation.
+         *
+         *     Provisioning clients acting as themselves may only attach a Discord account to a
+         *     user who has none yet (sign-up from the website or the bot).
+         */
+        post: operations["create_linked_account_users__user_id__linked_accounts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * List Linked Accounts
-     * @description List the acting user's own linked accounts; anyone else's are not found.
-     */
-    get: operations['list_linked_accounts_users__user_id__linked_accounts_get'];
-    put?: never;
-    /**
-     * Create Linked Account
-     * @description Link an account to the acting user, with provider-specific validation.
-     *
-     *     Provisioning clients acting as themselves may only attach a Discord account to a
-     *     user who has none yet (sign-up from the website or the bot).
-     */
-    post: operations['create_linked_account_users__user_id__linked_accounts_post'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/users/{user_id}/linked-accounts/{provider}/{provider_user_id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/users/{user_id}/linked-accounts/{provider}/{provider_user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Linked Account
+         * @description Delete one of the acting user's linked accounts by provider and external ID.
+         */
+        delete: operations["delete_linked_account_users__user_id__linked_accounts__provider___provider_user_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post?: never;
-    /**
-     * Delete Linked Account
-     * @description Delete one of the acting user's linked accounts by provider and external ID.
-     */
-    delete: operations['delete_linked_account_users__user_id__linked_accounts__provider___provider_user_id__delete'];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/users/lookup/by-provider/{provider}/{provider_user_id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/users/lookup/by-provider/{provider}/{provider_user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lookup User By Provider
+         * @description Resolve a user via a provider-specific identifier.
+         */
+        get: operations["lookup_user_by_provider_users_lookup_by_provider__provider___provider_user_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * Lookup User By Provider
-     * @description Resolve a user via a provider-specific identifier.
-     */
-    get: operations['lookup_user_by_provider_users_lookup_by_provider__provider___provider_user_id__get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/users/{user_id}/listening/recent': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/users/{user_id}/listening/recent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List User Recent Listens
+         * @description Return recent listen events for a user, joined with track metadata.
+         *
+         *     Visible to the owner, and to club members when the owner shares with the club.
+         */
+        get: operations["list_user_recent_listens_users__user_id__listening_recent_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * List User Recent Listens
-     * @description Return recent listen events for a user, joined with track metadata.
-     *
-     *     Visible to the owner, and to club members when the owner shares with the club.
-     */
-    get: operations['list_user_recent_listens_users__user_id__listening_recent_get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/albums/search': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/albums/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search Albums
+         * @description Search albums by identifiers or fuzzy title/artist/year.
+         */
+        get: operations["search_albums_albums_search_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * Search Albums
-     * @description Search albums by identifiers or fuzzy title/artist/year.
-     */
-    get: operations['search_albums_albums_search_get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/albums/{album_id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/albums/{album_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Album
+         * @description Return a single album by ID.
+         */
+        get: operations["get_album_albums__album_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Album
+         * @description Update an album's metadata fields. Club admins only.
+         */
+        patch: operations["update_album_albums__album_id__patch"];
+        trace?: never;
     };
-    /**
-     * Get Album
-     * @description Return a single album by ID.
-     */
-    get: operations['get_album_albums__album_id__get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /**
-     * Update Album
-     * @description Update an album's metadata fields. Club admins only.
-     */
-    patch: operations['update_album_albums__album_id__patch'];
-    trace?: never;
-  };
-  '/albums/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/albums/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Album
+         * @description Create an album; reuse an existing record if it matches title/artist/year. Members only.
+         */
+        post: operations["create_album_albums__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * Create Album
-     * @description Create an album; reuse an existing record if it matches title/artist/year. Members only.
-     */
-    post: operations['create_album_albums__post'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/albums/resolve': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/albums/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resolve Album Endpoint
+         * @description Find or create an album, enriching it with MusicBrainz, Cover Art Archive,
+         *     and Spotify metadata.
+         *
+         *     This is the primary endpoint for the nomination flow. It returns a fully-populated
+         *     album with cover art, genres, release year, and external IDs. Members only.
+         */
+        post: operations["resolve_album_endpoint_albums_resolve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * Resolve Album Endpoint
-     * @description Find or create an album, enriching it with MusicBrainz, Cover Art Archive,
-     *     and Spotify metadata.
-     *
-     *     This is the primary endpoint for the nomination flow. It returns a fully-populated
-     *     album with cover art, genres, release year, and external IDs. Members only.
-     */
-    post: operations['resolve_album_endpoint_albums_resolve_post'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/albums/{album_id}/enrich': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/albums/{album_id}/enrich": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Enrich Album Endpoint
+         * @description Re-run enrichment on an existing album to fill missing metadata. Members only.
+         */
+        post: operations["enrich_album_endpoint_albums__album_id__enrich_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * Enrich Album Endpoint
-     * @description Re-run enrichment on an existing album to fill missing metadata. Members only.
-     */
-    post: operations['enrich_album_endpoint_albums__album_id__enrich_post'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/tracks/pending-features': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/tracks/pending-features": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Tracks Pending Features
+         * @description Return tracks that have a spotify_id but no audio feature data yet.
+         */
+        get: operations["list_tracks_pending_features_tracks_pending_features_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * List Tracks Pending Features
-     * @description Return tracks that have a spotify_id but no audio feature data yet.
-     */
-    get: operations['list_tracks_pending_features_tracks_pending_features_get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/tracks/{track_id}/features': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/tracks/{track_id}/features": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upsert Track Features
+         * @description Upsert Spotify audio features for a track.
+         */
+        post: operations["upsert_track_features_tracks__track_id__features_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * Upsert Track Features
-     * @description Upsert Spotify audio features for a track.
-     */
-    post: operations['upsert_track_features_tracks__track_id__features_post'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/weeks/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/weeks/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Weeks
+         * @description Return club weeks with nomination, vote, and rating aggregates.
+         */
+        get: operations["list_weeks_weeks__get"];
+        put?: never;
+        /**
+         * Create Week
+         * @description Create or update a week using idempotent matching fields. Club admins only.
+         */
+        post: operations["create_week_weeks__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * List Weeks
-     * @description Return club weeks with nomination, vote, and rating aggregates.
-     */
-    get: operations['list_weeks_weeks__get'];
-    put?: never;
-    /**
-     * Create Week
-     * @description Create or update a week using idempotent matching fields. Club admins only.
-     */
-    post: operations['create_week_weeks__post'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/weeks/{week_id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/weeks/{week_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Week
+         * @description Return a single week with nested aggregates.
+         */
+        get: operations["get_week_weeks__week_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Week
+         * @description Apply partial updates to a week while validating the timeline.
+         *
+         *     Club admins may change any field; the bot acting as itself only thread IDs.
+         */
+        patch: operations["update_week_weeks__week_id__patch"];
+        trace?: never;
     };
-    /**
-     * Get Week
-     * @description Return a single week with nested aggregates.
-     */
-    get: operations['get_week_weeks__week_id__get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /**
-     * Update Week
-     * @description Apply partial updates to a week while validating the timeline.
-     *
-     *     Club admins may change any field; the bot acting as itself only thread IDs.
-     */
-    patch: operations['update_week_weeks__week_id__patch'];
-    trace?: never;
-  };
-  '/weeks/{week_id}/nominations': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/weeks/{week_id}/nominations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Week Nomination
+         * @description Create a nomination for the acting member; unique per (user, album, week).
+         */
+        post: operations["create_week_nomination_weeks__week_id__nominations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * Create Week Nomination
-     * @description Create a nomination for the acting member; unique per (user, album, week).
-     */
-    post: operations['create_week_nomination_weeks__week_id__nominations_post'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/club/notifications/claim': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/club/notifications/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Claim */
+        post: operations["claim_club_notifications_claim_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Claim */
-    post: operations['claim_club_notifications_claim_post'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/club/notifications/{event_id}/ack': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/club/notifications/{event_id}/ack": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Acknowledge */
+        post: operations["acknowledge_club_notifications__event_id__ack_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Acknowledge */
-    post: operations['acknowledge_club_notifications__event_id__ack_post'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/club/notifications/{event_id}/fail': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/club/notifications/{event_id}/fail": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Fail */
+        post: operations["fail_club_notifications__event_id__fail_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Fail */
-    post: operations['fail_club_notifications__event_id__fail_post'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/club/members/discord/{discord_id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/club/members/discord/{discord_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Put Member
+         * @description Record the Discord user as a current member with ``role``; idempotent.
+         */
+        put: operations["put_member_club_members_discord__discord_id__put"];
+        post?: never;
+        /**
+         * Remove Member
+         * @description Mark the Discord user as having left; their club history is kept.
+         */
+        delete: operations["remove_member_club_members_discord__discord_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    /**
-     * Put Member
-     * @description Record the Discord user as a current member with ``role``; idempotent.
-     */
-    put: operations['put_member_club_members_discord__discord_id__put'];
-    post?: never;
-    /**
-     * Remove Member
-     * @description Mark the Discord user as having left; their club history is kept.
-     */
-    delete: operations['remove_member_club_members_discord__discord_id__delete'];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/nominations/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/nominations/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Nominations
+         * @description Return nominations, optionally filtered by week, user, or album.
+         */
+        get: operations["list_nominations_nominations__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * List Nominations
-     * @description Return nominations, optionally filtered by week, user, or album.
-     */
-    get: operations['list_nominations_nominations__get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/nominations/{nomination_id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/nominations/{nomination_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Nomination
+         * @description Return a single nomination by ID.
+         */
+        get: operations["get_nomination_nominations__nomination_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete Nomination
+         * @description Withdraw (delete) a nomination. Cascades to associated votes. Nominator or admin only.
+         */
+        delete: operations["delete_nomination_nominations__nomination_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Nomination
+         * @description Update a nomination's pitch, pitch track, tags, or album.
+         *
+         *     Only fields included in the request body are updated. Nominator or admin only.
+         */
+        patch: operations["update_nomination_nominations__nomination_id__patch"];
+        trace?: never;
     };
-    /**
-     * Get Nomination
-     * @description Return a single nomination by ID.
-     */
-    get: operations['get_nomination_nominations__nomination_id__get'];
-    put?: never;
-    post?: never;
-    /**
-     * Delete Nomination
-     * @description Withdraw (delete) a nomination. Cascades to associated votes. Nominator or admin only.
-     */
-    delete: operations['delete_nomination_nominations__nomination_id__delete'];
-    options?: never;
-    head?: never;
-    /**
-     * Update Nomination
-     * @description Update a nomination's pitch, pitch track, tags, or album.
-     *
-     *     Only fields included in the request body are updated. Nominator or admin only.
-     */
-    patch: operations['update_nomination_nominations__nomination_id__patch'];
-    trace?: never;
-  };
-  '/votes': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/votes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Votes
+         * @description Return the acting member's own votes; ballots are private to the voter.
+         */
+        get: operations["list_votes_votes_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * List Votes
-     * @description Return the acting member's own votes; ballots are private to the voter.
-     */
-    get: operations['list_votes_votes_get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/votes/{vote_id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/votes/{vote_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Vote
+         * @description Return one of the acting member's own votes; anyone else's is not found.
+         */
+        get: operations["get_vote_votes__vote_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * Get Vote
-     * @description Return one of the acting member's own votes; anyone else's is not found.
-     */
-    get: operations['get_vote_votes__vote_id__get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/weeks/{week_id}/votes': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/weeks/{week_id}/votes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Week Vote
+         * @description Submit the acting member's vote for a nomination in a week. Returns 409 if they
+         *     have already voted with the same rank for this week.
+         */
+        post: operations["create_week_vote_weeks__week_id__votes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * Create Week Vote
-     * @description Submit the acting member's vote for a nomination in a week. Returns 409 if they
-     *     have already voted with the same rank for this week.
-     */
-    post: operations['create_week_vote_weeks__week_id__votes_post'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/ratings': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/ratings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Ratings */
+        get: operations["list_ratings_ratings_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** List Ratings */
-    get: operations['list_ratings_ratings_get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/ratings/{rating_id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/ratings/{rating_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Rating */
+        get: operations["get_rating_ratings__rating_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Get Rating */
-    get: operations['get_rating_ratings__rating_id__get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/weeks/{week_id}/ratings': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/weeks/{week_id}/ratings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Week Rating */
+        post: operations["create_week_rating_weeks__week_id__ratings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Create Week Rating */
-    post: operations['create_week_rating_weeks__week_id__ratings_post'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/weeks/{week_id}/ratings/summary': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/weeks/{week_id}/ratings/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Week Rating Summary */
+        get: operations["get_week_rating_summary_weeks__week_id__ratings_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Get Week Rating Summary */
-    get: operations['get_week_rating_summary_weeks__week_id__ratings_summary_get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/club/singles-nights': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/club/singles-nights": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Singles Nights */
+        get: operations["list_singles_nights_club_singles_nights_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** List Singles Nights */
-    get: operations['list_singles_nights_club_singles_nights_get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/club/singles-nights/{session_id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/club/singles-nights/{session_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Singles Night */
+        get: operations["get_singles_night_club_singles_nights__session_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Get Singles Night */
-    get: operations['get_singles_night_club_singles_nights__session_id__get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/listen-events/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/listen-events/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Listen Events
+         * @description Return one user's listen events, newest first: the acting user's by default.
+         *
+         *     Another user's listens are visible only when that user shares with the club.
+         */
+        get: operations["list_listen_events_listen_events__get"];
+        put?: never;
+        /**
+         * Upsert Listen Events
+         * @description Upsert the acting user's listen events.
+         *
+         *     Duplicates (user, track, played_at) are returned without creating new rows.
+         */
+        post: operations["upsert_listen_events_listen_events__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * List Listen Events
-     * @description Return one user's listen events, newest first: the acting user's by default.
-     *
-     *     Another user's listens are visible only when that user shares with the club.
-     */
-    get: operations['list_listen_events_listen_events__get'];
-    put?: never;
-    /**
-     * Upsert Listen Events
-     * @description Upsert the acting user's listen events.
-     *
-     *     Duplicates (user, track, played_at) are returned without creating new rows.
-     */
-    post: operations['upsert_listen_events_listen_events__post'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/listen-events/{listen_event_id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/listen-events/{listen_event_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Listen Event
+         * @description Return a single listen event, if its owner's visibility allows.
+         */
+        get: operations["get_listen_event_listen_events__listen_event_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * Get Listen Event
-     * @description Return a single listen event, if its owner's visibility allows.
-     */
-    get: operations['get_listen_event_listen_events__listen_event_id__get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/users/{user_id}/taste-profiles/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/users/{user_id}/listening/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Sessions */
+        get: operations["read_sessions_users__user_id__listening_sessions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * List Taste Profiles
-     * @description Return stored taste profiles for a user, if their visibility allows.
-     */
-    get: operations['list_taste_profiles_users__user_id__taste_profiles__get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/users/{user_id}/taste-profiles/recompute': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/users/{user_id}/listening/sessions/{session_id}/override": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Put Override */
+        put: operations["put_override_users__user_id__listening_sessions__session_id__override_put"];
+        post?: never;
+        /** Delete Override */
+        delete: operations["delete_override_users__user_id__listening_sessions__session_id__override_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * Recompute Taste Profile
-     * @description Enqueue a taste profile recomputation for the user.
-     *
-     *     Returns 202 with a job_id. Poll GET /jobs/{job_id}/status for progress.
-     *     Only the user themselves may recompute.
-     */
-    post: operations['recompute_taste_profile_users__user_id__taste_profiles_recompute_post'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/search': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/users/{user_id}/taste-profiles/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Taste Profiles
+         * @description Return stored taste profiles for a user, if their visibility allows.
+         */
+        get: operations["list_taste_profiles_users__user_id__taste_profiles__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Search */
-    get: operations['search_search_get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/recommendations': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/users/{user_id}/taste-profiles/recompute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Recompute Taste Profile
+         * @description Enqueue a taste profile recomputation for the user.
+         *
+         *     Returns 202 with a job_id. Poll GET /jobs/{job_id}/status for progress.
+         *     Only the user themselves may recompute.
+         */
+        post: operations["recompute_taste_profile_users__user_id__taste_profiles_recompute_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Get Recommendations */
-    get: operations['get_recommendations_recommendations_get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/integrations/{provider}/connect': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search */
+        get: operations["search_search_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * Connect Integration
-     * @description Return the authorization URL that starts linking ``provider`` for the acting user.
-     */
-    post: operations['connect_integration_integrations__provider__connect_post'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/integrations/lastfm/callback': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/recommendations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Recommendations */
+        get: operations["get_recommendations_recommendations_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * Lastfm Callback
-     * @description Exchange a Last.fm token for a session key and link it to the user named in ``state``.
-     */
-    post: operations['lastfm_callback_integrations_lastfm_callback_post'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/trending': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/integrations/{provider}/connect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Connect Integration
+         * @description Return the authorization URL that starts linking ``provider`` for the acting user.
+         */
+        post: operations["connect_integration_integrations__provider__connect_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Get Trending */
-    get: operations['get_trending_trending_get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/users/{user_a}/compatibility/{user_b}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/integrations/lastfm/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Lastfm Callback
+         * @description Exchange a Last.fm token for a session key and link it to the user named in ``state``.
+         */
+        post: operations["lastfm_callback_integrations_lastfm_callback_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * Get Compatibility
-     * @description Return a compatibility score (0-100) between two users.
-     *
-     *     Uses cosine similarity of audio-feature taste profiles when available,
-     *     falls back to genre histogram overlap.
-     *
-     *     Only user A or user B may ask; both must be club members, and the other user must
-     *     share listening with the club. Anything else is not found.
-     */
-    get: operations['get_compatibility_users__user_a__compatibility__user_b__get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/ingest/lastfm': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/trending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Trending */
+        get: operations["get_trending_trending_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * Trigger Lastfm Ingest
-     * @description Enqueue a Last.fm scrobble ingest for the acting user.
-     */
-    post: operations['trigger_lastfm_ingest_ingest_lastfm_post'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/jobs/{job_id}/status': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/users/{user_a}/compatibility/{user_b}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Compatibility
+         * @description Return a compatibility score (0-100) between two users.
+         *
+         *     Uses cosine similarity of audio-feature taste profiles when available,
+         *     falls back to genre histogram overlap.
+         *
+         *     Only user A or user B may ask; both must be club members, and the other user must
+         *     share listening with the club. Anything else is not found.
+         */
+        get: operations["get_compatibility_users__user_a__compatibility__user_b__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * Get Job Status
-     * @description Poll the status of a background job.
-     *
-     *     Possible status values: queued, started, finished, failed, deferred, canceled.
-     */
-    get: operations['get_job_status_jobs__job_id__status_get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/feed': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/ingest/lastfm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Trigger Lastfm Ingest
+         * @description Enqueue a Last.fm scrobble ingest for the acting user.
+         */
+        post: operations["trigger_lastfm_ingest_ingest_lastfm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * Get Feed
-     * @description Return recent club activity (ratings and winners) for an acting club member.
-     */
-    get: operations['get_feed_feed_get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/users/{user_id}/follow/{target_id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/jobs/{job_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Job Status
+         * @description Poll the status of a background job.
+         *
+         *     Possible status values: queued, started, finished, failed, deferred, canceled.
+         */
+        get: operations["get_job_status_jobs__job_id__status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * Follow User
-     * @description Create a follow relationship from the acting user (user_id) → target_id.
-     */
-    post: operations['follow_user_users__user_id__follow__target_id__post'];
-    /**
-     * Unfollow User
-     * @description Remove a follow relationship from the acting user (user_id) → target_id.
-     */
-    delete: operations['unfollow_user_users__user_id__follow__target_id__delete'];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/users/{user_id}/followers': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/feed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Feed
+         * @description Return recent club activity (ratings and winners) for an acting club member.
+         */
+        get: operations["get_feed_feed_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * List Followers
-     * @description Return users who follow user_id. Club members only.
-     */
-    get: operations['list_followers_users__user_id__followers_get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/users/{user_id}/following': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/users/{user_id}/follow/{target_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Follow User
+         * @description Create a follow relationship from the acting user (user_id) → target_id.
+         */
+        post: operations["follow_user_users__user_id__follow__target_id__post"];
+        /**
+         * Unfollow User
+         * @description Remove a follow relationship from the acting user (user_id) → target_id.
+         */
+        delete: operations["unfollow_user_users__user_id__follow__target_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * List Following
-     * @description Return users that user_id follows. Club members only.
-     */
-    get: operations['list_following_users__user_id__following_get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/health': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/users/{user_id}/followers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Followers
+         * @description Return users who follow user_id. Club members only.
+         */
+        get: operations["list_followers_users__user_id__followers_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * Health
-     * @description Report database reachability: 200 when it answers, 503 otherwise.
-     */
-    get: operations['health_health_get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
+    "/users/{user_id}/following": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Following
+         * @description Return users that user_id follows. Club members only.
+         */
+        get: operations["list_following_users__user_id__following_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Health
+         * @description Report database reachability: 200 when it answers, 503 otherwise.
+         */
+        get: operations["health_health_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-  schemas: {
-    /** AlbumCreate */
-    AlbumCreate: {
-      /** Title */
-      title: string;
-      /** Artist Name */
-      artist_name: string;
-      /** Release Year */
-      release_year?: number | null;
-      /** Musicbrainz Id */
-      musicbrainz_id?: string | null;
-      /** Spotify Id */
-      spotify_id?: string | null;
-      /** Cover Url */
-      cover_url?: string | null;
-      /** Spotify Url */
-      spotify_url?: string | null;
-      /** Genres */
-      genres?: string[] | null;
+    schemas: {
+        /** AlbumCreate */
+        AlbumCreate: {
+            /** Title */
+            title: string;
+            /** Artist Name */
+            artist_name: string;
+            /** Release Year */
+            release_year?: number | null;
+            /** Musicbrainz Id */
+            musicbrainz_id?: string | null;
+            /** Spotify Id */
+            spotify_id?: string | null;
+            /** Cover Url */
+            cover_url?: string | null;
+            /** Spotify Url */
+            spotify_url?: string | null;
+            /** Genres */
+            genres?: string[] | null;
+        };
+        /** AlbumRead */
+        AlbumRead: {
+            /** Title */
+            title: string;
+            /** Artist Name */
+            artist_name: string;
+            /** Release Year */
+            release_year?: number | null;
+            /** Musicbrainz Id */
+            musicbrainz_id?: string | null;
+            /** Spotify Id */
+            spotify_id?: string | null;
+            /** Cover Url */
+            cover_url?: string | null;
+            /** Spotify Url */
+            spotify_url?: string | null;
+            /** Genres */
+            genres?: string[] | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Artwork Source Url */
+            artwork_source_url?: string | null;
+        };
+        /**
+         * AlbumResolveRequest
+         * @description Request body for the /albums/resolve endpoint.
+         */
+        AlbumResolveRequest: {
+            /** Title */
+            title: string;
+            /** Artist */
+            artist: string;
+            /** Year */
+            year?: number | null;
+        };
+        /** AlbumUpdate */
+        AlbumUpdate: {
+            /** Title */
+            title?: string | null;
+            /** Artist Name */
+            artist_name?: string | null;
+            /** Release Year */
+            release_year?: number | null;
+            /** Musicbrainz Id */
+            musicbrainz_id?: string | null;
+            /** Spotify Id */
+            spotify_id?: string | null;
+            /** Cover Url */
+            cover_url?: string | null;
+            /** Spotify Url */
+            spotify_url?: string | null;
+            /** Genres */
+            genres?: string[] | null;
+        };
+        /** CallbackResponse */
+        CallbackResponse: {
+            /** Status */
+            status: string;
+            /** Provider */
+            provider: string;
+            /** Username */
+            username: string;
+            /** Message */
+            message: string;
+        };
+        /**
+         * ClubRole
+         * @enum {string}
+         */
+        ClubRole: "member" | "admin";
+        /**
+         * ConnectRequest
+         * @description Start linking an external account for the acting user.
+         */
+        ConnectRequest: {
+            /** User Id */
+            user_id?: string | null;
+            /** Callback Url */
+            callback_url: string;
+        };
+        /** ConnectResponse */
+        ConnectResponse: {
+            /** Status */
+            status: string;
+            /** Url */
+            url: string;
+        };
+        /** DeliveryAck */
+        DeliveryAck: {
+            /**
+             * Lease Token
+             * Format: uuid
+             */
+            lease_token: string;
+            /** Message Id */
+            message_id: string;
+        };
+        /** DeliveryEvent */
+        DeliveryEvent: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Lease Token
+             * Format: uuid
+             */
+            lease_token: string;
+            /** Thread Id */
+            thread_id: string;
+            /** Message */
+            message: string;
+        };
+        /** DeliveryFailure */
+        DeliveryFailure: {
+            /**
+             * Lease Token
+             * Format: uuid
+             */
+            lease_token: string;
+            /**
+             * Permanent
+             * @default false
+             */
+            permanent: boolean;
+            /**
+             * Retry After
+             * @default 0
+             */
+            retry_after: number;
+        };
+        /**
+         * FeedEventType
+         * @enum {string}
+         */
+        FeedEventType: "rating" | "listen" | "club" | "follow";
+        /**
+         * FeedItem
+         * @description An activity item shown in the feed.
+         */
+        FeedItem: {
+            /** Id */
+            id: string;
+            type: components["schemas"]["FeedEventType"];
+            /** Actor */
+            actor: string;
+            /** Actor Id */
+            actor_id?: string | null;
+            /** Action */
+            action: string;
+            /** Target */
+            target?: string | null;
+            /** Target Link */
+            target_link?: string | null;
+            /** Rating */
+            rating?: number | null;
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
+            /** Metadata */
+            metadata?: Record<string, never> | null;
+        };
+        /** HTTPValidationError */
+        HTTPValidationError: {
+            /** Detail */
+            detail?: components["schemas"]["ValidationError"][];
+        };
+        /** JobAccepted */
+        JobAccepted: {
+            /** Job Id */
+            job_id: string;
+            /**
+             * Status
+             * @default queued
+             */
+            status: string;
+            /**
+             * Detail
+             * @default Job enqueued for background processing.
+             */
+            detail: string;
+        };
+        /** JobStatus */
+        JobStatus: {
+            /** Job Id */
+            job_id: string;
+            /** Status */
+            status: string;
+            /** Result */
+            result?: unknown | null;
+            /** Error */
+            error?: string | null;
+        };
+        /**
+         * LastfmCallbackRequest
+         * @description Complete a Last.fm link. Any extra field, such as ``user_id``, is ignored.
+         */
+        LastfmCallbackRequest: {
+            /** Token */
+            token: string;
+            /** State */
+            state: string;
+        };
+        /** LastfmIngestRequest */
+        LastfmIngestRequest: {
+            /** User Id */
+            user_id?: string | null;
+            /** Lastfm Username */
+            lastfm_username: string;
+            /** Since Ts */
+            since_ts?: number | null;
+        };
+        /**
+         * LinkedAccountCreate
+         * @description Write schema: the only place credentials are accepted.
+         */
+        LinkedAccountCreate: {
+            /** User Id */
+            user_id?: string | null;
+            provider: components["schemas"]["ProviderType"];
+            /** Provider User Id */
+            provider_user_id: string;
+            /** Display Name */
+            display_name?: string | null;
+            /** Token Expires At */
+            token_expires_at?: string | null;
+            /** Access Token */
+            access_token?: string | null;
+            /** Refresh Token */
+            refresh_token?: string | null;
+        };
+        /**
+         * LinkedAccountRead
+         * @description Read schema: reports whether credentials exist, never their values.
+         */
+        LinkedAccountRead: {
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
+            provider: components["schemas"]["ProviderType"];
+            /** Provider User Id */
+            provider_user_id: string;
+            /** Display Name */
+            display_name?: string | null;
+            /** Token Expires At */
+            token_expires_at?: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Has Credentials
+             * @default false
+             */
+            has_credentials: boolean;
+        };
+        /** ListenEventCreate */
+        ListenEventCreate: {
+            /** User Id */
+            user_id?: string | null;
+            /**
+             * Track Id
+             * Format: uuid
+             */
+            track_id: string;
+            /**
+             * Played At
+             * Format: date-time
+             */
+            played_at: string;
+            source: components["schemas"]["ListenSource"];
+            /** Metadata */
+            metadata?: Record<string, never> | null;
+            /** Ingested At */
+            ingested_at?: string | null;
+        };
+        /** ListenEventRead */
+        ListenEventRead: {
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
+            /**
+             * Track Id
+             * Format: uuid
+             */
+            track_id: string;
+            /**
+             * Played At
+             * Format: date-time
+             */
+            played_at: string;
+            source: components["schemas"]["ListenSource"];
+            /** Metadata */
+            metadata?: Record<string, never> | null;
+            /** Ingested At */
+            ingested_at?: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+        };
+        /** ListenEventsPayload */
+        ListenEventsPayload: {
+            /**
+             * Listens
+             * @description Listen events to upsert.
+             */
+            listens: components["schemas"]["ListenEventCreate"][];
+        };
+        /** ListenSessionRead */
+        ListenSessionRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+            /**
+             * Ended At
+             * Format: date-time
+             */
+            ended_at: string;
+            /** Listen Count */
+            listen_count: number;
+            /** Kind */
+            kind: string;
+            /** Rule Version */
+            rule_version: string;
+            /** Override */
+            override: string | null;
+            /** Effective Kind */
+            effective_kind: string;
+        };
+        /**
+         * ListenSource
+         * @enum {string}
+         */
+        ListenSource: "spotify" | "lastfm" | "listenbrainz" | "manual";
+        /**
+         * ListeningVisibility
+         * @description Who besides the owner may see a user's listening data (ADR 0009).
+         * @enum {string}
+         */
+        ListeningVisibility: "private" | "club";
+        /** MembershipRead */
+        MembershipRead: {
+            /** User Id */
+            user_id: string;
+            role: components["schemas"]["ClubRole"];
+        };
+        /** MembershipUpdate */
+        MembershipUpdate: {
+            role: components["schemas"]["ClubRole"];
+        };
+        /** NominationCreate */
+        NominationCreate: {
+            /**
+             * Week Id
+             * Format: uuid
+             */
+            week_id: string;
+            /** User Id */
+            user_id?: string | null;
+            /**
+             * Album Id
+             * Format: uuid
+             */
+            album_id: string;
+            /** Pitch */
+            pitch?: string | null;
+            /** Pitch Track Url */
+            pitch_track_url?: string | null;
+            /** Genre */
+            genre?: string | null;
+            /** Decade */
+            decade?: string | null;
+            /** Country */
+            country?: string | null;
+            /** Submitted At */
+            submitted_at?: string | null;
+        };
+        /** NominationRead */
+        NominationRead: {
+            /**
+             * Week Id
+             * Format: uuid
+             */
+            week_id: string;
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
+            /**
+             * Album Id
+             * Format: uuid
+             */
+            album_id: string;
+            /** Pitch */
+            pitch?: string | null;
+            /** Pitch Track Url */
+            pitch_track_url?: string | null;
+            /** Genre */
+            genre?: string | null;
+            /** Decade */
+            decade?: string | null;
+            /** Country */
+            country?: string | null;
+            /** Submitted At */
+            submitted_at?: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+        };
+        /** NominationUpdate */
+        NominationUpdate: {
+            /** Pitch */
+            pitch?: string | null;
+            /** Pitch Track Url */
+            pitch_track_url?: string | null;
+            /** Genre */
+            genre?: string | null;
+            /** Decade */
+            decade?: string | null;
+            /** Country */
+            country?: string | null;
+            /** Album Id */
+            album_id?: string | null;
+        };
+        /** NominationWithStats */
+        NominationWithStats: {
+            /**
+             * Week Id
+             * Format: uuid
+             */
+            week_id: string;
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
+            /**
+             * Album Id
+             * Format: uuid
+             */
+            album_id: string;
+            /** Pitch */
+            pitch?: string | null;
+            /** Pitch Track Url */
+            pitch_track_url?: string | null;
+            /** Genre */
+            genre?: string | null;
+            /** Decade */
+            decade?: string | null;
+            /** Country */
+            country?: string | null;
+            /** Submitted At */
+            submitted_at?: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            vote_summary: components["schemas"]["VoteAggregate"];
+            rating_summary: components["schemas"]["RatingAggregate"];
+        };
+        /** OverrideWinnerPayload */
+        OverrideWinnerPayload: {
+            /**
+             * Album Id
+             * Format: uuid
+             */
+            album_id: string;
+        };
+        /** OverrideWrite */
+        OverrideWrite: {
+            /**
+             * Override
+             * @enum {string}
+             */
+            override: "keep" | "autoplay";
+        };
+        /**
+         * ProviderType
+         * @enum {string}
+         */
+        ProviderType: "discord" | "spotify" | "lastfm" | "listenbrainz";
+        /** RatingAggregate */
+        RatingAggregate: {
+            /** Average */
+            average: number | null;
+            /** Count */
+            count: number;
+        };
+        /** RatingCreate */
+        RatingCreate: {
+            /**
+             * Week Id
+             * Format: uuid
+             */
+            week_id: string;
+            /** User Id */
+            user_id?: string | null;
+            /**
+             * Album Id
+             * Format: uuid
+             */
+            album_id: string;
+            /** Nomination Id */
+            nomination_id?: string | null;
+            /** Value */
+            value: number;
+            /** Favorite Track */
+            favorite_track?: string | null;
+            /** Review */
+            review?: string | null;
+            /** Created At */
+            created_at?: string | null;
+            /** Metadata */
+            metadata?: Record<string, never> | null;
+        };
+        /** RatingHistogramBin */
+        RatingHistogramBin: {
+            /** Value */
+            value: number;
+            /** Count */
+            count: number;
+        };
+        /** RatingRead */
+        RatingRead: {
+            /**
+             * Week Id
+             * Format: uuid
+             */
+            week_id: string;
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
+            /**
+             * Album Id
+             * Format: uuid
+             */
+            album_id: string;
+            /** Nomination Id */
+            nomination_id?: string | null;
+            /** Value */
+            value: number;
+            /** Favorite Track */
+            favorite_track?: string | null;
+            /** Review */
+            review?: string | null;
+            /** Created At */
+            created_at?: string | null;
+            /** Metadata */
+            metadata?: Record<string, never> | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+        };
+        /** RatingSummary */
+        RatingSummary: {
+            /** Average */
+            average: number | null;
+            /** Count */
+            count: number;
+            /** Histogram */
+            histogram?: components["schemas"]["RatingHistogramBin"][] | null;
+        };
+        /** RecentListenRead */
+        RecentListenRead: {
+            /** Track Name */
+            track_name: string;
+            /** Artist Name */
+            artist_name: string;
+            /** Album Name */
+            album_name?: string | null;
+            /**
+             * Listened At
+             * Format: date-time
+             */
+            listened_at: string;
+            /** Source */
+            source?: string | null;
+        };
+        /** RecomputeAccepted */
+        RecomputeAccepted: {
+            /** Job Id */
+            job_id: string;
+            /**
+             * Status
+             * @default queued
+             */
+            status: string;
+            /**
+             * Detail
+             * @default Taste profile recomputation enqueued.
+             */
+            detail: string;
+        };
+        /** SinglesPhaseSummary */
+        SinglesPhaseSummary: {
+            /** Count */
+            count: number;
+            /** Average */
+            average: number | null;
+        };
+        /** SinglesRatingRead */
+        SinglesRatingRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
+            /** Display Name */
+            display_name: string;
+            /**
+             * Phase
+             * @enum {string}
+             */
+            phase: "first" | "final";
+            /** Value */
+            value: number;
+            /** Review */
+            review: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Source Url */
+            source_url: string | null;
+        };
+        /** SinglesRatingSummary */
+        SinglesRatingSummary: {
+            first: components["schemas"]["SinglesPhaseSummary"];
+            final: components["schemas"]["SinglesPhaseSummary"];
+        };
+        /** SinglesSessionDetail */
+        SinglesSessionDetail: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Week Number */
+            week_number: number | null;
+            /** Event Date */
+            event_date: string | null;
+            /** Event At */
+            event_at: string | null;
+            /** Original Label */
+            original_label: string;
+            /** Source Url */
+            source_url: string;
+            /** Song Count */
+            song_count: number;
+            /** Rating Count */
+            rating_count: number;
+            /** Songs */
+            songs: components["schemas"]["SinglesSongRead"][];
+        };
+        /** SinglesSessionRead */
+        SinglesSessionRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Week Number */
+            week_number: number | null;
+            /** Event Date */
+            event_date: string | null;
+            /** Event At */
+            event_at: string | null;
+            /** Original Label */
+            original_label: string;
+            /** Source Url */
+            source_url: string;
+            /** Song Count */
+            song_count: number;
+            /** Rating Count */
+            rating_count: number;
+        };
+        /** SinglesSongRead */
+        SinglesSongRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Title */
+            title: string;
+            /** Artist Name */
+            artist_name: string;
+            /** Url */
+            url: string | null;
+            /** Cover Url */
+            cover_url?: string | null;
+            /** Artwork Source Url */
+            artwork_source_url?: string | null;
+            /** Source Url */
+            source_url: string | null;
+            /** Submissions */
+            submissions: components["schemas"]["SinglesSubmissionRead"][];
+            /** Ratings */
+            ratings: components["schemas"]["SinglesRatingRead"][];
+            rating_summary: components["schemas"]["SinglesRatingSummary"];
+        };
+        /** SinglesSubmissionRead */
+        SinglesSubmissionRead: {
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
+            /** Display Name */
+            display_name: string;
+            /**
+             * Submitted At
+             * Format: date-time
+             */
+            submitted_at: string;
+        };
+        /** TasteProfileRead */
+        TasteProfileRead: {
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
+            /** Scope */
+            scope: string;
+            /** Genre Histogram */
+            genre_histogram?: {
+                [key: string]: number;
+            } | null;
+            /** Feature Means */
+            feature_means?: {
+                [key: string]: number | null;
+            } | null;
+            /** Time Of Day Histogram */
+            time_of_day_histogram?: {
+                [key: string]: number;
+            } | null;
+            /** Last Computed At */
+            last_computed_at?: string | null;
+        };
+        /** TrackFeatureCreate */
+        TrackFeatureCreate: {
+            /** Energy */
+            energy?: number | null;
+            /** Valence */
+            valence?: number | null;
+            /** Danceability */
+            danceability?: number | null;
+            /** Tempo */
+            tempo?: number | null;
+            /** Acousticness */
+            acousticness?: number | null;
+            /** Instrumentalness */
+            instrumentalness?: number | null;
+            /** Genres */
+            genres?: string[] | null;
+        };
+        /** TrackFeatureRead */
+        TrackFeatureRead: {
+            /** Energy */
+            energy?: number | null;
+            /** Valence */
+            valence?: number | null;
+            /** Danceability */
+            danceability?: number | null;
+            /** Tempo */
+            tempo?: number | null;
+            /** Acousticness */
+            acousticness?: number | null;
+            /** Instrumentalness */
+            instrumentalness?: number | null;
+            /** Genres */
+            genres?: string[] | null;
+            /**
+             * Track Id
+             * Format: uuid
+             */
+            track_id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** TrackRead */
+        TrackRead: {
+            /**
+             * Album Id
+             * Format: uuid
+             */
+            album_id: string;
+            /** Title */
+            title: string;
+            /** Artist Name */
+            artist_name: string;
+            /** Duration Ms */
+            duration_ms?: number | null;
+            /** Musicbrainz Id */
+            musicbrainz_id?: string | null;
+            /** Spotify Id */
+            spotify_id?: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+        };
+        /** UserCreate */
+        UserCreate: {
+            /** Display Name */
+            display_name: string;
+            /** Handle */
+            handle?: string | null;
+        };
+        /** UserRead */
+        UserRead: {
+            /** Display Name */
+            display_name: string;
+            /** Handle */
+            handle?: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** @default private */
+            listening_visibility: components["schemas"]["ListeningVisibility"];
+            /** Timezone */
+            timezone?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** UserUpdate */
+        UserUpdate: {
+            /** Display Name */
+            display_name?: string | null;
+            /** Handle */
+            handle?: string | null;
+            listening_visibility?: components["schemas"]["ListeningVisibility"] | null;
+            /** Timezone */
+            timezone?: string | null;
+        };
+        /** ValidationError */
+        ValidationError: {
+            /** Location */
+            loc: (string | number)[];
+            /** Message */
+            msg: string;
+            /** Error Type */
+            type: string;
+        };
+        /** VoteAggregate */
+        VoteAggregate: {
+            /** Points */
+            points: number;
+            /** First Place */
+            first_place: number;
+            /** Second Place */
+            second_place: number;
+            /** Total Votes */
+            total_votes: number;
+        };
+        /** VoteCreate */
+        VoteCreate: {
+            /**
+             * Week Id
+             * Format: uuid
+             */
+            week_id: string;
+            /**
+             * Nomination Id
+             * Format: uuid
+             */
+            nomination_id: string;
+            /** User Id */
+            user_id?: string | null;
+            /** Rank */
+            rank: number;
+            /** Submitted At */
+            submitted_at?: string | null;
+        };
+        /** VoteRead */
+        VoteRead: {
+            /**
+             * Week Id
+             * Format: uuid
+             */
+            week_id: string;
+            /**
+             * Nomination Id
+             * Format: uuid
+             */
+            nomination_id: string;
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
+            /** Rank */
+            rank: number;
+            /** Submitted At */
+            submitted_at?: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+        };
+        /** WeekAggregates */
+        WeekAggregates: {
+            /** Nomination Count */
+            nomination_count: number;
+            /** Vote Count */
+            vote_count: number;
+            /** Rating Count */
+            rating_count: number;
+            /** Rating Average */
+            rating_average: number | null;
+        };
+        /** WeekCreate */
+        WeekCreate: {
+            /** Label */
+            label: string;
+            /** Week Number */
+            week_number?: number | null;
+            /** Discussion At */
+            discussion_at?: string | null;
+            /** Nominations Close At */
+            nominations_close_at?: string | null;
+            /** Poll Close At */
+            poll_close_at?: string | null;
+            /** Winner Album Id */
+            winner_album_id?: string | null;
+            /** Nominations Thread Id */
+            nominations_thread_id?: string | null;
+            /** Poll Thread Id */
+            poll_thread_id?: string | null;
+            /** Winner Thread Id */
+            winner_thread_id?: string | null;
+            /** Ratings Thread Id */
+            ratings_thread_id?: string | null;
+        };
+        /** WeekDetail */
+        WeekDetail: {
+            /** Label */
+            label: string;
+            /** Week Number */
+            week_number?: number | null;
+            /** Discussion At */
+            discussion_at?: string | null;
+            /** Nominations Close At */
+            nominations_close_at?: string | null;
+            /** Poll Close At */
+            poll_close_at?: string | null;
+            /** Winner Album Id */
+            winner_album_id?: string | null;
+            /** Nominations Thread Id */
+            nominations_thread_id?: string | null;
+            /** Poll Thread Id */
+            poll_thread_id?: string | null;
+            /** Winner Thread Id */
+            winner_thread_id?: string | null;
+            /** Ratings Thread Id */
+            ratings_thread_id?: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Nominations */
+            nominations: components["schemas"]["NominationWithStats"][];
+            aggregates: components["schemas"]["WeekAggregates"];
+        };
+        /** WeekRead */
+        WeekRead: {
+            /** Label */
+            label: string;
+            /** Week Number */
+            week_number?: number | null;
+            /** Discussion At */
+            discussion_at?: string | null;
+            /** Nominations Close At */
+            nominations_close_at?: string | null;
+            /** Poll Close At */
+            poll_close_at?: string | null;
+            /** Winner Album Id */
+            winner_album_id?: string | null;
+            /** Nominations Thread Id */
+            nominations_thread_id?: string | null;
+            /** Poll Thread Id */
+            poll_thread_id?: string | null;
+            /** Winner Thread Id */
+            winner_thread_id?: string | null;
+            /** Ratings Thread Id */
+            ratings_thread_id?: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** WeekUpdate */
+        WeekUpdate: {
+            /** Label */
+            label?: string | null;
+            /** Week Number */
+            week_number?: number | null;
+            /** Discussion At */
+            discussion_at?: string | null;
+            /** Nominations Close At */
+            nominations_close_at?: string | null;
+            /** Poll Close At */
+            poll_close_at?: string | null;
+            /** Winner Album Id */
+            winner_album_id?: string | null;
+            /** Nominations Thread Id */
+            nominations_thread_id?: string | null;
+            /** Poll Thread Id */
+            poll_thread_id?: string | null;
+            /** Winner Thread Id */
+            winner_thread_id?: string | null;
+            /** Ratings Thread Id */
+            ratings_thread_id?: string | null;
+        };
     };
-    /** AlbumRead */
-    AlbumRead: {
-      /** Title */
-      title: string;
-      /** Artist Name */
-      artist_name: string;
-      /** Release Year */
-      release_year?: number | null;
-      /** Musicbrainz Id */
-      musicbrainz_id?: string | null;
-      /** Spotify Id */
-      spotify_id?: string | null;
-      /** Cover Url */
-      cover_url?: string | null;
-      /** Spotify Url */
-      spotify_url?: string | null;
-      /** Genres */
-      genres?: string[] | null;
-      /**
-       * Id
-       * Format: uuid
-       */
-      id: string;
-      /** Artwork Source Url */
-      artwork_source_url?: string | null;
-    };
-    /**
-     * AlbumResolveRequest
-     * @description Request body for the /albums/resolve endpoint.
-     */
-    AlbumResolveRequest: {
-      /** Title */
-      title: string;
-      /** Artist */
-      artist: string;
-      /** Year */
-      year?: number | null;
-    };
-    /** AlbumUpdate */
-    AlbumUpdate: {
-      /** Title */
-      title?: string | null;
-      /** Artist Name */
-      artist_name?: string | null;
-      /** Release Year */
-      release_year?: number | null;
-      /** Musicbrainz Id */
-      musicbrainz_id?: string | null;
-      /** Spotify Id */
-      spotify_id?: string | null;
-      /** Cover Url */
-      cover_url?: string | null;
-      /** Spotify Url */
-      spotify_url?: string | null;
-      /** Genres */
-      genres?: string[] | null;
-    };
-    /** CallbackResponse */
-    CallbackResponse: {
-      /** Status */
-      status: string;
-      /** Provider */
-      provider: string;
-      /** Username */
-      username: string;
-      /** Message */
-      message: string;
-    };
-    /**
-     * ClubRole
-     * @enum {string}
-     */
-    ClubRole: 'member' | 'admin';
-    /**
-     * ConnectRequest
-     * @description Start linking an external account for the acting user.
-     */
-    ConnectRequest: {
-      /** User Id */
-      user_id?: string | null;
-      /** Callback Url */
-      callback_url: string;
-    };
-    /** ConnectResponse */
-    ConnectResponse: {
-      /** Status */
-      status: string;
-      /** Url */
-      url: string;
-    };
-    /** DeliveryAck */
-    DeliveryAck: {
-      /**
-       * Lease Token
-       * Format: uuid
-       */
-      lease_token: string;
-      /** Message Id */
-      message_id: string;
-    };
-    /** DeliveryEvent */
-    DeliveryEvent: {
-      /**
-       * Id
-       * Format: uuid
-       */
-      id: string;
-      /**
-       * Lease Token
-       * Format: uuid
-       */
-      lease_token: string;
-      /** Thread Id */
-      thread_id: string;
-      /** Message */
-      message: string;
-    };
-    /** DeliveryFailure */
-    DeliveryFailure: {
-      /**
-       * Lease Token
-       * Format: uuid
-       */
-      lease_token: string;
-      /**
-       * Permanent
-       * @default false
-       */
-      permanent: boolean;
-      /**
-       * Retry After
-       * @default 0
-       */
-      retry_after: number;
-    };
-    /**
-     * FeedEventType
-     * @enum {string}
-     */
-    FeedEventType: 'rating' | 'listen' | 'club' | 'follow';
-    /**
-     * FeedItem
-     * @description An activity item shown in the feed.
-     */
-    FeedItem: {
-      /** Id */
-      id: string;
-      type: components['schemas']['FeedEventType'];
-      /** Actor */
-      actor: string;
-      /** Actor Id */
-      actor_id?: string | null;
-      /** Action */
-      action: string;
-      /** Target */
-      target?: string | null;
-      /** Target Link */
-      target_link?: string | null;
-      /** Rating */
-      rating?: number | null;
-      /**
-       * Timestamp
-       * Format: date-time
-       */
-      timestamp: string;
-      /** Metadata */
-      metadata?: Record<string, never> | null;
-    };
-    /** HTTPValidationError */
-    HTTPValidationError: {
-      /** Detail */
-      detail?: components['schemas']['ValidationError'][];
-    };
-    /** JobAccepted */
-    JobAccepted: {
-      /** Job Id */
-      job_id: string;
-      /**
-       * Status
-       * @default queued
-       */
-      status: string;
-      /**
-       * Detail
-       * @default Job enqueued for background processing.
-       */
-      detail: string;
-    };
-    /** JobStatus */
-    JobStatus: {
-      /** Job Id */
-      job_id: string;
-      /** Status */
-      status: string;
-      /** Result */
-      result?: unknown | null;
-      /** Error */
-      error?: string | null;
-    };
-    /**
-     * LastfmCallbackRequest
-     * @description Complete a Last.fm link. Any extra field, such as ``user_id``, is ignored.
-     */
-    LastfmCallbackRequest: {
-      /** Token */
-      token: string;
-      /** State */
-      state: string;
-    };
-    /** LastfmIngestRequest */
-    LastfmIngestRequest: {
-      /** User Id */
-      user_id?: string | null;
-      /** Lastfm Username */
-      lastfm_username: string;
-      /** Since Ts */
-      since_ts?: number | null;
-    };
-    /**
-     * LinkedAccountCreate
-     * @description Write schema: the only place credentials are accepted.
-     */
-    LinkedAccountCreate: {
-      /** User Id */
-      user_id?: string | null;
-      provider: components['schemas']['ProviderType'];
-      /** Provider User Id */
-      provider_user_id: string;
-      /** Display Name */
-      display_name?: string | null;
-      /** Token Expires At */
-      token_expires_at?: string | null;
-      /** Access Token */
-      access_token?: string | null;
-      /** Refresh Token */
-      refresh_token?: string | null;
-    };
-    /**
-     * LinkedAccountRead
-     * @description Read schema: reports whether credentials exist, never their values.
-     */
-    LinkedAccountRead: {
-      /**
-       * User Id
-       * Format: uuid
-       */
-      user_id: string;
-      provider: components['schemas']['ProviderType'];
-      /** Provider User Id */
-      provider_user_id: string;
-      /** Display Name */
-      display_name?: string | null;
-      /** Token Expires At */
-      token_expires_at?: string | null;
-      /**
-       * Id
-       * Format: uuid
-       */
-      id: string;
-      /**
-       * Created At
-       * Format: date-time
-       */
-      created_at: string;
-      /**
-       * Has Credentials
-       * @default false
-       */
-      has_credentials: boolean;
-    };
-    /** ListenEventCreate */
-    ListenEventCreate: {
-      /** User Id */
-      user_id?: string | null;
-      /**
-       * Track Id
-       * Format: uuid
-       */
-      track_id: string;
-      /**
-       * Played At
-       * Format: date-time
-       */
-      played_at: string;
-      source: components['schemas']['ListenSource'];
-      /** Metadata */
-      metadata?: Record<string, never> | null;
-      /** Ingested At */
-      ingested_at?: string | null;
-    };
-    /** ListenEventRead */
-    ListenEventRead: {
-      /**
-       * User Id
-       * Format: uuid
-       */
-      user_id: string;
-      /**
-       * Track Id
-       * Format: uuid
-       */
-      track_id: string;
-      /**
-       * Played At
-       * Format: date-time
-       */
-      played_at: string;
-      source: components['schemas']['ListenSource'];
-      /** Metadata */
-      metadata?: Record<string, never> | null;
-      /** Ingested At */
-      ingested_at?: string | null;
-      /**
-       * Id
-       * Format: uuid
-       */
-      id: string;
-    };
-    /** ListenEventsPayload */
-    ListenEventsPayload: {
-      /**
-       * Listens
-       * @description Listen events to upsert.
-       */
-      listens: components['schemas']['ListenEventCreate'][];
-    };
-    /**
-     * ListenSource
-     * @enum {string}
-     */
-    ListenSource: 'spotify' | 'lastfm' | 'listenbrainz' | 'manual';
-    /**
-     * ListeningVisibility
-     * @description Who besides the owner may see a user's listening data (ADR 0009).
-     * @enum {string}
-     */
-    ListeningVisibility: 'private' | 'club';
-    /** MembershipRead */
-    MembershipRead: {
-      /** User Id */
-      user_id: string;
-      role: components['schemas']['ClubRole'];
-    };
-    /** MembershipUpdate */
-    MembershipUpdate: {
-      role: components['schemas']['ClubRole'];
-    };
-    /** NominationCreate */
-    NominationCreate: {
-      /**
-       * Week Id
-       * Format: uuid
-       */
-      week_id: string;
-      /** User Id */
-      user_id?: string | null;
-      /**
-       * Album Id
-       * Format: uuid
-       */
-      album_id: string;
-      /** Pitch */
-      pitch?: string | null;
-      /** Pitch Track Url */
-      pitch_track_url?: string | null;
-      /** Genre */
-      genre?: string | null;
-      /** Decade */
-      decade?: string | null;
-      /** Country */
-      country?: string | null;
-      /** Submitted At */
-      submitted_at?: string | null;
-    };
-    /** NominationRead */
-    NominationRead: {
-      /**
-       * Week Id
-       * Format: uuid
-       */
-      week_id: string;
-      /**
-       * User Id
-       * Format: uuid
-       */
-      user_id: string;
-      /**
-       * Album Id
-       * Format: uuid
-       */
-      album_id: string;
-      /** Pitch */
-      pitch?: string | null;
-      /** Pitch Track Url */
-      pitch_track_url?: string | null;
-      /** Genre */
-      genre?: string | null;
-      /** Decade */
-      decade?: string | null;
-      /** Country */
-      country?: string | null;
-      /** Submitted At */
-      submitted_at?: string | null;
-      /**
-       * Id
-       * Format: uuid
-       */
-      id: string;
-    };
-    /** NominationUpdate */
-    NominationUpdate: {
-      /** Pitch */
-      pitch?: string | null;
-      /** Pitch Track Url */
-      pitch_track_url?: string | null;
-      /** Genre */
-      genre?: string | null;
-      /** Decade */
-      decade?: string | null;
-      /** Country */
-      country?: string | null;
-      /** Album Id */
-      album_id?: string | null;
-    };
-    /** NominationWithStats */
-    NominationWithStats: {
-      /**
-       * Week Id
-       * Format: uuid
-       */
-      week_id: string;
-      /**
-       * User Id
-       * Format: uuid
-       */
-      user_id: string;
-      /**
-       * Album Id
-       * Format: uuid
-       */
-      album_id: string;
-      /** Pitch */
-      pitch?: string | null;
-      /** Pitch Track Url */
-      pitch_track_url?: string | null;
-      /** Genre */
-      genre?: string | null;
-      /** Decade */
-      decade?: string | null;
-      /** Country */
-      country?: string | null;
-      /** Submitted At */
-      submitted_at?: string | null;
-      /**
-       * Id
-       * Format: uuid
-       */
-      id: string;
-      vote_summary: components['schemas']['VoteAggregate'];
-      rating_summary: components['schemas']['RatingAggregate'];
-    };
-    /** OverrideWinnerPayload */
-    OverrideWinnerPayload: {
-      /**
-       * Album Id
-       * Format: uuid
-       */
-      album_id: string;
-    };
-    /**
-     * ProviderType
-     * @enum {string}
-     */
-    ProviderType: 'discord' | 'spotify' | 'lastfm' | 'listenbrainz';
-    /** RatingAggregate */
-    RatingAggregate: {
-      /** Average */
-      average: number | null;
-      /** Count */
-      count: number;
-    };
-    /** RatingCreate */
-    RatingCreate: {
-      /**
-       * Week Id
-       * Format: uuid
-       */
-      week_id: string;
-      /** User Id */
-      user_id?: string | null;
-      /**
-       * Album Id
-       * Format: uuid
-       */
-      album_id: string;
-      /** Nomination Id */
-      nomination_id?: string | null;
-      /** Value */
-      value: number;
-      /** Favorite Track */
-      favorite_track?: string | null;
-      /** Review */
-      review?: string | null;
-      /** Created At */
-      created_at?: string | null;
-      /** Metadata */
-      metadata?: Record<string, never> | null;
-    };
-    /** RatingHistogramBin */
-    RatingHistogramBin: {
-      /** Value */
-      value: number;
-      /** Count */
-      count: number;
-    };
-    /** RatingRead */
-    RatingRead: {
-      /**
-       * Week Id
-       * Format: uuid
-       */
-      week_id: string;
-      /**
-       * User Id
-       * Format: uuid
-       */
-      user_id: string;
-      /**
-       * Album Id
-       * Format: uuid
-       */
-      album_id: string;
-      /** Nomination Id */
-      nomination_id?: string | null;
-      /** Value */
-      value: number;
-      /** Favorite Track */
-      favorite_track?: string | null;
-      /** Review */
-      review?: string | null;
-      /** Created At */
-      created_at?: string | null;
-      /** Metadata */
-      metadata?: Record<string, never> | null;
-      /**
-       * Id
-       * Format: uuid
-       */
-      id: string;
-    };
-    /** RatingSummary */
-    RatingSummary: {
-      /** Average */
-      average: number | null;
-      /** Count */
-      count: number;
-      /** Histogram */
-      histogram?: components['schemas']['RatingHistogramBin'][] | null;
-    };
-    /** RecentListenRead */
-    RecentListenRead: {
-      /** Track Name */
-      track_name: string;
-      /** Artist Name */
-      artist_name: string;
-      /** Album Name */
-      album_name?: string | null;
-      /**
-       * Listened At
-       * Format: date-time
-       */
-      listened_at: string;
-      /** Source */
-      source?: string | null;
-    };
-    /** RecomputeAccepted */
-    RecomputeAccepted: {
-      /** Job Id */
-      job_id: string;
-      /**
-       * Status
-       * @default queued
-       */
-      status: string;
-      /**
-       * Detail
-       * @default Taste profile recomputation enqueued.
-       */
-      detail: string;
-    };
-    /** SinglesPhaseSummary */
-    SinglesPhaseSummary: {
-      /** Count */
-      count: number;
-      /** Average */
-      average: number | null;
-    };
-    /** SinglesRatingRead */
-    SinglesRatingRead: {
-      /**
-       * Id
-       * Format: uuid
-       */
-      id: string;
-      /**
-       * User Id
-       * Format: uuid
-       */
-      user_id: string;
-      /** Display Name */
-      display_name: string;
-      /**
-       * Phase
-       * @enum {string}
-       */
-      phase: 'first' | 'final';
-      /** Value */
-      value: number;
-      /** Review */
-      review: string | null;
-      /**
-       * Created At
-       * Format: date-time
-       */
-      created_at: string;
-      /** Source Url */
-      source_url: string | null;
-    };
-    /** SinglesRatingSummary */
-    SinglesRatingSummary: {
-      first: components['schemas']['SinglesPhaseSummary'];
-      final: components['schemas']['SinglesPhaseSummary'];
-    };
-    /** SinglesSessionDetail */
-    SinglesSessionDetail: {
-      /**
-       * Id
-       * Format: uuid
-       */
-      id: string;
-      /** Week Number */
-      week_number: number | null;
-      /** Event Date */
-      event_date: string | null;
-      /** Event At */
-      event_at: string | null;
-      /** Original Label */
-      original_label: string;
-      /** Source Url */
-      source_url: string;
-      /** Song Count */
-      song_count: number;
-      /** Rating Count */
-      rating_count: number;
-      /** Songs */
-      songs: components['schemas']['SinglesSongRead'][];
-    };
-    /** SinglesSessionRead */
-    SinglesSessionRead: {
-      /**
-       * Id
-       * Format: uuid
-       */
-      id: string;
-      /** Week Number */
-      week_number: number | null;
-      /** Event Date */
-      event_date: string | null;
-      /** Event At */
-      event_at: string | null;
-      /** Original Label */
-      original_label: string;
-      /** Source Url */
-      source_url: string;
-      /** Song Count */
-      song_count: number;
-      /** Rating Count */
-      rating_count: number;
-    };
-    /** SinglesSongRead */
-    SinglesSongRead: {
-      /**
-       * Id
-       * Format: uuid
-       */
-      id: string;
-      /** Title */
-      title: string;
-      /** Artist Name */
-      artist_name: string;
-      /** Url */
-      url: string | null;
-      /** Cover Url */
-      cover_url?: string | null;
-      /** Artwork Source Url */
-      artwork_source_url?: string | null;
-      /** Source Url */
-      source_url: string | null;
-      /** Submissions */
-      submissions: components['schemas']['SinglesSubmissionRead'][];
-      /** Ratings */
-      ratings: components['schemas']['SinglesRatingRead'][];
-      rating_summary: components['schemas']['SinglesRatingSummary'];
-    };
-    /** SinglesSubmissionRead */
-    SinglesSubmissionRead: {
-      /**
-       * User Id
-       * Format: uuid
-       */
-      user_id: string;
-      /** Display Name */
-      display_name: string;
-      /**
-       * Submitted At
-       * Format: date-time
-       */
-      submitted_at: string;
-    };
-    /** TasteProfileRead */
-    TasteProfileRead: {
-      /**
-       * User Id
-       * Format: uuid
-       */
-      user_id: string;
-      /** Scope */
-      scope: string;
-      /** Genre Histogram */
-      genre_histogram?: {
-        [key: string]: number;
-      } | null;
-      /** Feature Means */
-      feature_means?: {
-        [key: string]: number | null;
-      } | null;
-      /** Time Of Day Histogram */
-      time_of_day_histogram?: {
-        [key: string]: number;
-      } | null;
-      /** Last Computed At */
-      last_computed_at?: string | null;
-    };
-    /** TrackFeatureCreate */
-    TrackFeatureCreate: {
-      /** Energy */
-      energy?: number | null;
-      /** Valence */
-      valence?: number | null;
-      /** Danceability */
-      danceability?: number | null;
-      /** Tempo */
-      tempo?: number | null;
-      /** Acousticness */
-      acousticness?: number | null;
-      /** Instrumentalness */
-      instrumentalness?: number | null;
-      /** Genres */
-      genres?: string[] | null;
-    };
-    /** TrackFeatureRead */
-    TrackFeatureRead: {
-      /** Energy */
-      energy?: number | null;
-      /** Valence */
-      valence?: number | null;
-      /** Danceability */
-      danceability?: number | null;
-      /** Tempo */
-      tempo?: number | null;
-      /** Acousticness */
-      acousticness?: number | null;
-      /** Instrumentalness */
-      instrumentalness?: number | null;
-      /** Genres */
-      genres?: string[] | null;
-      /**
-       * Track Id
-       * Format: uuid
-       */
-      track_id: string;
-      /**
-       * Created At
-       * Format: date-time
-       */
-      created_at: string;
-    };
-    /** TrackRead */
-    TrackRead: {
-      /**
-       * Album Id
-       * Format: uuid
-       */
-      album_id: string;
-      /** Title */
-      title: string;
-      /** Artist Name */
-      artist_name: string;
-      /** Duration Ms */
-      duration_ms?: number | null;
-      /** Musicbrainz Id */
-      musicbrainz_id?: string | null;
-      /** Spotify Id */
-      spotify_id?: string | null;
-      /**
-       * Id
-       * Format: uuid
-       */
-      id: string;
-    };
-    /** UserCreate */
-    UserCreate: {
-      /** Display Name */
-      display_name: string;
-      /** Handle */
-      handle?: string | null;
-    };
-    /** UserRead */
-    UserRead: {
-      /** Display Name */
-      display_name: string;
-      /** Handle */
-      handle?: string | null;
-      /**
-       * Id
-       * Format: uuid
-       */
-      id: string;
-      /** @default private */
-      listening_visibility: components['schemas']['ListeningVisibility'];
-      /**
-       * Created At
-       * Format: date-time
-       */
-      created_at: string;
-      /**
-       * Updated At
-       * Format: date-time
-       */
-      updated_at: string;
-    };
-    /** UserUpdate */
-    UserUpdate: {
-      /** Display Name */
-      display_name?: string | null;
-      /** Handle */
-      handle?: string | null;
-      listening_visibility?: components['schemas']['ListeningVisibility'] | null;
-    };
-    /** ValidationError */
-    ValidationError: {
-      /** Location */
-      loc: (string | number)[];
-      /** Message */
-      msg: string;
-      /** Error Type */
-      type: string;
-    };
-    /** VoteAggregate */
-    VoteAggregate: {
-      /** Points */
-      points: number;
-      /** First Place */
-      first_place: number;
-      /** Second Place */
-      second_place: number;
-      /** Total Votes */
-      total_votes: number;
-    };
-    /** VoteCreate */
-    VoteCreate: {
-      /**
-       * Week Id
-       * Format: uuid
-       */
-      week_id: string;
-      /**
-       * Nomination Id
-       * Format: uuid
-       */
-      nomination_id: string;
-      /** User Id */
-      user_id?: string | null;
-      /** Rank */
-      rank: number;
-      /** Submitted At */
-      submitted_at?: string | null;
-    };
-    /** VoteRead */
-    VoteRead: {
-      /**
-       * Week Id
-       * Format: uuid
-       */
-      week_id: string;
-      /**
-       * Nomination Id
-       * Format: uuid
-       */
-      nomination_id: string;
-      /**
-       * User Id
-       * Format: uuid
-       */
-      user_id: string;
-      /** Rank */
-      rank: number;
-      /** Submitted At */
-      submitted_at?: string | null;
-      /**
-       * Id
-       * Format: uuid
-       */
-      id: string;
-    };
-    /** WeekAggregates */
-    WeekAggregates: {
-      /** Nomination Count */
-      nomination_count: number;
-      /** Vote Count */
-      vote_count: number;
-      /** Rating Count */
-      rating_count: number;
-      /** Rating Average */
-      rating_average: number | null;
-    };
-    /** WeekCreate */
-    WeekCreate: {
-      /** Label */
-      label: string;
-      /** Week Number */
-      week_number?: number | null;
-      /** Discussion At */
-      discussion_at?: string | null;
-      /** Nominations Close At */
-      nominations_close_at?: string | null;
-      /** Poll Close At */
-      poll_close_at?: string | null;
-      /** Winner Album Id */
-      winner_album_id?: string | null;
-      /** Nominations Thread Id */
-      nominations_thread_id?: string | null;
-      /** Poll Thread Id */
-      poll_thread_id?: string | null;
-      /** Winner Thread Id */
-      winner_thread_id?: string | null;
-      /** Ratings Thread Id */
-      ratings_thread_id?: string | null;
-    };
-    /** WeekDetail */
-    WeekDetail: {
-      /** Label */
-      label: string;
-      /** Week Number */
-      week_number?: number | null;
-      /** Discussion At */
-      discussion_at?: string | null;
-      /** Nominations Close At */
-      nominations_close_at?: string | null;
-      /** Poll Close At */
-      poll_close_at?: string | null;
-      /** Winner Album Id */
-      winner_album_id?: string | null;
-      /** Nominations Thread Id */
-      nominations_thread_id?: string | null;
-      /** Poll Thread Id */
-      poll_thread_id?: string | null;
-      /** Winner Thread Id */
-      winner_thread_id?: string | null;
-      /** Ratings Thread Id */
-      ratings_thread_id?: string | null;
-      /**
-       * Id
-       * Format: uuid
-       */
-      id: string;
-      /**
-       * Created At
-       * Format: date-time
-       */
-      created_at: string;
-      /** Nominations */
-      nominations: components['schemas']['NominationWithStats'][];
-      aggregates: components['schemas']['WeekAggregates'];
-    };
-    /** WeekRead */
-    WeekRead: {
-      /** Label */
-      label: string;
-      /** Week Number */
-      week_number?: number | null;
-      /** Discussion At */
-      discussion_at?: string | null;
-      /** Nominations Close At */
-      nominations_close_at?: string | null;
-      /** Poll Close At */
-      poll_close_at?: string | null;
-      /** Winner Album Id */
-      winner_album_id?: string | null;
-      /** Nominations Thread Id */
-      nominations_thread_id?: string | null;
-      /** Poll Thread Id */
-      poll_thread_id?: string | null;
-      /** Winner Thread Id */
-      winner_thread_id?: string | null;
-      /** Ratings Thread Id */
-      ratings_thread_id?: string | null;
-      /**
-       * Id
-       * Format: uuid
-       */
-      id: string;
-      /**
-       * Created At
-       * Format: date-time
-       */
-      created_at: string;
-    };
-    /** WeekUpdate */
-    WeekUpdate: {
-      /** Label */
-      label?: string | null;
-      /** Week Number */
-      week_number?: number | null;
-      /** Discussion At */
-      discussion_at?: string | null;
-      /** Nominations Close At */
-      nominations_close_at?: string | null;
-      /** Poll Close At */
-      poll_close_at?: string | null;
-      /** Winner Album Id */
-      winner_album_id?: string | null;
-      /** Nominations Thread Id */
-      nominations_thread_id?: string | null;
-      /** Poll Thread Id */
-      poll_thread_id?: string | null;
-      /** Winner Thread Id */
-      winner_thread_id?: string | null;
-      /** Ratings Thread Id */
-      ratings_thread_id?: string | null;
-    };
-  };
-  responses: never;
-  parameters: never;
-  requestBodies: never;
-  headers: never;
-  pathItems: never;
+    responses: never;
+    parameters: never;
+    requestBodies: never;
+    headers: never;
+    pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-  override_winner_admin_weeks__week_id__override_winner_post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        week_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['OverrideWinnerPayload'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['WeekRead'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  delete_rating_admin_ratings__rating_id__delete: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        rating_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  list_users_users__get: {
-    parameters: {
-      query?: {
-        /** @description Maximum number of users to return. */
-        limit?: number;
-        /** @description Number of users to skip. */
-        offset?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['UserRead'][];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  create_user_users__post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['UserCreate'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['UserRead'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  get_user_users__user_id__get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        user_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['UserRead'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  delete_user_users__user_id__delete: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        user_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  update_user_users__user_id__patch: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        user_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['UserUpdate'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['UserRead'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  list_linked_accounts_users__user_id__linked_accounts_get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        user_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['LinkedAccountRead'][];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  create_linked_account_users__user_id__linked_accounts_post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        user_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['LinkedAccountCreate'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['LinkedAccountRead'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  delete_linked_account_users__user_id__linked_accounts__provider___provider_user_id__delete: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        user_id: string;
-        provider: components['schemas']['ProviderType'];
-        provider_user_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  lookup_user_by_provider_users_lookup_by_provider__provider___provider_user_id__get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        provider: components['schemas']['ProviderType'];
-        provider_user_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['UserRead'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  list_user_recent_listens_users__user_id__listening_recent_get: {
-    parameters: {
-      query?: {
-        /** @description Page size. */
-        limit?: number;
-        /** @description Number of records to skip. */
-        offset?: number;
-      };
-      header?: never;
-      path: {
-        user_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['RecentListenRead'][];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  search_albums_albums_search_get: {
-    parameters: {
-      query?: {
-        /** @description Case-insensitive match on album title. */
-        title?: string | null;
-        /** @description Case-insensitive match on artist name. */
-        artist_name?: string | null;
-        /** @description Release year to match. */
-        release_year?: number | null;
-        /** @description Exact match on MusicBrainz ID. */
-        musicbrainz_id?: string | null;
-        /** @description Exact match on Spotify album ID. */
-        spotify_id?: string | null;
-        /** @description Maximum number of albums to return. */
-        limit?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['AlbumRead'][];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  get_album_albums__album_id__get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        album_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['AlbumRead'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  update_album_albums__album_id__patch: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        album_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['AlbumUpdate'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['AlbumRead'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  create_album_albums__post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['AlbumCreate'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['AlbumRead'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  resolve_album_endpoint_albums_resolve_post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['AlbumResolveRequest'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['AlbumRead'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  enrich_album_endpoint_albums__album_id__enrich_post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        album_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['AlbumRead'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  list_tracks_pending_features_tracks_pending_features_get: {
-    parameters: {
-      query?: {
-        limit?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['TrackRead'][];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  upsert_track_features_tracks__track_id__features_post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        track_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['TrackFeatureCreate'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['TrackFeatureRead'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  list_weeks_weeks__get: {
-    parameters: {
-      query?: {
-        /** @description Filter weeks with discussion on/after this timestamp. */
-        discussion_start?: string | null;
-        /** @description Filter weeks with discussion on/before this timestamp. */
-        discussion_end?: string | null;
-        /** @description Filter by whether a week has a winner album set. */
-        has_winner?: boolean | null;
-        /** @description Case-insensitive substring match on week label. */
-        label?: string | null;
-        /** @description Filter weeks that have a nomination with this genre. */
-        genre?: string | null;
-        /** @description Filter weeks that have a nomination with this decade. */
-        decade?: string | null;
-        /** @description Filter weeks that have a nomination from this country. */
-        country?: string | null;
-        /** @description Filter weeks that have a nomination from this user. */
-        nominator_id?: string | null;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['WeekDetail'][];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  create_week_weeks__post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['WeekCreate'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['WeekDetail'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  get_week_weeks__week_id__get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        week_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['WeekDetail'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  update_week_weeks__week_id__patch: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        week_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['WeekUpdate'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['WeekDetail'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  create_week_nomination_weeks__week_id__nominations_post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        week_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['NominationCreate'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['NominationRead'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  claim_club_notifications_claim_post: {
-    parameters: {
-      query?: {
-        limit?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['DeliveryEvent'][];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  acknowledge_club_notifications__event_id__ack_post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        event_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['DeliveryAck'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  fail_club_notifications__event_id__fail_post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        event_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['DeliveryFailure'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  put_member_club_members_discord__discord_id__put: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        discord_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['MembershipUpdate'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['MembershipRead'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  remove_member_club_members_discord__discord_id__delete: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        discord_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  list_nominations_nominations__get: {
-    parameters: {
-      query?: {
-        week_id?: string | null;
-        user_id?: string | null;
-        album_id?: string | null;
-        /** @description Maximum number of nominations to return. */
-        limit?: number;
-        /** @description Number of nominations to skip. */
-        offset?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['NominationRead'][];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  get_nomination_nominations__nomination_id__get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        nomination_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['NominationRead'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  delete_nomination_nominations__nomination_id__delete: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        nomination_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  update_nomination_nominations__nomination_id__patch: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        nomination_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['NominationUpdate'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['NominationRead'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  list_votes_votes_get: {
-    parameters: {
-      query?: {
-        week_id?: string | null;
-        user_id?: string | null;
-        rank?: number | null;
-        /** @description Maximum number of votes to return. */
-        limit?: number;
-        /** @description Number of votes to skip. */
-        offset?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['VoteRead'][];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  get_vote_votes__vote_id__get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        vote_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['VoteRead'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  create_week_vote_weeks__week_id__votes_post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        week_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['VoteCreate'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['VoteRead'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  list_ratings_ratings_get: {
-    parameters: {
-      query?: {
-        /** @description Filter ratings by week ID. */
-        week_id?: string | null;
-        /** @description Filter ratings by user ID. */
-        user_id?: string | null;
-        /** @description Maximum number of ratings to return. */
-        limit?: number;
-        /** @description Number of ratings to skip. */
-        offset?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['RatingRead'][];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  get_rating_ratings__rating_id__get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        rating_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['RatingRead'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  create_week_rating_weeks__week_id__ratings_post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        week_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['RatingCreate'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['RatingRead'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  get_week_rating_summary_weeks__week_id__ratings_summary_get: {
-    parameters: {
-      query?: {
-        /** @description Return histogram bins. */
-        include_histogram?: boolean;
-        /** @description Histogram bin size. */
-        bin_size?: number;
-      };
-      header?: never;
-      path: {
-        week_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['RatingSummary'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  list_singles_nights_club_singles_nights_get: {
-    parameters: {
-      query?: {
-        limit?: number;
-        offset?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['SinglesSessionRead'][];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  get_singles_night_club_singles_nights__session_id__get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        session_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['SinglesSessionDetail'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  list_listen_events_listen_events__get: {
-    parameters: {
-      query?: {
-        /** @description Filter listen events by user. */
-        user_id?: string | null;
-        /** @description Filter by listen source. */
-        source?: components['schemas']['ListenSource'] | null;
-        /** @description Return listens played at/after this time. */
-        played_after?: string | null;
-        /** @description Return listens played at/before this time. */
-        played_before?: string | null;
-        /** @description Maximum number of events to return. */
-        limit?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ListenEventRead'][];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  upsert_listen_events_listen_events__post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['ListenEventsPayload'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ListenEventRead'][];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  get_listen_event_listen_events__listen_event_id__get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        listen_event_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ListenEventRead'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  list_taste_profiles_users__user_id__taste_profiles__get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        user_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['TasteProfileRead'][];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  recompute_taste_profile_users__user_id__taste_profiles_recompute_post: {
-    parameters: {
-      query?: {
-        scope?: string;
-      };
-      header?: never;
-      path: {
-        user_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      202: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['RecomputeAccepted'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  search_search_get: {
-    parameters: {
-      query?: {
-        /** @description Free text search query */
-        q?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            [key: string]: Record<string, never>[];
-          };
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  get_recommendations_recommendations_get: {
-    parameters: {
-      query?: {
-        /** @description Must be the acting user when given. */
-        user_id?: string | null;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            [key: string]: string;
-          }[];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  connect_integration_integrations__provider__connect_post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Integration provider */
-        provider: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['ConnectRequest'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ConnectResponse'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  lastfm_callback_integrations_lastfm_callback_post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['LastfmCallbackRequest'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['CallbackResponse'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  get_trending_trending_get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': Record<string, never>[];
-        };
-      };
-    };
-  };
-  get_compatibility_users__user_a__compatibility__user_b__get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        user_a: string;
-        user_b: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': Record<string, never>;
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  trigger_lastfm_ingest_ingest_lastfm_post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['LastfmIngestRequest'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      202: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['JobAccepted'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  get_job_status_jobs__job_id__status_get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        job_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['JobStatus'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  get_feed_feed_get: {
-    parameters: {
-      query?: {
-        /** @description Must be the acting user when given. */
-        user_id?: string | null;
-        /** @description Number of feed items to return */
-        limit?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['FeedItem'][];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  follow_user_users__user_id__follow__target_id__post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        user_id: string;
-        target_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            [key: string]: string;
-          };
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  unfollow_user_users__user_id__follow__target_id__delete: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        user_id: string;
-        target_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': unknown;
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  list_followers_users__user_id__followers_get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        user_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['UserRead'][];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  list_following_users__user_id__following_get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        user_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['UserRead'][];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  health_health_get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': unknown;
-        };
-      };
-    };
-  };
+    override_winner_admin_weeks__week_id__override_winner_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                week_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OverrideWinnerPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeekRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_rating_admin_ratings__rating_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rating_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_users_users__get: {
+        parameters: {
+            query?: {
+                /** @description Maximum number of users to return. */
+                limit?: number;
+                /** @description Number of users to skip. */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_user_users__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_user_users__user_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_user_users__user_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_user_users__user_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_linked_accounts_users__user_id__linked_accounts_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkedAccountRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_linked_account_users__user_id__linked_accounts_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinkedAccountCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkedAccountRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_linked_account_users__user_id__linked_accounts__provider___provider_user_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+                provider: components["schemas"]["ProviderType"];
+                provider_user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    lookup_user_by_provider_users_lookup_by_provider__provider___provider_user_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider: components["schemas"]["ProviderType"];
+                provider_user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_user_recent_listens_users__user_id__listening_recent_get: {
+        parameters: {
+            query?: {
+                /** @description Page size. */
+                limit?: number;
+                /** @description Number of records to skip. */
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecentListenRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_albums_albums_search_get: {
+        parameters: {
+            query?: {
+                /** @description Case-insensitive match on album title. */
+                title?: string | null;
+                /** @description Case-insensitive match on artist name. */
+                artist_name?: string | null;
+                /** @description Release year to match. */
+                release_year?: number | null;
+                /** @description Exact match on MusicBrainz ID. */
+                musicbrainz_id?: string | null;
+                /** @description Exact match on Spotify album ID. */
+                spotify_id?: string | null;
+                /** @description Maximum number of albums to return. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlbumRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_album_albums__album_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                album_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlbumRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_album_albums__album_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                album_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AlbumUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlbumRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_album_albums__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AlbumCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlbumRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resolve_album_endpoint_albums_resolve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AlbumResolveRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlbumRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    enrich_album_endpoint_albums__album_id__enrich_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                album_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlbumRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_tracks_pending_features_tracks_pending_features_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrackRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upsert_track_features_tracks__track_id__features_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                track_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TrackFeatureCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrackFeatureRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_weeks_weeks__get: {
+        parameters: {
+            query?: {
+                /** @description Filter weeks with discussion on/after this timestamp. */
+                discussion_start?: string | null;
+                /** @description Filter weeks with discussion on/before this timestamp. */
+                discussion_end?: string | null;
+                /** @description Filter by whether a week has a winner album set. */
+                has_winner?: boolean | null;
+                /** @description Case-insensitive substring match on week label. */
+                label?: string | null;
+                /** @description Filter weeks that have a nomination with this genre. */
+                genre?: string | null;
+                /** @description Filter weeks that have a nomination with this decade. */
+                decade?: string | null;
+                /** @description Filter weeks that have a nomination from this country. */
+                country?: string | null;
+                /** @description Filter weeks that have a nomination from this user. */
+                nominator_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeekDetail"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_week_weeks__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WeekCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeekDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_week_weeks__week_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                week_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeekDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_week_weeks__week_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                week_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WeekUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeekDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_week_nomination_weeks__week_id__nominations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                week_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NominationCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NominationRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    claim_club_notifications_claim_post: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeliveryEvent"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    acknowledge_club_notifications__event_id__ack_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeliveryAck"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    fail_club_notifications__event_id__fail_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeliveryFailure"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_member_club_members_discord__discord_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                discord_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MembershipUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_member_club_members_discord__discord_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                discord_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_nominations_nominations__get: {
+        parameters: {
+            query?: {
+                week_id?: string | null;
+                user_id?: string | null;
+                album_id?: string | null;
+                /** @description Maximum number of nominations to return. */
+                limit?: number;
+                /** @description Number of nominations to skip. */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NominationRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_nomination_nominations__nomination_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                nomination_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NominationRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_nomination_nominations__nomination_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                nomination_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_nomination_nominations__nomination_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                nomination_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NominationUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NominationRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_votes_votes_get: {
+        parameters: {
+            query?: {
+                week_id?: string | null;
+                user_id?: string | null;
+                rank?: number | null;
+                /** @description Maximum number of votes to return. */
+                limit?: number;
+                /** @description Number of votes to skip. */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VoteRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_vote_votes__vote_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                vote_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VoteRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_week_vote_weeks__week_id__votes_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                week_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VoteCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VoteRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_ratings_ratings_get: {
+        parameters: {
+            query?: {
+                /** @description Filter ratings by week ID. */
+                week_id?: string | null;
+                /** @description Filter ratings by user ID. */
+                user_id?: string | null;
+                /** @description Maximum number of ratings to return. */
+                limit?: number;
+                /** @description Number of ratings to skip. */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RatingRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_rating_ratings__rating_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rating_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RatingRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_week_rating_weeks__week_id__ratings_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                week_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RatingCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RatingRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_week_rating_summary_weeks__week_id__ratings_summary_get: {
+        parameters: {
+            query?: {
+                /** @description Return histogram bins. */
+                include_histogram?: boolean;
+                /** @description Histogram bin size. */
+                bin_size?: number;
+            };
+            header?: never;
+            path: {
+                week_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RatingSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_singles_nights_club_singles_nights_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SinglesSessionRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_singles_night_club_singles_nights__session_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SinglesSessionDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_listen_events_listen_events__get: {
+        parameters: {
+            query?: {
+                /** @description Filter listen events by user. */
+                user_id?: string | null;
+                /** @description Filter by listen source. */
+                source?: components["schemas"]["ListenSource"] | null;
+                /** @description Return listens played at/after this time. */
+                played_after?: string | null;
+                /** @description Return listens played at/before this time. */
+                played_before?: string | null;
+                /** @description Maximum number of events to return. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListenEventRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upsert_listen_events_listen_events__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ListenEventsPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListenEventRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_listen_event_listen_events__listen_event_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                listen_event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListenEventRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_sessions_users__user_id__listening_sessions_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListenSessionRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_override_users__user_id__listening_sessions__session_id__override_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OverrideWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListenSessionRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_override_users__user_id__listening_sessions__session_id__override_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListenSessionRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_taste_profiles_users__user_id__taste_profiles__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TasteProfileRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    recompute_taste_profile_users__user_id__taste_profiles_recompute_post: {
+        parameters: {
+            query?: {
+                scope?: string;
+            };
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecomputeAccepted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_search_get: {
+        parameters: {
+            query?: {
+                /** @description Free text search query */
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: Record<string, never>[];
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_recommendations_recommendations_get: {
+        parameters: {
+            query?: {
+                /** @description Must be the acting user when given. */
+                user_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string;
+                    }[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    connect_integration_integrations__provider__connect_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Integration provider */
+                provider: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConnectRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    lastfm_callback_integrations_lastfm_callback_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LastfmCallbackRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CallbackResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_trending_trending_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": Record<string, never>[];
+                };
+            };
+        };
+    };
+    get_compatibility_users__user_a__compatibility__user_b__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_a: string;
+                user_b: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    trigger_lastfm_ingest_ingest_lastfm_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LastfmIngestRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobAccepted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_job_status_jobs__job_id__status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_feed_feed_get: {
+        parameters: {
+            query?: {
+                /** @description Must be the acting user when given. */
+                user_id?: string | null;
+                /** @description Number of feed items to return */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedItem"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    follow_user_users__user_id__follow__target_id__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+                target_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unfollow_user_users__user_id__follow__target_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+                target_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_followers_users__user_id__followers_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_following_users__user_id__following_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    health_health_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
 }

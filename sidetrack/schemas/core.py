@@ -10,8 +10,9 @@ import re
 from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
+from zoneinfo import available_timezones
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from sidetrack.types import ListeningVisibility, ListenSource, ProviderType
 
@@ -50,6 +51,7 @@ class UserCreate(UserBase):
 class UserRead(UserBase):
     id: UUID
     listening_visibility: ListeningVisibility = ListeningVisibility.PRIVATE
+    timezone: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -58,6 +60,14 @@ class UserUpdate(OrmSchema):
     display_name: str | None = None
     handle: str | None = None
     listening_visibility: ListeningVisibility | None = None
+    timezone: str | None = None
+
+    @field_validator("timezone")
+    @classmethod
+    def _known_zone(cls, value: str | None) -> str | None:
+        if value is not None and value not in available_timezones():
+            raise ValueError("timezone must be an IANA zone name")
+        return value
 
 
 class LinkedAccountBase(OrmSchema):

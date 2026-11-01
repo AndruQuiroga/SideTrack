@@ -17,6 +17,8 @@ dependencies = [
     # pgvector's SQLAlchemy Vector type for audio embeddings (analysis).
     "pgvector==0.5.1",
     "httpx==0.27.0",
+    # Slim images have no system zone database, and users.timezone is validated against it.
+    "tzdata==2025.2",
 ]
 
 [build-system]

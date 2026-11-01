@@ -16,7 +16,8 @@ from sidetrack.analysis.embeddings import ModelUnavailable
 from sidetrack.club import cleanup_notifications, produce_notification
 from sidetrack.config import get_settings
 from sidetrack.db import database_now, get_engine, init_engine
-from sidetrack.listening import ingest_lastfm
+from sidetrack.listening import ingest_lastfm, ingest_listenbrainz
+from sidetrack.queue_client import enqueue
 from sidetrack.queue_maintenance import cleanup_jobs
 from sidetrack.queue_models import BackgroundJob
 
@@ -43,6 +44,25 @@ def run(job_id: UUID) -> int:
                     since_ts=arguments.get("since_ts"),
                     commit=False,
                 )
+            elif row.task == "listening.ingest_listenbrainz":
+                result = ingest_listenbrainz(
+                    db,
+                    user_id=UUID(arguments["user_id"]),
+                    mode=arguments.get("mode", "backfill"),
+                    max_ts=arguments.get("max_ts"),
+                    until_ts=arguments.get("until_ts"),
+                    run_id=UUID(arguments["run_id"]) if arguments.get("run_id") else None,
+                )
+                following = result.pop("next")
+                result["next_job_id"] = None
+                if following is not None:
+                    next_job = enqueue(
+                        db,
+                        row.task,
+                        following,
+                        requested_by=row.requested_by_user_id,
+                    )
+                    result["next_job_id"] = str(next_job.id)
             elif row.task == "analysis.recompute_taste_profile":
                 profile = compute_user_taste_profile(
                     db,

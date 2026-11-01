@@ -22,6 +22,19 @@ See proposal.md (Why, Impact). What shapes the approach:
   release_name, additional_info, mbid_mapping}`. The API is public for public users and
   paginates with `count` (max 1,000), `max_ts` and `min_ts`, with `X-RateLimit-*` headers.
   Task 1.1 confirms this before implementation.
+- **Observed on the live API, 2026-10-31 (task 1.1).** `count=1000` returns 1,000 listens,
+  and a larger `count` is accepted. Both bounds are exclusive. With only `max_ts` a page holds
+  the listens just before it; with only `min_ts`, the listens just after it, still newest
+  first. Every response carries `X-RateLimit-Limit` (30), `-Remaining`, `-Reset` and
+  `-Reset-In`. `mbid_mapping` sits in `track_metadata` with `recording_mbid`, `recording_name`
+  and `artists`, on 74% of the owner's listens, but holds no release name: only 31% have
+  `release_name`. YouTube origins are `additional_info.origin_url` on `music.youtube.com`,
+  `www.youtube.com` or `youtu.be`. The listen count endpoint said 74,919, and paging fetched
+  74,928. `tests/fixtures/listenbrainz/page.json` is a synthetic page in this shape.
+- **Corrections from that check.** 309 seconds hold more than one listen, so a page boundary
+  can split a second (Decision 2). ListenBrainz moved 7 of 3,084 listens to another recording
+  between one export and the API, so the track can't identify a listen (Decision 5). The
+  export zip for 2026-10 held only 3,084 listens, so the API is the complete source.
 - **Scale.** About 75,000 listens and (assumed) 10,000–15,000 distinct tracks for the owner.
   A club member who opts in later brings a similar order of magnitude.
 
@@ -51,6 +64,11 @@ records)`, which does resolution, insertion and counting. The rules are ported f
 `audio_lab/seeds.py` (`resolve`, `clean_title`, `_video_id`), and a test fixture of a dozen
 records with known answers pins them. audio-lab stays unchanged and separate (docs/MODULES.md).
 
+One rule differs from `seeds.py`, which splits every unmapped "A - B" title. That would turn
+`Some Song - Slowed` into an artist called `Some Song`. Production splits only when
+the listen's origin is YouTube, which is what marks an upload channel in this history (5,997
+of the 6,136 unmapped "A - B" titles).
+
 Alternative: import audio-lab's functions. Rejected: audio-lab has its own environment and
 is a benchmark tool; production can't depend on it.
 
@@ -58,14 +76,17 @@ is a benchmark tool; production can't depend on it.
 
 `listening.ingest_listenbrainz` arguments: `{user_id, mode: backfill|sync, max_ts?, until_ts?}`.
 - **Backfill:** one job fetches one page (`count=1000`, `max_ts`), stores it, and queues the
-  next job with `max_ts` = the oldest `listened_at` it saw, until a page is empty or the
-  oldest listen is older than `until_ts`. Each job commits its own page, so an interrupted
+  next job, until a page is empty or the oldest listen is older than `until_ts`. A full page
+  stores all but its oldest second and passes `max_ts` = that second + 1, because `max_ts` is
+  exclusive and a second can straddle the boundary; a short page stores everything. Each job commits its own page, so an interrupted
   chain leaves consistent data, and re-running the command restarts from the newest listen
   and skips duplicates (about 75 cheap requests for the owner's history). The result of
   each job records `next_job_id`, so the operator can follow the chain through
   `GET /jobs/{id}/status`.
-- **Sync:** one job pages forward with `min_ts` = checkpoint, newest first within the page
-  order ListenBrainz gives, until a page is short.
+- **Sync:** one job pages forward with `min_ts` = checkpoint, holding back a full page's
+  newest second in the same way, until a page is short. A listen submitted late with a time
+  older than the checkpoint is missed; a repeated backfill picks it up. With no checkpoint, a
+  sync starts a backfill. A chain shares one run, so its last job's result holds the totals.
 - **Time limit:** 600 s per job, the same as Last.fm; a page of 1,000 listens is DB work
   only and should take seconds, so this is generous.
 - **Lock:** the same per-account advisory lock as Last.fm, keyed `listenbrainz:{user}:{account}`.
@@ -92,11 +113,11 @@ Migration 0013 makes `tracks.album_id` nullable. Catalog gains a public operatio
 1. by `recording_mbid` when given;
 2. else by case-folded artist and title, and release when given (an expression index on
    `lower(artist_name), lower(title)` keeps this a lookup);
-3. else create the track, with an album only when a release name is given (through the
-   existing `upsert_album_from_release_group`, which makes no web request for an existing
-   album), and `album_id = NULL` otherwise.
+3. else create the track, with an album only when a release name is given (found by
+   case-folded title and artist, or created bare), and `album_id = NULL` otherwise.
 
-It never calls MusicBrainz. `resolve_listen_track` is left as it is for Last.fm, so that
+It never calls MusicBrainz. `upsert_album_from_release_group` can't be used, because it
+searches MusicBrainz even for an album that already exists. `resolve_listen_track` is left as it is for Last.fm, so that
 import's behaviour doesn't change in this change. Code that reads `track.album` already
 tolerates `None` in `sidetrack/api/routes/search.py`; the web's listening pages render the
 album as unavailable when absent, which `web/data-honesty` already requires for missing data.
@@ -107,17 +128,20 @@ that would show up as a real album in search and archives.
 ### Decision 5: Listen metadata is a curated subset
 
 `listen_events.metadata = {"listenbrainz": {...}}` holds the normalised identifiers and the
-original artist and title, not the whole payload: about 400 bytes a row, 30 MB for the
-owner's history, inside ADR 0005's budget. The MSID is kept because it is ListenBrainz's
+original artist and title, not the whole payload. `listen_events` measured 62 MB with the
+owner's 74,907 rows in the rehearsal, inside ADR 0005's budget. The MSID is kept because it is ListenBrainz's
 stable key for a listen and lets a later change fetch feedback or mappings for it.
+
+`uq_listen_event_dedup` keys on the track, which a remapped listen changes, so `store_listens`
+also treats a stored listen with the same time and MSID as a duplicate.
 
 ### Decision 6: Sessions are a listening-owned table, rebuilt from the first new listen
 
 `listen_sessions(id, user_id, started_at, ended_at, listen_count, kind, rule_version,
 computed_at)` with `kind` in `unclassified | night_autoplay | unknown`, and
 `listen_events.session_id` (nullable, `ON DELETE SET NULL`). `sessionize(db, user_id,
-since=None)` deletes sessions that end within 30 minutes before `since` or later, and
-rebuilds forward from the listens, so an import that stored listens touching the last
+since=None, until=None)` deletes sessions within 30 minutes of that range and rebuilds them
+from the listens, keeping a backward backfill's pages from rebuilding everything newer, so an import that stored listens touching the last
 session extends it rather than creating a second one (spec: New listens extend the last
 session). Each import job calls it for the time range it stored. The night rule is the
 benchmark's: start hour 22–03 local, duration ≥ 3,600 s, count ≥ 12; `rule_version = "night-v1"`.
@@ -139,7 +163,9 @@ Alternative: a timezone argument on the import command. Rejected: three later ch
 
 `python -m sidetrack.listening` (a `__main__.py` in the package) with subcommands
 `backfill --user <id> [--until YYYY-MM-DD]`, `sync --user <id>`, `import-export --user <id>
---export <dir>` and `sessionize --user <id> [--rebuild]`. `backfill` and `sync` queue jobs
+--export <dir>`, `sessionize --user <id> [--rebuild]` and `schedule --user <id> [--enable]`.
+The command lives in `sidetrack/listening_cli.py`, because it needs `sidetrack.models`, which
+domain packages can't import; `__main__.py` only calls it. `backfill` and `sync` queue jobs
 on the `default` queue and print the job IDs; `import-export` runs in-process on the
 operator's machine (the export is on their disk), committing per file; `sessionize` runs
 in-process. An optional persisted schedule, `listening.ingest_listenbrainz` in sync mode
@@ -165,7 +191,8 @@ provider, account, path in api|export, started_at, finished_at, outcome, counts 
 `import_coverage(user_id, provider, account, earliest_played_at, latest_played_at)` is
 advanced in the same transaction as committed listens. Coverage is contiguous by
 construction, because backfill pages walk backwards without gaps and sync walks forwards
-from the checkpoint. A retry is a new run; duplicates are counted, not stored.
+from the checkpoint. The exception is a backfill interrupted after an older export: until it
+finishes, coverage spans the gap between them. A retry is a new run; duplicates are counted, not stored.
 
 ## Risks / Trade-offs
 
@@ -185,8 +212,9 @@ from the checkpoint. A retry is a new run; duplicates are counted, not stored.
 
 ## Migration Plan
 
-1. Apply migration 0013 (nullable `tracks.album_id`, expression index, `users.timezone`,
-   `listen_sessions`, `listen_events.session_id`). Additive and reversible.
+1. Apply migration 0013 (nullable `tracks.album_id`, expression index, `users.timezone`, the
+   session, run and coverage tables, and `listen_events.session_id` and `import_run_id`).
+   Additive. Downgrading needs album-less tracks and their listens deleted first.
 2. Deploy API and worker together (they share the image).
 3. Set the owner's timezone, link the ListenBrainz account, run `import-export` from the
    owner's disk or `backfill` on the rack, then `sessionize`.

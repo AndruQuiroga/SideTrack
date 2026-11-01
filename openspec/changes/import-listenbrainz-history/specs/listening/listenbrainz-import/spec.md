@@ -34,11 +34,15 @@ The operator command SHALL accept a ListenBrainz export directory and import its
 - **THEN** one listen event exists, and its track, played time and recorded identifiers are identical whichever path ran first
 
 ### Requirement: Listens are normalised before resolution
-For each listen the system SHALL take the artist and title from ListenBrainz's MusicBrainz mapping when present; otherwise split a title of the form "Artist - Title" when the submitted artist is an upload channel; otherwise use the submitted artist and title. Bracketed upload noise such as "(Official Video)" SHALL be removed from titles. The release name, recording MBID, duration and origin URL SHALL be kept on the listen.
+For each listen the system SHALL take the artist and title from ListenBrainz's MusicBrainz mapping when present; otherwise split a title of the form "Artist - Title" when the submitted artist is an upload channel, which a YouTube origin URL marks; otherwise use the submitted artist and title. Bracketed upload noise such as "(Official Video)" SHALL be removed from titles. The release name, recording MBID, duration and origin URL SHALL be kept on the listen.
 
 #### Scenario: Mapped listen
 - **WHEN** a listen carries a `mbid_mapping` with a recording MBID and artist credits
 - **THEN** the stored listen's track has that recording MBID, the mapped artist credit and the mapped recording name
+
+#### Scenario: Title with a dash from elsewhere
+- **WHEN** an unmapped listen with no YouTube origin has the title "Some Song - Slowed"
+- **THEN** the stored track keeps that whole title and the submitted artist
 
 #### Scenario: Channel upload
 - **WHEN** a listen's artist is an upload channel and its title is "Some Artist - Deep Cut (Official Video)"
@@ -63,11 +67,19 @@ A listen whose release is unknown SHALL still be stored, against a catalog track
 - **THEN** both listen events reference the same catalog track
 
 ### Requirement: Imports are duplicate-safe and transactional
-Re-importing listens SHALL not create duplicates, and a failed import SHALL store nothing from its run. The same listen reached through ListenBrainz and Last.fm SHALL be stored once.
+Re-importing listens SHALL not create duplicates, including a listen ListenBrainz has since mapped to another recording, and a failed import SHALL store nothing from its run. The same listen reached through ListenBrainz and Last.fm SHALL be stored once.
 
 #### Scenario: Backfill run twice
 - **WHEN** a completed backfill is run again
 - **THEN** no new listen events are stored and the result reports every listen as `duplicate`
+
+#### Scenario: Listen remapped between imports
+- **WHEN** a stored listen is imported again with the same time and MSID but a different recording
+- **THEN** no second listen event is stored and it is reported as `duplicate`
+
+#### Scenario: Listens sharing a second across a page boundary
+- **WHEN** several listens share one second and a page ends among them
+- **THEN** every one of them is stored, and none is counted twice
 
 #### Scenario: Listen already imported from Last.fm
 - **WHEN** a listen with the same track and played time already exists with source `lastfm`

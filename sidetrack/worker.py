@@ -23,7 +23,11 @@ from sidetrack.queue_maintenance import reconcile_schedules, recover_stalled, se
 from sidetrack.queue_models import BackgroundJob
 
 # Seconds a job's child process may run, by task; everything else gets 300.
-TIME_LIMITS = {"listening.ingest_lastfm": 600, EMBED_AUDIO: EMBED_AUDIO_LIMIT_S}
+TIME_LIMITS = {
+    "listening.ingest_lastfm": 600,
+    "listening.ingest_listenbrainz": 600,
+    EMBED_AUDIO: EMBED_AUDIO_LIMIT_S,
+}
 
 
 class ExecutionFailed(Exception):
