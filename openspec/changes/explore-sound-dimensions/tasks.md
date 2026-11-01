@@ -15,7 +15,7 @@
 ## 3. Suggested names
 
 - [ ] 3.1 Add text encoding to the MuQ-MuLan adapter with the pinned revision, reporting unavailable without torch; verify `tests/test_adapters_gpu.py::test_mulan_text_vectors` (marked `gpu`) and `test_dimensions.py::test_text_unavailable_without_torch`
-- [ ] 3.2 Add contrast scoring with a permutation null and `no_confident_label`, over a versioned vocabulary; verify `::test_planted_term_is_suggested` and `::test_no_term_abstains`
+- [x] 3.2 Add contrast scoring with a permutation null and `no_confident_label`, over a versioned vocabulary; verify `::test_planted_term_is_suggested` and `::test_no_term_abstains`
 
 ## 4. Blind review
 

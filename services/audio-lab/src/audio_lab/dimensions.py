@@ -10,11 +10,14 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
+from collections.abc import Callable
 from dataclasses import dataclass, field
+from importlib import resources
 from pathlib import Path
 
 import numpy as np
 
+from .adapters import ModelUnavailable
 from .adapters.models import MuQMuLanAdapter
 from .manifest import Asset, _norm, read_manifest
 from .runs import RUN_JSON, load_run
@@ -306,6 +309,102 @@ def mood_overlap(
     }
 
 
+VOCABULARY_VERSION = "v1"
+PERMUTATIONS = 1000
+END_FRACTION = 0.10
+MIN_END_TRACKS = 5
+TERMS_PER_END = 3
+NO_LABEL = "no_confident_label"
+Encoder = Callable[[list[str]], np.ndarray]
+
+
+def read_vocabulary(path: Path | None = None) -> tuple[list[str], str]:
+    """Terms and a content hash. The default is the packaged, versioned vocabulary."""
+
+    if path is None:
+        data = resources.files(__package__).joinpath(f"vocabulary_{VOCABULARY_VERSION}.csv")
+        raw = data.read_bytes()
+    else:
+        raw = path.read_bytes()
+    reader = csv.DictReader(raw.decode("utf-8").splitlines())
+    if "term" not in (reader.fieldnames or []):
+        raise DimensionsError("a vocabulary needs a term column")
+    terms = [row["term"].strip() for row in reader if row["term"].strip()]
+    if len(set(terms)) != len(terms):
+        raise DimensionsError("vocabulary terms must be unique")
+    return terms, hashlib.sha256(raw).hexdigest()
+
+
+def _unit(rows: np.ndarray) -> np.ndarray:
+    norms = np.linalg.norm(rows, axis=1, keepdims=True)
+    return rows / np.where(norms > 0, norms, 1.0)
+
+
+def suggest_names(
+    axis_scores: np.ndarray,
+    vectors: np.ndarray,
+    term_vectors: np.ndarray,
+    terms: list[str],
+    seed: int = 0,
+    permutations: int = PERMUTATIONS,
+) -> list[dict]:
+    """Terms for each end of each axis (columns of ``axis_scores``), or ``no_confident_label``.
+
+    A term's contrast is its mean cosine with the tracks at one end minus the other end, which
+    cancels what text and audio vectors share. It counts only above the 95th percentile of the
+    best contrast any term reaches under two nulls, so a term must beat the whole vocabulary's
+    luck, not just its own:
+
+    - tracks permuted: random groups of the same size stand in for the ends;
+    - embedding coordinates permuted in the term vectors (same permutation for every term):
+      the ends stay as they are, but the terms lose any alignment with the audio space. The
+      first null alone is too lenient for a real axis, whose ends are far more separated than
+      random groups, so a term that lines up with it by chance would pass.
+    """
+
+    tracks, dim = vectors.shape
+    end = max(MIN_END_TRACKS, round(END_FRACTION * tracks))
+    if 2 * end > tracks:
+        raise DimensionsError(f"{tracks} tracks are too few to compare the ends of an axis")
+    unit_terms, unit_tracks = _unit(term_vectors), _unit(vectors)
+    similarity = unit_terms @ unit_tracks.T  # (terms, tracks)
+
+    rng = np.random.default_rng(seed)
+    best = np.zeros((permutations, 2))
+    for trial in range(permutations):
+        pick = rng.permutation(tracks)[: 2 * end]
+        contrast = similarity[:, pick[:end]].mean(axis=1) - similarity[:, pick[end:]].mean(axis=1)
+        best[trial] = contrast.max(), (-contrast).max()
+    by_tracks = np.percentile(best, BASELINE_PERCENTILE, axis=0)
+
+    result = []
+    for k in range(axis_scores.shape[1]):
+        order = np.argsort(axis_scores[:, k], kind="stable")
+        difference = unit_tracks[order[-end:]].mean(axis=0) - unit_tracks[order[:end]].mean(axis=0)
+        contrast = unit_terms @ difference
+        for trial in range(permutations):
+            shuffled = unit_terms[:, rng.permutation(dim)] @ difference
+            best[trial] = shuffled.max(), (-shuffled).max()
+        by_coordinates = np.percentile(best, BASELINE_PERCENTILE, axis=0)
+        needed = np.maximum(by_tracks, by_coordinates)
+        ends = {}
+        for position, (name, signed) in enumerate((("high", contrast), ("low", -contrast))):
+            ranked = [i for i in np.argsort(-signed, kind="stable") if signed[i] > needed[position]]
+            ends[name] = (
+                {
+                    "status": "suggested",
+                    "terms": [
+                        {"term": terms[i], "contrast": round(float(signed[i]), 6)}
+                        for i in ranked[:TERMS_PER_END]
+                    ],
+                }
+                if ranked
+                else {"status": NO_LABEL}
+            )
+        result.append({**ends, "needed": {"high": float(needed[0]), "low": float(needed[1])}})
+    return result
+
+
 def encode_terms(terms: list[str], device: str = "cuda") -> np.ndarray:
     """MuQ-MuLan text vectors for ``terms``; raises ModelUnavailable without torch or weights."""
 
@@ -334,6 +433,10 @@ def run_dimensions(
     model: str = "muq-mulan",
     exclude_seeds: list[Path] | None = None,
     seed: int = 0,
+    names: bool = False,
+    vocabulary: Path | None = None,
+    encoder: Encoder | None = None,
+    device: str = "cuda",
 ) -> dict:
     """Write ``dimensions.json`` and ``scores.csv`` into ``out`` and return the report.
 
@@ -361,6 +464,23 @@ def run_dimensions(
         predictions = read_predictions(predictions_path, model)
         mood = mood_overlap(x, rotated_scores, selection.hashes, predictions)
 
+    naming: dict = {"status": "not_requested"}
+    suggestions: list[dict] = []
+    if names and len(axes):
+        terms, vocabulary_hash = read_vocabulary(vocabulary)
+        naming = {
+            "vocabulary_version": VOCABULARY_VERSION if vocabulary is None else "custom",
+            "vocabulary_sha256": vocabulary_hash,
+            "terms": len(terms),
+            "permutations": PERMUTATIONS,
+        }
+        try:
+            term_vectors = (encoder or (lambda t: encode_terms(t, device)))(terms)
+            suggestions = suggest_names(rotated_scores, x, term_vectors, terms, seed)
+            naming["status"] = "ok"
+        except ModelUnavailable as exc:
+            naming.update(status="unavailable", reason=str(exc))
+
     axis_rows = []
     for k in range(len(axes)):
         row = {
@@ -370,6 +490,8 @@ def run_dimensions(
         }
         if mood is not None and mood["status"] == "ok":
             row["mood"] = mood["axes"][k]
+        if suggestions:
+            row["suggested_names"] = suggestions[k]
         axis_rows.append(row)
 
     report = {
@@ -408,6 +530,7 @@ def run_dimensions(
         ],
         "axes": axis_rows,
         "mood": None if mood is None else {k: v for k, v in mood.items() if k != "axes"},
+        "names": naming,
         "summary": (
             "no component beat the shuffled baseline"
             if components.kept == 0

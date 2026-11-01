@@ -97,6 +97,11 @@ def _parser() -> argparse.ArgumentParser:
         "--exclude-seeds", type=Path, action="append", help="Repeatable; seeds.csv format."
     )
     dims.add_argument("--seed", type=int, default=0)
+    dims.add_argument(
+        "--names", action="store_true", help="Suggest names (needs the models extra)."
+    )
+    dims.add_argument("--vocabulary", type=Path, help="A term CSV; default is the packaged v1.")
+    dims.add_argument("--device", default="cuda", help="For the text tower with --names.")
 
     compare = commands.add_parser("parity", help="One model's vectors in two runs, per asset.")
     compare.add_argument("run_a", type=Path)
@@ -287,6 +292,9 @@ def main(argv: Sequence[str] | None = None) -> int:
                 model=args.model,
                 exclude_seeds=args.exclude_seeds,
                 seed=args.seed,
+                names=args.names,
+                vocabulary=args.vocabulary,
+                device=args.device,
             )
         except (DimensionsError, OutputInRepo) as exc:
             print(str(exc), file=sys.stderr)

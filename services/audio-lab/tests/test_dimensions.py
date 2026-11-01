@@ -26,6 +26,7 @@ from audio_lab.dimensions import (
     rotate,
     run_dimensions,
     select_tracks,
+    suggest_names,
 )
 from audio_lab.manifest import COLUMNS, Asset, read_manifest
 from audio_lab.runs import EMBEDDINGS, RUN_JSON, load_run
@@ -343,6 +344,58 @@ def test_text_unavailable_without_torch(monkeypatch):
         encode_terms(["calm piano"], "cpu")
     with pytest.raises(ModelUnavailable, match="not loaded"):
         MuQMuLanAdapter().embed_texts(["calm piano"])
+
+
+def _term_case(rng, tracks=300, dim=32, count=40):
+    x, basis = planted(rng, tracks=tracks, dim=dim, strengths=(6.0, 4.0, 3.0))
+    scores = (x - x.mean(axis=0)) @ basis[0]
+    terms = [f"noise{i}" for i in range(count)]
+    return x, basis, scores, terms, rng.normal(size=(count, dim))
+
+
+def test_planted_term_is_suggested():
+    x, basis, scores, terms, vectors = _term_case(np.random.default_rng(3))
+    terms[0], terms[1] = "along", "against"
+    vectors[0], vectors[1] = basis[0], -basis[0]
+
+    found = suggest_names(scores[:, None], x, vectors, terms, seed=0)[0]
+
+    assert found["high"]["status"] == "suggested"
+    assert found["high"]["terms"][0]["term"] == "along"
+    assert found["low"]["terms"][0]["term"] == "against"
+    assert all(t["term"] not in ("against",) for t in found["high"]["terms"])
+
+
+def test_no_term_abstains():
+    # Tracks with no structure: the top of the first component is a chance group, and no term
+    # tells it from the bottom.
+    terms = [f"noise{i}" for i in range(40)]
+
+    def ends(seed):
+        rng = np.random.default_rng(seed)
+        x = rng.normal(size=(300, 32))
+        _, axes = principal_components(x)
+        scores = (x - x.mean(axis=0)) @ axes[0]
+        found = suggest_names(scores[:, None], x, rng.normal(size=(40, 32)), terms, seed=0)[0]
+        return found["high"], found["low"]
+
+    assert ends(4) == ({"status": "no_confident_label"}, {"status": "no_confident_label"})
+    # Calibration: at the 95th percentile, about one end in ten may still get a chance label.
+    labelled = sum(e["status"] == "suggested" for seed in range(10, 30) for e in ends(seed))
+    assert labelled <= 8  # of 40 ends
+
+
+def test_unavailable_text_still_completes_the_run(tmp_path):
+    run, manifest, _ = command_inputs(tmp_path)
+
+    def broken(terms):
+        raise ModelUnavailable("torch is not installed")
+
+    report = run_dimensions(run, manifest, tmp_path / "out", names=True, encoder=broken)
+
+    assert report["names"]["status"] == "unavailable"
+    assert "torch" in report["names"]["reason"]
+    assert report["axes"] and "suggested_names" not in report["axes"][0]
 
 
 def test_rotation_keeps_total_variance():
