@@ -106,3 +106,45 @@ def load_selection(
         raise DimensionsError(f"model {model} is not in run {record['run_id']}")
     keys = read_excluded_seeds(exclude_seeds or [])
     return record, select_tracks(table, read_manifest(manifest_path), model, keys)
+
+
+SHUFFLES = 100
+BASELINE_PERCENTILE = 95.0
+
+
+def _orient(axes: np.ndarray) -> np.ndarray:
+    """Flip each row's sign so its largest-magnitude entry is positive (a stable convention)."""
+
+    largest = np.argmax(np.abs(axes), axis=1)
+    signs = np.sign(axes[np.arange(len(axes)), largest])
+    return axes * np.where(signs == 0, 1.0, signs)[:, None]
+
+
+def principal_components(x: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Centred SVD: eigenvalues of the covariance (descending) and unit axes as rows."""
+
+    centred = x - x.mean(axis=0)
+    _, singular, axes = np.linalg.svd(centred, full_matrices=False)
+    return singular**2 / max(len(x) - 1, 1), _orient(axes)
+
+
+def parallel_analysis(
+    x: np.ndarray, rng: np.random.Generator, shuffles: int = SHUFFLES
+) -> tuple[int, np.ndarray]:
+    """How many leading components beat the 95th percentile of column-shuffled copies.
+
+    Returns the count and the threshold for every component. The count stops at the first
+    component that fails, so a noisy tail can't revive a rejected one.
+    """
+
+    eigenvalues, _ = principal_components(x)
+    null = np.zeros((shuffles, len(eigenvalues)))
+    shuffled = np.empty_like(x)
+    for trial in range(shuffles):
+        for column in range(x.shape[1]):
+            shuffled[:, column] = rng.permutation(x[:, column])
+        null[trial] = principal_components(shuffled)[0]
+    threshold = np.percentile(null, BASELINE_PERCENTILE, axis=0)
+    beaten = eigenvalues > threshold
+    kept = len(beaten) if beaten.all() else int(np.argmin(beaten))
+    return kept, threshold

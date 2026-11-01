@@ -10,7 +10,12 @@ import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from audio_lab.dimensions import load_selection, select_tracks
+from audio_lab.dimensions import (
+    load_selection,
+    parallel_analysis,
+    principal_components,
+    select_tracks,
+)
 from audio_lab.manifest import COLUMNS, Asset, read_manifest
 from audio_lab.runs import EMBEDDINGS, RUN_JSON, load_run
 
@@ -117,3 +122,32 @@ def test_drop_counts_reported(tmp_path):
     assert selection.dropped["preview_superseded"] == 1
     assert selection.dropped["excluded_seed"] == 1
     assert selection.counts()["tracks"] == 4
+
+
+def planted(rng, tracks=300, dim=32, strengths=(6.0, 4.0, 3.0), noise=1.0):
+    """Gaussian noise plus one orthogonal planted direction per strength."""
+
+    basis = np.linalg.qr(rng.normal(size=(dim, len(strengths))))[0].T
+    scores = rng.normal(size=(tracks, len(strengths))) * np.array(strengths)
+    return scores @ basis + rng.normal(scale=noise, size=(tracks, dim)), basis
+
+
+def test_planted_dimensions_found():
+    rng = np.random.default_rng(3)
+    x, basis = planted(rng)
+
+    kept, threshold = parallel_analysis(x, np.random.default_rng(0))
+    _, axes = principal_components(x)
+
+    assert kept == 3
+    assert len(threshold) == 32
+    for planted_axis, found in zip(basis, axes[:3], strict=True):
+        assert abs(planted_axis @ found) > 0.9
+
+
+def test_pure_noise_keeps_no_dimensions():
+    x = np.random.default_rng(5).normal(size=(300, 32))
+
+    kept, _ = parallel_analysis(x, np.random.default_rng(0))
+
+    assert kept == 0
