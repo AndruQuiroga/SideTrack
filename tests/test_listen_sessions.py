@@ -6,7 +6,7 @@ import pytest
 from sqlalchemy import delete, func, select
 
 from sidetrack.catalog import Album, Track
-from sidetrack.identity import User
+from sidetrack.identity import User, add_timezone_period
 from sidetrack.listening import (
     ListenEvent,
     ListenSession,
@@ -245,3 +245,38 @@ def test_rebuild_changes_boundaries(db, track, listener):
     read, override = list_sessions(db, listener.id)[0]
     assert override is None
     assert effective_kind(read, override) == "unclassified"
+
+
+def test_night_uses_zone_at_session_start(db, track, listener):
+    listener.timezone = "UTC"
+    add_timezone_period(db, listener.id, _at(100), PHOENIX)
+    # 06:00-09:00 UTC is 23:00-02:00 in Phoenix, but daytime in UTC.
+    before = _spread(_at(6), _at(9), 20)
+    after = _spread(_at(126), _at(129), 20)
+    _play(db, listener, *before, *after)
+    sessionize(db, listener.id)
+    kinds = [session.kind for session in _sessions(db, listener)]
+    assert kinds == ["unclassified", "night_autoplay"]
+
+
+def test_same_clock_time_differs_across_a_move(db, track, listener):
+    listener.timezone = "America/New_York"
+    add_timezone_period(db, listener.id, _at(48), PHOENIX)
+    # 03:00 UTC is 23:00 in New York (UTC-4 in June) and 20:00 in Phoenix (UTC-7).
+    _play(db, listener, *_spread(_at(3), _at(6), 20), *_spread(_at(51), _at(54), 20))
+    sessionize(db, listener.id)
+    kinds = [session.kind for session in _sessions(db, listener)]
+    assert kinds == ["night_autoplay", "unclassified"]
+
+
+def test_rebuild_keeps_boundaries_and_overrides(db, track, listener):
+    _play(db, listener, *_spread(_at(23), _at(26), 20))
+    sessionize(db, listener.id)
+    before = [(s.started_at, s.ended_at, s.listen_count) for s in _sessions(db, listener)]
+    set_override(db, _sessions(db, listener)[0], "keep")
+    add_timezone_period(db, listener.id, _at(0), PHOENIX)
+    result = sessionize(db, listener.id)
+    assert result["override_orphaned"] == 0
+    assert [(s.started_at, s.ended_at, s.listen_count) for s in _sessions(db, listener)] == before
+    assert _sessions(db, listener)[0].kind == "unclassified"
+    assert effective_kind(*list_sessions(db, listener.id)[0]) == "keep"
