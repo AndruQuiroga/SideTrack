@@ -1,7 +1,7 @@
 ## 1. Rules and read model
 
 - [x] 1.1 Implement the versioned rule (N, W, M, K, D) and peak-window computation over included plays; verify `tests/test_rediscovery_rules.py` (qualifying track, recently played excluded, earliest max window chosen)
-- [ ] 1.2 Read effective session classification: autoplay excluded by default with count, `keep` override counted, `unknown` included and counted, include-autoplay toggle; verify `tests/test_rediscovery_sessions.py`
+- [x] 1.2 Read effective session classification: autoplay excluded by default with count, `keep` override counted, `unknown` included and counted, include-autoplay toggle; verify `tests/test_rediscovery_sessions.py`
 - [ ] 1.3 Implement coverage and activity checks with states `not_imported`, `coverage_gap`, `insufficient_history`, `none_found`; verify `tests/test_rediscovery_coverage.py` (covered-with-zero-listens is not `not_imported`)
 
 ## 2. Storage and API

@@ -14,6 +14,12 @@ from datetime import datetime, timedelta
 from typing import Any
 from uuid import UUID
 
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from sidetrack.listening.models import ListenEvent
+from sidetrack.listening.sessions import effective_kind, list_sessions
+
 RULE_VERSION = "forgotten-v1"
 
 
@@ -100,3 +106,55 @@ def find_forgotten(
         )
     found.sort(key=lambda row: (-row["peak_plays"], row["peak_start"], str(row["track_id"])))
     return found
+
+
+_AUTOPLAY_KINDS = frozenset({"night_autoplay", "autoplay"})
+_SESSION_PAGE = 1000
+
+
+@dataclass(frozen=True)
+class IncludedPlays:
+    """The plays the rule counts, and what was left out or counted without a timezone."""
+
+    plays: list[tuple[UUID, datetime]]
+    excluded_autoplay: int
+    unknown_session: int
+
+
+def _session_kinds(db: Session, user_id: UUID) -> dict[UUID, str]:
+    kinds: dict[UUID, str] = {}
+    offset = 0
+    while True:
+        page = list_sessions(db, user_id, limit=_SESSION_PAGE, offset=offset)
+        for session, override in page:
+            kinds[session.id] = effective_kind(session, override)
+        if len(page) < _SESSION_PAGE:
+            return kinds
+        offset += _SESSION_PAGE
+
+
+def included_plays(db: Session, user_id: UUID, *, include_autoplay: bool = False) -> IncludedPlays:
+    """The user's plays by effective session classification.
+
+    Plays in sessions whose effective kind is autoplay (the rule's flag or the user's
+    override, so a `keep` override counts) are left out unless asked for, and counted.
+    Plays in `unknown` sessions are included and counted, as are plays not yet in any
+    session, which have no classification either.
+    """
+
+    kinds = _session_kinds(db, user_id)
+    rows = db.execute(
+        select(ListenEvent.track_id, ListenEvent.played_at, ListenEvent.session_id).where(
+            ListenEvent.user_id == user_id
+        )
+    )
+    plays: list[tuple[UUID, datetime]] = []
+    excluded = unknown = 0
+    for track_id, played_at, session_id in rows:
+        kind = kinds.get(session_id, "unknown") if session_id else "unknown"
+        if kind in _AUTOPLAY_KINDS and not include_autoplay:
+            excluded += 1
+            continue
+        unknown += kind == "unknown"
+        plays.append((track_id, played_at))
+    return IncludedPlays(plays=plays, excluded_autoplay=excluded, unknown_session=unknown)
