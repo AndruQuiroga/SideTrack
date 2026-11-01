@@ -231,3 +231,70 @@ def rotate(axes: np.ndarray, eigenvalues: np.ndarray) -> tuple[np.ndarray, np.nd
     variances = (coordinates**2) @ eigenvalues  # principal scores are uncorrelated
     order = np.argsort(-variances, kind="stable")
     return _orient((coordinates @ axes)[order]), variances[order]
+
+
+MIN_MOOD_TRACKS = 10
+
+
+def read_predictions(path: Path, model: str) -> dict[str, tuple[float, float]]:
+    """Asset hash → predicted valence and arousal, from ``audio-lab mood-probe --predict-out``."""
+
+    with path.open(encoding="utf-8", newline="") as handle:
+        reader = csv.DictReader(handle)
+        missing = {"sha256", "valence", "arousal"} - set(reader.fieldnames or [])
+        if missing:
+            raise DimensionsError(f"{path} is missing columns: {', '.join(sorted(missing))}")
+        rows = [r for r in reader if "model" not in r or r["model"] == model]
+    if not rows:
+        raise DimensionsError(f"{path} has no predictions for model {model}")
+    return {r["sha256"]: (float(r["valence"]), float(r["arousal"])) for r in rows}
+
+
+def _correlation(a: np.ndarray, b: np.ndarray) -> float:
+    a, b = a - a.mean(), b - b.mean()
+    denominator = np.sqrt((a @ a) * (b @ b))
+    return float(a @ b / denominator) if denominator > 0 else 0.0
+
+
+def mood_overlap(
+    x: np.ndarray,
+    scores: np.ndarray,
+    hashes: list[str],
+    predictions: dict[str, tuple[float, float]],
+) -> dict:
+    """Each axis's correlation with valence and arousal, and the variance mood explains.
+
+    ``scores`` holds one column per axis. Tracks without a prediction are left out and counted,
+    and so are predictions for tracks that aren't in the analysis.
+    """
+
+    rows = [i for i, sha in enumerate(hashes) if sha in predictions]
+    result: dict = {
+        "tracks_with_prediction": len(rows),
+        "tracks_without_prediction": len(hashes) - len(rows),
+        "predictions_for_other_tracks": len(predictions.keys() - set(hashes)),
+    }
+    if len(rows) < MIN_MOOD_TRACKS:
+        return {
+            **result,
+            "status": "unavailable",
+            "reason": f"needs at least {MIN_MOOD_TRACKS} tracks with predictions",
+        }
+    mood = np.array([predictions[hashes[i]] for i in rows])
+    centred = x[rows] - x[rows].mean(axis=0)
+    design = np.column_stack([np.ones(len(rows)), mood])
+    fitted = design @ np.linalg.lstsq(design, centred, rcond=None)[0]
+    total = float((centred**2).sum())
+    return {
+        **result,
+        "status": "ok",
+        "mood_variance_share": float(1 - ((centred - fitted) ** 2).sum() / total),
+        "valence_arousal_correlation": _correlation(mood[:, 0], mood[:, 1]),
+        "axes": [
+            {
+                "valence": _correlation(scores[rows, k], mood[:, 0]),
+                "arousal": _correlation(scores[rows, k], mood[:, 1]),
+            }
+            for k in range(scores.shape[1])
+        ],
+    }

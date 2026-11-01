@@ -14,6 +14,7 @@ import pytest
 from audio_lab.dimensions import (
     analyse,
     load_selection,
+    mood_overlap,
     parallel_analysis,
     principal_components,
     rotate,
@@ -215,6 +216,46 @@ def test_varimax_recovers_rotated_axes():
     match = np.abs(rotated @ truth.T)
     assert match.max(axis=1).min() > 0.95
     assert sorted(match.argmax(axis=1)) == [0, 1, 2]
+
+
+def _mood_case(tracks=200):
+    x, _ = planted(np.random.default_rng(3), tracks=tracks)
+    _, axes = principal_components(x)
+    scores = (x - x.mean(axis=0)) @ axes[:3].T
+    rng = np.random.default_rng(9)
+    arousal = scores[:, 0] / scores[:, 0].std() + rng.normal(scale=0.2, size=tracks)
+    valence = rng.normal(size=tracks)
+    hashes = [sha(i) for i in range(tracks)]
+    return x, scores, hashes, {h: (v, a) for h, v, a in zip(hashes, valence, arousal, strict=True)}
+
+
+def test_axis_restating_mood_correlates():
+    x, scores, hashes, predictions = _mood_case()
+
+    overlap = mood_overlap(x, scores, hashes, predictions)
+
+    assert overlap["status"] == "ok"
+    first, second, _ = overlap["axes"]
+    assert abs(first["arousal"]) > 0.9
+    assert abs(second["arousal"]) < 0.3 and abs(second["valence"]) < 0.3
+    # Arousal follows the 6-strength axis, which holds 36 of the ~100 variance units
+    assert 0.2 < overlap["mood_variance_share"] < 0.6
+
+
+def test_predictions_for_other_tracks_are_counted():
+    x, scores, hashes, predictions = _mood_case()
+    for sha_ in hashes[:20]:
+        del predictions[sha_]
+    predictions[sha(9999)] = (0.0, 0.0)
+
+    overlap = mood_overlap(x, scores, hashes, predictions)
+
+    assert overlap["tracks_without_prediction"] == 20
+    assert overlap["tracks_with_prediction"] == 180
+    assert overlap["predictions_for_other_tracks"] == 1
+
+    sparse = mood_overlap(x, scores, hashes, {hashes[0]: (0.0, 0.0)})
+    assert sparse["status"] == "unavailable"
 
 
 def test_rotation_keeps_total_variance():
