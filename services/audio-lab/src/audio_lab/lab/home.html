@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Listening Lab</title>
+<style>
+/*__LAB_CSS__*/
+</style>
+</head>
+<body>
+<h1>Listening Lab</h1>
+<p class="muted">Quick demos on your own listening, built locally and opened from disk. They show
+estimated changes in sound, not what any change meant. Mark each demo keep, rework or drop, then
+export your verdicts.</p>
+<div id="demos"></div>
+<p><button type="button" id="export">Export lab-verdicts.json</button></p>
+<p class="muted">The export holds each demo's verdict and note, and no track data.</p>
+<script id="data" type="application/json">/*__LAB_DATA__*/null</script>
+<script>
+/*__LAB_JS__*/
+loadDrafts();
+const lab = labData();
+const list = document.getElementById("demos");
+lab.demos.forEach((demo) => {
+  const head = el("h2", {}, [demo.status === "ready" ? el("a", { href: demo.href, text: demo.title }) : el("span", { text: demo.title })]);
+  const card = el("div", { class: "card" }, [head, el("p", { text: demo.summary })]);
+  if (demo.status === "ready") {
+    card.append(verdictControl(demo.name));
+  } else {
+    card.append(el("p", {}, [el("span", { class: "tag unavailable", text: "unavailable" }), document.createTextNode(" " + demo.reason)]));
+  }
+  list.append(card);
+});
+if (!lab.demos.length) list.append(el("p", { class: "muted", text: "No demos are registered." }));
+document.getElementById("export").addEventListener("click", () => {
+  download("lab-verdicts.json", buildVerdicts({ demos: lab.demos, verdicts: verdicts, today: today() }));
+});
+</script>
+</body>
+</html>

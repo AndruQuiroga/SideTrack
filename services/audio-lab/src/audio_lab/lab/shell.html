@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__LAB_TITLE__</title>
+<style>
+/*__LAB_CSS__*/
+</style>
+</head>
+<body>
+<p class="muted"><a href="index.html">Listening Lab</a></p>
+<h1>__LAB_TITLE__</h1>
+<p class="muted">__LAB_SUMMARY__</p>
+<!--__LAB_BODY__-->
+<h2>Your verdict</h2>
+<div class="card" id="verdict"></div>
+<p class="muted">Drafts are kept in this browser when it allows. Export all verdicts from the home page.</p>
+<script id="data" type="application/json">/*__LAB_DATA__*/null</script>
+<script>
+/*__LAB_JS__*/
+loadDrafts();
+document.getElementById("verdict").append(verdictControl(labData().name));
+</script>
+</body>
+</html>
