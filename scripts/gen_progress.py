@@ -130,7 +130,7 @@ PHASES: list[dict[str, Any]] = [
             "add-sound-world-explorer",
             "add-sound-bridge",
             "add-forgotten-favourites",
-            "explore-sound-dimensions",
+            "add-listening-lab",
             "add-listening-journey",
             "add-share-consent",
             "add-track-facet-card",
