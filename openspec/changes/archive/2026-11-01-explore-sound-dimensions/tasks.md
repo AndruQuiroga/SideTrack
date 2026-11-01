@@ -14,7 +14,7 @@
 
 ## 3. Suggested names
 
-- [ ] 3.1 Add text encoding to the MuQ-MuLan adapter with the pinned revision, reporting unavailable without torch; verify `tests/test_adapters_gpu.py::test_mulan_text_vectors` (marked `gpu`) and `test_dimensions.py::test_text_unavailable_without_torch`
+- [x] 3.1 Add text encoding to the MuQ-MuLan adapter with the pinned revision, reporting unavailable without torch; verify `tests/test_adapters_gpu.py::test_mulan_text_vectors` (marked `gpu`) and `test_dimensions.py::test_text_unavailable_without_torch`
 - [x] 3.2 Add contrast scoring with a permutation null and `no_confident_label`, over a versioned vocabulary; verify `::test_planted_term_is_suggested` and `::test_no_term_abstains`
 
 ## 4. Blind review
@@ -23,6 +23,6 @@
 
 ## 5. Owner run and records
 
-- [ ] 5.1 (owner) Run `dimensions` on run `20261027-031711-c7c3698`, excluding the control seeds, then the suggested names on the RTX 5070; verify `dimensions.json` is outside the repo and record the track count, kept and stable dimensions, variance shares and mood overlap in `docs/AUDIO-BENCHMARK.md`, aggregates only
-- [ ] 5.2 (owner) Listen to the blind review, mark each axis and name the kept ones; verify `dimensions-decision.json` validates and record the decision with the run ID
-- [ ] 5.3 Write the recommendation for a follow-up change in `docs/AUDIO-BENCHMARK.md`, update `services/audio-lab/README.md` and `docs/status.yaml`, and regenerate `docs/STATUS.md`; verify `uv run pytest` and `ruff check` in `services/audio-lab`, `scripts/gen_status.py --check` and `pnpm exec openspec validate explore-sound-dimensions --strict`. No ADR change is expected.
+- [x] 5.1 (owner) Run `dimensions` on run `20261027-031711-c7c3698`, excluding the control seeds, then the suggested names on the RTX 5070; verify `dimensions.json` is outside the repo and record the track count, kept and stable dimensions, variance shares and mood overlap in `docs/AUDIO-BENCHMARK.md`, aggregates only
+- [x] 5.2 (owner) Listen to the blind review, mark each axis and name the kept ones; verify `dimensions-decision.json` validates and record the decision with the run ID
+- [x] 5.3 Write the recommendation for a follow-up change in `docs/AUDIO-BENCHMARK.md`, update `services/audio-lab/README.md` and `docs/status.yaml`, and regenerate `docs/STATUS.md`; verify `uv run pytest` and `ruff check` in `services/audio-lab`, `scripts/gen_status.py --check` and `pnpm exec openspec validate explore-sound-dimensions --strict`. No ADR change is expected.

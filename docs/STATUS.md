@@ -37,7 +37,7 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 | Capability | Status | Notes | Evidence |
 | --- | --- | --- | --- |
 | Audio acquisition | works | Opt-in `python -m sidetrack.audio` (ADR 0007): YouTube Music full tracks and Deezer previews, content-addressed storage, AcoustID verification, manifest, verify and prune. `import-manifest` creates rows for files copied to another machine, with no fetching. Real 5-seed run on 2026-10-26: 10 assets stored, all 5 full tracks AcoustID-confirmed (0.96-1.00); previews stay unverified as expected. 862 assets were imported to production on 2026-10-31. | `deploy/EMBEDDINGS-ROLLOUT.md`, `tests/test_audio_assets.py`, `tests/test_audio_cli.py`, `docs/AUDIO.md` |
-| Audio feature extraction | partial | services/audio-lab benchmark CLI (ADR 0004) embeds acquired audio into versioned Parquet runs with a blind-duel report, automatic neighbour metrics and duel scoring; plus a seed builder for ListenBrainz exports and a Deezer genre control set. Benchmark only, not integrated into Sidetrack (docs/AUDIO-BENCHMARK.md) | `services/audio-lab/tests/test_runs.py`, `services/audio-lab/tests/test_neighbours.py`, `services/audio-lab/tests/test_report_and_score.py` |
+| Audio feature extraction | partial | services/audio-lab benchmark CLI (ADR 0004) embeds acquired audio into versioned Parquet runs with a blind-duel report, automatic neighbour metrics and duel scoring; plus a seed builder for ListenBrainz exports and a Deezer genre control set. `dimensions` finds a listener's own sound dimensions; six stable axes on the owner's 233 tracks were named by blind listening on 2026-11-01. Benchmark only, not integrated into Sidetrack (docs/AUDIO-BENCHMARK.md) | `services/audio-lab/tests/test_runs.py`, `services/audio-lab/tests/test_neighbours.py`, `services/audio-lab/tests/test_report_and_score.py` |
 | Embedding models (any) | partial | MuQ-MuLan passed the v2 benchmark gate as the lead model, with MuQ kept as a second (run 20261027-031711-c7c3698, 703 assets, 103 owner duels, 2026-10-27). Both also run on the rack's GTX 1070 on docker-0 (run 20261027-172855-0c32766-dirty: torch 2.11 cu126, 77 audio-s/s, MuQ-MuLan peak 2.8 GB, MuQ 5.3 GB), and their vectors match the RTX 5070's to a cosine of at least 0.99998. MuQ-MuLan also passed the mood gate (run 20261031-204732-9b07ff0, owner check 2026-10-31). MuQ-MuLan is integrated as Sidetrack's only enabled model (ADR 0010); MuQ is not | `services/audio-lab/tests/test_adapters_gpu.py`, `services/audio-lab/tests/test_gpu_compat.py`, `services/audio-lab/tests/test_parity.py`, `docs/AUDIO-BENCHMARK.md` |
 | Listens linked to audio | works | `python -m sidetrack.audio link` links tracks to assets from stored evidence, and `coverage` reports what share of plays have audio. Production links 392 tracks. That covers 9.3% of the owner's plays, because the audio library is a benchmark sample. | `docs/AUDIO.md`, `tests/test_audio_links_matcher.py`, `tests/test_audio_for_track.py`, `tests/test_audio_coverage.py` |
 | Audio embeddings | works | MuQ-MuLan vectors in pgvector, embedded by `analysis.embed_audio` jobs on the gpu queue, which `python -m sidetrack.audio embed` queues; `neighbours` ranks similar audio within one model and revision (ADR 0010). Production holds all 862 of the owner's imported assets, embedded on the rack's GTX 1070 on 2026-10-31 with no failures, and spot checks returned same-genre neighbours. No HTTP route or page uses embeddings yet. | `deploy/EMBEDDINGS-ROLLOUT.md`, `tests/test_audio_embeddings_store.py`, `tests/test_audio_embeddings_pipeline.py`, `tests/test_audio_embeddings_job.py`, `tests/test_audio_embeddings_neighbours.py`, `services/gpu-worker/tests/test_parity.py`, `docs/AUDIO.md` |
@@ -94,7 +94,6 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 - `add-weekly-listening-profile`: 0/4 tasks
 - `automate-database-backups`: 9/13 tasks
 - `explore-lyrics-and-captioning`: 0/11 tasks
-- `explore-sound-dimensions`: 8/12 tasks
 
 ### Specs
 
@@ -104,6 +103,7 @@ Statuses: **works** (implemented end to end), **partial** (known gaps or unteste
 - `analysis/benchmark-seeds`
 - `analysis/evaluation-gates`
 - `analysis/listen-audio-resolution`
+- `analysis/sound-dimensions`
 - `catalog/artwork-recovery`
 - `club/durable-notifications`
 - `club/history-import`

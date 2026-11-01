@@ -389,6 +389,24 @@ and it covers at most the first 180 s of each track.
 | 5 | 8.1% | 0.22 | 0.21 |
 | 6 | 5.3% | -0.08 | -0.08 |
 
-Suggested names are unavailable so far, because `torchvision` doesn't match `torch` in the current
-`models` install. The owner's blind listening review is still to come, so nothing here says what
-these axes mean.
+**Owner's review, 2026-11-01.** The owner listened blind, named all six axes and kept them. The
+export left the keep field empty, so naming an axis was recorded as keeping it. Suggested names were
+generated only afterwards, from a 69-term vocabulary, so they couldn't lead the review.
+
+| Axis | Owner's name | Model's terms, one end | Model's terms, other end |
+| --- | --- | --- | --- |
+| 1 | Energy | female vocals, male vocals, vocals | atmospheric, ambient, dreamy |
+| 2 | Peaks or highs and lows versus stable | indie, soul, country | tense, techno, angry |
+| 3 | Chaos | house, electronic, atmospheric | lo-fi, gentle, lush |
+| 4 | Upbeat | indie, relaxing, melancholic | techno, tense, danceable |
+| 5 | Danceability | lo-fi, angry, soul | house, female vocals, atmospheric |
+| 6 | Soul (unsure) | atmospheric | rock, country, metal |
+
+The terms describe the music at each end, and the owner's names describe what changes along the
+axis. Axes 1, 4 and 5 agree closely. Axis 2 suggests something a genre vocabulary can't say. About one
+end in ten can carry a chance term, and axis 6 is the smallest and least certain.
+
+**Recommendation.** Keep all six as the base of a listener's sound signature, with mood as a reading
+of axis 1 and not a separate pair of axes. Rerun on a larger library first: 233 tracks is a sample
+of the owner's listening, and the audio library is growing. A signature product change needs its own
+proposal and an evaluation gate.

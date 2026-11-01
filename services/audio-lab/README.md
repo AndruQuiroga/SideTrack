@@ -145,6 +145,21 @@ uv run --extra models pytest -m gpu  # real models on a CUDA GPU
 Checking the report by hand: open a run's `report.html`, answer a few duels, reload the
 page (they persist), then export and confirm `duels.json` contains them with the run ID.
 
+## Sound dimensions
+
+`dimensions` finds the independent directions in a listener's own tracks: one vector per track,
+control seeds excluded, kept only above a shuffled baseline and checked for stability. `--names`
+suggests terms from the MuLan text tower, and needs the `models` extra. `dimensions-review` writes a
+blind, offline listening page, and `dimensions-decision` validates its export. Everything stays
+outside the repo.
+
+```bash
+uv run audio-lab dimensions RUN --manifest MANIFEST --predictions PREDICTIONS --exclude-seeds CONTROL.csv --out DIR
+uv run --extra models audio-lab dimensions RUN --manifest MANIFEST --out DIR --names
+uv run audio-lab dimensions-review DIR --manifest MANIFEST --audio-dir AUDIO --out DIR/review.html
+uv run audio-lab dimensions-decision DIR DECISION.json
+```
+
 ## Mood probes
 
 `emotion-manifest` turns a local emotion dataset into a normal manifest plus `mood-labels.csv`,

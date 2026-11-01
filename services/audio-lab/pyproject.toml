@@ -19,12 +19,16 @@ dependencies = [
 models = [
     "torch==2.11.0",
     "torchaudio==2.11.0",
+    "torchvision==0.26.0",
     "transformers==4.57.6",
     "muq==0.1.0",
+    # MuLan's text tower tokenizes with xlm-roberta-base.
+    "sentencepiece==0.2.1",
+    "protobuf==6.33.0",
 ]
 # The same pins from the CUDA 12.6 index, for the rack's GTX 1070 (Pascal, sm_61).
-# Conflicts with `models`; install one or the other. torchvision (pulled in by muq's x-clip)
-# must come from the same index: PyPI's Linux wheel is built against PyPI torch, and its
+# Conflicts with `models`; install one or the other. In both extras torchvision (pulled in by
+# muq's x-clip) must come from the same index as torch: PyPI's Linux wheel is built against PyPI torch, and its
 # compiled ops (torchvision::nms) don't load with the cu126 build.
 models-pascal = [
     "torch==2.11.0",
@@ -60,7 +64,10 @@ torchaudio = [
     { index = "pytorch-cu128", extra = "models" },
     { index = "pytorch-cu126", extra = "models-pascal" },
 ]
-torchvision = [{ index = "pytorch-cu126", extra = "models-pascal" }]
+torchvision = [
+    { index = "pytorch-cu128", extra = "models" },
+    { index = "pytorch-cu126", extra = "models-pascal" },
+]
 
 [[tool.uv.index]]
 name = "pytorch-cu128"
