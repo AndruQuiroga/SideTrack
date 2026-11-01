@@ -55,6 +55,8 @@ jobs:
         run: uv run --frozen python scripts/check_stack_docs.py
       - name: Status page is current
         run: uv run --frozen python scripts/gen_status.py --check
+      - name: Evaluation registers are consistent
+        run: uv run --frozen python scripts/check_evaluations.py --links
 
   audio-lab:
     # Core layer only: no PyTorch, no GPU, no model downloads (ADR 0004).

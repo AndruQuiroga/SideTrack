@@ -1,0 +1,204 @@
+# Rights register for evaluation datasets (spec: analysis/evaluation-gates).
+# Source: docs/research/MUSIC-ANALYSIS-RESEARCH-NOTES.md, section 3, as reviewed on 2026-10-31.
+#
+# This records what each source says and what is still unknown. It is not legal advice and it
+# does not say any permission is cleared: every entry keeps `recheck: true` until the owner
+# has verified the terms at the exact revision and files used.
+#
+# status.audio:       recorded | rights_unconfirmed | annotation_only | not_for_use
+# status.annotations: recorded | rights_unconfirmed | not_for_use
+#   recorded           the source states terms, noted below; the use still needs the re-check
+#   rights_unconfirmed the terms are unknown or depend on files not yet checked
+#   annotation_only    audio exists only as references (such as YouTube ids); none is held
+# acquisition: owner_manual (the owner fetches files by hand) | none. Never automated: no
+#   yt-dlp, no scheduled download, no audio over HTTP.
+# Nothing from a dataset (audio, annotation files, per-track results) belongs in the repo.
+
+datasets:
+  - id: deam
+    name: DEAM
+    url: https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0173392
+    use: >-
+      Static and time-varying human ratings of perceived valence and arousal: 1,802
+      recordings or excerpts (58 full songs, 1,744 45-second excerpts). Mood probes.
+    audio_terms: >-
+      Not established. The article and the individual audio and annotation files do not
+      necessarily share terms. docs/AUDIO-BENCHMARK.md records the Kaggle copy the owner used
+      as non-commercial Creative Commons.
+    annotation_terms: >-
+      Crowdsourced or lab-collected human ratings. Terms of the actual annotation files not
+      confirmed.
+    status:
+      audio: rights_unconfirmed
+      annotations: rights_unconfirmed
+    gaps:
+      - The original data site was inaccessible during review (it timed out again on 2026-10-31).
+      - Run 20261031-204732-9b07ff0 used a Kaggle copy of the audio and a separate copy of the
+        ratings; terms of those exact files are unconfirmed.
+      - No artist metadata was available, so splits were not artist-grouped.
+    acquisition: owner_manual
+    storage: HDD, outside the repo
+    recheck: true
+    reviewed: 2026-10-31
+
+  - id: musav
+    name: MusAV
+    url: https://github.com/MTG/musav-dataset
+    use: >-
+      Relative judgments of which of two clips sounds more arousing or positive, with several
+      annotator-agreement subsets. Tests ranking rather than absolute scores.
+    audio_terms: >-
+      Spotify previews and API metadata are available on request for non-commercial scientific
+      research only. This is not blanket permission for product use.
+    annotation_terms: AV annotation metadata is CC BY-NC-SA 4.0.
+    status:
+      audio: rights_unconfirmed
+      annotations: recorded
+    gaps:
+      - Preview access is on request and limited to non-commercial scientific research.
+      - Whether a personal, non-redistributed evaluation counts as that use is not decided.
+    acquisition: owner_manual
+    storage: HDD, outside the repo
+    recheck: true
+    reviewed: 2026-10-31
+
+  - id: mtg-jamendo
+    name: MTG-Jamendo
+    url: https://github.com/MTG/mtg-jamendo-dataset
+    use: >-
+      Genre, instrument and mood/theme tagging. The published splits have 55,525 tracks and
+      87, 40 and 56 tags respectively.
+    audio_terms: Each track carries its own license; they have not been checked individually.
+    annotation_terms: Tags are uploader-supplied. Terms of the annotation files not confirmed.
+    status:
+      audio: rights_unconfirmed
+      annotations: rights_unconfirmed
+    gaps:
+      - The low-quality mood subset is about 46 GB and the full low-quality audio about 156 GB.
+        Both exceed the project's 40 GB SSD budget, so use the HDD only.
+      - Check each audio license and plan storage before use.
+    acquisition: owner_manual
+    storage: HDD, outside the repo
+    recheck: true
+    reviewed: 2026-10-31
+
+  - id: pmemo
+    name: PMEmo
+    url: https://github.com/HuiZhangDB/PMEmo
+    use: >-
+      794 popular songs with human affect annotations, chorus clips and physiological signals.
+      A possible cross-dataset check for mood.
+    audio_terms: Not established; verify audio and redistribution terms.
+    annotation_terms: Not established; verify annotation terms.
+    status:
+      audio: rights_unconfirmed
+      annotations: rights_unconfirmed
+    gaps:
+      - Popular-song and chorus bias is unlike the owner's collection.
+      - Physiological signals are not a diagnosis.
+    acquisition: owner_manual
+    storage: HDD, outside the repo
+    recheck: true
+    reviewed: 2026-10-31
+
+  - id: musiccaps
+    name: MusicCaps
+    url: https://huggingface.co/datasets/google/MusicCaps
+    use: >-
+      5,521 musician-written descriptions of 10-second clips. Descriptive prompts and
+      retrieval.
+    audio_terms: >-
+      The audio is referenced by YouTube id only. The dataset card's license does not give
+      permission for the referenced audio.
+    annotation_terms: The dataset card lists CC BY-SA 4.0 for the dataset.
+    status:
+      audio: annotation_only
+      annotations: recorded
+    audio_source: youtube_reference
+    gaps:
+      - Do not schedule or automate yt-dlp to obtain the audio.
+      - Annotation-only unless the owner already holds the audio by other means.
+    acquisition: owner_manual
+    storage: HDD, outside the repo
+    recheck: true
+    reviewed: 2026-10-31
+
+  - id: song-describer
+    name: Song Describer
+    url: https://github.com/mulab-mir/song-describer-dataset
+    use: >-
+      About 1,100 human-written captions for 706 recordings, with roughly two minutes of
+      audio per track. Caption and text-retrieval evaluation at a different duration from
+      MusicCaps.
+    audio_terms: The recordings have their own Creative Commons licenses, not checked here.
+    annotation_terms: Repository code is MIT and the dataset is CC BY-SA 4.0.
+    status:
+      audio: rights_unconfirmed
+      annotations: recorded
+    gaps:
+      - Check individual recording terms and genre coverage.
+      - Captions are human annotations, not labels for the owner's tracks.
+    acquisition: owner_manual
+    storage: HDD, outside the repo
+    recheck: true
+    reviewed: 2026-10-31
+
+  - id: muchomusic
+    name: MuChoMusic
+    url: https://github.com/mulab-mir/muchomusic
+    use: Multiple-choice evaluation of music understanding by audio-language models.
+    audio_terms: The underlying audio sources and their rights have not been checked.
+    annotation_terms: The repository says MIT code and a CC BY-SA 4.0 dataset.
+    status:
+      audio: rights_unconfirmed
+      annotations: recorded
+    gaps:
+      - Check the underlying audio sources and rights separately.
+      - A benchmark score is not a guarantee of correct free-text descriptions.
+    acquisition: owner_manual
+    storage: HDD, outside the repo
+    recheck: true
+    reviewed: 2026-10-31
+
+  - id: jam-alt
+    name: Jam-ALT
+    url: https://huggingface.co/datasets/jamendolyrics/jam-alt
+    use: >-
+      A 79-song, four-language benchmark for lyrics transcription, including readability and
+      line-level timing.
+    audio_terms: Each recording has its own license; not checked here.
+    annotation_terms: Lyrics terms not confirmed.
+    status:
+      audio: rights_unconfirmed
+      annotations: rights_unconfirmed
+    gaps:
+      - It is not word-aligned, and its small test set cannot establish performance on every
+        genre or language.
+      - Check the lyrics and each recording's actual license before storage, display or
+        redistribution.
+    acquisition: owner_manual
+    storage: HDD, outside the repo
+    recheck: true
+    reviewed: 2026-10-31
+
+  - id: harmonix
+    name: Harmonix Set
+    url: https://github.com/urinieto/harmonixset
+    use: >-
+      Beat, downbeat and functional-section annotations for 912 Western pop tracks. Timing
+      checks.
+    audio_terms: >-
+      Audio is referenced by YouTube id. The spectrograms have their own license agreement;
+      YouTube references do not imply audio download rights.
+    annotation_terms: Annotation terms not confirmed.
+    status:
+      audio: annotation_only
+      annotations: rights_unconfirmed
+    audio_source: youtube_reference
+    gaps:
+      - It is not a representative EDM-drop dataset, so it cannot support a "drop" claim.
+      - Annotation-only unless the owner already holds the audio by other means.
+    acquisition: owner_manual
+    storage: HDD, outside the repo
+    recheck: true
+    reviewed: 2026-10-31

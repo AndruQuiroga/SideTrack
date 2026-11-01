@@ -1,0 +1,71 @@
+# Evaluation register: one entry per user-facing analysis claim (spec: analysis/evaluation-gates).
+# See README.md for the statuses. Only `approved` permits a claim to be shown to a user.
+#
+# claim              id used by the feature's change and the summary directory
+# status             approved | gate_pending | incomplete | rejected | stale
+# feature_revisions  what the feature declares it uses; an approval is bound to these
+# datasets           [{id, use}] cited by the evaluation, each registered in datasets.yaml
+# capabilities       docs/status.yaml capabilities that depend on the claim; none may be
+#                    `works` unless the entry is `approved`
+# summary            docs/evaluations/summaries/<claim>/<record-id>.json, required once approved
+#
+# Aggregate figures only. No title, path or per-track value belongs here.
+
+claims:
+  - claim: muq-mulan-neighbours
+    title: Nearest tracks in the owner's library, by MuQ-MuLan embedding similarity
+    status: incomplete
+    feature_revisions:
+      model: muq-mulan
+      checkpoint_revision: 2e01c796b71dca71b45251384c04cd7b237c9020
+      probe_revision: none
+      pipeline: w10-t3-cap180-fp32-mean-l2-v1
+      vocabulary_version: none
+    datasets: []
+    capabilities: []
+    evidence:
+      - >-
+        Model-selection benchmark, run 20261027-031711-c7c3698: 703 assets and 103 owner duels
+        (docs/AUDIO-BENCHMARK.md). It chose the model; it is not this gate.
+    missing:
+      - random control and a recent-or-frequent baseline for the production pipeline
+      - coverage and failure counts, and a robustness record (preview against full, loudness)
+      - same-recording judgments kept separate from sounds-similar judgments
+      - an owner decision on the production pipeline's neighbours
+    notes: >-
+      Production holds 862 vectors from one mean-pooled embedding per asset over at most the
+      first 180 s. No HTTP route uses them yet.
+
+  - claim: mood-estimate
+    title: Valence and arousal estimate for a track, from a linear probe on MuQ-MuLan
+    status: incomplete
+    feature_revisions:
+      model: muq-mulan
+      checkpoint_revision: 2e01c796b71dca71b45251384c04cd7b237c9020
+      probe_revision: unassigned
+      pipeline: unassigned
+      vocabulary_version: none
+    datasets:
+      - id: deam
+        use: audio
+      - id: deam
+        use: annotations
+    capabilities: []
+    evidence:
+      - >-
+        Mood probe, run 20261031-204732-9b07ff0 (docs/AUDIO-BENCHMARK.md): DEAM valence R2
+        0.615 and arousal R2 0.688 over five repeats of nested five-fold validation.
+      - >-
+        Owner listening check passed on 2026-10-31 (the top and bottom 20 of the owner's
+        library on each dimension).
+      - >-
+        Axis correlation: predictions on the owner's library 0.88, human ratings 0.57. The
+        axes may not be distinguished.
+    missing:
+      - artist-grouped splits; the run is not artist-grouped, so its scores may be optimistic
+      - a gate record with calibration of any displayed range and rankings per axis
+      - coverage and robustness records, and a probe and pipeline revision for the feature
+      - rights for the DEAM files used: audio and annotations are rights_unconfirmed
+    notes: >-
+      Not approved. The listening check passed, but the dataset evidence is incomplete and
+      DEAM's rights for the exact files used are unconfirmed.

@@ -91,6 +91,7 @@ uv run audio-lab parity E:/sidetrack/audio-lab-runs/<run-a> \
   - **Results:** live duel standings and the automatic metrics: preview→full recall,
     same-artist rate, separation, and top-10 overlap between models.
   - **Browse:** every seed's top 10 per model.
+
 - **`parity`** compares one model's vectors in two runs (for example the same manifest on
   two GPUs) by asset SHA-256. It prints the shared asset count, the minimum, 1st-percentile
   and median cosine, and every asset below `--threshold` (default 0.999). It refuses runs
@@ -157,3 +158,34 @@ uv run --extra models audio-lab embed --manifest E:/sidetrack/mood/prepared/mani
 uv run audio-lab mood-probe RUN --labels E:/sidetrack/mood/prepared/mood-labels.csv --predict-run LIBRARY_RUN --predict-out E:/sidetrack/mood/predictions.csv --predict-manifest MANIFEST
 ```
 
+## Evaluation gates
+
+An analysis claim may reach a user only after a recorded evaluation passes and the owner approves
+it (spec `analysis/evaluation-gates`, registers in `docs/evaluations/`). `gate` checks
+that record. The record itself holds per-track results and example titles, so keep it outside the
+repo (for example next to the run on the HDD). `check`, `review` and `decide` refuse any output
+path inside the working tree. `summarize` is the one exception, and only for
+`docs/evaluations/summaries/`: it writes aggregate figures and counts, no artist, title, path or
+per-track value.
+
+```bash
+uv run audio-lab gate check $RECORD
+uv run audio-lab gate review $RECORD --out $REVIEW --audio-dir $AUDIO
+uv run audio-lab gate decide $RECORD $DECISION --out $DECIDED
+uv run audio-lab gate summarize $DECIDED --out $SUMMARY
+uv run audio-lab gate prepare --metadata $METADATA --audio-dir $AUDIO
+```
+
+- **`check`** prints `complete` or `incomplete`, naming each missing field, and exits non-zero
+  when incomplete. It also lists held-out categories that are `not_covered` and any flags. Fields
+  per task are in `src/audio_lab/gate.py`; `tests/test_gate.py` builds a synthetic record for each.
+- **`review`** writes one offline HTML page: examples, a local audio player for files you already
+  hold, and an Export button that downloads `decision.json`. Open it from disk; nothing is served.
+- **`decide`** imports that `decision.json` (`approve`, `reject` or `correct`) into a copy of the
+  record. `reject` keeps a note and `correct` keeps the corrections; only `approve` on a complete
+  record gives the status `approved`.
+- **`summarize`** writes the summary that the evaluation register links to.
+- **`prepare`** counts which items of a dataset (a CSV with an `id` column) have audio in
+  `--audio-dir`. For YouTube-referenced sets such as MusicCaps it reports the rest as
+  `no_local_audio`. It prepares and downloads nothing: audio for these sets is the owner's to
+  obtain by hand.
