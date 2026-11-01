@@ -271,3 +271,21 @@ def test_seed_register_is_honest_and_consistent():
         "w10-t3-cap180-fp32-mean-l2-v1"
     )
     assert "20261031-204732-9b07ff0" in json.dumps(claims["mood-estimate"]["evidence"])
+
+
+def test_repo_links_resolve():
+    assert check_evaluations.check_links(ROOT) == []
+
+
+def test_broken_and_missing_links_are_reported(tmp_path):
+    (tmp_path / "docs" / "evaluations").mkdir(parents=True)
+    (tmp_path / "docs" / "research").mkdir()
+    (tmp_path / "docs" / "evaluations" / "README.md").write_text("[x](nope.md) [ok](#a)", "utf-8")
+    (tmp_path / "docs" / "AUDIO-BENCHMARK.md").write_text("no link", "utf-8")
+    (tmp_path / "docs" / "research" / "MUSIC-ANALYSIS.md").write_text(
+        "[e](../evaluations/)", "utf-8"
+    )
+    errors = check_evaluations.check_links(tmp_path)
+    assert any("broken link nope.md" in e for e in errors)
+    assert any("AUDIO-BENCHMARK.md: does not link" in e for e in errors)
+    assert len(errors) == 2

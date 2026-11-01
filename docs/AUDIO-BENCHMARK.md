@@ -4,6 +4,11 @@ ADR 0004: prove audio models on real tracks before building anything on them. Th
 benchmark is `services/audio-lab` (see its README for commands). This page holds the
 pass gate, the licences, and every recorded run.
 
+Choosing a model here does not approve any claim built on it. Whether a result may be shown
+to a user (a mood estimate, a neighbour list) is a separate gate with its own record and the
+owner's decision: see [docs/evaluations/](evaluations/README.md). The mood gate below passed, but
+the `mood-estimate` claim is still `incomplete` there.
+
 ## Models
 
 | Name | Checkpoint (pinned revision) | Licence | Rate | Dim | Pooling |
