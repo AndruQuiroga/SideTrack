@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import copy
+import json
 
 import pytest
 
 from audio_lab import gate
+from audio_lab.cli import main
 
 COVERAGE = {
     "total_items": 200,
@@ -154,3 +156,95 @@ def test_other_needs_a_metric_plan():
     record = other()
     record["other"] = {}
     assert gate.check_record(record)["missing"] == ["metric_plan"]
+
+
+def test_missing_checkpoint_revision(tmp_path, capsys):
+    record = neighbours()
+    del record["checkpoint_revision"]
+    result = gate.check_record(record)
+    assert result["status"] == "incomplete"
+    assert result["missing"] == ["checkpoint_revision"]
+    path = tmp_path / "record.json"
+    path.write_text(json.dumps(record), encoding="utf-8")
+    assert main(["gate", "check", str(path)]) == 1
+    assert "checkpoint_revision" in capsys.readouterr().out
+
+
+def test_every_missing_header_field_is_named():
+    record = neighbours()
+    for field in ("model", "pipeline", "vocabulary_version", "time_range", "source"):
+        del record[field]
+    assert set(gate.check_record(record)["missing"]) == {
+        "model",
+        "pipeline",
+        "vocabulary_version",
+        "time_range",
+        "source",
+    }
+
+
+def test_altered_versions_not_covered():
+    record = neighbours()
+    record["challenge"] = {"held_out": True, "obscure": 40, "electronic": 60}
+    result = gate.check_record(record)
+    assert result["not_covered"] == ["altered"]
+    assert result["status"] == "complete"
+    assert gate.summarize(record)["not_covered"] == ["altered"]
+
+
+def test_challenge_must_be_held_out():
+    record = neighbours()
+    record["challenge"]["held_out"] = False
+    assert "challenge" in gate.check_record(record)["missing"]
+
+
+def test_ungrouped_flag():
+    record = mood()
+    record["grouping"] = {"mode": "none", "reason": "artist metadata unavailable"}
+    summary = gate.summarize(record)
+    fitted = [m for m in summary["metrics"] if m["fitted"]]
+    assert fitted
+    assert all(m["caveat"] == "not artist-grouped: scores may be optimistic" for m in fitted)
+    assert summary["grouping"] == "none"
+
+
+def test_ungrouped_needs_a_reason():
+    record = mood()
+    record["grouping"] = {"mode": "none"}
+    assert "grouping" in gate.check_record(record)["missing"]
+
+
+def test_artist_grouped_has_no_caveat():
+    assert all(m["caveat"] is None for m in gate.summarize(mood())["metrics"])
+
+
+def test_duplicate_hash_across_folds():
+    record = mood()
+    record["items"][1]["audio_sha256"] = "h1"
+    result = gate.check_record(record)
+    assert result["status"] == "incomplete"
+    assert "duplicate_items" in result["missing"]
+    assert any("h1" in m for m in result["messages"])
+
+
+@pytest.mark.parametrize("key", ["recording_id", "upload_group"])
+def test_duplicate_recording_or_upload_across_folds(key):
+    record = mood()
+    record["items"][0][key] = "same"
+    record["items"][1][key] = "same"
+    assert "duplicate_items" in gate.check_record(record)["missing"]
+
+
+def test_duplicate_in_one_fold_is_fine():
+    record = mood()
+    record["items"][1].update(fold=0, audio_sha256="h1")
+    assert gate.check_record(record)["status"] == "complete"
+
+
+def test_accepted_duplicate_needs_a_reason():
+    record = mood()
+    record["items"][1]["audio_sha256"] = "h1"
+    record["accepted_leakage"] = [{"key": "h1", "reason": ""}]
+    assert gate.check_record(record)["status"] == "incomplete"
+    record["accepted_leakage"] = [{"key": "h1", "reason": "owner: same file, kept in both"}]
+    assert gate.check_record(record)["status"] == "complete"
